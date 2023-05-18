@@ -180,6 +180,7 @@ def displt(rt,k,dis):
 
 if (__name__ == '__main__'):
 
+    pass
     # model = './Models/Shell_Rafan'
     # op2name = model+'/Wing400/nx26ny5nz5/S_na25'
     # bdfname = model+'/Wing400/nx26ny5nz5/S_na25'
