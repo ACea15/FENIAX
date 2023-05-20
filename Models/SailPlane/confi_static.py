@@ -1,0 +1,23 @@
+from config0 import *
+V = 'V'
+Fname = 'Fstatic'
+AeroToRun = ''
+InitC = ''
+test_on = 0
+multi=1
+NumProcess = 'multiprocessing.cpu_count()-1'
+save_folder = 'results_static'
+save_modes = 1
+load_modes = 0
+save_gammas = 1
+load_gammas = 0
+save_qs = 1
+load_qs = 0
+save_sol = 1
+load_sol = 0
+run_fem = 1
+run_modes = 1
+run_coefficients = 1
+run_modal_solution = 1
+run_displacements = 1
+run_cg = 0
