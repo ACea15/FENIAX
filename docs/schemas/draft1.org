@@ -1,0 +1,297 @@
+#+TITLE: FEM4INAS initial architecture
+#+AUTHOR: Alvaro Cea
+#+Date: 6/06/2023
+#+STARTUP: inlineimages
+
+
+#+Name: dem3
+#+begin_src plantuml :file my-diagram3.png
+          title SU2_CFD: Harmonic Balance architecture
+
+          class CDriver {
+            +DynamicMesh_Preprocessing()
+            +Inlet_Preprocessing()
+              }
+
+          class CFluidDriver {
+            +StartSolver()
+            +DynamicMeshUpdate()
+            +UpdateFlutterConditions()
+            +Monitor()
+              }
+
+
+         class CHBDriver {
+            +Preprocess()
+            +Update()
+            +Run()
+            +ComputeHB_Operator()
+            +Preprocess()
+            +StabilizeHarmonicBalance()
+            +SetHarmonicBalance()
+            +Output()
+         }
+
+         class CSolver {
+            +AeroelasticWing_HB()        
+            +SolveModalwing_HB()
+            +Aeroelastic_HB()
+            +Velocity_Update_3D()
+            +Frequency_Velocity_Update_3D()
+            +AeroelasticWing()        
+          }
+
+         class CEulerSolver {
+            +SetInitialCondition()
+              +Preprocessing() 	
+            +Upwind_Residual()
+            +Centered_Residual()
+            +Source_Residual()
+            }
+
+         class CMeshSolver {
+            +AeroelasticDeformMesh
+            +Calculate_Generalized_Forces()
+            +Calculate_Surface_Displacement()
+            +SetStructuralModes()
+            +RBF_Basis_Function()
+            +SetBoundaryDisplacements()
+            +SetBoundaryVelocities()
+            +UpdateMultiGrid()
+            +UpdateDualGrid()
+            +DeformMesh()
+          }
+
+         class CFEASolver {
+            +Solve_System
+            +BC_
+            +Compute_StiffMatrix()
+            +_Relaxation()
+
+          }
+
+
+      class CVolumetricMovement{
+          -nDim
+          -nVar
+          -nPoint
+          +UpdateMultiGrid()
+            +UpdateGridCoord()
+    }
+
+      class CIteration{
+               -nZone
+               -nInst
+               -multizone
+               -singlezone
+               +SetGrid_Movement()
+               +SetGrid_AeroelasticMovement()
+               +SetAeroelastic_Mesh_Deformation()
+               +SetMesh_Deformation()
+       }
+
+    class CFluidIteration{
+            +Preprocess()
+            +Iterate()
+            +Solve()
+            +Update()
+            +Monitor()
+            +Postprocess()
+     }
+
+
+        CDriver <|-- CFluidDriver
+        CFluidDriver <|-- CHBDriver
+        CDriver *- CIteration
+        CIteration <|-- CFluidIteration
+        CFluidIteration *-- CVolumetricMovement
+        CIteration *- CSolver
+        CSolver <|-- CEulerSolver
+        CSolver <|-- CFEASolver
+        CFEASolver <|-- CMeshSolver
+
+
+#+end_src
+
+#+RESULTS: dem3
+[[file:my-diagram3.png]]
+
+#+Name: flutter_process
+#+begin_src plantuml :file flutter_process2.png
+  'agent DMAPs'
+  <style>
+  artifact {
+  BackGroundColor #ee1100
+  LineThickness 1
+  LineColor black
+  }
+
+  database {
+  BackGroundColor #ff9933
+  LineThickness 1
+  LineColor black
+  }
+  circle {
+  BackGroundColor #ff3311
+  LineThickness 1
+  LineColor black
+  }
+  /'
+   ' rectangle {
+   ' BackGroundColor #4444dd
+   ' LineThickness 1
+   ' LineColor black
+   ' }
+   '/
+  </style>
+
+  artifact inputs
+  artifact mesh.su2
+  artifact nastran.bdf [
+  Model_0.bdf
+  DMAPs
+  ]
+
+  file parseSU2.py
+
+  package Parametric_analysis {
+    package "PyNastran"
+    component parametric_factory {
+    component run_model
+    component write_model
+    component iterator
+  }
+    component parametric_engine
+    package "MSc nastran"
+  }
+  inputs --> parametric_factory
+  'parametric_engine -> iterator'
+  nastran.bdf --> PyNastran 
+  write_model  --> run_model
+  run_model ..> "MSc nastran"
+  iterator --> write_model
+  "MSc nastran" --> iterator
+  parametric_factory ..>  PyNastran
+  iterator .l.> parametric_engine
+
+  package "Write_modes" {
+    [filters]
+    [interpolation]
+    [modal_reconstruction]
+  }
+  database database [
+  model.<b>bdf
+  ----
+  model.<b>f06	
+  ----
+  model.<b>op2
+  ----
+  GAFs.<b>op4
+  ----
+  cases.<b>json
+  ]
+  database database2 [
+  3D Modal shapes
+  ----
+  Frequencies
+  ]
+  Parametric_analysis ~> database
+  database -d-> Write_modes
+  modal_reconstruction -> interpolation
+  interpolation -> filters
+
+  package build_flutter {
+    component nastran_postprocessor [
+        f06_postprocessor.py
+          - flutter and
+          stability postprocessing]
+    component PK_GAFs.m [
+      PK_GAFs.m
+      - GAFs preprocessing
+      - flutter via
+        fix_point iterator
+      - postprocessing
+      ]
+    file compute_HB.sh
+    file compute_steady.sh
+    file mesh_deformation.sh
+  }
+
+  mesh_deformation.sh -l-> compute_steady.sh
+  compute_steady.sh -l-> compute_HB.sh
+  compute_HB.sh -l-> PK_GAFs.m
+  PK_GAFs.m -l-> nastran_postprocessor
+  node HPC {
+        rectangle SU2_DEF.cpp
+        rectangle SU2_CFD.cpp
+  }
+
+  mesh.su2 -l-> parseSU2.py
+  parseSU2.py -u-> Write_modes
+  Parametric_analysis -[hidden]> Write_modes 
+  Write_modes ~u~> database2
+  database2 -u-> mesh_deformation.sh
+  database -d-> nastran_postprocessor
+  HPC -[hidden]-> mesh_deformation.sh
+  mesh_deformation.sh -d-> SU2_DEF.cpp
+  compute_steady.sh -d-> SU2_CFD.cpp
+  compute_HB.sh -d-> SU2_CFD.cpp
+  circle Solution
+  nastran_postprocessor ~up~> Solution
+  /'
+   ' rectangle stability
+   ' PK_GAFs.m -u-> stability
+   '/
+
+  /'
+   ' database -> Write_modes
+   ' mesh.su2 -> Write_modes
+   ' parseSU2.py -> Write_modes
+   '/
+
+#+end_src
+
+
+* Modules
+** Geometryrb
+*** geometry_def(Grid,NumBeams,BeamConn,start_reading,beam_start,nodeorder_start,node_start,Clamped,ClampX,BeamsClamped,MBbeams=[])
+BeamSeg([NumBeams]){
+- EnumNodes: int
+- NodeX: np.array([NumNodes*3])
+- NodeOrder: list -> Index of node in FE matrices. Extra nodes inserted at the connections
+- GlobalAxes: np.array([NumNodes*3])
+- Conn: [[],[]] -> BeamConn 
+- NodeL:
+- NodeDL:
+}
+DupNodes: list [BeamIndex_lastNode, ConnectedBeams_firstNode]
+NumNode: int (FEM Ones)
+NumNodes: int (FEM + Duplicates at connections)
+inverseconn: dict (BeamIndex -> masterBeam)
+
+** Modesrb
+Populate these tensors
+Centre of mass, very important! it needs to be given. Actually is only used for the RB. 
+#+begin_src python
+  Xm=intrinsic.FEmodel.CentreofMass(Ma,V.Clamped,V.NumBeams,BeamSeg,V.cg)
+  MdotV=np.zeros(np.shape(Vreal))
+  Mdotg0=np.zeros(np.shape(Vreal))
+  Phi0=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))    for i in range(V.NumBeams)]
+  Phi1=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))    for i in range(V.NumBeams)]
+  Phi1m=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))   for i in range(V.NumBeams)]
+  Phi2=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))    for i in range(V.NumBeams)]
+  CPhi2x=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))  for i in range(V.NumBeams)]
+  MPhi1=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))   for i in range(V.NumBeams)]
+  MPhi1x=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))  for i in range(V.NumBeams)]
+  Phig0=[np.zeros((BeamSeg[i].EnumNodes,6))   for i in range(V.NumBeams)]
+
+  Phi0l=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))    for i in range(V.NumBeams)]
+  Phi1l=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))    for i in range(V.NumBeams)]
+  Phi2l=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))    for i in range(V.NumBeams)]
+  Phi1ml=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))   for i in range(V.NumBeams)]
+  CPhi2xl=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))  for i in range(V.NumBeams)]
+  MPhi1l=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))   for i in range(V.NumBeams)]
+  MPhi1l2=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))  for i in range(V.NumBeams)]
+  MPhi1xl=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))  for i in range(V.NumBeams)]
+#+end_src
+

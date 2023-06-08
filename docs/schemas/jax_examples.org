@@ -1,0 +1,31 @@
+
+* Get expression
+#+begin_src python
+import jax
+
+def f(x):
+  for i in range(5):
+    x += i
+  return x
+
+print(jax.make_jaxpr(f)(0))
+#+end_src
+
+* ODE solvers
+
+** Diffrax
+https://github.com/patrick-kidger/diffrax
+(pip install diffrax)
+#+begin_src python
+  from diffrax import diffeqsolve, ODETerm, Dopri5
+  import jax.numpy as jnp
+
+  def f(t, y, args):
+      return -y
+
+  term = ODETerm(f)
+  solver = Dopri5()
+  y0 = jnp.array([2., 3.])
+  solution = diffeqsolve(term, solver, t0=0, t1=1, dt0=0.1, y0=y0)
+#+end_src
+
