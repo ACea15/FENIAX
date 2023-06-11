@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+
+import dataclass_factory
 
 
 class ConfigObject(dict):
@@ -38,22 +41,26 @@ d1 = {
 c1 = config2object(d1)
 
 
-# from dataclasses import dataclass
-# import dataclass_factory
+@dataclass
+class Book:
+    title: str
+    price: int
+    author: str = "Unknown author"
 
 
-# @dataclass
-# class Book:
-#     title: str
-#     price: int
-#     author: str = "Unknown author"
+data = {
+    "title": "Fahrenheit 451",
+    "price": 100,
+}
 
+factory = dataclass_factory.Factory()
+book: Book = factory.load(data, Book)  # Same as Book(title="Fahrenheit 451", price=100)
+serialized = factory.dump(book)
 
-# data = {
-#     "title": "Fahrenheit 451",
-#     "price": 100,
-# }
+from typing import Any
+@dataclass
+class Field:
 
-# factory = dataclass_factory.Factory()
-# book: Book = factory.load(data, Book)  # Same as Book(title="Fahrenheit 451", price=100)
-# serialized = factory.dump(book)
+    value: Any
+    
+    

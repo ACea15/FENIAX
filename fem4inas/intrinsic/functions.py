@@ -1,7 +1,7 @@
 import numpy as np
 import jax.numpy as jnp
 import jax
-import jax.jit as jit
+from jax import jit
 ###############################
 # Exponential map integration #
 ###############################

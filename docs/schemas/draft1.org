@@ -295,3 +295,17 @@ Centre of mass, very important! it needs to be given. Actually is only used for 
   MPhi1xl=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))  for i in range(V.NumBeams)]
 #+end_src
 
+* inputs
+** container
+** fields
+- value
+- description
+- default
+- options
+  
+* XForces
+
+** prescribed_follower
+** prescribed_dead
+** gravity
+** modal_aero
