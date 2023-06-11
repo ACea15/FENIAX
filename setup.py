@@ -1,0 +1,63 @@
+from setuptools import setup, find_packages, Extension, Command
+
+setup(
+    name="fem4inas",
+    #version=__version__,
+    description="""FEM4INAS is an aeroelastic toolbox written and parallelized in Python, which acts as a post-processor of commercial software such as MSC Nastran. Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.""",
+    #long_description=long_description,
+    #long_description_content_type="text/markdown",
+    keywords="nonlinear aeroelastic structural aerodynamic analysis",
+    author="Alvaro Cea",
+    author_email="alvaro_cea",
+    url="https://github.com/ACea15/FEM4INAS",
+    license="",
+    packages=find_packages(
+        where='./',
+        include=['fem4inas*'],
+        exclude=['tests']
+        ),
+    # data_files=[
+    #     ("./lib/UVLM/lib", ["libuvlm.so"]),
+    #     ("./lib/xbeam/lib", ["libxbeam.so"])
+    #     ],
+    python_requires=">=3.11",
+    install_requires=[
+        "numpy",
+        "scipy",
+        "PyYAML",
+        "jax",
+        "jaxlib"
+    ],
+    extras_require={
+        "cpu":[
+        "jax[cpu]"],
+        "plot": [
+            "matplotlib",
+            "plotly"
+            ],
+        "docs": [
+            "sphinx",
+            "myst-parser",
+            "sphinx_rtd_theme",
+            "nbsphinx"
+                 ],
+        "all": [
+            "jupyterlab",
+            "pandas",
+            "matplotlib",
+            "plotly"            
+            "sphinx",
+            "myst-parser",
+            "sphinx_rtd_theme",
+            "nbsphinx"
+                 ],
+    },
+    classifiers=[
+        "Operating System :: Linux, Mac OS",
+        "Programming Language :: Python, C++",
+        ],
+
+    entry_points={
+        'console_scripts': ['sharpy=sharpy.sharpy_main:sharpy_run'],
+        }
+)
