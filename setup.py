@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages, Extension, Command
 
 setup(
-    name="fem4inas",
-    #version=__version__,
+    name="FEM4INAS",
+    #Version=__version__,
     description="""FEM4INAS is an aeroelastic toolbox written and parallelized in Python, which acts as a post-processor of commercial software such as MSC Nastran. Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.""",
     #long_description=long_description,
     #long_description_content_type="text/markdown",
@@ -45,19 +45,10 @@ setup(
             "jupyterlab",
             "pandas",
             "matplotlib",
-            "plotly"            
+            "plotly",
             "sphinx",
             "myst-parser",
             "sphinx_rtd_theme",
             "nbsphinx"
                  ],
-    },
-    classifiers=[
-        "Operating System :: Linux, Mac OS",
-        "Programming Language :: Python, C++",
-        ],
-
-    entry_points={
-        'console_scripts': ['sharpy=sharpy.sharpy_main:sharpy_run'],
-        }
-)
+    })

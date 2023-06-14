@@ -3,7 +3,7 @@
 #+Date: 6/06/2023
 #+STARTUP: inlineimages
 
-
+* UML
 #+Name: dem3
 #+begin_src plantuml :file my-diagram3.png
           title SU2_CFD: Harmonic Balance architecture
@@ -302,6 +302,15 @@ Centre of mass, very important! it needs to be given. Actually is only used for 
 - description
 - default
 - options
+* Architecture
+** Driver
+- Cases
+  -- Supercase
+  -- Subcase
+  --- Simulation
+** Simulation
+- simulation_types
+- simulation_workflow
   
 * XForces
 

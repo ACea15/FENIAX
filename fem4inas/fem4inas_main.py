@@ -17,4 +17,6 @@ def main(input_file=None, input_dict=None, input_obj=None):
             args = parser.parse_args()
 
     driver = fem4inas.drivers.factory(settings)
+    
     driver.run()
+
