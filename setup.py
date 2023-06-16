@@ -24,7 +24,8 @@ setup(
     install_requires=[
         "numpy",
         "scipy",
-        "PyYAML",
+        #"PyYAML",
+        "ruamel.yaml",
         "jax",
         "jaxlib"
     ],

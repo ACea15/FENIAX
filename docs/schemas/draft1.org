@@ -251,6 +251,68 @@
 
 #+end_src
 
+#+RESULTS: flutter_process
+[[file:classes.png]]
+
+#+Name: classes_architecture
+#+begin_src plantuml :file classes.png
+
+  abstract class Simulation {
+    +prerun(): void
+    +run(): void
+    +postrun(): void
+    +trigger(): void
+  }
+
+  abstract class System {
+    +set_solver(): void
+    +set_init(): void
+    +set_generator(): void
+    +solve(): void
+  }
+
+  class SerialSimulation {
+    +prerun(): void
+    +run(): void
+    +postrun(): void
+    +trigger(): void
+  }
+
+  class SingleSimulation {
+    +prerun(): void
+    +run(): void
+    +postrun(): void
+    +trigger(): void
+  }
+
+  Simulation "1" -- "1" System : composition
+
+  System <|-- SerialSystem
+  System <|-- SingleSystem
+
+  class SerialSystem {
+    +set_solver(): void
+    +set_init(): void
+    +set_generator(): void
+    +solve(): void
+  }
+
+  class SingleSystem {
+    +set_solver(): void
+    +set_init(): void
+    +set_generator(): void
+    +solve(): void
+  }
+
+  SerialSimulation *-- SerialSystem
+  SingleSimulation *-- SingleSystem
+
+#+end_src
+
+#+RESULTS: classes_architecture
+[[file:classes.png]]
+
+
 
 * Modules
 ** Geometryrb

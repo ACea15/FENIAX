@@ -1,8 +1,5 @@
 from dataclasses import dataclass
 
-import dataclass_factory
-
-
 class ConfigObject(dict):
     """
     Represents configuration options' group, works like a dict
