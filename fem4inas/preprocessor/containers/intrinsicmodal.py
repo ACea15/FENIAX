@@ -1,12 +1,10 @@
 from dataclasses import dataclass
 from typing import Sequence
 
-import jax
 import jax.numpy as jnp
-import numpy as np
 import pathlib
 
-from fem4inas.preprocessor.utils import field2, field3
+from fem4inas.preprocessor.utils import dfield, initialise_Dclass
 
 @dataclass(order=True, frozen=True)
 class Dfiles:
@@ -18,27 +16,27 @@ class Dfiles:
 @dataclass(order=True, frozen=True)
 class Dxloads:
 
-    gravity: float = field2("gravity force [m/s]", 9.807)
-    gravity_vect: jnp.array = field2("gravity vector", jnp.array([0, 0, -1]))
-    gravity_forces: bool = field2("Include gravity in the analysis", False)
-    follower_forces: bool = field2("Include follower forces", False)
-    dead_forces: bool = field2("Include dead forces", False)
-    aero_forces: bool = field2("Include aerodynamic forces", False)
-    follower_points: list[list[int | str]] = field2(
+    gravity: float = dfield("gravity force [m/s]", 9.807)
+    gravity_vect: jnp.array = dfield("gravity vector", jnp.array([0, 0, -1]))
+    gravity_forces: bool = dfield("Include gravity in the analysis", False)
+    follower_forces: bool = dfield("Include follower forces", False)
+    dead_forces: bool = dfield("Include dead forces", False)
+    aero_forces: bool = dfield("Include aerodynamic forces", False)
+    follower_points: list[list[int | str]] = dfield(
         "Follower force points [component, Node, coordinate]",
         None,
     )
-    dead_points: list[list[int]] = field2(
+    dead_points: list[list[int]] = dfield(
         "Dead force points \
     [component, Node, coordinate]",
         None,
     )
-    follower_interpolation: list[list[int]] = field2(
+    follower_interpolation: list[list[int]] = dfield(
         "(Linear) interpolation of the follower forces \
     [[ti, fi]..](time_points * 2 * NumForces) [seconds, Newton]",
         None,
     )
-    dead_interpolation: list[list[int]] = field2(
+    dead_interpolation: list[list[int]] = dfield(
         "(Linear) interpolation of the dead forces \
     [[ti, fi]] [seconds, Newton]",
         None,
@@ -48,44 +46,51 @@ class Dxloads:
 @dataclass(order=True, frozen=True)
 class Dgeometry:
 
-    gravity: float = field2("gravity force [m/s]", 9.807)
+    gravity: float = dfield("gravity force [m/s]", 9.807)
 
 
 @dataclass(order=True, frozen=True)
 class Dfem:
 
-    gravity: float = field2("gravity force [m/s]", 9.807)
+    gravity: float = dfield("gravity force [m/s]", 9.807)
 
 
 @dataclass(order=True, frozen=True)
 class Ddriver:
 
-    subcases: dict[str: Dxloads] = field2("", None)
+    subcases: dict[str: Dxloads] = dfield("", None)
     supercases: dict[str: (list[Dfem, Dgeometry]|
-                           Dfem | Dgeometry)] = field2("", None)
+                           Dfem | Dgeometry)] = dfield("", None)
 
 
 @dataclass(order=True, frozen=True)
 class Dsystem:
 
-    typeof: str = field3("Type of system to be solved", 'single',
+    typeof: str | int = dfield("Type of system to be solved", default='single',
                        options= ['single', 'serial', 'parallel'])
-    t0: float = field2("Initial time", None)
-    t1: float = field2("Final time", None)
-    tn: int = field2("Number of time steps", None)
-    dt: float = field2("Delta time", None)    
-    t: jnp.array = field2("Time vector", None)
-    solver_library: str = field1("Library solving our system of equations")
-    solver_name: str = field1("Name for the solver of the previously defined library")
-    
+    xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
+    t0: float = dfield("Initial time", default=None)
+    t1: float = dfield("Final time", default=None)
+    tn: int = dfield("Number of time steps", default=None)
+    dt: float = dfield("Delta time", default=None)    
+    t: jnp.array = dfield("Time vector", default=None)
+    solver_library: str = dfield("Library solving our system of equations")
+    solver_name: str = dfield("Name for the solver of the previously defined library")
 
+    def __post_init__(self):
+
+        self.xloads = initialise_Dclass(self.xloads, Dxloads)
+
+    def _set_label(self):
+        ...
+        
 @dataclass(order=True, frozen=True)
 class Dsimulation:
 
-    typeof: str = field3("Type of simulation", 'single',
+    typeof: str = dfield("Type of simulation", 'single',
                        options= ['single', 'serial', 'parallel'])
     
-    systems: list[Dsystem] | Dsystem = field3("Type of simulation", 'single',
+    systems: list[Dsystem] | Dsystem = dfield("Type of simulation", 'single',
                        options= ['single', 'serial', 'parallel'])
 
 

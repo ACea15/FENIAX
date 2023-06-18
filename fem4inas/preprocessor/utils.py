@@ -1,34 +1,36 @@
 from dataclasses import field
 
 
-def field1(description):
+def dfield(description, **kwargs):
 
-    return field(metadata={"description": description})
-
-
-def field2(description, default):
-
-    if isinstance(default, (str, int, bool, float, tuple)):
-        return field(default=default, metadata={"description": description})
+    options = kwargs.pop('options', None)
+    default = kwargs.pop('default', None)
+    init = kwargs.pop('init', True)
+    if default is not None:
+        if isinstance(default, (str, int, bool, float, tuple)):
+            return field(
+                default=default, metadata={"description": description, "options": options},
+                init=init, **kwargs
+            )
+        else:
+            return field(
+                default_factory=(lambda: default),
+                metadata={"description": description, "options": options},
+                init=init, **kwargs
+            )
     else:
         return field(
-            default_factory=(lambda: default), metadata={"description": description}
-        )
-
-
-def field2o(description, options):
-
-    return field(metadata={"description": description, "options": options})
-
-
-def field3(description, default, options):
-
-    if isinstance(default, (str, int, bool, float, tuple)):
-        return field(
-            default=default, metadata={"description": description, "options": options}
-        )
-    else:
-        return field(
-            default_factory=(lambda: default),
             metadata={"description": description, "options": options},
+            init=init, **kwargs
         )
+
+def initialise_Dclass(data, Dclass):
+
+    if data is None:
+        return Dclass()
+    elif isinstance(data, dict):
+        return Dclass(**data)
+    elif isinstance(data, Dclass):
+        return data
+    else:
+        raise TypeError("Wrong input type")
