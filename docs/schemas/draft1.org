@@ -366,13 +366,54 @@ Centre of mass, very important! it needs to be given. Actually is only used for 
 - options
 * Architecture
 ** Driver
-- Cases
+(only driver gets to modify object)
+run_cases
+  -- set_case
+  -- simulation.trigger()
+set_case
+(modifies config object)
   -- Supercase
   -- Subcase
-  --- Simulation
+set_simulation -> simulation
+
+config.supercase.fems[dict]
+config.subcase.system[].xloads
+config.simulation.typeof
+config.simulation.build_grads
+config.systems[]
+config.system.name
+config.system.solver.library
+config.system.solver.settings
 ** Simulation
-- simulation_types
-- simulation_workflow
+- trigger
+- _prerun
+- _run
+  -- system.set_init
+- _pull_solution
+- _postrun
+*** SerialSimulation
+*** ParallelSimulation
+*** SingleSimulation
+**** IntrinsicSimulation
+- _prerun
+  -- calculate_modalshapes
+  -- calculate_modalcouplings
+- post_run
+**** OptIntrinsicSimulation
+- _prerun
+  -- calculate_modalshapes
+  -- calculate_modalcouplings
+- post_run
+  -- build_gradients
+
+** System
+- set_init -> q0
+- set_name
+- set_generator -> dq
+- set_solver
+- solve -> q
+  self.solver(self.dq)
+- save
   
 * XForces
 
