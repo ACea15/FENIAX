@@ -6,12 +6,28 @@ import pathlib
 
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass
 
+
+@dataclass(order=True, frozen=True)
+class Dconstants:
+
+    I3: jnp.ndarray = dfield("3x3 Identity matrix", default=jnp.eye(3))
+    e1: jnp.ndarray = dfield("3x3 Identity matrix",
+                             default=jnp.array([1., 0., 0.]))
+    EMAT: jnp.ndarray = dfield("3x3 Identity matrix",
+                               default=jnp.array([[0, 0, 0, 0, 0, 0],
+                                                  [0, 0, 0, 0, 0, 0],
+                                                  [0, 0, 0, 0, 0, 0],
+                                                  [0, 0, 0, 0, 0, 0],
+                                                  [0, 0, -1, 0, 0, 0],
+                                                  [0, 1, 0, 0, 0, 0]]))
+
 @dataclass(order=True, frozen=True)
 class Dfiles:
 
-    folder_in: str|pathlib.Path
-    folder_out: str|pathlib.Path
-    config_file: str|pathlib.Path
+    folder_in: str | pathlib.Path
+    folder_out: str | pathlib.Path
+    config_file: str | pathlib.Path
+
 
 @dataclass(order=True, frozen=True)
 class Dxloads:
@@ -43,39 +59,52 @@ class Dxloads:
     )
 
 
-@dataclass(order=True, frozen=True)
-class Dgeometry:
+# @dataclass(order=True, frozen=True)
+# class Dgeometry:
 
-    gravity: float = dfield("gravity force [m/s]", 9.807)
-
+#     grid: str | jnp.ndarray = dfield("Grid file or array with Nodes Coordinates, node ID in the FEM and component")
+#     connectivity: dict | list = dfield("Connectivities of components")
+#     X: jnp.ndarray = dfield("Grid coordinates", init=False)
 
 @dataclass(order=True, frozen=True)
 class Dfem:
 
-    gravity: float = dfield("gravity force [m/s]", 9.807)
+    Ka: str | jnp.ndarray = dfield("Condensed stiffness matrix")
+    Ma: str | jnp.ndarray = dfield("Condensed mass matrix")    
+    connectivity: dict | list = dfield("Connectivities of components")
+    #
+    grid: str | jnp.ndarray = dfield("Grid file or array with Nodes Coordinates, node ID in the FEM and component",
+                                     default=None)
+    X: jnp.ndarray = dfield("Grid coordinates", default=None)
+    node_order: list | jnp.ndarray = dfield("node ID in the FEM", default=None)
+    node_component: list[str | int] | jnp.ndarray[int]
+    components: set = dfield(Name of components defining the structure, init=None)
+    #
 
 
 @dataclass(order=True, frozen=True)
 class Ddriver:
 
-    subcases: dict[str: Dxloads] = dfield("", None)
-    supercases: dict[str: (list[Dfem, Dgeometry]|
-                           Dfem | Dgeometry)] = dfield("", None)
+    subcases: dict[str:Dxloads] = dfield("", None)
+    supercases: dict[str:(list[Dfem, Dgeometry] | Dfem | Dgeometry)] = dfield(
+        "", None)
 
 
 @dataclass(order=True, frozen=True)
 class Dsystem:
 
-    typeof: str | int = dfield("Type of system to be solved", default='single',
-                       options= ['single', 'serial', 'parallel'])
+    typeof: str | int = dfield("Type of system to be solved",
+                               default='single',
+                               options=['single', 'serial', 'parallel'])
     xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
     t0: float = dfield("Initial time", default=None)
     t1: float = dfield("Final time", default=None)
     tn: int = dfield("Number of time steps", default=None)
-    dt: float = dfield("Delta time", default=None)    
+    dt: float = dfield("Delta time", default=None)
     t: jnp.array = dfield("Time vector", default=None)
     solver_library: str = dfield("Library solving our system of equations")
-    solver_name: str = dfield("Name for the solver of the previously defined library")
+    solver_name: str = dfield(
+        "Name for the solver of the previously defined library")
 
     def __post_init__(self):
 
@@ -83,17 +112,21 @@ class Dsystem:
 
     def _set_label(self):
         ...
-        
+
+
 @dataclass(order=True, frozen=True)
 class Dsimulation:
 
-    typeof: str = dfield("Type of simulation", 'single',
-                       options= ['single', 'serial', 'parallel'])
-    
-    systems: list[Dsystem] | Dsystem = dfield("Type of simulation", 'single',
-                       options= ['single', 'serial', 'parallel'])
+    typeof: str = dfield("Type of simulation",
+                         'single',
+                         options=['single', 'serial', 'parallel'])
+
+    systems: list[Dsystem] | Dsystem = dfield(
+        "Type of simulation",
+        'single',
+        options=['single', 'serial', 'parallel'])
 
 
-if __name__ == '__main__':
+if (__name__ == '__main__'):
 
     d1 = Dxloads()
