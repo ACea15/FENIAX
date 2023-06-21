@@ -257,62 +257,73 @@
 #+Name: classes_architecture
 #+begin_src plantuml :file classes.png
 
-  abstract class Simulation {
-    +prerun(): void
-    +run(): void
-    +postrun(): void
-    +trigger(): void
+    abstract class Driver {
+            -integration: Integration
+            -simulation: Simulation
+            +run_cases(): void
+            -set_case(): void
+            -set_integration(): void
+            -set_simulation(): void
+    }
+
+    abstract class Integration {
+      +run(): void
+    }
+
+    class IntrinsicIntegration {
+      +compute_modalshapes(): void
+      +compute_modalcouplings(): void
+    }
+
+
+    abstract class Simulation {
+      +trigger(): void
+      +_run(): void
+      +_post_run(): void
+      +pull_solution(): void
+    }
+
+    package Simulations {
+    class SerialSimulation {
+    }
+
+    class ParallelSimulation {
+    }
+
+    class SingleSimulation {
+    }
+
+    class CoupledSimulation {
+    }
   }
 
   abstract class System {
-    +set_solver(): void
     +set_init(): void
+    +set_name(): void
     +set_generator(): void
-    +solve(): void
-  }
-
-  class SerialSimulation {
-    +prerun(): void
-    +run(): void
-    +postrun(): void
-    +trigger(): void
-  }
-
-  class SingleSimulation {
-    +prerun(): void
-    +run(): void
-    +postrun(): void
-    +trigger(): void
-  }
-
-  Simulation "1" -- "1" System : composition
-
-  System <|-- SerialSystem
-  System <|-- SingleSystem
-
-  class SerialSystem {
     +set_solver(): void
-    +set_init(): void
-    +set_generator(): void
     +solve(): void
+    +save(): void
   }
 
-  class SingleSystem {
-    +set_solver(): void
-    +set_init(): void
-    +set_generator(): void
-    +solve(): void
-  }
+    /'
+     ' Simulation <|-- SerialSimulation
+     ' Simulation <|-- ParallelSimulation
+     ' Simulation <|-- SingleSimulation
+     ' Simulation <|-- CoupledSimulation
+     '/
 
-  SerialSimulation *-- SerialSystem
-  SingleSimulation *-- SingleSystem
-
+    Simulation <|-- Simulations
+    'Driver "1" -- "1" Integration : composition
+    'Driver "1" -- "1" Simulation : composition'
+    Driver  *-- Integration
+    Driver  *-- Simulation
+    Integration <|-- IntrinsicIntegration
 #+end_src
 
 #+RESULTS: classes_architecture
 [[file:classes.png]]
-
-
+ 
 
 * Modules
 ** Geometryrb
@@ -364,26 +375,56 @@ Centre of mass, very important! it needs to be given. Actually is only used for 
 - description
 - default
 - options
-* Architecture
-** Driver
-(only driver gets to modify object)
-run_cases
-  -- set_case
-  -- simulation.trigger()
-set_case
-(modifies config object)
-  -- Supercase
-  -- Subcase
-set_simulation -> simulation
+* Challenging problems driving the design
+** Max speed:
+- JAX Just in Time Compilation (JIT)
+- Code vectorisation.
+- JAX seemingly runs on accelerators (GPUs, TPUs, etc.)
 
+Ultimately the goal is to know that even if industry could implement a more efficient version of the software, the gain in speed would be in the order of percentage and not magnitude, which gives a valuable idea of what problems might be feasible using this approach. 
+** Efficient derivatives
+JAX AD package using pure functions from functional programming style.
+** Compute and arbitrary number of loads cases
+Via subcase option of driver class that modifies the xloads option in each case. For example to get the max. loads envelope without having to manage an array of simulations which might also overlap computations.
+** Compute the derivative of function applied to the previous point
+If for instance one wants to set an optimisation with boundaries on the maximum loads, it would not make sense to do it for only one atmospheric load case.
+** Perform calculations on different models in a single run
+Via the supercase option of driver. This might be used to compute finite differences; or if the response of if the response of a fractured component is to be compared.
+** Release wingtip in-flight
+Via serial simulation, with two multibody cases: first with a constraint that fuses the bodies in a trimmed simulation; second realising the DoF corresponding to a hinge and taking the states from the previous ones
+
+* Architecture
+** Config
+config.engine = intrinsic
 config.supercase.fems[dict]
 config.subcase.system[].xloads
-config.simulation.typeof
+config.simulation.typeof[Serial, parallel, Single]
 config.simulation.build_grads
+config.simulation.optimize
+config.
 config.systems[]
 config.system.name
 config.system.solver.library
 config.system.solver.settings
+** Driver
+(only driver gets to modify object)
+run_cases
+  -- set_case
+  -- integration.pre_simulation()
+  -- simulation.trigger()
+  -- 
+set_case
+(modifies config object)
+  -- Supercase
+  -- Subcase
+set_integration
+set_simulation -> simulation
+** Integration
+run
+  -- calculate_modalshapes
+  -- calculate_modalcouplings
+derivatives
+
 ** Simulation
 - trigger
 - _prerun
@@ -392,20 +433,11 @@ config.system.solver.settings
 - _pull_solution
 - _postrun
 *** SerialSimulation
+-_run
 *** ParallelSimulation
+-_run
 *** SingleSimulation
-**** IntrinsicSimulation
-- _prerun
-  -- calculate_modalshapes
-  -- calculate_modalcouplings
-- post_run
-**** OptIntrinsicSimulation
-- _prerun
-  -- calculate_modalshapes
-  -- calculate_modalcouplings
-- post_run
-  -- build_gradients
-
+- _run
 ** System
 - set_init -> q0
 - set_name
