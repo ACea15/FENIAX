@@ -1,11 +1,19 @@
 from abc import ABC, abstractmethod
 
+import fem4inas.preprocessor.inputs.Inputs as Inputs
+import fem4inas.intrinsic.modes as modes
+
 class Integration(ABC):
     @abstractmethod
     def run(self):
         pass
 
+
 class IntrinsicIntegration(Integration):
+    
+    def __init__(self, config: Inputs):
+
+        self.config = config
 
     def run(self):
         pass

@@ -57,7 +57,7 @@ class Inputs:
 
     #     for k, v in obj.__dict__:
     #         if k[0] != "_":
-                
+
 
 i1= Inputs({})
 

@@ -78,9 +78,9 @@ class Dfem:
     X: jnp.ndarray = dfield("Grid coordinates", default=None)
     node_order: list | jnp.ndarray = dfield("node ID in the FEM", default=None)
     node_component: list[str | int] | jnp.ndarray[int]
-    components: set = dfield(Name of components defining the structure, init=None)
+    components: set = dfield("Name of components defining the structure", init=None)
     #
-
+    clamped_indices
 
 @dataclass(order=True, frozen=True)
 class Ddriver:
