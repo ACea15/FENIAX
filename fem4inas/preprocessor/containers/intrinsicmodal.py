@@ -8,7 +8,7 @@ from fem4inas.preprocessor.utils import dfield, initialise_Dclass
 
 
 @dataclass(order=True, frozen=True)
-class Dconstants:
+class Dconst:
 
     I3: jnp.ndarray = dfield("3x3 Identity matrix", default=jnp.eye(3))
     e1: jnp.ndarray = dfield("3x3 Identity matrix",
@@ -20,7 +20,7 @@ class Dconstants:
                                                   [0, 0, 0, 0, 0, 0],
                                                   [0, 0, -1, 0, 0, 0],
                                                   [0, 1, 0, 0, 0, 0]]))
-
+    EMATT
 @dataclass(order=True, frozen=True)
 class Dfiles:
 
