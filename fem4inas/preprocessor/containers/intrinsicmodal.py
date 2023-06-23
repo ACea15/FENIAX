@@ -32,8 +32,10 @@ class Dfiles:
 @dataclass(order=True, frozen=True)
 class Dxloads:
 
-    gravity: float = dfield("gravity force [m/s]", 9.807)
-    gravity_vect: jnp.array = dfield("gravity vector", jnp.array([0, 0, -1]))
+    gravity: float = dfield("gravity force [m/s]",
+                            default=9.807)
+    gravity_vect: jnp.ndarray = dfield("gravity vector",
+                                       default=jnp.array([0, 0, -1]))
     gravity_forces: bool = dfield("Include gravity in the analysis", False)
     follower_forces: bool = dfield("Include follower forces", False)
     dead_forces: bool = dfield("Include dead forces", False)
@@ -77,11 +79,26 @@ class Dfem:
                                      default=None)
     X: jnp.ndarray = dfield("Grid coordinates", default=None)
     node_order: list | jnp.ndarray = dfield("node ID in the FEM", default=None)
-    node_component: list[str | int] | jnp.ndarray[int]
+    node_component: list[str | int] | jnp.ndarray[int] = None
     components: set = dfield("Name of components defining the structure", init=None)
     #
-    clamped_indices
+    clamped_dof: list[list] = None
+    clamped_nodes = None
+    num_nodes = None
 
+    def set_clamped_dof(self):
+        ...
+    def build_FEorder(self):
+
+        self.FEorder = np.zeros((6 * self.num_nodes, 6 * self.num_nodes))
+        for i in range(self.num_nodes):
+            if i in self.clamped_nodes:
+                fe_dof = [6 * i + j, for j in [k for k in range(6) if k not in self.clamped_dof[i]]]
+            else:
+                fe_dof = range(6 * i, 6 * i + 6)
+            self.FEorder[i, fe_dof] = 1.
+
+    def build_
 @dataclass(order=True, frozen=True)
 class Ddriver:
 
@@ -89,7 +106,7 @@ class Ddriver:
     supercases: dict[str:(list[Dfem, Dgeometry] | Dfem | Dgeometry)] = dfield(
         "", None)
 
-
+    
 @dataclass(order=True, frozen=True)
 class Dsystem:
 
