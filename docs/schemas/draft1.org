@@ -252,73 +252,107 @@
 #+end_src
 
 #+RESULTS: flutter_process
-[[file:classes.png]]
+[[file:flutter_process2.png]]
+
 
 #+Name: classes_architecture
 #+begin_src plantuml :file classes.png
 
-    abstract class Driver {
-            -integration: Integration
-            -simulation: Simulation
-            +run_cases(): void
-            -set_case(): void
-            -set_integration(): void
-            -set_simulation(): void
-    }
+  abstract class Driver {
+          #_integration: Integration
+          #_simulation: Simulation
+	    #_opt: Optimisation
+          +run_cases()
+          #_set_case()
+          #_set_integration()
+          #_set_simulation()
+  }
 
-    abstract class Integration {
-      +run(): void
-    }
+  abstract class Integration {
+          +run()
+  }
 
-    class IntrinsicIntegration {
-      +compute_modalshapes(): void
-      +compute_modalcouplings(): void
-    }
+  class IntrinsicIntegration {
+          +run()
+          #_compute_modalshapes()
+          #_compute_modalcouplings()
+  }
 
+  abstract class Simulation {
+          +trigger()
+          +pull_solution()
+          #_run()
+          #_post_run()
+  }
 
-    abstract class Simulation {
-      +trigger(): void
-      +_run(): void
-      +_post_run(): void
-      +pull_solution(): void
-    }
+  /'
+   ' package Simulations {
+   '         class SerialSimulation {
+   '         }
+   '         class ParallelSimulation {
+   '         }
+   '         class SingleSimulation {
+   '         }
+   '         class CoupledSimulation {
+   '         }
+   ' }
+   '/
 
-    package Simulations {
-    class SerialSimulation {
-    }
-
-    class ParallelSimulation {
-    }
-
-    class SingleSimulation {
-    }
-
-    class CoupledSimulation {
-    }
+  class SerialSimulation {
+  }
+  class ParallelSimulation {
+  }
+  class SingleSimulation {
+  }
+  class CoupledSimulation {
   }
 
   abstract class System {
-    +set_init(): void
-    +set_name(): void
-    +set_generator(): void
-    +set_solver(): void
-    +solve(): void
-    +save(): void
+          +set_init()
+          +set_name()
+          +set_generator()
+          +set_solver()
+          +solve()
+          +save()
   }
 
-    /'
-     ' Simulation <|-- SerialSimulation
-     ' Simulation <|-- ParallelSimulation
-     ' Simulation <|-- SingleSimulation
-     ' Simulation <|-- CoupledSimulation
-     '/
+  class IntrinsicSystem {
+        -dq: callable
+        -solver: callable
+  }
 
-    Simulation <|-- Simulations
-    'Driver "1" -- "1" Integration : composition
-    'Driver "1" -- "1" Simulation : composition'
-    Driver  *-- Integration
-    Driver  *-- Simulation
-    Integration <|-- IntrinsicIntegration
+  class ControlIntrinsicSystem {
+  }
+
+  class MultibodyIntrinsicSystem {
+  }
+
+     /'
+      ' Simulation <|-- SerialSimulation
+      ' Simulation <|-- ParallelSimulation
+      ' Simulation <|-- SingleSimulation
+      ' Simulation <|-- CoupledSimulation
+      '/
+  abstract class Optimisation {
+        -save_grads()
+        -assemble()
+  }
+
+  'Simulation <|-- Simulations
+  Simulation <|-- SingleSimulation
+  SingleSimulation -- SerialSimulation 
+  SerialSimulation -- ParallelSimulation
+  ParallelSimulation -- CoupledSimulation					
+  'Driver "1" -- "1" Integration : composition
+  'Driver "1" -- "1" Simulation : composition'
+  Driver  *- Integration
+  Driver  *-- Simulation
+  Driver  *-- Optimisation				
+  Simulation  *- System
+  Integration <|-- IntrinsicIntegration
+  System  <|-- IntrinsicSystem
+  IntrinsicSystem -- ControlIntrinsicSystem
+  ControlIntrinsicSystem -- MultibodyIntrinsicSystem
 #+end_src
 
 #+RESULTS: classes_architecture
@@ -446,7 +480,15 @@ derivatives
 - solve -> q
   self.solver(self.dq)
 - save
-  
+*** dqs
+| Dynamic   | Nonlinear | Gravity/DeadForces | ModalAero | residualised
+| Static    | Linear    |                    |           |
+| Stability |           |                    |           |
+
+dq_2110
+
+def dq_2110:
+
 * XForces
 
 ** prescribed_follower

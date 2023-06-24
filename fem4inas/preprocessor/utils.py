@@ -1,4 +1,5 @@
 from dataclasses import field
+from typing import Sequence
 
 
 def dfield(description, **kwargs):
@@ -40,9 +41,10 @@ def initialise_Dclass(data, Dclass):
     else:
         raise TypeError("Wrong input type")
 
-def component_child(component_name: str,
-                    component_connectivity: dict[str:list],
-                    chain:list = None):
+def get_component_children(component_name: str,
+                           component_connectivity: dict[str:list],
+                           chain:list = None):
+    
     if chain is None:
         chain = list()
     children_components = component_connectivity[component_name]
@@ -51,13 +53,64 @@ def component_child(component_name: str,
     else:
         chain += children_components
         for ci in children_components:
-            component_child(ci, component_connectivity, chain)
+            get_component_children(ci, component_connectivity, chain)
     return chain
+
+def get_component_father(component_connectivity: dict[str:list],
+                         chain:list = None):
+
+    component_names = component_connectivity.keys()
+    component_father = {ci: [] for ci in component_names}
+    for k, v in component_connectivity.items():
+        for vi in v:
+            component_father[vi].append(k)
+    return component_father
+
+def compute_component_nodes(components_range):
+
+    prevnodes = list
+    j = 0
+    current_component = None
+    for i, ci in enumerate(components_range):
+        if ci != current_component and i != 0: # change in component
+            prevnodes.append(component_nodes[component_father[ci]][-1])
+            current_component = ci
+            j = 0
+        elif i==0:
+            prevnodes.append(0)
+            j += 1
+        else:
+            prevnodes.append(component_nodes[current_component][j])
+            j += 1
+    return prevnodes
+
+
+def compute_prevnode(components_range: Sequence[str],
+                     component_nodes: dict[str:list[int]],
+                     component_father: dict[str:int]):
+
+    prevnodes = list
+    j = 0
+    current_component = None
+    for i, ci in enumerate(components_range):
+        if ci != current_component and i != 0: # change in component
+            prevnodes.append(component_nodes[component_father[ci]][-1])
+            current_component = ci
+            j = 0
+        elif i==0:
+            prevnodes.append(0)
+            j += 1
+        else:
+            prevnodes.append(component_nodes[current_component][j])
+            j += 1
+    return prevnodes
+            
+
 
 comp_conn = dict(c1=['c2','c3'], c2=[],
                  c3=['c4'], c4=[])
-chain1 = component_child('c1', comp_conn)
-chain2 = component_child('c2', comp_conn)
-chain3 = component_child('c3', comp_conn)
-chain4 = component_child('c4', comp_conn)
+chain1 = get_component_children('c1', comp_conn)
+chain2 = get_component_children('c2', comp_conn)
+chain3 = get_component_children('c3', comp_conn)
+chain4 = get_component_children('c4', comp_conn)
 
