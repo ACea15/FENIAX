@@ -28,7 +28,7 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray,
     # reorder to the grid coordinate in X
     _phi1 = jnp.matmul(fem.Mfe_order, eigenvecs)
     # add 0s for clamped nodes and DoF
-    _phi1 = add_clampedDoF(_phi1, fem.clamped_indices, num_modes)
+    _phi1 = add_clampedDoF(_phi1, fem.clamped_dof, num_modes)
     phi1 = reshape_modes(_phi1, num_modes) # Becomes  (Nm, 6, Nn)
     # Define mode components in-between nodes
     phi1m = jnp.dot(phi1, fem.Maverage_nodes, precision=precision)
@@ -36,8 +36,8 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray,
     phi1l = coordinate_transform(fem.Mglobal2local, phi1)
     phi1ml = coordinate_transform(fem.Mglobal2local, phi1m)
     _psi1 = jnp.matmul(Ma, eigenvec, precision=precision)
-    _psi1 = add_clampedDoF(_psi1, fem.clamped_indices, num_modes)
-    psi1 = reshape_modes(_psi1, num_modes)    
+    _psi1 = add_clampedDoF(_psi1, fem.clamped_dof, num_modes)
+    psi1 = reshape_modes(_psi1, num_modes)
     # Nodal forces in global frame (equal to Ka*eigenvec)
     nodal_force = _psi1 * eigenval  # broadcasting (6Nn x Nm * Nm)
     _phi2 = reshape_modes(nodal_force, num_modes)
@@ -65,10 +65,10 @@ def reshape_modes(_phi, num_modes):
                       order='C')
     return phi
 
-@partial(jit, static_argnames=['num_modes', 'clamped_indices'])
-def add_clampedDoF(_phi, num_modes, clamped_indices):
+@partial(jit, static_argnames=['num_modes', 'clamped_dof'])
+def add_clampedDoF(_phi, num_modes, clamped_dof):
 
-    phi = jnp.insert(_phi, clamped_indices,
+    phi = jnp.insert(_phi, clamped_dof,
                      jnp.zeros(num_modes), axis=0)
     
     return phi

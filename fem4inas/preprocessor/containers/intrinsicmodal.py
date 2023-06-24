@@ -20,7 +20,11 @@ class Dconst:
                                                   [0, 0, 0, 0, 0, 0],
                                                   [0, 0, -1, 0, 0, 0],
                                                   [0, 1, 0, 0, 0, 0]]))
-    EMATT
+    EMAT: jnp.ndarray = dfield("3x3 Identity matrix", init=False)
+    
+    def __post_init__(self):
+
+        self.EMATT = self.EMATT.T
 @dataclass(order=True, frozen=True)
 class Dfiles:
 
@@ -72,7 +76,8 @@ class Dxloads:
 class Dfem:
 
     Ka: str | jnp.ndarray = dfield("Condensed stiffness matrix")
-    Ma: str | jnp.ndarray = dfield("Condensed mass matrix")    
+    Ma: str | jnp.ndarray = dfield("Condensed mass matrix")
+    num_modes: int = dfield("Number of modes in the solution")        
     connectivity: dict | list = dfield("Connectivities of components")
     #
     grid: str | jnp.ndarray = dfield("Grid file or array with Nodes Coordinates, node ID in the FEM and component",
@@ -86,19 +91,35 @@ class Dfem:
     clamped_nodes = None
     num_nodes = None
 
+    def build_grid(self):
+        ...
+    def set_component_nodes(self):
+        ...
+    def set_clamped_nodes(self):
+        ...
     def set_clamped_dof(self):
         ...
-    def build_FEorder(self):
-
-        self.FEorder = np.zeros((6 * self.num_nodes, 6 * self.num_nodes))
+    def set_clamped_indices(self):
+        ...
+    def set_FEorder(self):
+        self.Mfe_order = np.zeros((6 * self.num_nodes, 6 * self.num_nodes))
         for i in range(self.num_nodes):
             if i in self.clamped_nodes:
                 fe_dof = [6 * i + j, for j in [k for k in range(6) if k not in self.clamped_dof[i]]]
             else:
                 fe_dof = range(6 * i, 6 * i + 6)
-            self.FEorder[i, fe_dof] = 1.
-
-    def build_
+            self.Mfe_order[i, fe_dof] = 1.
+    def set_averaging_nodes(self):
+        ...
+    def set_diff_nodes(self):
+        ...
+    def set_delta_nodes(self):
+        ...
+    def set_Tba(self):
+        ...
+    def set_load_paths(self):
+        ...
+        
 @dataclass(order=True, frozen=True)
 class Ddriver:
 
