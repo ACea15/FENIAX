@@ -33,8 +33,8 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray,
     # Define mode components in-between nodes
     phi1m = jnp.dot(phi1, fem.Maverage_nodes, precision=precision)
     # Define mode components in the initial local-frame
-    phi1l = coordinate_transform(fem.Mglobal2local, phi1)
-    phi1ml = coordinate_transform(fem.Mglobal2local, phi1m)
+    phi1l = coordinate_transform(fem.T0ba, phi1)
+    phi1ml = coordinate_transform(fem.T0ba, phi1m)
     _psi1 = jnp.matmul(Ma, eigenvec, precision=precision)
     _psi1 = add_clampedDoF(_psi1, fem.clamped_dof, num_modes)
     psi1 = reshape_modes(_psi1, num_modes)

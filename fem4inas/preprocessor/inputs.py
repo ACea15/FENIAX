@@ -19,13 +19,14 @@ class Inputs:
         if "ex" in self.__sett.keys():
             self.__set_experimental(self.__sett.pop('ex'))
         if "engine" in self.__sett.keys():
-            self.__set_attr(self.__sett.pop('engine'))
+            self.__set_attr(engine=self.__sett.pop('engine'))
             
     def __load_containers(self):
 
         # TODO: Extend to functionality for various containers
         self.__container = importlib.import_module(self.__sett["engine"],
                                                    "fem4inas.preprocessor.containers")
+        self.__container = importlib.reload(self.__container)
         
     def __build(self):
 
@@ -58,55 +59,55 @@ class Inputs:
     #     for k, v in obj.__dict__:
     #         if k[0] != "_":
 
+if __name__ == "__main__":
+    i1= Inputs({})
 
-i1= Inputs({})
+    from ruamel.yaml import YAML
 
-from ruamel.yaml import YAML
-
-yaml = YAML()
-data = yaml.load("""# This is a FEM4INAS input file""")
-
-
-data.insert(1, 'last name', 'Vandelay', comment="new key")
+    yaml = YAML()
+    data = yaml.load("""# This is a FEM4INAS input file""")
 
 
+    data.insert(1, 'last name', 'Vandelay', comment="new key")
 
-# Regular imports
-from copy import deepcopy
 
-# Yaml loaders and dumpers
-from ruamel.yaml.main import \
-    round_trip_load as yaml_load, \
-    round_trip_dump as yaml_dump
 
-# Yaml commentary
-from ruamel.yaml.comments import \
-    CommentedMap as OrderedDict, \
-    CommentedSeq as OrderedList
+    # Regular imports
+    from copy import deepcopy
 
-# For manual creation of tokens
-from ruamel.yaml.tokens import CommentToken
-from ruamel.yaml.error import CommentMark
+    # Yaml loaders and dumpers
+    from ruamel.yaml.main import \
+        round_trip_load as yaml_load, \
+        round_trip_dump as yaml_dump
 
-# Original object
-shopping_list = {
-    "Shopping List": {
-        "eggs": {
-            "type": "free range",
-            "brand": "Mr Tweedy",
-            "amount": 12
-        },
-        "milk": {
-            "type": "pasteurised",
-            "litres": 1.5,
-            "brands": [
-                "FarmFresh",
-                "FarmHouse gold",
-                "Daisy The Cow"
-            ]
+    # Yaml commentary
+    from ruamel.yaml.comments import \
+        CommentedMap as OrderedDict, \
+        CommentedSeq as OrderedList
+
+    # For manual creation of tokens
+    from ruamel.yaml.tokens import CommentToken
+    from ruamel.yaml.error import CommentMark
+
+    # Original object
+    shopping_list = {
+        "Shopping List": {
+            "eggs": {
+                "type": "free range",
+                "brand": "Mr Tweedy",
+                "amount": 12
+            },
+            "milk": {
+                "type": "pasteurised",
+                "litres": 1.5,
+                "brands": [
+                    "FarmFresh",
+                    "FarmHouse gold",
+                    "Daisy The Cow"
+                ]
+            }
         }
     }
-}
 
-# To yaml object
-shopping_list = yaml_load(yaml_dump(shopping_list), preserve_quotes=True)
+    # To yaml object
+    shopping_list = yaml_load(yaml_dump(shopping_list), preserve_quotes=True)
