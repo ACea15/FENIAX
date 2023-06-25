@@ -27,7 +27,8 @@ setup(
         #"PyYAML",
         "ruamel.yaml",
         "jax",
-        "jaxlib"
+        "jaxlib",
+        "multipledispatch"
     ],
     extras_require={
         "cpu":[

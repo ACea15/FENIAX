@@ -107,10 +107,12 @@ class Dfem:
         self.Mfe_order = jnp.zeros((6 * self.num_nodes, 6 * self.num_nodes))
         for i in range(self.num_nodes):
             if i in self.clamped_nodes:
-                fe_dof = [(6 * i + j) for j in [k for k in range(6) if k not in self.clamped_dof[i]]]
+                fe_dof = [(6 * (self.fe_order[i] + 1) + j) for j in self.free_dof[i]]
             else:
-                fe_dof = range(6 * i, 6 * i + 6)
-            self.Mfe_order[i, fe_dof] = 1.
+                fe_dof = range(6 * self.fe_order[i], 6 * self.fe_order[i] + 6)
+            if len(fe_dof) > 0:
+                self.Mfe_order[i, fe_dof] = 1.
+            
     def __set_averaging_nodes(self):
         ...
     def __set_diff_nodes(self):
