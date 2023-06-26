@@ -1,4 +1,6 @@
 import fem4inas.preprocessor.containers as containers
+from fem4inas.preprocessor.containers.data_container import DataContainer
+from fem4inas.preprocessor.utils import dump_inputs
 import importlib
 import fem4inas.preprocessor.config as config
 import pathlib
@@ -13,6 +15,7 @@ class Inputs:
         self.__load_containers()        
         self.__extract_attr()
         self.__build()
+        self._data_dict = serialize(self)
 
     def __extract_attr(self):
         """Extracts attributes that do not belong to a container"""
@@ -22,14 +25,16 @@ class Inputs:
             self.__set_attr(engine=self.__sett.pop('engine'))
             
     def __load_containers(self):
-
+        """Loads the containers"""
+        
         # TODO: Extend to functionality for various containers
         self.__container = importlib.import_module(self.__sett["engine"],
                                                    "fem4inas.preprocessor.containers")
-        self.__container = importlib.reload(self.__container)
+        self.__container = importlib.reload(self.__container) # remove after testing
         
     def __build(self):
 
+        
         for k, v in self.__sett.items():
             container_k = getattr(self.__container, "".join(["D", k]))
             setattr(self, k, container_k(**v))
@@ -47,17 +52,34 @@ class Inputs:
     @classmethod
     def from_file(cls, file_dir: str|pathlib. Path, **kwargs):
         yaml_obj = yaml_load(file_dir)
-        if 'experimental' in yaml_obj.keys():
-            experimental = yaml_obj.pop('experimental')
-        else:
-            experimental = None
-        return cls(yaml, experimental)
+        return cls(yaml_obj)
 
     # @staticmethod
     # def _serialize(obj):
 
     #     for k, v in obj.__dict__:
     #         if k[0] != "_":
+
+def serialize(obj: Inputs | DataContainer):
+
+    dictionary = dict()
+    for k, v in obj.__dict__.items():
+        if k[0] != "_":
+            if isinstance(v, DataContainer):
+                dictionary[k] = serialize(v)
+            else:
+                try:
+                    dictionary[k] = [v, obj.__dataclass_fields__[k].metadata['description']]
+                except AttributeError:
+                    dictionary[k] = [v, " "]
+    return dictionary
+
+def dump_to_yaml(file_out, config: Inputs, with_comments=True):
+
+    yaml = YAML()
+    data = dump_inputs(config._data_dict, with_comments=with_comments)
+    with open(file_out, "w") as f:
+        yaml.dump(data, f)
 
 if __name__ == "__main__":
     i1= Inputs({})
@@ -69,8 +91,6 @@ if __name__ == "__main__":
 
 
     data.insert(1, 'last name', 'Vandelay', comment="new key")
-
-
 
     # Regular imports
     from copy import deepcopy

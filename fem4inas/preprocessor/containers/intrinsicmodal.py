@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import pathlib
 import pandas as pd
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass
-
+from fem4inas.preprocessor.containers.data_container import DataContainer
 
 @dataclass(order=True, frozen=True)
 class Dconst:
@@ -71,7 +71,7 @@ class Dxloads:
 #     X: jnp.ndarray = dfield("Grid coordinates", init=False)
 
 @dataclass(order=True, frozen=True)
-class Dfem:
+class Dfem(DataContainer):
 
     connectivity: dict | list = dfield("Connectivities of components")
     folder: str | pathlib.Path = dfield("Folder in which to find Ka, Ma, and grid data (with those names)",
@@ -80,8 +80,8 @@ class Dfem:
     Ma: str | pathlib.Path | jnp.ndarray = dfield("Condensed mass matrix", default=None)
     num_modes: int = dfield("Number of modes in the solution", default=None)
     #
-    grid: str | jnp.ndarray | pd.DataFrame = dfield("Grid file or array with Nodes Coordinates, \
-    node ID in the FEM and component", default=None)
+    grid: str | jnp.ndarray | pd.DataFrame = dfield("""Grid file or array with Nodes Coordinates,
+    node ID in the FEM and component""", default=None)
     X: jnp.ndarray = dfield("Grid coordinates", default=None)
     fe_order: list | jnp.ndarray = dfield("node ID in the FEM", default=None)
     node_component: list[str | int] | jnp.ndarray = dfield("Grid coordinates", default=None)

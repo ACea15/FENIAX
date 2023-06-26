@@ -1,10 +1,12 @@
 from dataclasses import field
-from typing import Sequence
+from typing import Sequence, Any
 import pandas as pd
 from multipledispatch import dispatch
 import numpy as np
 import jax.numpy as jnp
 from fem4inas.utils import flatten_list
+from ruamel.yaml import YAML
+from ruamel.yaml.comments import CommentedMap
 
 def dfield(description, **kwargs):
 
@@ -45,6 +47,23 @@ def initialise_Dclass(data, Dclass):
     else:
         raise TypeError("Wrong input type")
 
+def dump_inputs(data: dict[str:list[Any, str]], ind=0,
+                with_comments:bool=True):
+
+    data = CommentedMap(data)
+    for k, v in data.items():
+        if isinstance(v, dict):
+            data[k] = dump_inputs(v, ind=ind+1,
+                                  with_comments=with_comments)
+        else:
+            data[k] = v[0]
+            #data.yaml_add_eol_comment(v[1], k)
+            if with_comments:
+                data.yaml_set_comment_before_after_key(k,
+                                                       before=v[1],
+                                                       indent=2*ind)
+    return data
+    
 def compute_component_children(component_name: str,
                            component_connectivity: dict[str:list],
                            chain:list = None):
