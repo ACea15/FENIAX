@@ -3,6 +3,7 @@ import jax
 import jax.numpy as jnp
 import jax.scipy as jscipy
 from fem4inas.preprocessor.containers.intrinsicmodal import Dfem
+from fem4inas.intrinsic.functions import compute_C0ab
 from functools import partial
 
 #TODO: implement from jnp.eigh and compare with jscipy.eigh
@@ -23,8 +24,11 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray,
 
     precision = config.jax_np.precision
     num_modes = config.fem.num_modes  # Nm
-    num_nodes = config.fem.num_nodes  # Nn
-    delta_X = jnp.linalg.norm(jnp.matmul(config.fem.Mdiff, X), axis=0)
+    # num_nodes = config.fem.num_nodes  # Nn
+    X_diff = jnp.matmul(X, config.fem.Mdiff)
+    X_xdelta = jnp.linalg.norm(X_diff, axis=0)
+    X_xdelta = X_xdelta.at[0].set(1.)
+    C0ab = compute_C0ab(X_diff, X_xdelta, config) # shape=(3x3xNn)
     eigenvals, eigenvecs = compute_eigs(Ka, Ma, num_modes)
     # reorder to the grid coordinate in X
     _phi1 = jnp.matmul(config.fem.Mfe_order, eigenvecs)
@@ -32,11 +36,11 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray,
     _phi1 = add_clampedDoF(_phi1, config.fem.clamped_dof, num_modes)
     phi1 = reshape_modes(_phi1, num_modes) # Becomes  (Nm, 6, Nn)
     # Define mode components in-between nodes
-    phi1m = jnp.tensordot(phi1, config.fem.Maverage_nodes,
+    phi1m = jnp.tensordot(phi1, config.fem.Mavg,
                           axes=(2, 0), precision=precision)
     # Define mode components in the initial local-frame
-    phi1l = coordinate_transform(config.fem.T0ba, phi1)
-    phi1ml = coordinate_transform(config.fem.T0ba, phi1m)
+    phi1l = coordinate_transform(phi1, C0ab) # effectively doing C0ba*phi1
+    phi1ml = coordinate_transform(phi1m, C0ab)
     _psi1 = jnp.matmul(Ma, eigenvec, precision=precision)
     _psi1 = add_clampedDoF(_psi1, config.fem.clamped_dof, num_modes)
     psi1 = reshape_modes(_psi1, num_modes)
@@ -47,19 +51,47 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray,
     # Each column in config.fem.Mload_paths represents the nodes to sum through
     phi2 = jnp.tensordot(_phi2, config.fem.Mload_paths,
                          axes=(2, 0), precision=precision)
+    phi2 += jnp.tensordot(_phi2, config.fem.Mload_paths,
+                          axes=(2, 0), precision=precision)
     phi2l = coordinate_transform(config.fem.Mglobal2local, phi2)
     psi2l = (jnp.tensordot(phi1l, config.fem.Mdiff, axes=(2, 0),
-                           precision=precision) / delta_X
+                           precision=precision) / X_xdelta
              + jnp.tensordot(phi1ml, config.const.EMAT, axes=(2, 0)))
 
-    return phi1, phi1l, psi1, phi2l, psi2l
+    return phi1, phi1l, psi1, phi2l, psi2l, C0ab
+
+
+def coordinates_difftensor(X: jnp.ndarray, Mavg: jnp.ndarray) -> jnp.ndarray:
+    """Computes coordinates
+
+
+    The tensor representes the following: Coordinates, middle point of each element,
+    minus the position of each node in the structure
+
+    Parameters
+    ----------
+    X : jnp.ndarray
+        Grid coordinates
+    Mavg : jnp.ndarray
+        Matrix to calculate the averege point between nodes
+
+    Returns
+    -------
+    jnp.ndarray: (3xNnxNn) tensor
+
+
+    """
     
-    
+    num_nodes = X.shape[0]
+    Xavg = jnp.matmul(X, Mavg)
+    ones = jnp.ones(num_nodes)
+    return jnp.tensordot(Xavg, ones) - jnp.tensordot(ones, X).T
+
 @jit
 def coordinate_transform(u1, v1):
 
-    f = jax.vmap(lambda u, v: jnp.matmul(v, u.T),
-                 in_axes=(0,1), out_axes=1)
+    f = jax.vmap(lambda u, v: jnp.matmul(u, v),
+                 in_axes=(2,2), out_axes=2)
     fuv = f(u1, v1)
     return fuv
 

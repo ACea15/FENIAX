@@ -1,7 +1,10 @@
 import numpy as np
 import jax.numpy as jnp
 import jax
-from jax import jit
+from jax import jit, lax
+from fem4inas.preprocessor.inputs import Inputs
+from functools import partial
+
 ###############################
 # Exponential map integration #
 ###############################
@@ -59,7 +62,6 @@ def L1(x1):
                 [-v[1]  ,  v[0] ,  0 ]]
 
    return np.asarray(L1)
-#===========================================================================================================================================================
 
 @jit
 def L2fun(x2):
@@ -81,5 +83,19 @@ def L2fun(x2):
 
    return L2
 
+@partial(jit, static_argnames=['config'])
+def compute_C0ab(X_diff: jnp.ndarray, X_xdelta: jnp.ndarray,
+                 config: Inputs) -> jnp.ndarray:
 
+    x = X_diff / X_xdelta
+    x = x.at[:, 0].set(jnp.array([1, 0, 0])) # WARNING: this says the first node FoR at time 0
+    # aligns with the global reference frame.
+    cond = jnp.linalg.norm(x - jnp.array([0,0,1])) > config.ex.Cab_xtol # if not true,
+    # local-x is almost parallel to global-z, z direction parallel to global y
+    y = lax.select(cond,
+                   jnp.cross(jnp.array([0, 0, 1]), x, axisb=0, axisc=0),
+                   jnp.cross(jnp.array([0, 1, 0]), x, axisb=0, axisc=0))
+    z = jnp.cross(x, y, axisa=0, axisb=0, axisc=0)
+    C0ab = jnp.stack([x, y, z], axis=1)
+    return C0ab
 

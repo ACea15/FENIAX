@@ -90,7 +90,9 @@ class Dfem(DataContainer):
     clamped_dof: list[list] = dfield("Grid coordinates", default=None)
     clamped_nodes: int = dfield("Grid coordinates", default=None)
     num_nodes: int = dfield("Grid coordinates", default=None)
-
+    Mavg: jnp.ndarray = dfield("Grid coordinates", init=None)
+    Mdiff: jnp.ndarray = dfield("Grid coordinates", init=None)
+    Mfe_order: jnp.ndarray = dfield("Grid coordinates", init=None)
     def __post_init__(self):
         ...
     def build_grid(self):
