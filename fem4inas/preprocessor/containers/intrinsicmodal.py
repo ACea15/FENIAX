@@ -8,7 +8,7 @@ from fem4inas.preprocessor.utils import dfield, initialise_Dclass
 from fem4inas.preprocessor.containers.data_container import DataContainer
 
 @dataclass(order=True, frozen=True)
-class Dconst:
+class Dconst(DataContainer):
 
     I3: jnp.ndarray = dfield("3x3 Identity matrix", default=jnp.eye(3))
     e1: jnp.ndarray = dfield("3x3 Identity matrix",
@@ -20,37 +20,37 @@ class Dconst:
                                                   [0, 0, 0, 0, 0, 0],
                                                   [0, 0, -1, 0, 0, 0],
                                                   [0, 1, 0, 0, 0, 0]]))
-    EMATT: jnp.ndarray = dfield("3x3 Identity matrix", init=False)
+    EMATT: jnp.ndarray = dfield("3x3 Identity matrix", default=None)
     
     def __post_init__(self):
 
         self.EMATT = self.EMATT.T
 @dataclass(order=True, frozen=True)
-class Dfiles:
+class Dfiles(DataContainer):
 
     folder_in: str | pathlib.Path
     folder_out: str | pathlib.Path
     config_file: str | pathlib.Path
 
 
-@dataclass(order=True, frozen=True)
-class Dxloads:
+@dataclass(order=True, frozen=False)
+class Dxloads(DataContainer):
     
     follower_points: list[list[int | str]] = dfield(
         "Follower force points [component, Node, coordinate]",
-        init=False,
+        default=None,
     )    
-    dead_points: list[list[int]] = dfield("Dead force points [component, Node, coordinate]", init=False,
+    dead_points: list[list[int]] = dfield("Dead force points [component, Node, coordinate]", default=None,
     )
     follower_interpolation: list[list[int]] = dfield(
         "(Linear) interpolation of the follower forces \
     [[ti, fi]..](time_points * 2 * NumForces) [seconds, Newton]",
-        init=False,
+        default=None,
     )
     dead_interpolation: list[list[int]] = dfield(
         "(Linear) interpolation of the dead forces \
     [[ti, fi]] [seconds, Newton]",
-        init=False,
+        default=None,
     )
 
     gravity: float = dfield("gravity force [m/s]",
@@ -68,7 +68,7 @@ class Dxloads:
 
 #     grid: str | jnp.ndarray = dfield("Grid file or array with Nodes Coordinates, node ID in the FEM and component")
 #     connectivity: dict | list = dfield("Connectivities of components")
-#     X: jnp.ndarray = dfield("Grid coordinates", init=False)
+#     X: jnp.ndarray = dfield("Grid coordinates", default=None)
 
 @dataclass(order=True, frozen=True)
 class Dfem(DataContainer):
@@ -90,9 +90,9 @@ class Dfem(DataContainer):
     clamped_dof: list[list] = dfield("Grid coordinates", default=None)
     clamped_nodes: int = dfield("Grid coordinates", default=None)
     num_nodes: int = dfield("Grid coordinates", default=None)
-    Mavg: jnp.ndarray = dfield("Grid coordinates", init=None)
-    Mdiff: jnp.ndarray = dfield("Grid coordinates", init=None)
-    Mfe_order: jnp.ndarray = dfield("Grid coordinates", init=None)
+    #Mavg: jnp.ndarray = dfield("Grid coordinates", init=None)
+    #Mdiff: jnp.ndarray = dfield("Grid coordinates", init=None)
+    #Mfe_order: jnp.ndarray = dfield("Grid coordinates", init=None)
     def __post_init__(self):
         ...
     def build_grid(self):
@@ -127,25 +127,26 @@ class Dfem(DataContainer):
         ...
 
 @dataclass(order=True, frozen=True)
-class Ddriver:
+class Ddriver(DataContainer):
 
-    subcases: dict[str:Dxloads] = dfield("", init=False)
+    subcases: dict[str:Dxloads] = dfield("", default=None)
     supercases: dict[str:Dfem] = dfield(
-        "", init=False)
+        "", default=None)
 
-    
-@dataclass(order=True, frozen=True)
-class Dsystem:
 
-    xloads: dict | Dxloads = dfield("External loads dataclass", init=False)
-    t0: float = dfield("Initial time", init=False)
-    t1: float = dfield("Final time", init=False)
-    tn: int = dfield("Number of time steps", init=False)
-    dt: float = dfield("Delta time", init=False)
-    t: jnp.array = dfield("Time vector", init=False)
-    solver_library: str = dfield("Library solving our system of equations", init=False)
+@dataclass(order=True, frozen=False)
+class Dsystem(DataContainer):
+
+    name: str = dfield("System name")
+    xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
+    t0: float = dfield("Initial time", default=0.)
+    t1: float = dfield("Final time", default=1.)
+    tn: int = dfield("Number of time steps", default=None)
+    dt: float = dfield("Delta time", default=None)
+    t: jnp.array = dfield("Time vector", default=None)
+    solver_library: str = dfield("Library solving our system of equations", default=None)
     solver_name: str = dfield(
-        "Name for the solver of the previously defined library", init=False)
+        "Name for the solver of the previously defined library", default=None)
     typeof: str | int = dfield("Type of system to be solved",
                                default='single',
                                options=['single', 'serial', 'parallel'])
@@ -159,7 +160,7 @@ class Dsystem:
 
 
 @dataclass(order=True, frozen=True)
-class Dsimulation:
+class Dsimulation(DataContainer):
 
     typeof: str = dfield("Type of simulation",
                          default='single',

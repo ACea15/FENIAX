@@ -4,8 +4,7 @@ from fem4inas.preprocessor.utils import dump_inputs
 import importlib
 import fem4inas.preprocessor.config as config
 import pathlib
-import yaml
-
+from ruamel.yaml import YAML 
 class Inputs:
 
     def __init__(self, sett: dict):
@@ -28,8 +27,7 @@ class Inputs:
         """Loads the containers"""
         
         # TODO: Extend to functionality for various containers
-        self.__container = importlib.import_module(self.__sett["engine"],
-                                                   "fem4inas.preprocessor.containers")
+        self.__container = importlib.import_module(f"fem4inas.preprocessor.containers.{self.__sett['engine']}")
         self.__container = importlib.reload(self.__container) # remove after testing
         
     def __build(self):
