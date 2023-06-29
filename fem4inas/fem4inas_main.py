@@ -1,7 +1,7 @@
 """FEM4INAS main"""
 import argparse
 import fem4inas.drivers
-from fem4inas.preprocessor.inputs import Inputs
+from fem4inas.preprocessor.inputs import Config
 
 def main(input_file=None, input_dict=None, input_obj=None):
     """
@@ -17,17 +17,16 @@ def main(input_file=None, input_dict=None, input_obj=None):
             args = parser.parse_args(input_file)
         else:
             args = parser.parse_args()
-
             
     elif input_dict is not None and (input_file is None and
                                      input_obj is None):
-        config = Inputs()
+        config = Config()
 
     elif input_dict is not None and (input_file is None and
                                      input_obj is None):
         config = input_obj
 
     driver = fem4inas.drivers.factory(config.engine)
-    
-    driver.run()
+    driver.pre_simulation()
+    driver.run_cases()
 

@@ -1,104 +1,89 @@
-from dataclasses import dataclass, field
+import fem4inas.preprocessor.containers as containers
+from fem4inas.preprocessor.containers.data_container import DataContainer
+from fem4inas.preprocessor.utils import dump_inputs
+import importlib
+import fem4inas.preprocessor.config as config
+import pathlib
+from ruamel.yaml import YAML
+import jax.numpy as jnp
 
+class Config:
 
-class Config(dict):
-    """Represents configuration options, works like a dict."""
+    def __init__(self, sett: dict):
 
-    def __init__(self, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
+        self.__sett = sett
+        self.__serial_data = None
+        self.__load_containers()        
+        self.__extract_attr()
+        self.__build()
+        self._data_dict = serialize(self)
 
-    def __getattr__(self, name):
-        try:
-            return self[name]
-        except KeyError:
-            self[name] = Config({})
-            return self[name]
+    def __extract_attr(self):
+        """Extracts attributes that do not belong to a container"""
+        if "ex" in self.__sett.keys():
+            self.__set_experimental(self.__sett.pop('ex'))
+        if "engine" in self.__sett.keys():
+            self.__set_attr(engine=self.__sett.pop('engine'))
 
-    def __setattr__(self, name, val):
-        self[name] = val
+    def __load_containers(self):
+        """Loads the containers"""
 
+        # TODO: Extend to functionality for various containers
+        self.__container = importlib.import_module(
+            f"fem4inas.preprocessor.containers.{self.__sett['engine']}")
+        self.__container = importlib.reload(self.__container) # remove after testing
+        
+    def __build(self):
 
-def dict2object(config: dict | Config):
-    """Convert dictionary into instance allowing access dot notation."""
-    if isinstance(config, dict):
-        result = Config()
-        for key in config:
-            result[key] = dict2object(config[key])
-        return result
-    else:
-        return config
+        for k, v in self.__sett.items():
+            container_k = getattr(self.__container, "".join(["D", k]))
+            setattr(self, k, container_k(**v))
 
+    def __set_experimental(self, experimental: dict):
 
-if __name__ == '__main__':
+        ex_object = config.dict2object(experimental)
+        setattr(self, "ex", ex_object)
 
-    d1 = {
-        "conf1": {
-            "key1": "aaa",
-            "key2": 12321,
-            "key3": {"a": 8},
-        },
-        "conf2": "bbbb",
-    }
+    def __set_attr(self, **kwargs):
 
-    c1 = dict2object(d1)
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        
+    @classmethod
+    def from_file(cls, file_dir: str|pathlib. Path, **kwargs):
+        yaml = YAML()
+        yaml_dict = yaml.load(file_dir)
+        return cls(yaml_dict)
 
-    def field1(description, options=None, default=None):
+    # @staticmethod
+    # def _serialize(obj):
 
-        return field(metadata={"description": description})
+    #     for k, v in obj.__dict__:
+    #         if k[0] != "_":
 
-    @dataclass
-    class try_meta2:
-        v1: int
+def serialize(obj: Config | DataContainer):
 
-    @dataclass()
-    class try_meta:
-        v1: int = field(metadata={"description": "fff", "options": [1, 2, 3]})
-        v2: int = field(metadata={"options": [1, 2]})
-        v3: str
-        v4: try_meta2 = field()
+    dictionary = dict()
+    for k, v in obj.__dict__.items():
+        if isinstance(v, jnp.ndarray):
+            v = v.tolist()
+        if k[0] != "_":
+            if isinstance(v, DataContainer):
+                dictionary[k] = serialize(v)
+            else:
+                try:
+                    dictionary[k] = [v, obj.__dataclass_fields__[k].metadata['description']]
+                except AttributeError:
+                    dictionary[k] = [v, " "]
+    return dictionary
 
-        def __post_init__(self):
-            object.__setattr__(self, "v4", try_meta2(self.v4))
+def dump_to_yaml(file_out, config: Config, with_comments=True):
 
-    # __dataclass_fields__['name'].metadata
-    # uex = UsesExternalDict(9)
-    # uex.__dataclass_fields__
+    yaml = YAML()
+    data = dump_inputs(config._data_dict, with_comments=with_comments)
+    with open(file_out, "w") as f:
+        yaml.dump(data, f)
 
-    t1 = try_meta(1, 2, "hello", 5)
+if __name__ == "__main__":
 
-    sett = dict2object({})
-
-    sett.engine = "IntrinsicModal"
-    sett.driver.subcases = None
-    sett.driver.supercases = None
-
-    sett.fem.Ka_file = None
-    sett.fem.Ma_file = None
-    sett.fem.Ka = None
-    sett.fem.Ma = None
-
-    sett.simulation.type = "single"
-
-    sett.geometry.file_name = None
-    sett.geometry.input_data = None
-
-    sett.quadratic_tensorterms = None
-
-    sett.xloads.gravity = None
-    sett.xloads.gravity_vect = None
-    sett.xloads.follower_forces = None
-    sett.xloads.dead_forces = None
-    sett.xloads.gravity_forces = None
-    sett.xloads.follower_forces = None
-    sett.xloads.aero_forces = None
-
-    sett.xloads.follower_points = None
-    sett.xloads.dead_points = None
-    sett.xloads.follower_interpolation = None
-    sett.xloads.dead_interpolation = None
-
-    sett.aero.u_inf = None
-    sett.aero.rho_inf = None
-    sett.aero.chord = None
-    sett.aero.gafs = None
-    sett.aero.poles = None
+    pass

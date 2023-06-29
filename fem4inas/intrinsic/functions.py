@@ -2,7 +2,7 @@ import numpy as np
 import jax.numpy as jnp
 import jax
 from jax import jit, lax
-from fem4inas.preprocessor.inputs import Inputs
+from fem4inas.preprocessor.inputs import Config
 from functools import partial
 
 ###############################
@@ -85,7 +85,7 @@ def L2fun(x2):
 
 @partial(jit, static_argnames=['config'])
 def compute_C0ab(X_diff: jnp.ndarray, X_xdelta: jnp.ndarray,
-                 config: Inputs) -> jnp.ndarray:
+                 config: Config) -> jnp.ndarray:
 
     x = X_diff / X_xdelta
     x = x.at[:, 0].set(jnp.array([1, 0, 0])) # WARNING: this says the first node FoR at time 0

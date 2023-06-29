@@ -7,7 +7,7 @@ import pandas as pd
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass
 from fem4inas.preprocessor.containers.data_container import DataContainer
 
-@dataclass(order=True, frozen=True)
+@dataclass(frozen=True)
 class Dconst(DataContainer):
 
     I3: jnp.ndarray = dfield("3x3 Identity matrix", default=jnp.eye(3))
@@ -25,7 +25,7 @@ class Dconst(DataContainer):
     def __post_init__(self):
 
         self.EMATT = self.EMATT.T
-@dataclass(order=True, frozen=True)
+@dataclass(frozen=True)
 class Dfiles(DataContainer):
 
     folder_in: str | pathlib.Path
@@ -33,7 +33,7 @@ class Dfiles(DataContainer):
     config_file: str | pathlib.Path
 
 
-@dataclass(order=True, frozen=False)
+@dataclass(frozen=False)
 class Dxloads(DataContainer):
     
     follower_points: list[list[int | str]] = dfield(
@@ -63,14 +63,14 @@ class Dxloads(DataContainer):
     aero_forces: bool = dfield("Include aerodynamic forces", default=False)
 
 
-# @dataclass(order=True, frozen=True)
+# @dataclass(frozen=True)
 # class Dgeometry:
 
 #     grid: str | jnp.ndarray = dfield("Grid file or array with Nodes Coordinates, node ID in the FEM and component")
 #     connectivity: dict | list = dfield("Connectivities of components")
 #     X: jnp.ndarray = dfield("Grid coordinates", default=None)
 
-@dataclass(order=True, frozen=True)
+@dataclass(frozen=True)
 class Dfem(DataContainer):
 
     connectivity: dict | list = dfield("Connectivities of components")
@@ -126,7 +126,7 @@ class Dfem(DataContainer):
     def __set_load_paths(self):
         ...
 
-@dataclass(order=True, frozen=True)
+@dataclass(frozen=True)
 class Ddriver(DataContainer):
 
     subcases: dict[str:Dxloads] = dfield("", default=None)
@@ -134,7 +134,7 @@ class Ddriver(DataContainer):
         "", default=None)
 
 
-@dataclass(order=True, frozen=False)
+@dataclass(frozen=False)
 class Dsystem(DataContainer):
 
     name: str = dfield("System name")
@@ -159,17 +159,36 @@ class Dsystem(DataContainer):
         ...
 
 
-@dataclass(order=True, frozen=True)
+@dataclass(frozen=True)
 class Dsimulation(DataContainer):
 
     typeof: str = dfield("Type of simulation",
                          default='single',
                          options=['single', 'serial', 'parallel'])
+    systems: dict = dfield(
+        "Dictionary of systems involved in the simulation",
+        default=None
+    )
+    workflow: dict = dfield(
+        """Dictionary that defines which system is run after which.
+        The default None implies systems are run in order of the input""",
+        default=None
+    )
 
-    systems: list[Dsystem] | Dsystem = dfield(
-        "Type of simulation",
-        default='single',
-        options=['single', 'serial', 'parallel'])
+    def __post_init__(self):
+
+        if self.systems is not None:
+            for k, v in self.systems:
+                setattr(self, k, initialise_Dclass(v, Dsystem))
+    
+
+    
+
+
+    def __post_init__(self):
+
+        
+        self.xloads = initialise_Dclass(self.xloads, Dxloads)
 
 
 if (__name__ == '__main__'):
