@@ -32,15 +32,14 @@ def H1(Itheta,Ipsi,ds):
 
    return ds*(I3+(1-np.cos(Itheta))/(Itheta**2)*tilde(Ipsi)+(Itheta-np.sin(Itheta))/(Itheta**3)*(tilde(Ipsi).dot(tilde(Ipsi))))
 
-
+@jit
 def tilde(vector):
-  """ Finds the matrix that yields the vectorial product when multiplied by another vector """
+    """ Finds the matrix that yields the vectorial product when multiplied by another vector """
     
-  tilde = jnp.array([[0.,        -vector[2], vector[1]],
-                     [vector[2],  0.,       -vector[0]],
-                     [-vector[1], vector[0], 0.]])
-  return tilde
-
+    tilde = jnp.array([[0.,        -vector[2], vector[1]],
+                       [vector[2],  0.,       -vector[0]],
+                       [-vector[1], vector[0], 0.]])
+    return tilde
 
 def L1(x1):
 
