@@ -29,6 +29,8 @@ setup(
         "ruamel.yaml",
         "jax",
         "jaxlib",
+        "diffrax",
+        "jaxopt",
         "multipledispatch"
     ],
     extras_require={

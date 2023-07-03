@@ -254,7 +254,6 @@
 #+RESULTS: flutter_process
 [[file:flutter_process2.png]]
 
-
 #+Name: classes_architecture
 #+begin_src plantuml :file classes.png
 
@@ -357,7 +356,114 @@
 
 #+RESULTS: classes_architecture
 [[file:classes.png]]
- 
+
+#+Name: classes_architecture2
+#+begin_src plantuml :file classes2.png
+
+  abstract class IntrinsicDriver {
+          #integration: Integration
+          #simulation: Simulation
+          #opt: Optimisation
+          #systems: [System]
+          +run_cases()
+          #_set_case()
+          #_set_integration()
+          #_set_simulation()
+          #_set_systems()	
+  }
+
+  /'
+   ' abstract class Integration {
+   '         +run()
+   ' }
+   '/
+
+  class IntrinsicIntegration {
+          +run()
+          #_compute_modalshapes()
+          #_compute_modalcouplings()
+  }
+
+  abstract class Simulation {
+          +trigger()
+          +pull_solution()
+          #_run()
+          #_post_run()
+  }
+
+  /'
+   ' package Simulations {
+   '         class SerialSimulation {
+   '         }
+   '         class ParallelSimulation {
+   '         }
+   '         class SingleSimulation {
+   '         }
+   '         class CoupledSimulation {
+   '         }
+   ' }
+   '/
+
+  class SerialSimulation {
+  }
+  class ParallelSimulation {
+  }
+  class SingleSimulation {
+  }
+  class CoupledSimulation {
+  }
+
+  abstract class System {
+          +set_init()
+          +set_name()
+          +set_generator()
+          +set_solver()
+          +solve()
+          +save()
+  }
+
+  class IntrinsicSystem {
+        -dq: callable
+        -solver: callable
+  }
+
+  class ControlSystem {
+  }
+
+  class MultibodySystem {
+  }
+
+     /'
+      ' Simulation <|-- SerialSimulation
+      ' Simulation <|-- ParallelSimulation
+      ' Simulation <|-- SingleSimulation
+      ' Simulation <|-- CoupledSimulation
+      '/
+  abstract class Optimisation {
+        -save_grads()
+        -assemble()
+  }
+
+  'Simulation <|-- Simulations
+  Simulation <|-- SingleSimulation
+  SingleSimulation -- SerialSimulation 
+  SerialSimulation -- ParallelSimulation
+  ParallelSimulation -- CoupledSimulation					
+  'Driver "1" -- "1" Integration : composition
+  'Driver "1" -- "1" Simulation : composition'
+  IntrinsicDriver  *- IntrinsicIntegration
+  IntrinsicDriver  *-- Simulation
+  IntrinsicDriver  *-- Optimisation
+  IntrinsicDriver  *- System
+  'Integration <|-- IntrinsicIntegration
+  System  <|-- IntrinsicSystem
+  IntrinsicSystem -- ControlSystem
+  ControlSystem -- MultibodySystem
+#+end_src
+
+#+RESULTS: classes_architecture2
+[[file:classes2.png]]
+
 
 * Modules
 ** Geometryrb
@@ -424,9 +530,6 @@ Via subcase option of driver class that modifies the xloads option in each case.
 If for instance one wants to set an optimisation with boundaries on the maximum loads, it would not make sense to do it for only one atmospheric load case.
 ** Perform calculations on different models in a single run
 Via the supercase option of driver. This might be used to compute finite differences; or if the response of if the response of a fractured component is to be compared.
-** Release wingtip in-flight
-Via serial simulation, with two multibody cases: first with a constraint that fuses the bodies in a trimmed simulation; second realising the DoF corresponding to a hinge and taking the states from the previous ones
-
 * Architecture
 ** Config
 config.engine = intrinsic
@@ -495,3 +598,29 @@ def dq_2110:
 ** prescribed_dead
 ** gravity
 ** modal_aero
+* Connection with High Fidelity structural model
+** Initial Model
+- Clamped wing
+- Mass model? Lumped masses may be needed at some point, for instance to account for the engine
+** Input requirements
+
+#+ATTR_ORG: :width 400
+[[./3Dinterpolation.png]]
+
+*** Load paths
+Interpolation: Spider interpolation elements?
+
+*** Condensed stiffness and mass matrices along load paths
+- Should be suitable for eigenvalue analysis
+
+*** Aerodynamic model
+- Preliminary DLM model. Automatically built from wing-box?
+- Steady loads?
+  
+** Output requirements
+
+*** Sectional loads
+- Map to the FEM via the same interpolation elements?
+  
+** Data architecture
+- should we already  think of a workflow

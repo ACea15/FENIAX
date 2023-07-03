@@ -38,3 +38,44 @@ u = jnp.array([jnp.eye(6) for i in range(3)])
 v = jnp.arange(4*6*3).reshape((4, 3, 6))
 fuv = f(u, v)
 
+##################################
+from functools import partial
+from jax import jit
+import jax
+import jax.numpy as jnp
+
+import diffrax
+import numpy as np
+import jaxopt
+jax.config.update("jax_enable_x64", True)
+
+def newton_raphson(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **kwargs):
+
+    solver = diffrax.NewtonNonlinearSolver(rtol=rtol, atol=atol,
+                                           max_steps=max_steps, kappa=kappa,
+                                           norm=norm, tolerate_nonconvergence=True)
+    sol = solver(F, q0, args, jac)
+    return sol
+
+@partial(jit, static_argnames=['args'])
+def F(x, args):
+
+    y = args[0] + args[1] * x +args[2] * x**2
+    return y
+
+
+sol = newton_raphson(F, q0=jnp.array([100.]),  args=(0,-4,2), rtol=1e-7, atol=1e-7, max_steps=100, kappa=0.0001, norm=jnp.linalg.norm)
+
+
+jopt = jaxopt.ScipyRootFinding('hybr', optimality_fun=F)
+sol = jopt.run(jnp.array([-1.]),  args=(0,-4,2))
+
+
+import scipy.optimize
+def F2(x, *args):
+
+    y = args[0] + args[1] * x +args[2] * x**2
+    return y
+
+sol2 = scipy.optimize.root(F2, x0=np.array([1.]),  args=(0,-4,2))
+    
