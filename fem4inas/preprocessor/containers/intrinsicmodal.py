@@ -6,6 +6,7 @@ import pathlib
 import pandas as pd
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass
 from fem4inas.preprocessor.containers.data_container import DataContainer
+import fem4inas.intrinsic.geometry as geometry
 
 @dataclass(frozen=True)
 class Dconst(DataContainer):
@@ -74,57 +75,54 @@ class Dxloads(DataContainer):
 class Dfem(DataContainer):
 
     connectivity: dict | list = dfield("Connectivities of components")
-    folder: str | pathlib.Path = dfield("Folder in which to find Ka, Ma, and grid data (with those names)",
-                                        default=None)
+    folder: str | pathlib.Path = dfield("""Folder in which to find Ka, Ma,
+    and grid data (with those names)""", default=None)
     Ka: str | pathlib.Path | jnp.ndarray = dfield("Condensed stiffness matrix", default=None)
     Ma: str | pathlib.Path | jnp.ndarray = dfield("Condensed mass matrix", default=None)
     num_modes: int = dfield("Number of modes in the solution", default=None)
     #
     grid: str | jnp.ndarray | pd.DataFrame = dfield("""Grid file or array with Nodes Coordinates,
-    node ID in the FEM and component""", default=None)
+    node ID in the FEM, and associated component""", default=None)
     X: jnp.ndarray = dfield("Grid coordinates", default=None)
-    fe_order: list | jnp.ndarray = dfield("node ID in the FEM", default=None)
-    node_component: list[str | int] | jnp.ndarray = dfield("Grid coordinates", default=None)
-    components: set = dfield("Name of components defining the structure", default=None)
+    fe_order: list[int] | jnp.ndarray = dfield("node ID in the FEM", default=None)
+    component_vect: list[str] = dfield("Array with component associated to each node",
+                                       default=None)
+    component_nodes: list[str | int] | jnp.ndarray = dfield("Grid coordinates", init=False)
+    component_names: list = dfield("Name of components defining the structure", init=False)
+    component_chain: dict[str:list[str]] = dfield(" ", init=False)
+    prevnodes: list[int] = dfield("Name of components defining the structure", init=False)
     #
     clamped_dof: list[list] = dfield("Grid coordinates", default=None)
     clamped_nodes: int = dfield("Grid coordinates", default=None)
-    num_nodes: int = dfield("Grid coordinates", default=None)
-    #Mavg: jnp.ndarray = dfield("Grid coordinates", init=None)
-    #Mdiff: jnp.ndarray = dfield("Grid coordinates", init=None)
-    #Mfe_order: jnp.ndarray = dfield("Grid coordinates", init=None)
+    num_nodes: int = dfield("Number of nodes", init=False)
+    Mavg: jnp.ndarray = dfield("Matrix for tensor average between nodes", init=False)
+    Mdiff: jnp.ndarray = dfield("Matrix for tensor difference between nodes", init=False)
+    Mfe_order: jnp.ndarray = dfield("""Matrix with 1s and 0s that reorders quantities
+    such as eigenvectors in the FE model; nodes in horizontal arrangement.""", init=False)
+    Mload_paths: jnp.ndarray = dfield("""Matrix with with 1s and 0s for the load paths
+    that each node, in vertical arrangement, need to transverse to sum up to a free-end""",
+                                      init=False)
     def __post_init__(self):
-        ...
-    def build_grid(self):
-        ...
-    def __set_component_nodes(self):
-        ...
-    def __set_clamped_nodes(self):
-        ...
-    def __set_clamped_dof(self):
-        ...
-    def __set_clamped_indices(self):
-        ...
-    def __set_FEorder(self):
-        self.Mfe_order = jnp.zeros((6 * self.num_nodes, 6 * self.num_nodes))
-        for i in range(self.num_nodes):
-            if i in self.clamped_nodes:
-                fe_dof = [(6 * (self.fe_order[i] + 1) + j) for j in self.free_dof[i]]
-            else:
-                fe_dof = range(6 * self.fe_order[i], 6 * self.fe_order[i] + 6)
-            if len(fe_dof) > 0:
-                self.Mfe_order[i, fe_dof] = 1.
-            
-    def __set_averaging_nodes(self):
-        ...
-    def __set_diff_nodes(self):
-        ...
-    def __set_delta_nodes(self):
-        ...
-    def __set_Tba(self):
-        ...
-    def __set_load_paths(self):
-        ...
+        self.connectivity = geometry.list2dict(self.connectivity)
+        self.df_grid, self.X, self.fe_order, self.component_vect = geometry.build_grid(
+            self.grid, self.X, self.fe_order, self.component_vect)
+        self.component_names, self.component_father = geometry.compute_component_father(
+            self.connectivity)
+        self.num_nodes = len(self.X)
+        self.clamped_nodes, self.freeDoF = geometry.compute_clamped(self.fe_order)
+        self.component_nodes = geometry.compute_component_nodes(self.component_vect)
+        self.component_chain = geometry.compute_component_chain(self.component_names,
+                                                                self.connectivity)
+        self.prevnodes = geometry.compute_prevnode(self.component_vect,
+                                                   self.component_nodes,
+                                                   self.component_father)
+        self.Mavg = geometry.compute_Maverage(self.prevnodes, self.num_nodes)
+        self.Mdiff = geometry.compute_Mdiff(self.prevnodes, self.num_nodes)
+        self.Mfe_order = geometry.compute_Mfe_order(self.fe_order, self.num_nodes)
+        self.Mload_paths = geometry.compute_Mloadpaths(self.component_vect,
+                                                       self.component_nodes,
+                                                       self.component_chain,
+                                                       self.num_nodes)
 
 @dataclass(frozen=True)
 class Ddriver(DataContainer):

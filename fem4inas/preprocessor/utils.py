@@ -1,7 +1,6 @@
 from dataclasses import field
 from typing import Sequence, Any
 import pandas as pd
-from multipledispatch import dispatch
 import numpy as np
 import jax.numpy as jnp
 from fem4inas.utils import flatten_list
@@ -63,123 +62,6 @@ def dump_inputs(data: dict[str:list[Any, str]], ind=0,
                                                        before=v[1],
                                                        indent=2*ind)
     return data
-    
-def compute_component_children(component_name: str,
-                           component_connectivity: dict[str:list],
-                           chain:list = None):
-    
-    if chain is None:
-        chain = list()
-    children_components = component_connectivity[component_name]
-    if children_components is None or len(children_components) == 0:
-        pass
-    else:
-        chain += children_components
-        for ci in children_components:
-            compute_component_children(ci, component_connectivity, chain)
-    return chain
-
-def compute_component_father(component_connectivity: dict[str:list]) -> dict[str:list]:
-
-    component_names = component_connectivity.keys()
-    component_father = {ci: None for ci in component_names}
-    for k, v in component_connectivity.items():
-        if v is not None:
-            for vi in v:
-                component_father[vi] = k
-    return component_father
-
-@dispatch(list)
-def compute_component_nodes(components_range: list) -> dict[str:list]:
-
-    component_nodes = dict()
-    for i, ci in enumerate(components_range):
-        if ci not in component_nodes.keys():
-            component_nodes[ci] = []
-        component_nodes[ci].append(i)
-    return component_nodes
-
-@dispatch(pd.DataFrame)
-def compute_component_nodes(df: pd.DataFrame) -> dict[str:list]:
-
-    component_nodes = dict()
-    components = df.component.unique()
-    group = df.groupby('component')
-    for ci in components:
-        component_nodes[ci] = list(group.get_group(ci).index)
-    return component_nodes
-
-def compute_prevnode(components_range: Sequence[str],
-                     component_nodes: dict[str:list[int]],
-                     component_father: dict[str:int]) -> list[int]:
-
-    prevnodes = list()
-    j = 0
-    current_component = None
-    for i, ci in enumerate(components_range):
-        if i==0:
-            prevnodes.append(0)
-            #j += 1
-            current_component = ci
-        elif ci != current_component: # change in component
-            if component_father[ci] is None: # component starting at first node
-                prevnodes.append(0)
-                current_component = ci
-                j = 0
-            else:
-                prevnodes.append(component_nodes[component_father[ci]][-1])
-                current_component = ci
-                j = 0
-        else:
-            prevnodes.append(component_nodes[current_component][j])
-            j += 1
-    return prevnodes
-
-def compute_dof2insert(free_dof):
-
-    j=0
-    dof2insert = []
-    for i in range(6):
-        if i in free_dof:
-            j +=1
-        else:
-            dof2insert.append(j)
-    return dof2insert
-
-def compute_Maverage(prevnodes: Sequence[int], num_nodes: int) -> jnp.ndarray:
-
-    M = np.eye(num_nodes)
-    for i in range(1, num_nodes):
-        M[prevnodes[i], i] = 1
-    M *= 0.5
-    return jnp.array(M)
-
-def compute_Mdiff(prevnodes: Sequence[int], num_nodes: int) -> jnp.ndarray:
-
-    M = np.eye(num_nodes)
-    for i in range(1, num_nodes):
-        M[prevnodes[i], i] = -1
-    return jnp.array(M)
-
-def compute_Mloadpaths(prevnodes: Sequence[int], num_nodes: int) -> jnp.ndarray:
-
-    M = np.eye(num_nodes)
-    M[:,0] = 1.
-    current_component = components_range[0]
-    j = 1
-    for i in range(1, num_nodes):
-        ci = components_range[i]
-        if ci != current_component:
-            j = 0
-            current_component = ci
-        ci_nodes = component_nodes[ci]
-        ci_children = component_chain[ci]
-        ci_children_nodes = flatten_list([component_nodes[k] for k in ci_children])
-        M[ci_children_nodes, i] = 1.
-        M[ci_nodes[j:], i] = 1
-        j += 1
-    return jnp.array(M)
-
 
 if __name__ == "__main__":
     comp_conn = dict(c1=['c2','c3', 'c5'], c2=None,

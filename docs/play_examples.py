@@ -38,6 +38,107 @@ u = jnp.array([jnp.eye(6) for i in range(3)])
 v = jnp.arange(4*6*3).reshape((4, 3, 6))
 fuv = f(u, v)
 
+##########################################
+
+def tilde(vector):
+  """ Finds the matrix that yields the vectorial product when multiplied by another vector """
+    
+  tilde = jnp.array([[0.,        -vector[2], vector[1]],
+                     [vector[2],  0.,       -vector[0]],
+                     [-vector[1], vector[0], 0.]])
+  return tilde
+
+def tilde0010(vector):
+    a = jnp.vstack([jnp.zeros((3,6)),
+                    jnp.hstack([tilde(vector), jnp.zeros((3,3))])
+                    ])
+    return a
+
+####################################################
+def some_func(a,r1,r2):
+    return a + r1 + r2
+
+a = 0 
+r1 = jnp.arange(0,3)
+r2 = jnp.arange(0,3)
+s = 0 
+for i in range(len(r1)): 
+    for j in range(len(r2)): 
+        s+= some_func(a, r1[i], r2[j])
+    
+print(s)
+
+func1= jax.vmap(some_func, (None, 0, None))
+func2 = jax.vmap(func1, (None, None, 0))
+func2(a, r1, r2).sum()
+
+######################################################
+
+a1 = jnp.arange(3*2*4).reshape((3,4,2))
+f1 = jax.vmap(tilde0010, in_axes=1, out_axes=2)
+f2 = jax.vmap(f1, in_axes=2, out_axes=3)
+res1 = f2(a1)
+
+for i in range(a1.shape[1]):
+    for j in range(a1.shape[2]):
+        assert (res1[3:,:3, i, j] == tilde(a1[:,i,j])).all()
+
+
+# f = jax.vmap(jax.vmap(lambda u, v: jnp.matmul(v, u.T), in_axes=(0,1), out_axes=1)
+# u = jnp.array([jnp.eye(6) for i in range(3)])
+# v = jnp.arange(4*6*3).reshape((4, 3, 6))
+# fuv = f(u, v)
+
+###############################################
+from multipledispatch import dispatch
+
+@dispatch(str, ss=list)
+def Func(s, ss=[]):
+    return s
+
+
+@dispatch(list, list)
+def Func(l, ss=[]):
+    return Func(l[0], ss=ss)
+
+Func(["string"])  # output: string
+#Func("string", [])  # calling this will raise error
+Func("string", ss=[])  # output: string
+
+#################################################
+
+def contraction(u, v):
+    
+    f = jax.vmap(lambda u, v: jnp.dot(u, v),
+                 in_axes=(3,1), out_axes=2)
+    fuv = f(u, v)
+    return fuv
+
+def moment_force(u, v):
+
+    f1 = jax.vmap(lambda u, v: jnp.matmul(u, v), in_axes=(2,2), out_axes=2)
+    f2 = jax.vmap(f1, in_axes=(None, 3), out_axes=3)
+    fuv = f2(u, v)
+
+    return fuv
+    
+
+x6 = jnp.arange(6*6*5*5).reshape((6, 6, 5, 5))
+phi = jnp.arange(4*6*5).reshape((4,6,5))
+M = jnp.arange(5*5).reshape((5,5))
+
+mf = moment_force(phi, x6)
+for i in range(x6.shape[3]):
+    for j in range(phi.shape[2]):
+        assert (mf[:,:,j,i] == jnp.matmul(phi[:,:,j], x6[:,:,j,i])).all()
+
+
+
+fuv = contraction(mf, M)
+
+
+
+
 ##################################
 from functools import partial
 from jax import jit
