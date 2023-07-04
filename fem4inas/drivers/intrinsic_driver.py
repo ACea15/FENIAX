@@ -9,6 +9,7 @@ class IntrinsicDriver:
 
     def pre_simulation(self):
         self._compute_modalshapes()
+        self._compute_modalcouplings()
         
     def _compute_modalshapes(self):
         modes.Smodes =  modes.shapes(args, kwargs)
@@ -36,6 +37,7 @@ class IntrinsicDriver:
         # Configure the integration
         pass
 
+    
     def set_simulation(self):
         # Configure the simulation
         cls_simulation = fem4inas.simulations.factory_method(config.simulation.typeof)

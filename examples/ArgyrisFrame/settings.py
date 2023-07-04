@@ -8,9 +8,10 @@ inp.engine = "intrinsicmodal"
 inp.fem.connectivity = [1]
 inp.driver.subcases = {'a':4}
 
+
 inp.simulation.typeof = "serial"
 inp.system.name = "static"
-inp.simulation.systems
+#inp.simulation.systems
 # conf.system.xloads= dict(dead_interpolation=None,
 #                          #follower_points=[[1, -1, [1]]],
 #                          dead_points=None,

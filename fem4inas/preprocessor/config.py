@@ -6,6 +6,7 @@ import fem4inas.preprocessor.config as config
 import pathlib
 from ruamel.yaml import YAML
 import jax.numpy as jnp
+import numpy as np
 
 class Config:
 
@@ -65,15 +66,19 @@ def serialize(obj: Config | DataContainer):
 
     dictionary = dict()
     for k, v in obj.__dict__.items():
-        if isinstance(v, jnp.ndarray):
+        # serialise if it is ndarray
+        if isinstance(v, jnp.ndarray) or isinstance(v, np.ndarray):
             v = v.tolist()
+        # ensure the field is public
         if k[0] != "_":
             if isinstance(v, DataContainer):
                 dictionary[k] = serialize(v)
             else:
-                try:
+                # ensure v is not an uninitialised field, which should not be saved
+                if (isinstance(obj, DataContainer) and
+                    obj.__dataclass_fields__[k].init):
                     dictionary[k] = [v, obj.__dataclass_fields__[k].metadata['description']]
-                except AttributeError:
+                else:
                     dictionary[k] = [v, " "]
     return dictionary
 

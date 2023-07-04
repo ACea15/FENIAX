@@ -180,16 +180,6 @@ class Dsimulation(DataContainer):
         if self.systems is not None:
             for k, v in self.systems:
                 setattr(self, k, initialise_Dclass(v, Dsystem))
-    
-
-    
-
-
-    def __post_init__(self):
-
-        
-        self.xloads = initialise_Dclass(self.xloads, Dxloads)
-
 
 if (__name__ == '__main__'):
 
