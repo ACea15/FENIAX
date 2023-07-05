@@ -53,9 +53,12 @@ def build_grid(grid: str | jnp.ndarray | pd.DataFrame | None,
         component_vect = list(df_grid.component.astype('str'))        
     return df_grid, X, fe_order, component_vect
 
-def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list]):
+def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list],
+                                             dict[str: list], int):
     clamped_nodes = list()
     freeDoF = dict()
+    clampedDoF = dict()
+    total_clampedDoF = 0
     for i in fe_order:
         if i < 0:
             clamped_nodes.append(i)
@@ -64,9 +67,11 @@ def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list]):
         if len(fe_ni) == 6: # 100100 format with 1 being DoF clamped
             # picks the index of free DoF
             freeDoF[ni] = [i for i,j in enumerate(fe_ni) if j =='0']
+            clampedDoF[ni] = [i for i,j in enumerate(fe_ni) if j =='1']
+            total_clampedDoF += len(clampedDoF[ni])
         else:
             freeDoF[ni] = []
-    return clamped_nodes, freeDoF
+    return clamped_nodes, freeDoF, clampedDoF, total_clampedDoF
 
 def compute_component_father(component_connectivity:
                              dict[str:list]) -> (list[str], dict[str:list]):
@@ -203,14 +208,20 @@ def compute_Mfe_order(fe_order,
                       component_chain,
                       num_nodes) -> jnp.ndarray:
 
-    M = np.zeros((6 * num_nodes, 6 * num_nodes))
-    for i in range(6 * num_nodes):
-        if i in clamped_nodes:
-            fe_dof = [(6 * (fe_order[i] + 1) + j) for j in freeDoF[i]]
-        else:
-            fe_dof = range(6 * fe_order[i], 6 * fe_order[i] + 6)
-        if len(fe_dof) > 0:
-            M[i, fe_dof] = 1.
+    clamped_dofs = 0
+    total_clampedDoF = 0
+    M = np.zeros((6 * num_nodes, 6 * num_nodes - total_clampedDoF))
+    for fi in range(num_nodes):
+        node_index = int(jnp.where(fe_order == fi)[0])
+        for di in range(6):
+            if node_index in clamped_nodes:
+                if di in freeDoF[node_index]:
+                    M[6 * node_index + di, 6 * fi + clamped_dofs] = 1.
+                    clamped_dofs += 1
+                else:
+                    continue
+            else:
+                M[6 * node_index + di, 6 * fi + di + clamped_dofs] = 1.
 
     return jnp.array(M)
 

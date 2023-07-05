@@ -109,7 +109,8 @@ class Dfem(DataContainer):
         self.component_names, self.component_father = geometry.compute_component_father(
             self.connectivity)
         self.num_nodes = len(self.X)
-        self.clamped_nodes, self.freeDoF = geometry.compute_clamped(self.fe_order)
+        self.clamped_nodes, self.freeDoF, self.clampedDoF, self.total_clampedDoF = \
+            geometry.compute_clamped(self.fe_order)
         self.component_nodes = geometry.compute_component_nodes(self.component_vect)
         self.component_chain = geometry.compute_component_chain(self.component_names,
                                                                 self.connectivity)
@@ -118,7 +119,12 @@ class Dfem(DataContainer):
                                                    self.component_father)
         self.Mavg = geometry.compute_Maverage(self.prevnodes, self.num_nodes)
         self.Mdiff = geometry.compute_Mdiff(self.prevnodes, self.num_nodes)
-        self.Mfe_order = geometry.compute_Mfe_order(self.fe_order, self.num_nodes)
+        self.Mfe_order = geometry.compute_Mfe_order(self.fe_order,
+                                                    self.clamped_nodes,
+                                                    self.freeDoF,
+                                                    self.component_nodes,
+                                                    self.component_chain,
+                                                    self.num_nodes)
         self.Mload_paths = geometry.compute_Mloadpaths(self.component_vect,
                                                        self.component_nodes,
                                                        self.component_chain,
