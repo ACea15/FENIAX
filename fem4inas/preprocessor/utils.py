@@ -6,6 +6,7 @@ import jax.numpy as jnp
 from fem4inas.utils import flatten_list
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
+import pathlib
 
 def dfield(description, **kwargs):
 
@@ -62,6 +63,14 @@ def dump_inputs(data: dict[str:list[Any, str]], ind=0,
                                                        before=v[1],
                                                        indent=2*ind)
     return data
+
+def load_jnp(path):
+
+    if not isinstance(path, pathlib.Path):
+        path = pathlib.Path(path)
+    assert path.is_file(), f"{str(path)} is not a file"
+    A = jnp.load(path)
+    return A
 
 if __name__ == "__main__":
     comp_conn = dict(c1=['c2','c3', 'c5'], c2=None,
