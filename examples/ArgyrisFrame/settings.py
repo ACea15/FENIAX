@@ -10,6 +10,7 @@ inp.engine = "intrinsicmodal"
 inp.fem.connectivity = [[1], []]
 inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.num_modes = 10
+inp.fem.fe_order_start = 1
 config =  Config(inp)
 
 path2config = pathlib.Path("./config.yaml")

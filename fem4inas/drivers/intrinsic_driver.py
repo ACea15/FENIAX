@@ -1,6 +1,6 @@
 import fem4inas.intrinsic.modes as modes
 import fem4inas.simulations
-
+import fem4inas.integrations.integration
 class IntrinsicDriver:
     def __init__(self):
         self.case = None
@@ -35,7 +35,7 @@ class IntrinsicDriver:
 
     def set_integration(self):
         # Configure the integration
-        pass
+        self.integration = 
 
     
     def set_simulation(self):

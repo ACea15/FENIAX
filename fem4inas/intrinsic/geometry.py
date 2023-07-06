@@ -11,9 +11,9 @@ from collections.abc import Iterable
 def find_fem(folder, Ka_name, Ma_name, grid):
 
     #TODO: add assertions
-    if folder is not None:
-        Ka_path = list(pathlib.Path(folder).glob(f"*{Ka_name}*"))[0]
-        Ma_path = list(pathlib.Path(folder).glob(f"*{Ma_name}*"))[0]
+    if folder is not None:        
+        Ka_path = list(pathlib.Path(folder).glob(f"*{Ka_name}"))[0]
+        Ma_path = list(pathlib.Path(folder).glob(f"*{Ma_name}"))[0]
         if isinstance(grid, str):
             grid_path = list(pathlib.Path(folder).glob(f"*{grid}*"))[0]
         else:
@@ -40,7 +40,7 @@ def build_grid(grid: str | jnp.ndarray | pd.DataFrame | None,
                fe_order_start: int,
                component_vect: list[str] | None) -> (pd.DataFrame,
                                                      jnp.ndarray,
-                                                     jnp.ndarray,
+                                                     np.ndarray,
                                                      list[str]):
     if grid is None:
         assert X is not None, "X needs to be provided \
@@ -66,8 +66,8 @@ def build_grid(grid: str | jnp.ndarray | pd.DataFrame | None,
     if not isinstance(X, jnp.ndarray):
         X = jnp.array(df_grid.to_numpy()[:,:3].astype('float'))
     if not isinstance(fe_order, jnp.ndarray):
-        fe_order = jnp.array(df_grid.to_numpy()[:,3:4].astype('int'))
-        fe_order -= fe_order_start 
+        fe_order = df_grid.to_numpy()[:,3:4].astype('int').flatten()
+        fe_order -= fe_order_start
     if not isinstance(component_vect, list):
         component_vect = list(df_grid.component.astype('str'))
     df_grid.fe_order -= fe_order_start
@@ -79,16 +79,16 @@ def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list],
     freeDoF = dict()
     clampedDoF = dict()
     total_clampedDoF = 0
-    
+
     for i in fe_order:
         if i < 0:
             fe_node = str(abs(i))
             if len(fe_node) < 6: # clamped node, format = -1 (node 0),
                 #-5 (node 4) etc
-                import pdb; pdb.set_trace();
-                
                 clamped_nodes.append(abs(i) - 1)
                 freeDoF[clamped_nodes[-1]] = []
+                clampedDoF[clamped_nodes[-1]] = list(range(6))
+                total_clampedDoF += 6
             elif len(fe_node) > 6: #format = -1010117 with
                 # 101011 being clamped/free DoF and abs(-7 + 1)=6
                 # being the multibody node
@@ -99,8 +99,8 @@ def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list],
             else: #len(fe_node) == 6, format = -101011, multibody node assummed at 0
                 clamped_nodes.append(0)
                 # picks the index of free DoF
-                freeDoF[0] = [i for i, j in enumerate(fe_node) if j =='0']
-                clampedDoF[0] = [i for i, j in enumerate(fe_node) if j =='1']
+                freeDoF[0] = [i for i, j in enumerate(fe_node) if j == '0']
+                clampedDoF[0] = [i for i, j in enumerate(fe_node) if j == '1']
                 total_clampedDoF += len(clampedDoF[0])
 
     return clamped_nodes, freeDoF, clampedDoF, total_clampedDoF
@@ -126,7 +126,7 @@ def compute_component_father(component_connectivity:
 
     """
 
-    component_names = component_connectivity.keys()
+    component_names = list(component_connectivity.keys())
     component_father = {ci: None for ci in component_names}
     for k, v in component_connectivity.items():
         if v is not None:
@@ -200,9 +200,9 @@ def compute_prevnode(components_range: Sequence[str],
     return prevnodes
 
 def compute_component_children(component_name: str,
-                               component_connectivity: dict[str:list],
+                               component_connectivity: dict[str:list[str | int]],
                                chain:list = None):
-    
+
     if chain is None:
         chain = list()
     component_name = str(component_name) # in case components are defined with numbers
@@ -210,13 +210,13 @@ def compute_component_children(component_name: str,
     if children_components is None or len(children_components) == 0:
         pass
     else:
-        chain += children_components
+        chain += [str(cci) for cci in children_components]
         for ci in children_components:
             compute_component_children(ci, component_connectivity, chain)
     return chain
 
 def compute_component_chain(component_names: list[str],
-                            component_connectivity: dict[str:list]):
+                            component_connectivity: dict[str:list[str | int]]):
 
     component_chain = {k: compute_component_children(k, component_connectivity)
                        for k in component_names}
@@ -225,19 +225,24 @@ def compute_component_chain(component_names: list[str],
 def compute_Maverage(prevnodes: Sequence[int], num_nodes: int) -> jnp.ndarray:
 
     M = np.eye(num_nodes)
+    M[0,0] = 0. # first node should be made 0 since we have Nn - 1 elements:
+    # given a structure like *--o--*--o--*, tensors are given in '*', but
+    # only the quantity at 'o' is of interest 
     for i in range(1, num_nodes):
         M[prevnodes[i], i] = 1
     M *= 0.5
     return jnp.array(M)
 
-def compute_Mdiff(prevnodes: Sequence[int], num_nodes: int) -> jnp.ndarray:
+def compute_Mdiff(prevnodes: Sequence[int],
+                  num_nodes: int) -> jnp.ndarray:
 
     M = np.eye(num_nodes)
+    M[0,0] = 0.
     for i in range(1, num_nodes):
         M[prevnodes[i], i] = -1
     return jnp.array(M)
 
-def compute_Mfe_order(fe_order,
+def compute_Mfe_order(fe_order: np.ndarray,
                       clamped_nodes,
                       freeDoF,
                       total_clampedDoF,
@@ -247,8 +252,7 @@ def compute_Mfe_order(fe_order,
 
     clamped_dofs = 0
     M = np.zeros((6 * num_nodes, 6 * num_nodes - total_clampedDoF))
-    for fi in range(num_nodes):
-        node_index = int(jnp.where(fe_order == fi)[0])
+    for fi, node_index in zip(np.sort(fe_order), np.argsort(fe_order)):
         for di in range(6):
             if node_index in clamped_nodes:
                 if di in freeDoF[node_index]:
@@ -262,7 +266,7 @@ def compute_Mfe_order(fe_order,
     return jnp.array(M)
 
 def compute_Mloadpaths(components_range,
-                       component_nodes,
+                       component_nodes: dict[str:list[int]],
                        component_chain,
                        num_nodes) -> jnp.ndarray:
 
@@ -276,7 +280,7 @@ def compute_Mloadpaths(components_range,
             j = 0
             current_component = ci
         ci_nodes = component_nodes[ci]
-        ci_children = component_chain[ci]
+        ci_children = component_chain[ci]        
         ci_children_nodes = flatten_list([component_nodes[k] for
                                           k in ci_children])
         M[ci_children_nodes, i] = 1.

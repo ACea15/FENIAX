@@ -11,9 +11,12 @@ class SerialSimulation(Simulation, name="serial"):
 
     def _run(self):
         # Implement _run for SerialSimulation
-        pass
+        for si in self.systems:
+            si.set_ic()
+            q = si.solve()
+            self._post_run(q)
 
-    def _post_run(self):
+    def _post_run(self, q):
         # Implement _post_run for SerialSimulation
         pass
 

@@ -26,8 +26,8 @@ def main(input_file=None, input_dict=None, input_obj=None):
                                      input_obj is None):
         config = input_obj
 
-    driver = fem4inas.drivers.factory(config.engine)
-    
+    Driver = fem4inas.drivers.factory(config.engine)
+    driver = Driver(config)
     driver.pre_simulation()
     driver.run_cases()
 
