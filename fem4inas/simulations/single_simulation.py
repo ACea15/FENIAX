@@ -15,7 +15,6 @@ class SingleSimulation(Simulation, name="single"):
 
         self.system.set_ic()
         sol = self.system.solve()
-        
 
     def _post_run(self):
         # Implement _post_run for SerialSimulation

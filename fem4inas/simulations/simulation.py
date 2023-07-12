@@ -4,6 +4,12 @@ __SIMULATION_DICT__ = dict()
 
     
 class Simulation(ABC):
+
+    def __init__(self, sol, config):
+
+        self.sol = sol
+        self.config = config
+        
     @abstractmethod
     def trigger(self):
         pass

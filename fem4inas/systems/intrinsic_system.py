@@ -1,4 +1,7 @@
-class IntrinsicSystem():
+from  fem4inas.systems.system import System
+
+class IntrinsicSystem(System):
+    
     def set_ic(self, q0):
         self.q0 = q0
 

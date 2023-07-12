@@ -161,6 +161,11 @@ class Dfem(DataContainer):
 @dataclass(frozen=True)
 class Ddriver(DataContainer):
 
+    solution_path: str | pathlib.Path = dfield("Folder path to save results",
+                                                default=None)
+    compute_presimulation: bool = dfield("Folder path to save results",
+                                         default=True)
+
     subcases: dict[str:Dxloads] = dfield("", default=None)
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
