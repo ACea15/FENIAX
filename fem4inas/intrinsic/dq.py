@@ -45,46 +45,47 @@ def q_static_for(q2, omega, gamma2, eta=0.):
     return res
 
 
-import time
+if __name__ == "__main__":
+    import time
 
-NUM_MODES = 70
-NUM_ITER = 1000
-st1 = time.time()
-res = np.zeros(NUM_MODES)
-for i in range(NUM_ITER):
-    omega = np.arange(i,i+NUM_MODES, dtype=float)
-    q2 = np.arange(i,i+NUM_MODES, dtype=float) / NUM_MODES**4
-    gamma2 = np.arange(NUM_MODES**3, dtype=float).reshape((NUM_MODES,
-                                                           NUM_MODES, NUM_MODES ))
-    res += q_static_np(q2, omega, gamma2)
-time1 = time.time() - st1
+    NUM_MODES = 70
+    NUM_ITER = 1000
+    st1 = time.time()
+    res = np.zeros(NUM_MODES)
+    for i in range(NUM_ITER):
+        omega = np.arange(i,i+NUM_MODES, dtype=float)
+        q2 = np.arange(i,i+NUM_MODES, dtype=float) / NUM_MODES**4
+        gamma2 = np.arange(NUM_MODES**3, dtype=float).reshape((NUM_MODES,
+                                                               NUM_MODES, NUM_MODES ))
+        res += q_static_np(q2, omega, gamma2)
+    time1 = time.time() - st1
 
-st1 = time.time()
-res2 = jnp.zeros(NUM_MODES)
-for i in range(NUM_ITER):
-    omega = jnp.arange(i, i+NUM_MODES, dtype=float)
-    q2 = jnp.arange(i, i+NUM_MODES, dtype=float) / NUM_MODES**4
-    gamma2 = jnp.arange(NUM_MODES**3, dtype=float).reshape((NUM_MODES,
-                                                           NUM_MODES, NUM_MODES ))
-    res2 += q_static_ein(q2, omega, gamma2)
-time2 = time.time() - st1
+    st1 = time.time()
+    res2 = jnp.zeros(NUM_MODES)
+    for i in range(NUM_ITER):
+        omega = jnp.arange(i, i+NUM_MODES, dtype=float)
+        q2 = jnp.arange(i, i+NUM_MODES, dtype=float) / NUM_MODES**4
+        gamma2 = jnp.arange(NUM_MODES**3, dtype=float).reshape((NUM_MODES,
+                                                               NUM_MODES, NUM_MODES ))
+        res2 += q_static_ein(q2, omega, gamma2)
+    time2 = time.time() - st1
 
-st1 = time.time()
-res3 = jnp.zeros(NUM_MODES)
-for i in range(NUM_ITER):
-    omega = jnp.arange(i, i+NUM_MODES, dtype=float)
-    q2 = jnp.arange(i, i+NUM_MODES, dtype=float) / NUM_MODES**4
-    gamma2 = jnp.arange(NUM_MODES**3, dtype=float).reshape((NUM_MODES,
-                                                           NUM_MODES, NUM_MODES ))
-    res3 += q_static_td(q2, omega, gamma2)
-time3 = time.time() - st1
+    st1 = time.time()
+    res3 = jnp.zeros(NUM_MODES)
+    for i in range(NUM_ITER):
+        omega = jnp.arange(i, i+NUM_MODES, dtype=float)
+        q2 = jnp.arange(i, i+NUM_MODES, dtype=float) / NUM_MODES**4
+        gamma2 = jnp.arange(NUM_MODES**3, dtype=float).reshape((NUM_MODES,
+                                                               NUM_MODES, NUM_MODES ))
+        res3 += q_static_td(q2, omega, gamma2)
+    time3 = time.time() - st1
 
-st1 = time.time()
-res4 = np.zeros(NUM_MODES)
-for i in range(NUM_ITER):
-    omega = np.arange(i,i+NUM_MODES, dtype=float)
-    q2 = np.arange(i,i+NUM_MODES, dtype=float) / NUM_MODES**4
-    gamma2 = np.arange(NUM_MODES**3, dtype=float).reshape((NUM_MODES,
-                                                           NUM_MODES, NUM_MODES ))
-    res4 += q_static_for(q2, omega, gamma2)
-time4 = time.time() - st1
+    st1 = time.time()
+    res4 = np.zeros(NUM_MODES)
+    for i in range(NUM_ITER):
+        omega = np.arange(i,i+NUM_MODES, dtype=float)
+        q2 = np.arange(i,i+NUM_MODES, dtype=float) / NUM_MODES**4
+        gamma2 = np.arange(NUM_MODES**3, dtype=float).reshape((NUM_MODES,
+                                                               NUM_MODES, NUM_MODES ))
+        res4 += q_static_for(q2, omega, gamma2)
+    time4 = time.time() - st1

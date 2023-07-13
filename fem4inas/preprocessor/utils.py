@@ -7,6 +7,8 @@ from fem4inas.utils import flatten_list
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
 import pathlib
+from fem4inas.preprocessor.config import Config
+import argparse
 
 def dfield(description, **kwargs):
 
@@ -71,6 +73,31 @@ def load_jnp(path):
     assert path.is_file(), f"{str(path)} is not a file"
     A = jnp.load(path)
     return A
+
+def initialise_config(input_file: str = None,
+                      input_dict: dict = None,
+                      input_obj: Config = None) -> Config:
+
+
+    if input_dict is None and input_obj is None:  # inputs given as .yaml file
+        parser = argparse.ArgumentParser(prog='FEM4INAS', description=
+        """This is the executable of Fininte-Element Models for
+        Intrinsic Nonlinear Aeroelastic Simulations.""")
+        parser.add_argument('input_file', help='path to the *.yaml input file',
+                            type=str, default='')
+        if input_file is not None: #running from within python file
+            args = parser.parse_args(input_file)
+        else: # running from command line
+            args = parser.parse_args()
+        config = Config.from_file(args.input_file)
+    elif input_dict is not None and (input_file is None and
+                                     input_obj is None):  # inputs given as dict
+        config = Config(input_dict)
+
+    elif input_dict is not None and (input_file is None and
+                                     input_obj is None):  #  inputs directly as Config
+        config = input_obj
+    return config
 
 if __name__ == "__main__":
     comp_conn = dict(c1=['c2','c3', 'c5'], c2=None,

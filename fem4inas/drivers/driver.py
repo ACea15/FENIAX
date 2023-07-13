@@ -1,17 +1,9 @@
 from abc import ABC, abstractmethod
 
-from abc import ABC, abstractmethod
+__DRIVER_DICT__ = dict()
 
-class Case(ABC):
-    pass
 
-class Integration(ABC):
-    pass
-
-class Simulation(ABC):
-    pass
-
-class Driver:
+class Driver(ABC):
     def __init__(self):
         self.case = None
         self.integration = None
@@ -35,16 +27,9 @@ class Driver:
         # Configure the simulation
         pass
 
-class DIntrinsicModal:
-
-    def build():
-        ...
-        # calculate_modes
-        # calculate_tensors
-
-    def run():
-        ...
-
-    def postprocess():
-        ...
-    
+    def __init_subclass__(cls, **kwargs):
+        assert "cls_name" in kwargs
+        super().__init_subclass__()
+        if kwargs["cls_name"] in __DRIVER_DICT__:
+            raise ValueError("Name %s already registered!" % kwargs["cls_name"])
+        __DRIVER_DICT__[kwargs["cls_name"]] = cls

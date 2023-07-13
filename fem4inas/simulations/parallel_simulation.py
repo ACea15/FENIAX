@@ -1,6 +1,6 @@
 from fem4inas.simulations.simulation import Simulation
 
-class ParallelSimulation(Simulation, name="parallel"):
+class ParallelSimulation(Simulation, cls_name="parallel"):
     def trigger(self):
         # Implement trigger for SerialSimulation
         pass

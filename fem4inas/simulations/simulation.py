@@ -5,10 +5,11 @@ __SIMULATION_DICT__ = dict()
     
 class Simulation(ABC):
 
-    def __init__(self, sol, config):
+    def __init__(self, systems, sol, settings):
 
+        self.systems = systems
         self.sol = sol
-        self.config = config
+        self.settings = settings
         
     @abstractmethod
     def trigger(self):
@@ -27,9 +28,9 @@ class Simulation(ABC):
         pass
 
     def __init_subclass__(cls, **kwargs):
-        assert "name" in kwargs
+        assert "cls_name" in kwargs
         super().__init_subclass__()
-        if kwargs["name"] in __SIMULATION_DICT__:
-            raise ValueError("Name %s already registered!" % kwargs["name"])
-        __SIMULATION_DICT__[kwargs["name"]] = cls
+        if kwargs["cls_name"] in __SIMULATION_DICT__:
+            raise ValueError("Name %s already registered!" % kwargs["cls_name"])
+        __SIMULATION_DICT__[kwargs["cls_name"]] = cls
 

@@ -1,25 +1,21 @@
 from fem4inas.simulations.simulation import Simulation
 
-class SingleSimulation(Simulation, name="single"):
-
-    def __init__(self, system):
-
-        self.system = system
+class SingleSimulation(Simulation, cls_name="single"):
         
     def trigger(self):
         # Implement trigger for SerialSimulation
-        pass
+        self._run_systems()
 
-    def _run(self):
+    def _run_systems(self):
         # Implement _run for SerialSimulation
 
-        self.system.set_ic()
-        sol = self.system.solve()
+        for k, sys in self.systems.items():
+            sys.set_ic()
+            sol = sys.solve()
+            qs = sys.pull_solution()
+            
 
     def _post_run(self):
         # Implement _post_run for SerialSimulation
         pass
 
-    def pull_solution(self):
-        # Implement pull_solution for SerialSimulation
-        pass

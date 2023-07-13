@@ -1,6 +1,8 @@
 from  fem4inas.systems.system import System
+import fem4inas.systems.sollibs as sollibs
+import fem4inas.intrinsic.dq as dq
 
-class IntrinsicSystem(System):
+class IntrinsicSystem(System, cls_name="intrinsic"):
     
     def set_ic(self, q0):
         self.q0 = q0
@@ -10,16 +12,19 @@ class IntrinsicSystem(System):
 
     def set_generator(self):
 
-        self.Fdq = None
+        self.dFq = getattr(dq, self.settings.label)
 
     def set_solver(self):
 
-        self.eqsolver = getattr(self._library, self.sol_engine)
-        
+        self.eqsolver = sollibs.factory(
+            self.settings.solver_library,
+            self.settings.solver_function)
 
     def solve(self):
 
-        sol = self.eqsolver(self.Fdq, self.q0, **self.sol_settings)
+        sol = self.eqsolver(self.dFq,
+                            self.q0,
+                            **self.settings.solver_settings)
         return sol
 
         

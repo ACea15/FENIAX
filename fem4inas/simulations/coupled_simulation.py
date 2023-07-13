@@ -1,6 +1,6 @@
 from fem4inas.simulations.simulation import Simulation
 
-class CoupledSimulation(Simulation, name="coupled"):
+class CoupledSimulation(Simulation, cls_name="coupled"):
     def trigger(self):
         # Implement trigger for SerialSimulation
         pass

@@ -6,7 +6,7 @@ import pathlib
 import pandas as pd
 
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass, dump_inputs
-from fem4inas.preprocessor.inputs import Inputs, dump_to_yaml
+from fem4inas.preprocessor.inputs import Config, dump_to_yaml
 from fem4inas.preprocessor.config import Config
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
@@ -22,7 +22,7 @@ c1.engine = "intrinsicmodal"
 c1.fem.folder = 'ff'
 c1.fem.connectivity = [[]]
 c1.fem.Ka = 'hello'
-config = Inputs(c1)
+config = Config(c1)
 
 #data_yaml = dump_inputs({'a': [5, 'rr'], 'b':{'b1':[1," "]}})
 

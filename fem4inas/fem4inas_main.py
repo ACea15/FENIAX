@@ -1,34 +1,43 @@
 """FEM4INAS main"""
-import argparse
 import fem4inas.drivers
-from fem4inas.preprocessor.inputs import Config
+from fem4inas.preprocessor.config import Config
+from fem4inas.preprocessor.utils import initialise_config
+from fem4inas.drivers.driver import Driver
+from fem4inas.preprocessor.solution import Solution
 
-def main(input_file=None, input_dict=None, input_obj=None):
+def main(input_file: str = None,
+         input_dict: dict = None,
+         input_obj: Config = None,
+         return_driver: bool = False) -> Solution | Driver:
+    """Main ``FEM4INAS`` routine
+
+
+    Parameters
+    ----------
+    input_file : str
+        Path to YAML input file
+    input_dict : dict
+        Alternatively, dictionary with the settings to be loaded into
+        the Config object.
+    input_obj : Config
+        Alternatively input the Config object directly.
+
+    Returns
+    -------
+    Solution
+        Data object with the numerical solution saved along the
+        process.
+
     """
-    Main ``FEM4INAS`` routine
 
-    """
-    if input_dict is None and input_obj is None:
-        parser = argparse.ArgumentParser(prog='FEM4INAS', description=
-        """This is the executable of Fininte-Element Models for Intrinsic Nonlinear Aeroelastic Simulations.""")
-        parser.add_argument('input_file', help='path to the *.yml input file',
-                            type=str, default='')
-        if input_file is not None:
-            args = parser.parse_args(input_file)
-        else:
-            args = parser.parse_args()
-            
-    elif input_dict is not None and (input_file is None and
-                                     input_obj is None):
-        config = Config()
-
-    elif input_dict is not None and (input_file is None and
-                                     input_obj is None):
-        config = input_obj
-
-    Driver = fem4inas.drivers.factory(config.engine)
+    config = initialise_config(input_file, input_dict, input_obj)
+    Driver = fem4inas.drivers.factory(config.driver.typeof)
     driver = Driver(config)
     driver.pre_simulation()
-    driver.run_cases()
+    driver.run_case()
 
+    if return_driver:  # return driver object for inspection
+        return driver
+    else:  # just return the solution data
+        return driver.sol
 

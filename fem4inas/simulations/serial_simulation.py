@@ -1,6 +1,6 @@
 from fem4inas.simulations.simulation import Simulation
 
-class SerialSimulation(Simulation, name="serial"):
+class SerialSimulation(Simulation, cls_name="serial"):
 
     def init_systems(self):
         ...

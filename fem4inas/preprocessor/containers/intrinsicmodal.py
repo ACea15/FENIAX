@@ -170,7 +170,6 @@ class Ddriver(DataContainer):
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
 
-
 @dataclass(frozen=False)
 class Dsystem(DataContainer):
 
@@ -182,11 +181,16 @@ class Dsystem(DataContainer):
     dt: float = dfield("Delta time", default=None)
     t: jnp.array = dfield("Time vector", default=None)
     solver_library: str = dfield("Library solving our system of equations", default=None)
-    solver_name: str = dfield(
+    solver_function: str = dfield(
         "Name for the solver of the previously defined library", default=None)
+    solver_settings: str = dfield(
+        "Name for the solver of the previously defined library", default=None)
+
     typeof: str | int = dfield("Type of system to be solved",
                                default='single',
-                               options=['single', 'serial', 'parallel'])
+                               options=['single',
+                                        'serial',
+                                        'parallel'])
 
     def __post_init__(self):
 
@@ -195,6 +199,16 @@ class Dsystem(DataContainer):
     def _set_label(self):
         ...
 
+@dataclass(frozen=False)
+class Dsystems(DataContainer):
+
+    settings: dict = dfield("System name")
+
+    def __post_init__(self):
+
+        for k, v in self.settings.items():
+            self.sys[k] = initialise_Dclass(
+                v, Dsystem)
 
 @dataclass(frozen=True)
 class Dsimulation(DataContainer):

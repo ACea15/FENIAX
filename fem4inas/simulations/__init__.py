@@ -1,9 +1,9 @@
-__all__ = ["factory_method"]
+__all__ = ["factory"]
 import os
 import importlib
-from fem4inas.simulations.simulation import Simulation, __SIMULATION_DICT__
+from fem4inas.simulations.simulation import __SIMULATION_DICT__
 
-def factory_method(name):
+def factory(name):
     return __SIMULATION_DICT__[name]
 
 for file in os.listdir(os.path.dirname(__file__)):
