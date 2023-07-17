@@ -35,6 +35,10 @@ class System(ABC):
     def save(self):
         pass
 
+    @abstractmethod
+    def pull_solution(self):
+        pass
+
     def __init_subclass__(cls, **kwargs):
         assert "cls_name" in kwargs
         super().__init_subclass__()

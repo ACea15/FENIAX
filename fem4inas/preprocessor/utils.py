@@ -38,12 +38,12 @@ def dfield(description, **kwargs):
             init=init, **kwargs
         )
 
-def initialise_Dclass(data, Dclass):
+def initialise_Dclass(data, Dclass, **kwargs):
 
     if data is None:
         return Dclass()
     elif isinstance(data, dict):
-        return Dclass(**data)
+        return Dclass(**(data | kwargs))
     elif isinstance(data, Dclass):
         return data
     else:

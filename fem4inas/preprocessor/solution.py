@@ -63,6 +63,12 @@ class Solution(ABC):
         """Save the self object to pickle file"""
         ...
 
+    def add_dict(self, name, label, obj):
+
+        if not hasattr(self, name):
+            setattr(self, name, dict())
+        self.name[label] = obj
+        
 class IntrinsicSolution(Solution):
         
     def set_solcontainer(self):

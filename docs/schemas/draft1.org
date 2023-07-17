@@ -361,109 +361,133 @@
 #+Name: classes_architecture2
 #+begin_src plantuml :file classes2.png
 
-  abstract class IntrinsicDriver {
-          #integration: IntrinsicIntegration
-          #simulation: Simulation
-          #opt: Optimisation
-          #systems: [System]
-              -__init__(config: Config)
+   abstract Driver {
           +pre_simulation()
           +run_cases()
-          #_set_case()
-          #_set_integration()
-          #_set_simulation()
-          #_set_systems()	
   }
 
-  /'
-   ' abstract class Integration {
-   '         +run()
-   ' }
-   '/
+   class IntrinsicDriver {
+           #integration: IntrinsicIntegration
+           #simulation: Simulation
+           #opt: Optimisation
+           #systems: [System]
+           -__init__(config: Config)
+           #_set_case()
+           #_set_integration()
+           #_set_simulation()
+           #_set_systems()
+   }
 
-  class IntrinsicIntegration {
-	      + <math>Gamma_{1,2} </math>
-          +run()
-          #_compute_modalshapes()
-          #_compute_modalcouplings()
-  }
+   class  XLoads {
+           +q: [jnp.ndarray]
+           +Rab: [jnp.ndarray]
+           +GAFs: [jnp.ndarray]
+           -__init__(config.systems.loads,
+          q, Rab, GAFs)
+           +followerF()
+           +deadF()
+           +gravityF()
+           +modalAero()
+           }
 
-  abstract class Simulation {
-          +systems: [System]
-              #workflow: dict[str:str]
-          +trigger()
-          #run_systems()
-          #post_run()
-  }
+   /'
+    ' abstract class Integration {
+    '         +run()
+    ' }
+    '/
 
-  /'
-   ' package Simulations {
-   '         class SerialSimulation {
-   '         }
-   '         class ParallelSimulation {
-   '         }
-   '         class SingleSimulation {
-   '         }
-   '         class CoupledSimulation {
-   '         }
-   ' }
-   '/
+   class IntrinsicIntegration {
+                   + <math>phi_1, phi_2, psi_1, psi_2</math>
+                   + <math>Gamma_1, Gamma_2 </math>
+                   -__init__(X, Ka, Ma)		
+                   +run()
+                   #compute_modalshapes()
+                   #compute_modalcouplings()
+   }
 
-  class SerialSimulation {
-  }
-  class ParallelSimulation {
-  }
-  class SingleSimulation {
-  }
-  class CoupledSimulation {
-  }
+   abstract class Simulation {
+                   +systems: [System]
+                   #workflow: dict[str:str]
+                       #opt: Optimisation
+                   -__init__(config.simulation,
+                  systems, opt, config.simulation)
+                   +trigger()
+                   #run_systems()
+                   #post_run()
+           }
 
-  abstract class System {
-          +set_ic(q0)
-          +solve() -> sol
-          +pull_solution() -> qs
-          #set_generator()
-          #set_solver()
-  }
+   /'
+    ' package Simulations {
+    '         class SerialSimulation {
+    '         }
+    '         class ParallelSimulation {
+    '         }
+    '         class SingleSimulation {
+    '         }
+    '         class CoupledSimulation {
+    '         }
+    ' }
+    '/
 
-  class IntrinsicSystem {
-        -dq: callable
-        -solver: callable
-  }
+   class SerialSimulation {
+   }
+   class ParallelSimulation {
+   }
+   class SingleSimulation {
+   }
+   class CoupledSimulation {
+   }
 
-  class ControlSystem {
-  }
+   abstract class System {
+           +set_ic(q0)
+           +solve() -> sol
+           +pull_solution() -> qs
+   }
 
-  class MultibodySystem {
-  }
+   class IntrinsicSystem {
+          -dq: callable
+          -solver: callable
+          +sol: obj
+          #set_generator() -> dq
+          #set_solver() -> solver
 
-     /'
-      ' Simulation <|-- SerialSimulation
-      ' Simulation <|-- ParallelSimulation
-      ' Simulation <|-- SingleSimulation
-      ' Simulation <|-- CoupledSimulation
-      '/
-  abstract class Optimisation {
-        -save_grads()
-        -assemble()
-  }
+   }
 
-  'Simulation <|-- Simulations
-  Simulation <|-- SingleSimulation
-  SingleSimulation -- SerialSimulation 
-  SerialSimulation -- ParallelSimulation
-  ParallelSimulation -- CoupledSimulation					
-  'Driver "1" -- "1" Integration : composition
-  'Driver "1" -- "1" Simulation : composition'
-  IntrinsicIntegration  -* IntrinsicDriver
-  IntrinsicDriver  *-- Optimisation						
-  IntrinsicDriver  *-- Simulation
-  IntrinsicDriver  *- System
-  System ..> Simulation
-  'Integration <|-- IntrinsicIntegration
-  System  <|-- IntrinsicSystem
-  IntrinsicSystem -- ControlSystem
-  ControlSystem -- MultibodySystem
+   class ControlSystem {
+   }
+
+   class MultibodySystem {
+   }
+
+      /'
+       ' Simulation <|-- SerialSimulation
+       ' Simulation <|-- ParallelSimulation
+       ' Simulation <|-- SingleSimulation
+       ' Simulation <|-- CoupledSimulation
+       '/
+   abstract class Optimisation {
+         +save_grads()
+         +assemble()
+   }
+
+   'Simulation <|-- Simulations
+   Simulation <|-- SingleSimulation
+   SingleSimulation -- SerialSimulation 
+   SerialSimulation -- ParallelSimulation
+   ParallelSimulation -- CoupledSimulation					
+   'Driver "1" -- "1" Integration : composition
+   'Driver "1" -- "1" Simulation : composition'
+   IntrinsicIntegration  -* IntrinsicDriver
+   Driver <|-- IntrinsicDriver
+   IntrinsicDriver  *-- Optimisation						
+   IntrinsicDriver  *-- Simulation
+   IntrinsicDriver  *- System
+   System ..> Simulation
+   'Integration <|-- IntrinsicIntegration
+   System  <|-- IntrinsicSystem
+   IntrinsicSystem -- ControlSystem
+   IntrinsicSystem o- XLoads
+   ControlSystem -- MultibodySystem
 
 #+end_src
 
@@ -480,7 +504,7 @@ node math [
 #+RESULTS: classes_architecture3
 [[file:classes3.png]]
 
-* Modules
+* ModulesH
 ** Geometryrb
 *** geometry_def(Grid,NumBeams,BeamConn,start_reading,beam_start,nodeorder_start,node_start,Clamped,ClampX,BeamsClamped,MBbeams=[])
 BeamSeg([NumBeams]){

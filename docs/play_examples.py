@@ -203,7 +203,39 @@ t1 = 140
 dt0 = 0.1
 y0 = (10.0, 10.0)
 args = (0.1, 0.02, 0.4, 0.02)
-#saveat = SaveAt(ts=jnp.linspace(t0, t1, 1000))
-sol = diffeqsolve(term, solver, t0, t1, dt0, y0, args=args)
+saveat = SaveAt(ts=jnp.linspace(t0, t1, 1000))
+sol = diffeqsolve(term, solver, t0, t1, dt0, y0,saveat=saveat, args=args)
 
 
+# scan
+import numpy as np
+wealth_record = []
+starting_wealth = 100.0
+interest_factor = 1.01
+num_timesteps = 100
+prev_wealth = starting_wealth
+
+for t in range(num_timesteps):
+    new_wealth = prev_wealth * interest_factor
+    wealth_record.append(prev_wealth)
+    prev_wealth = new_wealth
+
+wealth_record = np.array(wealth_record)
+
+from functools import partial
+import jax.lax
+
+def wealth_at_time(prev_wealth, time, interest_factor):
+    # The lax.scannable function to compute wealth at a given time.
+    # your answer here
+    return  (interest_factor)*prev_wealth, prev_wealth
+
+
+# Comment out the import to test your answer
+#from dl_workshop.jax_idioms import lax_scan_ex_1 as wealth_at_time
+
+wealth_func = partial(wealth_at_time, interest_factor=interest_factor)
+timesteps = np.arange(num_timesteps)
+final, result = jax.lax.scan(wealth_func, init=starting_wealth, xs=timesteps)
+
+assert np.allclose(wealth_record, result)

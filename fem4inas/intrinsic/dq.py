@@ -3,49 +3,69 @@ import numpy as np
 from jax import jit
 from jax.config import config; config.update("jax_enable_x64", True)
 
-@jit
-def q_static_ein(q2, omega, gamma2, eta=0.):
+def contraction_gamma1(gamma1: jnp.ndarray, q1:jnp.ndarray) -> jnp.ndarray:
 
-    res = omega * q2
-    res += jnp.einsum('ijk,jk->i',gamma2, jnp.tensordot(q2, q2, axes=0))
-    #res += eta(q2)
-
+    res = jnp.einsum('ijk,jk->i', gamma1,
+                     jnp.tensordot(q1, q1, axes=0))
     return res
 
-@jit
-def q_static_td(q2, omega, gamma2, eta=0.):
+def contraction_gamma2(gamma2: jnp.ndarray, q2:jnp.ndarray) -> jnp.ndarray:
 
-    res = omega * q2
-    res += jnp.tensordot(gamma2, jnp.tensordot(q2, q2, axes=0), axes=([1,2],
-                                                                      [0,1]))
-    #res += eta(q2)
-
+    res = jnp.einsum('ijk,jk->i', gamma2,
+                     jnp.tensordot(q2, q2, axes=0))
     return res
 
-def q_static_np(q2, omega, gamma2, eta=0.):
+def contraction_gamma3(gamma2: jnp.ndarray, q1: jnp.ndarray,
+                       q2: jnp.ndarray) -> jnp.ndarray:
 
-    res = omega * q2
-    res += np.tensordot(gamma2, np.tensordot(q2, q2, axes=0), axes=([1,2],
-                                                                    [0,1]))
-    #res += eta(q2)
-
-    return res
-
-def q_static_for(q2, omega, gamma2, eta=0.):
-
-    nm = len(q2)
-    res = np.zeros(nm)
-    for i in range(nm):
-        res[i] = omega[i] * q2[i]
-        for j in range(nm):
-            for k in range(nm):
-                res[i] += gamma2[i][j][k] * q2[j] * q2[k]
-                #res += eta(q2)
-
+    res = jnp.einsum('jik,jk->i', gamma2,
+                     jnp.tensordot(q1, q2, axes=0))
     return res
 
 
 if __name__ == "__main__":
+
+    @jit
+    def q_static_ein(q2, omega, gamma2, eta=0.):
+
+        res = omega * q2
+        res += jnp.einsum('ijk,jk->i',gamma2, jnp.tensordot(q2, q2, axes=0))
+        #res += eta(q2)
+
+        return res
+
+    @jit
+    def q_static_td(q2, omega, gamma2, eta=0.):
+
+        res = omega * q2
+        res += jnp.tensordot(gamma2, jnp.tensordot(q2, q2, axes=0), axes=([1,2],
+                                                                          [0,1]))
+        #res += eta(q2)
+
+        return res
+
+    def q_static_np(q2, omega, gamma2, eta=0.):
+
+        res = omega * q2
+        res += np.tensordot(gamma2, np.tensordot(q2, q2, axes=0), axes=([1,2],
+                                                                        [0,1]))
+        #res += eta(q2)
+
+        return res
+
+    def q_static_for(q2, omega, gamma2, eta=0.):
+
+        nm = len(q2)
+        res = np.zeros(nm)
+        for i in range(nm):
+            res[i] = omega[i] * q2[i]
+            for j in range(nm):
+                for k in range(nm):
+                    res[i] += gamma2[i][j][k] * q2[j] * q2[k]
+                    #res += eta(q2)
+
+        return res
+    
     import time
 
     NUM_MODES = 70

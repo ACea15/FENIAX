@@ -7,7 +7,14 @@ import pandas as pd
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass, load_jnp
 from fem4inas.preprocessor.containers.data_container import DataContainer
 import fem4inas.intrinsic.geometry as geometry
+from enum import Enum
 
+class Solution(Enum):
+    STATIC = 0
+    DYNAMIC = 1
+    MULTIBODY = 2
+    STABILITY = 3
+    
 @dataclass(frozen=True)
 class Dconst(DataContainer):
 
@@ -26,16 +33,17 @@ class Dconst(DataContainer):
     def __post_init__(self):
 
         self.EMATT = self.EMATT.T
+        
 @dataclass(frozen=True)
 class Dfiles(DataContainer):
 
     folder_in: str | pathlib.Path
     folder_out: str | pathlib.Path
-    config_file: str | pathlib.Path
+    config: str | pathlib.Path
 
 
 @dataclass(frozen=False)
-class Dxloads(DataContainer):
+class D_xloads(DataContainer):
     
     follower_points: list[list[int | str]] = dfield(
         "Follower force points [component, Node, coordinate]",
@@ -58,12 +66,18 @@ class Dxloads(DataContainer):
                             default=9.807)
     gravity_vect: jnp.ndarray = dfield("gravity vector",
                                        default=jnp.array([0, 0, -1]))
-    gravity_forces: bool = dfield("Include gravity in the analysis", default=False)
     follower_forces: bool = dfield("Include follower forces", default=False)
     dead_forces: bool = dfield("Include dead forces", default=False)
+    gravity_forces: bool = dfield("Include gravity in the analysis", default=False)    
     aero_forces: bool = dfield("Include aerodynamic forces", default=False)
+    label: str = dfield("""Description of the loading type:
+    '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""", init=False)
 
+    def __post_init__(self):
 
+        self.label = f"{int(self.follower_forces)}\
+        {int(self.dead_forces)}{self.gravity_forces}{self.aero_forces}"
+    
 # @dataclass(frozen=True)
 # class Dgeometry:
 
@@ -166,49 +180,73 @@ class Ddriver(DataContainer):
     compute_presimulation: bool = dfield("Folder path to save results",
                                          default=True)
 
-    subcases: dict[str:Dxloads] = dfield("", default=None)
+    subcases: dict[str:D_xloads] = dfield("", default=None)
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
 
 @dataclass(frozen=False)
-class Dsystem(DataContainer):
+class D_system(DataContainer):
 
     name: str = dfield("System name")
-    xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
+    xloads: dict | D_xloads = dfield("External loads dataclass", default=None)
     t0: float = dfield("Initial time", default=0.)
     t1: float = dfield("Final time", default=1.)
     tn: int = dfield("Number of time steps", default=None)
     dt: float = dfield("Delta time", default=None)
     t: jnp.array = dfield("Time vector", default=None)
-    solver_library: str = dfield("Library solving our system of equations", default=None)
+    solver_library: str = dfield("Library solving our system of equations", default="Diffrax")
     solver_function: str = dfield(
         "Name for the solver of the previously defined library", default=None)
     solver_settings: str = dfield(
         "Name for the solver of the previously defined library", default=None)
 
-    typeof: str | int = dfield("Type of system to be solved",
-                               default='single',
-                               options=['single',
-                                        'serial',
-                                        'parallel'])
+    solution: str | int = dfield("Type of solution to be solved",
+                                 options=['static',
+                                          'dynamic',
+                                          'multibody',
+                                          'stability'])
+    nonlinear: bool = dfield(
+        "whether to include the nonlinear terms in the eqs. (Gammas)", default=True)
+    residualise: bool = dfield(
+        "average the higher frequency eqs and make them algebraic", default=False)
+    residual_modes: int = dfield(
+        "number of modes to residualise", default=0)
+
+    label: str = dfield("""Description of the loading type:
+    '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""", init=False)
 
     def __post_init__(self):
 
-        self.xloads = initialise_Dclass(self.xloads, Dxloads)
+        self.xloads = initialise_Dclass(self.xloads, D_xloads)
+        if isinstance(self.solution, str):
+            sol_label = Solution[self.solution.upper()].value
+        else:
+            sol_label = self.solution
+        self.label = f"{sol_label}{self.nonlinear}{self.residualise}{self.xloads.label}"
 
-    def _set_label(self):
-        ...
+        if self.solver_function is None:  # set default  
+            if self.label[0] == 0:
+                self.solver_function = 'newton_raphson'
+            elif self.label[0] == 1:
+                self.solver_function = 'ode'
+            elif self.label[0] == 2:
+                ...
+                # TODO: implement
+            if self.label[0] == 3:
+                ...
+                # TODO: implement
 
 @dataclass(frozen=False)
 class Dsystems(DataContainer):
 
-    settings: dict = dfield("System name")
+    settings: dict[str: dict] = dfield("System name")
+    sys: dict[str: D_system]  = dfield("System name")
 
     def __post_init__(self):
-
+        self.sys = dict()
         for k, v in self.settings.items():
             self.sys[k] = initialise_Dclass(
-                v, Dsystem)
+                v, D_system, name=k)
 
 @dataclass(frozen=True)
 class Dsimulation(DataContainer):
@@ -225,13 +263,17 @@ class Dsimulation(DataContainer):
         The default None implies systems are run in order of the input""",
         default=None
     )
+    save_objs: bool = dfield(
+        """Saves the objects output by the solution""",
+        default=False
+    )
 
     def __post_init__(self):
 
         if self.systems is not None:
             for k, v in self.systems:
-                setattr(self, k, initialise_Dclass(v, Dsystem))
+                setattr(self, k, initialise_Dclass(v, D_system))
 
 if (__name__ == '__main__'):
 
-    d1 = Dxloads()
+    d1 = D_xloads()

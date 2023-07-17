@@ -69,10 +69,11 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
     def _set_systems(self):
 
         self.systems = dict()
-        for k, v in self._config.systems.data.items():
+        for k, v in self._config.systems.sys.items():
             cls_sys = fem4inas.systems.factory(
                 v.typeof)
-        self.systems[k] = cls_sys(k, v)
+            self.systems[k] = cls_sys(k, v,
+                                      self._config.fem)
 
     def _set_sol(self):
         # Configure the simulation

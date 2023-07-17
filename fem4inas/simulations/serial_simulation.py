@@ -1,5 +1,5 @@
 from fem4inas.simulations.simulation import Simulation
-
+import diffrax
 class SerialSimulation(Simulation, cls_name="serial"):
 
     def init_systems(self):
@@ -7,14 +7,18 @@ class SerialSimulation(Simulation, cls_name="serial"):
         
     def trigger(self):
         # Implement trigger for SerialSimulation
-        pass
+        self._run_systems()
 
-    def _run(self):
+    def _run_systems(self):
         # Implement _run for SerialSimulation
-        for si in self.systems:
-            si.set_ic()
-            q = si.solve()
-            self._post_run(q)
+
+        for k, sys in self.systems.items(): # only one item in the loop
+            sys.set_ic()
+            solver_sol = sys.solve()
+            if self.settings.save_objs:
+                self.sol.add_dict('dsys_sol', k, solver_sol)
+            sys.pull_solution(self.sol)
+            #self._post_run(qs, sol)
 
     def _post_run(self, q):
         # Implement _post_run for SerialSimulation
