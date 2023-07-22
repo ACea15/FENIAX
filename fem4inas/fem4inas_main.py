@@ -1,13 +1,12 @@
 """FEM4INAS main"""
 import fem4inas.drivers
-from fem4inas.preprocessor.config import Config
-from fem4inas.preprocessor.utils import initialise_config
+import fem4inas.preprocessor.configuration as configuration  # Config, ValidateConfig
 from fem4inas.drivers.driver import Driver
 from fem4inas.preprocessor.solution import Solution
 
 def main(input_file: str = None,
          input_dict: dict = None,
-         input_obj: Config = None,
+         input_obj: configuration.Config = None,
          return_driver: bool = False) -> Solution | Driver:
     """Main ``FEM4INAS`` routine
 
@@ -30,7 +29,7 @@ def main(input_file: str = None,
 
     """
 
-    config = initialise_config(input_file, input_dict, input_obj)
+    config = configuration.initialise_config(input_file, input_dict, input_obj)
     Driver = fem4inas.drivers.factory(config.driver.typeof)
     driver = Driver(config)
     driver.pre_simulation()

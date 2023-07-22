@@ -20,7 +20,7 @@ def compute_eigs(Ka: jnp.ndarray, Ma: jnp.ndarray,
 
 @partial(jit, static_argnames=['config'])
 def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray,
-           eigenval: jnp.ndarray, eigenvec: jnp.ndarray, config: Dfem):
+           config: Dfem):
 
     precision = config.jax_np.precision
     num_modes = config.fem.num_modes  # Nm

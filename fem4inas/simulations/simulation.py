@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
+import fem4inas.drivers.driver as driver
+import fem4inas.preprocessor.solution as solution
 
 __SIMULATION_DICT__ = dict()
 
     
 class Simulation(ABC):
 
-    def __init__(self, systems, sol, settings):
+    def __init__(self, systems: dict[str:driver.Driver],
+                 sol: solution.Solution, settings):
 
         self.systems = systems
         self.sol = sol
@@ -16,15 +19,11 @@ class Simulation(ABC):
         pass
 
     @abstractmethod
-    def _run(self):
+    def _run_systems(self):
         pass
 
     @abstractmethod
     def _post_run(self):
-        pass
-
-    @abstractmethod
-    def pull_solution(self):
         pass
 
     def __init_subclass__(cls, **kwargs):

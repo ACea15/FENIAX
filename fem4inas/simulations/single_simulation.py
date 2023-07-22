@@ -11,16 +11,13 @@ class SingleSimulation(Simulation, cls_name="single"):
 
         for k, sys in self.systems.items(): # only one item in the loop
             sys.set_ic()
-            sol = sys.solve()
-            if self.settings.save_objs:
-                self.sol.add_dict('dsys_sol', k, sol)
+            sol_obj = sys.solve()
             sys.build_solution(self.sol)
-            #self._post_run(qs, sol)
+            self._post_run(k, sol_obj)
 
-    def _save_states():
-        ...
-    def _post_run(self, qs, sol):
+    def _post_run(self, sys_name, sol_obj):
         # Implement _post_run for SerialSimulation
-        ...
-        
+
+        if self.settings.save_objs:
+            self.sol.add_dict('dsys_sol', sys_name, sol_obj)
 

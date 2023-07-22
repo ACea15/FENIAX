@@ -96,9 +96,9 @@ class Dfem(DataContainer):
     Ma_name: str | pathlib.Path  = dfield("Condensed mass matrix",
                                           default='Ma.npy')
     Ka: jnp.ndarray  = dfield("Condensed stiffness matrix",
-                              default=None)
+                              default=None, yaml_save=False)
     Ma: jnp.ndarray  = dfield("Condensed mass matrix",
-                              default=None)    
+                              default=None, yaml_save=False)
     num_modes: int = dfield("Number of modes in the solution", default=None)
     #
     grid: str | pathlib.Path | jnp.ndarray | pd.DataFrame = dfield(
@@ -175,6 +175,10 @@ class Dfem(DataContainer):
 @dataclass(frozen=True)
 class Ddriver(DataContainer):
 
+    typeof: str = dfield("Driver to manage the simulation",
+                         default=True,
+                         options=['intrinsic']
+                         )
     solution_path: str | pathlib.Path = dfield("Folder path to save results",
                                                 default=None)
     compute_presimulation: bool = dfield("Folder path to save results",
@@ -188,6 +192,11 @@ class Ddriver(DataContainer):
 class D_system(DataContainer):
 
     name: str = dfield("System name")
+    solution: str | int = dfield("Type of solution to be solved",
+                                 options=['static',
+                                          'dynamic',
+                                          'multibody',
+                                          'stability'])    
     xloads: dict | D_xloads = dfield("External loads dataclass", default=None)
     t0: float = dfield("Initial time", default=0.)
     t1: float = dfield("Final time", default=1.)
@@ -199,12 +208,6 @@ class D_system(DataContainer):
         "Name for the solver of the previously defined library", default=None)
     solver_settings: str = dfield(
         "Name for the solver of the previously defined library", default=None)
-
-    solution: str | int = dfield("Type of solution to be solved",
-                                 options=['static',
-                                          'dynamic',
-                                          'multibody',
-                                          'stability'])
     nonlinear: bool = dfield(
         "whether to include the nonlinear terms in the eqs. (Gammas)", default=True)
     residualise: bool = dfield(

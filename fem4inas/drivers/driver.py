@@ -4,10 +4,6 @@ __DRIVER_DICT__ = dict()
 
 
 class Driver(ABC):
-    def __init__(self):
-        self.case = None
-        self.integration = None
-        self.simulation = None
 
     def run_cases(self):
         self.set_case()

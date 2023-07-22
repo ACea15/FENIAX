@@ -239,3 +239,29 @@ timesteps = np.arange(num_timesteps)
 final, result = jax.lax.scan(wealth_func, init=starting_wealth, xs=timesteps)
 
 assert np.allclose(wealth_record, result)
+
+###########################
+
+class passing_class:
+
+    def __init__(self, inp1):
+
+        self.inp1  = inp1
+
+    def add_attr(self, k, v):
+        setattr(self, k, v)
+
+class to_thisclass:
+
+    def __init__(self, obj1):
+
+        self.obj1  = obj1
+
+    def  set_attr(self, k, v):
+
+        self.obj1.add_attr(k, v)
+
+pc1 = passing_class('inp')
+tc1 = to_thisclass(pc1)
+tc1.set_attr('new', 4)
+# new also pc1

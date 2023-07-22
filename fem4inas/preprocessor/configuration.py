@@ -2,7 +2,7 @@ import fem4inas.preprocessor.containers as containers
 from fem4inas.preprocessor.containers.data_container import DataContainer
 import fem4inas.preprocessor.utils as utils
 import importlib
-import fem4inas.preprocessor.configuration as configuration
+import fem4inas.preprocessor.inputs as inputs
 import pathlib
 from ruamel.yaml import YAML
 import jax.numpy as jnp
@@ -14,8 +14,8 @@ class Config:
 
         self.__sett = sett
         self.__serial_data = None
+        self.__extract_attr()        
         self.__load_containers()        
-        self.__extract_attr()
         self.__build()
         self._data_dict = serialize(self)
 
@@ -23,7 +23,7 @@ class Config:
         """Extracts attributes that do not belong to a container"""
         if "ex" in self.__sett.keys():
             self.__set_experimental(self.__sett.pop('ex'))
-        if "engine" in self.__sett.keys():
+        if "engine" in self.__sett.keys():            
             self.__set_attr(engine=self.__sett.pop('engine'))
 
     def __load_containers(self):
@@ -31,7 +31,7 @@ class Config:
 
         # TODO: Extend to functionality for various containers
         self.__container = importlib.import_module(
-            f"fem4inas.preprocessor.containers.{self.__sett['engine']}")
+            f"fem4inas.preprocessor.containers.{self.engine}")
         self.__container = importlib.reload(self.__container) # remove after testing
         
     def __build(self):
@@ -42,7 +42,7 @@ class Config:
 
     def __set_experimental(self, experimental: dict):
 
-        ex_object = configuration.dict2object(experimental)
+        ex_object = inputs.dict2object(experimental)
         setattr(self, "ex", ex_object)
 
     def __set_attr(self, **kwargs):
@@ -64,9 +64,10 @@ class ValidateConfig:
         validate_engine(config)
         
     @staticmethod
-    def _intrinsic_modal(config):
+    def _intrinsicmodal(config):
 
-        assert hasattr(config, "driver"), "No driver in config object"
+        assert hasattr(config, "driver"), "No 'driver' attr in config object"
+        assert hasattr(config, "fem"), "No 'fem' attr in config object"
 
     
 def serialize(obj: Config | DataContainer):
@@ -76,15 +77,18 @@ def serialize(obj: Config | DataContainer):
         # serialise if it is ndarray
         if isinstance(v, jnp.ndarray) or isinstance(v, np.ndarray):
             v = v.tolist()
+        if isinstance(v, pathlib.Path):
+            v = str(v) 
         # ensure the field is public
         if k[0] != "_":
             if isinstance(v, DataContainer):
                 dictionary[k] = serialize(v)
             else:
                 # ensure v is not an uninitialised field, which should not be saved
-                if (isinstance(obj, DataContainer) and
-                    obj.__dataclass_fields__[k].init):
-                    dictionary[k] = [v, obj.__dataclass_fields__[k].metadata['description']]
+                if isinstance(obj, DataContainer):
+                    if (obj.__dataclass_fields__[k].init and
+                        obj.__dataclass_fields__[k].metadata['yaml_save']):
+                        dictionary[k] = [v, obj.__dataclass_fields__[k].metadata['description']]
                 else:
                     dictionary[k] = [v, " "]
     return dictionary
@@ -92,10 +96,41 @@ def serialize(obj: Config | DataContainer):
 def dump_to_yaml(file_out, config: Config, with_comments=True):
 
     yaml = YAML()
+    
     data = utils.dump_inputs(config._data_dict, with_comments=with_comments)
     with open(file_out, "w") as f:
         yaml.dump(data, f)
 
+
+def initialise_config(input_file: str = None,
+                      input_dict: dict = None,
+                      input_obj: Config = None) -> Config:
+
+
+    if input_dict is None and input_obj is None:  # inputs given as .yaml file
+        parser = argparse.ArgumentParser(prog='FEM4INAS', description=
+        """This is the executable of Fininte-Element Models for
+        Intrinsic Nonlinear Aeroelastic Simulations.""")
+        parser.add_argument('input_file', help='path to the *.yaml input file',
+                            type=str, default='')
+        if input_file is not None: #running from within python file
+            args = parser.parse_args(input_file)
+        else: # running from command line
+            args = parser.parse_args()
+        config = Config.from_file(args.input_file)
+    elif input_dict is not None and (input_file is None and
+                                     input_obj is None):  # inputs given as dict
+        config = Config(input_dict)
+
+    elif input_obj is not None and (input_file is None and
+                                     input_dict is None):  #  inputs directly as Config
+        config = input_obj
+    else:
+        raise ValueError("Input error combination")
+    ValidateConfig.validate(config)
+    return config
+
+        
 if __name__ == "__main__":
 
     pass
