@@ -4,7 +4,7 @@ import jax.lax
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass
 
 
-@dataclass(order=True, frozen=True)
+@dataclass
 class Djax_np:
 
     precision: jax.lax.Precision = dfield("Precision in tensor and dot products",
@@ -12,4 +12,4 @@ class Djax_np:
 class Djax_scipy:
 
     eigh: dict = dfield("Eigen value solution",
-                                          default= jax.lax.Precision.HIGH)
+                        default= jax.lax.Precision.HIGH)

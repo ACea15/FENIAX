@@ -18,7 +18,8 @@ class Config:
         self.__load_containers()        
         self.__build()
         self._data_dict = serialize(self)
-
+        self.__default_containers()
+        
     def __extract_attr(self):
         """Extracts attributes that do not belong to a container"""
         if "ex" in self.__sett.keys():
@@ -33,7 +34,18 @@ class Config:
         self.__container = importlib.import_module(
             f"fem4inas.preprocessor.containers.{self.engine}")
         self.__container = importlib.reload(self.__container) # remove after testing
-        
+
+    def __default_containers(self):
+
+        mod_cont = dict(optionsjax=['jax_np', 'jax_scipy'])
+        for k, v in mod_cont.items():
+            _container = importlib.import_module(
+                f"fem4inas.preprocessor.containers.{k}")
+            for i in v:
+                if not hasattr(self, i):
+                    container_k = getattr(_container, "".join(["D", i]))
+                    setattr(self, i, container_k())
+
     def __build(self):
 
         for k, v in self.__sett.items():

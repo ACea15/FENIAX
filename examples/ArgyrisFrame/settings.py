@@ -14,7 +14,7 @@ inp.fem.num_modes = 10
 inp.fem.fe_order_start = 1
 inp.driver.typeof = "intrinsic"
 inp.simulation.typeof = "single"
-
+inp.ex.Cab_xtol = 1e-4
 config =  configuration.Config(inp)
 
 # for k, v in config._data_dict['fem'].items():
@@ -39,4 +39,3 @@ fem4inas.fem4inas_main.main(input_obj=config)
 # p1 = list(pathlib.Path("./FEM/").glob("*Ka*"))[0]
 # for pi in p1:
 #     print(list(re.match("*Ka*", pi)))
-    
