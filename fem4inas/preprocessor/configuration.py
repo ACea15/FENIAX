@@ -15,36 +15,49 @@ class Config:
         self.__sett = sett
         self.__serial_data = None
         self.__extract_attr()        
-        self.__load_containers()        
+        self.__load_container()        
         self.__build()
         self._data_dict = serialize(self)
-        self.__default_containers()
+        self.__defaults()
+        self.__set_defaults()
         
     def __extract_attr(self):
-        """Extracts attributes that do not belong to a container"""
+        """Extracts attributes that do not belong to a container.
+        This attributes are located at the first level of the input settings."""
         if "ex" in self.__sett.keys():
             self.__set_experimental(self.__sett.pop('ex'))
         if "engine" in self.__sett.keys():            
             self.__set_attr(engine=self.__sett.pop('engine'))
 
-    def __load_containers(self):
-        """Loads the containers"""
+    def __load_container(self):
+        """Load the container with the configuration dataclasses"""
 
         # TODO: Extend to functionality for various containers
         self.__container = importlib.import_module(
             f"fem4inas.preprocessor.containers.{self.engine}")
         self.__container = importlib.reload(self.__container) # remove after testing
 
-    def __default_containers(self):
+    def __defaults(self):
 
-        mod_cont = dict(optionsjax=['jax_np', 'jax_scipy'])
-        for k, v in mod_cont.items():
+        self.__MOD_DEFAULT = dict(optionsjax=['jax_np', 'jax_scipy'])
+        self.__CONTAINER_DEFAULT = dict(intrinsicmodal="const")
+
+    def __set_defaults(self):
+
+        # default modules
+        for k, v in self.__MOD_DEFAULT.items():
             _container = importlib.import_module(
                 f"fem4inas.preprocessor.containers.{k}")
             for i in v:
                 if not hasattr(self, i):
                     container_k = getattr(_container, "".join(["D", i]))
                     setattr(self, i, container_k())
+        # default containers within self.engine module
+        for k, v in self.__CONTAINER_DEFAULT.items():
+            if self.engine == k:
+                if not hasattr(self, v):
+                    container_v = getattr(self.__container, "".join(["D", v]))
+                    setattr(self, v, container_v())
 
     def __build(self):
 

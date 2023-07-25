@@ -8,9 +8,12 @@ class Modes:
     psi1: jnp.ndarray
     phi2: jnp.ndarray
     phi1l: jnp.ndarray
+    phi1ml: jnp.ndarray    
     phi2l: jnp.ndarray
     psi2l: jnp.ndarray
-
+    X_xdelta: jnp.ndarray
+    C0ab: jnp.ndarray
+    
 @dataclass(slots=True)
 class Couplings:
     gamma1: jnp.ndarray

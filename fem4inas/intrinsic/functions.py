@@ -32,56 +32,69 @@ def H1(Itheta,Ipsi,ds):
 
    return ds*(I3+(1-np.cos(Itheta))/(Itheta**2)*tilde(Ipsi)+(Itheta-np.sin(Itheta))/(Itheta**3)*(tilde(Ipsi).dot(tilde(Ipsi))))
 
+@jit
+def tilde(vector3: jnp.ndarray):
+    """Compute matrix that yields the cross product.
 
-def tilde(vector):
-  """ Finds the matrix that yields the vectorial product when multiplied by another vector """
-    
-  tilde = jnp.array([[0.,        -vector[2], vector[1]],
-                     [vector[2],  0.,       -vector[0]],
-                     [-vector[1], vector[0], 0.]])
-  return tilde
+    Parameters
+    ----------
+    vector3 : jnp.ndarray
+      Vector of length 3
 
-
-def L1(x1):
-
-   L1= np.zeros((6,6))
-   #v=np.zeros(3)
-   #w=np.zeros(3)
-   v=x1[0:3]
-   w=x1[3:6]
-
-   L1[0:3,0:3]=  [[ 0    ,-w[2]  , w[1]],\
-                 [ w[2]  , 0     ,-w[0]],\
-                 [-w[1]  ,  w[0] ,  0 ]]
-
-
-   L1[3:6,3:6]=L1[0:3,0:3]
-
-   L1[3:6,0:3]= [[ 0    ,-v[2]  , v[1]],\
-                [ v[2]  , 0     ,-v[0]],\
-                [-v[1]  ,  v[0] ,  0 ]]
-
-   return np.asarray(L1)
+    """
+    tilde = jnp.array([[0.,    -vector3[2], vector3[1]],
+                       [vector3[2],  0.,       -vector3[0]],
+                       [-vector3[1], vector3[0], 0.]])
+    return tilde
 
 @jit
-def L2fun(x2):
+def L1(x1: jnp.ndarray):
 
-   L2 = jnp.zeros((6,6))
-   #f=np.zeros(3)
-   #m=np.zeros(3)
-   f = x2[0:3]
-   m = x2[3:6]
-   L2 = L2.at[3:6,3:6].set(jnp.array([[ 0    ,-m[2]  , m[1]],
-                                      [ m[2]  , 0     ,-m[0]],
-                                      [-m[1]  ,  m[0] ,  0 ]]))
+    L1 = jnp.zeros((6, 6))
+    v = x1[0:3]
+    w = x1[3:6]
 
-   L2 = L2.at[0:3,3:6].set(jnp.array([[ 0    ,-f[2] , f[1]],
-                                      [ f[2] , 0    ,-f[0]],
-                                      [-f[1],  f[0] ,  0 ]]))
+    L1 = L1.at[0:3, 0:3].set(tilde(w))
+    L1 = L1.at[3:6, 3:6].set(tilde(w))
+    L1 = L1.at[3:6, 0:3].set(tilde(v))
+    return L1
 
-   L2 = L2.at[3:6,0:3].set(L2[0:3,3:6])
+def tilde_np(vector3: np.ndarray):
+    """Compute matrix that yields the cross product.
 
-   return L2
+    Parameters
+    ----------
+    vector3 : jnp.ndarray
+      Vector of length 3
+
+    """
+    tilde = np.array([[0.,    -vector3[2], vector3[1]],
+                      [vector3[2],  0.,       -vector3[0]],
+                      [-vector3[1], vector3[0], 0.]])
+    return tilde
+
+def L1_np(x1: np.ndarray):
+
+    L1 = np.zeros((6, 6))
+    v = x1[0:3]
+    w = x1[3:6]
+
+    L1[0:3, 0:3] = (tilde_np(w))
+    L1[3:6, 3:6] = (tilde_np(w))
+    L1[3:6, 0:3] = (tilde_np(v))
+    return L1
+
+@jit
+def L2(x2: jnp.ndarray):
+
+    L2 = jnp.zeros((6, 6))
+    f = x2[0:3]
+    m = x2[3:6]
+
+    L2 = L2.at[0:3, 3:6].set(tilde(f))
+    L2 = L2.at[3:6, 3:6].set(tilde(m))
+    L2 = L2.at[3:6, 0:3].set(tilde(f))
+    return L2
 
 @partial(jit, static_argnames=['config'])
 def compute_C0ab(X_diff: jnp.ndarray, X_xdelta: jnp.ndarray,

@@ -136,6 +136,36 @@ for i in range(x6.shape[3]):
 
 fuv = contraction(mf, M)
 
+##################################
+##################################
+import fem4inas.intrinsic.functions as functions
+import numpy as np
+import time
+num_modes = 80
+phi = jnp.arange(num_modes*6*5).reshape((num_modes,6,5)) #Nmx6xNn
+psi = jnp.arange(0,num_modes*6*5*2,2).reshape((num_modes,6,5))
+phil = np.arange(num_modes*6*5).reshape((num_modes,6,5)) #Nmx6xNn
+psil = np.arange(0,num_modes*6*5*2,2).reshape((num_modes,6,5))
+
+
+f1 = jax.vmap(lambda u, v: jnp.tensordot(functions.L1(u), v, axes=(1, 1)),
+              in_axes=(1,2), out_axes=2) #iterate nodes
+#f1 = jax.vmap(lambda u, v: functions.L1(u), in_axes=(1, 2), out_axes=1)
+f2 = jax.vmap(f1, in_axes=(0, None), out_axes=0) # iterate modes first tensor
+st1 = time.time()
+L1 = f2(phi, psi) # Nmx6xNmxNm
+gamma1 = jnp.einsum('isn,jskn->ijk', phi, L1+1)
+time1 = time.time() - st1
+
+st2 = time.time()
+gamma1l = np.zeros((num_modes,num_modes,num_modes))
+for i in range(num_modes):
+    for j in range(num_modes):
+        for k in range(num_modes):
+            for n in range(5):
+                gamma1l[i, j, k] += phil[i,:,n].dot(functions.L1_np(phil[j, :, n]).dot(psil[k, :, n]) +1)
+time2 = time.time() - st2
+
 
 
 

@@ -100,8 +100,14 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         
     def _compute_modalcouplings(self):
         
-        gammas = couplings.gammas()
-        self.sol.add_container('Couplings', *gammas)
+        gamma1 = couplings.f_Gamma1(self.sol.modes.phi1,
+                                    self.sol.modes.psi1)
+        gamma2 = couplings.f_Gamma2(self.sol.modes.phi1ml,
+                                    self.sol.modes.phi2,
+                                    self.sol.modes.psi2,
+                                    self.sol.modes.X_xdelta)
+
+        self.sol.add_container('Couplings', gamma1, gamma2)
 
     def _load_modalshapes(self):
 

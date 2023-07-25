@@ -28,11 +28,11 @@ class Dconst(DataContainer):
                                                   [0, 0, 0, 0, 0, 0],
                                                   [0, 0, -1, 0, 0, 0],
                                                   [0, 1, 0, 0, 0, 0]]))
-    EMATT: jnp.ndarray = dfield("3x3 Identity matrix", default=None)
+    EMATT: jnp.ndarray = dfield("3x3 Identity matrix", init=False)
     
     def __post_init__(self):
 
-        self.EMATT = self.EMATT.T
+        object.__setattr__(self, 'EMATT', self.EMAT.T)
         
 @dataclass(frozen=True)
 class Dfiles(DataContainer):
@@ -71,8 +71,8 @@ class D_xloads(DataContainer):
     gravity_forces: bool = dfield("Include gravity in the analysis", default=False)    
     aero_forces: bool = dfield("Include aerodynamic forces", default=False)
     label: str = dfield("""Description of the loading type:
-    '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""", init=False)
-
+    '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
+                        init=False)
     def __post_init__(self):
 
         self.label = f"{int(self.follower_forces)}\
