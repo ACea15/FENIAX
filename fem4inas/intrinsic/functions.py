@@ -9,29 +9,6 @@ from functools import partial
 # Exponential map integration #
 ###############################
 
-def H0(Itheta,Ipsi):
-
-  I3=np.eye(3)
-  if Itheta==0.0:
-
-   return I3
-
-  else:
-
-   return I3+np.sin(Itheta)/Itheta*tilde(Ipsi)+(1-np.cos(Itheta))/(Itheta**2)*(tilde(Ipsi).dot(tilde(Ipsi)))
-
-
-def H1(Itheta,Ipsi,ds):
-
-  I3=np.eye(3)
-  if Itheta==0.0:
-
-   return I3*ds
-
-  else:
-
-   return ds*(I3+(1-np.cos(Itheta))/(Itheta**2)*tilde(Ipsi)+(Itheta-np.sin(Itheta))/(Itheta**3)*(tilde(Ipsi).dot(tilde(Ipsi))))
-
 @jit
 def tilde(vector3: jnp.ndarray):
     """Compute matrix that yields the cross product.
@@ -46,6 +23,28 @@ def tilde(vector3: jnp.ndarray):
                        [vector3[2],  0.,       -vector3[0]],
                        [-vector3[1], vector3[0], 0.]])
     return tilde
+
+@jit
+def H0(Itheta: float, Ipsi: jnp.ndarray):
+
+    I3 = jnp.eye(3)
+    if Itheta == 0.0:
+        return I3
+    else:
+        return (I3 + jnp.sin(Itheta) / Itheta * tilde(Ipsi)
+                + (1 - jnp.cos(Itheta)) / Itheta**2 * jnp.matmul(tilde(Ipsi),
+                                                                 tilde(Ipsi)))
+
+@jit
+def H1(Itheta: float, Ipsi: jnp.ndarray, ds: float):
+
+    I3 = jnp.eye(3)
+    if Itheta == 0.0:
+        return I3*ds
+    else:
+        return ds *(I3 + (1 - jnp.cos(Itheta)) / Itheta**2 * tilde(Ipsi)
+                    + (Itheta - jnp.sin(Itheta)) / (Itheta**3) * jnp.matmul(tilde(Ipsi),
+                                                                            tilde(Ipsi)))
 
 @jit
 def L1(x1: jnp.ndarray):

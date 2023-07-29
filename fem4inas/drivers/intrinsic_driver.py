@@ -1,5 +1,3 @@
-import fem4inas.intrinsic.modes as modes
-import fem4inas.intrinsic.couplings as couplings
 from fem4inas.drivers.driver import Driver
 
 import fem4inas.simulations
@@ -92,6 +90,11 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         
     def _compute_modalshapes(self):
         
+        if self._config.numlib == "jax":
+            import fem4inas.intrinsic.modes as modes
+        elif self._config.numlib == "numpy":
+            import fem4inas.intrinsic.modes_np as modes
+
         modal_shapes = modes.shapes(self._config.fem.X,
                                     self._config.fem.Ka,
                                     self._config.fem.Ma,
@@ -99,12 +102,17 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         self.sol.add_container('Modes', *modal_shapes)
         
     def _compute_modalcouplings(self):
-        
+
+        if self._config.numlib == "jax":
+            import fem4inas.intrinsic.couplings as couplings
+        elif self._config.numlib == "numpy":
+            import fem4inas.intrinsic.couplings_np as couplings
+
         gamma1 = couplings.f_Gamma1(self.sol.modes.phi1,
                                     self.sol.modes.psi1)
         gamma2 = couplings.f_Gamma2(self.sol.modes.phi1ml,
                                     self.sol.modes.phi2,
-                                    self.sol.modes.psi2,
+                                    self.sol.modes.psi2l,
                                     self.sol.modes.X_xdelta)
 
         self.sol.add_container('Couplings', gamma1, gamma2)
