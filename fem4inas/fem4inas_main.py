@@ -3,6 +3,7 @@ import fem4inas.drivers
 import fem4inas.preprocessor.configuration as configuration  # Config, ValidateConfig
 from fem4inas.drivers.driver import Driver
 from fem4inas.preprocessor.solution import Solution
+from jax.config import config; config.update("jax_enable_x64", True)
 
 def main(input_file: str = None,
          input_dict: dict = None,
@@ -38,5 +39,5 @@ def main(input_file: str = None,
     if return_driver:  # return driver object for inspection
         return driver
     else:  # just return the solution data
-        return driver.sol
+        return driver.sol.data
 
