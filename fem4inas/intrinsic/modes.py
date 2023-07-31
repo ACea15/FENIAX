@@ -1,12 +1,13 @@
 from jax import jit
 import numpy as np
+import scipy
 import jax
 import jax.numpy as jnp
 import jax.scipy as jscipy
 from fem4inas.preprocessor.containers.intrinsicmodal import Dfem
-from fem4inas.intrinsic.functions import compute_C0ab
+from fem4inas.intrinsic.functions import compute_C0ab, tilde
 from functools import partial
-
+import fem4inas.intrinsic.couplings as couplings
 # TODO: implement from jnp.eigh and compare with jscipy.eigh
 # https://math.stackexchange.com/questions/4518062/rewrite-generalized-eigenvalue-problem-as-standard-eigenvalue-problem
 
@@ -139,9 +140,16 @@ def eigh_jvp_rule(primals, tangents):
 def compute_eigs(
     Ka: jnp.ndarray, Ma: jnp.ndarray, num_modes: int
 ) -> (jnp.ndarray, jnp.ndarray):
-    # eigenvals, eigenvecs = jscipy.linalg.eigh(Ka, Ma)
     # eigenvals, eigenvecs = generalized_eigh(Ka, Ma)
     eigenvals, eigenvecs = eigh(Ka, Ma)
+    reduced_eigenvals = eigenvals[:num_modes]
+    reduced_eigenvecs = eigenvecs[:, :num_modes]
+    return reduced_eigenvals, reduced_eigenvecs
+
+def compute_eigs_scpy(
+    Ka: jnp.ndarray, Ma: jnp.ndarray,
+        num_modes: int) -> (jnp.ndarray, jnp.ndarray):
+    eigenvals, eigenvecs = scipy.linalg.eigh(Ka, Ma)
     reduced_eigenvals = eigenvals[:num_modes]
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
@@ -158,7 +166,9 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     # by 0 below
     C0ab = compute_C0ab(X_diff, X_xdelta, config)  # shape=(3x3xNn)
     C06ab = make_C6(C0ab)  # shape=(6x6xNn)
-    eigenvals, eigenvecs = compute_eigs(Ka, Ma, num_modes)
+    #eigenvals, eigenvecs = compute_eigs(Ka, Ma, num_modes)
+    eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)    
+    omega = jnp.sqrt(eigenvals)
     # reorder to the grid coordinate in X and add 0s of clamped DoF
     _phi1 = jnp.matmul(config.fem.Mfe_order, eigenvecs)
     phi1 = reshape_modes(_phi1, num_modes, num_nodes)  # Becomes  (Nm, 6, Nn)
@@ -170,17 +180,23 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     _psi1 = jnp.matmul(Ma, eigenvecs, precision=precision)
     _psi1 = jnp.matmul(config.fem.Mfe_order, _psi1)
     psi1 = reshape_modes(_psi1, num_modes, num_nodes)
+    psi1l = coordinate_transform(psi1, C06ab)
     # Nodal forces in global frame (equal to Ka*eigenvec)
     nodal_force = _psi1 * eigenvals  # broadcasting (6Nn x Nm)
-    _phi2 = reshape_modes(nodal_force, num_modes, num_nodes)
+    _phi2 = reshape_modes(nodal_force, num_modes, num_nodes)  #(Nmx6xNn)
+    #  Note: _phi2 are forces at the Nodes due to deformed shape, phi2 are internal forces
+    #  as the sum of _phi2 along load-paths
+    X3 = coordinates_difftensor(X.T, config.fem.Mavg)  # (3xNnxNn)
+    X3tilde = axis_tilde(X3)  # (6x6xNnxNn)
+    _moments_force = moment_force(_phi2, X3tilde)  # (Nmx6xNnxNn)
+    moments_force = contraction(_moments_force,
+                                config.fem.Mload_paths)  # (Nmx6xNn)
     # Sum all forces in the load-path from the present node to the free-ends
     # Each column in config.fem.Mload_paths represents the nodes to sum through
     phi2 = jnp.tensordot(
         _phi2, config.fem.Mload_paths, axes=(2, 0), precision=precision
     )
-    phi2 += jnp.tensordot(
-        _phi2, config.fem.Mload_paths, axes=(2, 0), precision=precision
-    )
+    phi2 += moments_force
     phi2l = coordinate_transform(phi2, C06ab)
     ematt_phi1 = ephi(config.const.EMAT, phi1ml)
     psi2l = jnp.tensordot(
@@ -188,13 +204,133 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     ) / X_xdelta + ematt_phi1
 
     return (phi1, psi1, phi2,
-            phi1l, phi1ml, phi2l, psi2l,
-            X_xdelta, C0ab)
+            phi1l, phi1ml, psi1l, phi2l, psi2l,
+            omega, X_xdelta, C0ab)
 
 
+def scale(phi1, psi1, phi2,
+          phi1l, phi1ml, psi1l, phi2l, psi2l,
+          omega, X_xdelta, C0ab,
+          *args, **kwargs):
+
+    alpha1 = couplings.f_alpha1(phi1, psi1)
+    alpha2 = couplings.f_alpha2(phi2l, psi2l)
+    num_modes = len(alpha1)
+    # Broadcasting in division    
+    phi1 /= alpha1.diagonal().reshape(num_modes, 1, 1)
+    psi1 /= alpha1.diagonal().reshape(num_modes, 1, 1)
+    phi1l /= alpha1.diagonal().reshape(num_modes, 1, 1)
+    phi1ml /= alpha1.diagonal().reshape(num_modes, 1, 1)
+    psi1l /= alpha1.diagonal().reshape(num_modes, 1, 1)
+    phi2 /= alpha2.diagonal().reshape(num_modes, 1, 1)
+    phi2l /= alpha2.diagonal().reshape(num_modes, 1, 1)
+    psi2l /= alpha2.diagonal().reshape(num_modes, 1, 1)
+
+    return (phi1, psi1, phi2,
+            phi1l, phi1ml, psi1l, phi2l, psi2l,
+            omega, X_xdelta, C0ab)
+
+
+def check_alphas(phi1, psi1, phi2,
+                 phi1l, phi1ml, psi1l, phi2l, psi2l,
+                 omega, X_xdelta, C0ab,
+                 tolerance, *args, **kwargs):
+
+    alpha1 = couplings.f_alpha1(phi1, psi1)
+    alpha2 = couplings.f_alpha2(phi2l, psi2l)
+    num_modes = len(alpha1)
+    assert jnp.allclose(alpha1, jnp.eye(num_modes),
+                        **tolerance), \
+        f"Alpha1 not equal to Identity: Alpha1: {alpha1}"
+    assert jnp.allclose(alpha2, jnp.eye(num_modes),
+                        **tolerance), \
+        f"Alpha2 not equal to Identity: Alpha2: {alpha2}"
+
+
+@jit
+def tilde0010(vector: jnp.ndarray) -> jnp.ndarray:
+    """Tilde matrix for cross product (moments due to forces)
+
+    Parameters
+    ----------
+    vector : jnp.ndarray
+        A 3-element array
+
+    Returns
+    -------
+    jnp.ndarray
+        6x6 matrix with (3:6 x 0:3) tilde operator
+
+    """
+    
+    vector_tilde = jnp.vstack([jnp.zeros((3,6)),
+                               jnp.hstack([tilde(vector), jnp.zeros((3,3))])
+                               ])
+    return vector_tilde
+
+@jit
+def axis_tilde(tensor: jnp.ndarray) -> jnp.ndarray:
+    """Apply tilde0010 to a tensor
+
+    The input tesor is iterated through axis 2 first, and axis 1
+    subsequently; tilde0010 is applied to axis 0.
+
+    Parameters
+    ----------
+    tensor : jnp.ndarray
+        3xN1xN2 tensor
+
+    Returns
+    -------
+    jnp.ndarray
+        6x6xN1xN2 tensor
+
+    """
+
+    f1 = jax.vmap(tilde0010, in_axes=1, out_axes=2)
+    f2 = jax.vmap(f1, in_axes=2, out_axes=3)
+    f = f2(tensor)
+
+    return f
+
+@jit
+def contraction(moments: jnp.ndarray, loadpaths: jnp.ndarray) -> jnp.ndarray:
+    """Sums the moments from the nodal forces along the corresponding load path  
+
+    Parameters
+    ----------
+    moments : jnp.ndarray
+        num_modes x 6 x num_nodes(index) x num_nodes(moment at the
+        previous index due to forces at this node)
+    loadpaths : jnp.ndarray
+        num_node x num_node such that [ni, nj] is 1 or 0 depending on
+        whether ni is a node in the loadpath of nj respectively
+
+    Returns
+    -------
+    jnp.ndarray
+        num_modes x 6 x num_nodes(index) as the sum of moments
+        due to forces at each node
+
+    """
+
+    f = jax.vmap(lambda u, v: jnp.dot(u, v),
+                 in_axes=(2, 1), out_axes=2)
+    fuv = f(moments, loadpaths)
+    return fuv
+
+@jit
+def moment_force(u: jnp.ndarray, v: jnp.ndarray) -> jnp.ndarray:
+
+    f1 = jax.vmap(lambda u, v: jnp.matmul(u, v), in_axes=(2,2), out_axes=2)
+    f2 = jax.vmap(f1, in_axes=(None, 2), out_axes=3)
+    fuv = f2(u, v)
+
+    return fuv
+
+@jit
 def coordinates_difftensor(X: jnp.ndarray, Mavg: jnp.ndarray) -> jnp.ndarray:
     """Computes coordinates
-
 
     The tensor representes the following: Coordinates, middle point of each element,
     minus the position of each node in the structure
@@ -205,21 +341,43 @@ def coordinates_difftensor(X: jnp.ndarray, Mavg: jnp.ndarray) -> jnp.ndarray:
         Grid coordinates
     Mavg : jnp.ndarray
         Matrix to calculate the averege point between nodes
+    num_nodes : int
+        Number of nodes  
 
     Returns
     -------
-    jnp.ndarray: (3xNnxNn) tensor
+    X3 : jnp.ndarray: (3xNnxNn)
+        Tensor, Xm*1 -(X*1)' : [Coordinates, Middle point of segment, Node]
 
 
     """
 
-    num_nodes = X.shape[0]
-    Xavg = jnp.matmul(X, Mavg)
+    Xm = jnp.matmul(X, Mavg)
+    num_nodes = X.shape[1]
     ones = jnp.ones(num_nodes)
-    return jnp.tensordot(Xavg, ones) - jnp.tensordot(ones, X).T
+    Xm3 = jnp.tensordot(Xm, ones, axes=0)  # copy Xm along a 3rd dimension
+    Xn3 = jnp.transpose(jnp.tensordot(X, ones, axes=0),
+                        axes=[0, 2, 1]) # copy X along the 2nd dimension
+    X3 = (Xm3 - Xn3)
+    return X3
 
 @jit
-def coordinate_transform(u1, v1):
+def coordinate_transform(u1: jnp.ndarray,
+                         v1: jnp.ndarray) -> jnp.ndarray:
+    """Applies a coordinate transformation
+
+    to the 6-element component (dim=1) of a 3rd order tensor
+
+    Parameters
+    ----------
+    u1 : jnp.ndarray
+        Tensor to transform coordinates
+    v1 : jnp.ndarray
+        Node by node transpose transformation matrix:
+    v1=Cab(6x6xNn) effectively does Cba.u1 along the Nn dimension
+
+
+    """
     f = jax.vmap(lambda u, v: jnp.matmul(u, v), in_axes=(2, 2), out_axes=2)
     fuv = f(u1, v1)
     return fuv
@@ -247,10 +405,3 @@ def make_C6(v1):
 def reshape_modes(_phi, num_modes, num_nodes):
     phi = jnp.reshape(_phi, (num_nodes, 6, num_modes), order="C")
     return phi.T
-
-
-@partial(jit, static_argnames=["num_modes", "clamped_dof"])
-def add_clampedDoF(_phi, num_modes: int, clamped_dof):
-    phi = jnp.insert(_phi, clamped_dof, jnp.zeros(num_modes), axis=0)
-
-    return phi
