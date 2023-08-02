@@ -8,7 +8,7 @@ from fem4inas.preprocessor.utils import dfield, initialise_Dclass
 class Djax_np:
 
     precision: jax.lax.Precision = dfield("Precision in jnp operations",
-                                          default= jax.lax.Precision.HIGH)
+                                          default= jax.lax.Precision.HIGHEST)
     allclose: dict[str: float] = dfield("""Relative and absolute tolerances""",
                                         default=dict(rtol=1e-5,
                                                      atol=1e-6))

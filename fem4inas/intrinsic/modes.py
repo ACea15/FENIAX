@@ -140,8 +140,8 @@ def eigh_jvp_rule(primals, tangents):
 def compute_eigs(
     Ka: jnp.ndarray, Ma: jnp.ndarray, num_modes: int
 ) -> (jnp.ndarray, jnp.ndarray):
-    # eigenvals, eigenvecs = generalized_eigh(Ka, Ma)
-    eigenvals, eigenvecs = eigh(Ka, Ma)
+    eigenvals, eigenvecs = generalized_eigh(Ka, Ma)
+    #eigenvals, eigenvecs = eigh(Ka, Ma)
     reduced_eigenvals = eigenvals[:num_modes]
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
@@ -154,6 +154,12 @@ def compute_eigs_scpy(
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
 
+def compute_eigs_load(num_modes: int)-> (jnp.ndarray, jnp.ndarray):
+    eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/w.npy")
+    eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/v.npy")
+    reduced_eigenvals = eigenvals[:num_modes]
+    reduced_eigenvecs = eigenvecs[:, :num_modes]
+    return reduced_eigenvals, reduced_eigenvecs
 
 # @partial(jit, static_argnames=['config'])
 def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
@@ -167,7 +173,8 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     C0ab = compute_C0ab(X_diff, X_xdelta, config)  # shape=(3x3xNn)
     C06ab = make_C6(C0ab)  # shape=(6x6xNn)
     #eigenvals, eigenvecs = compute_eigs(Ka, Ma, num_modes)
-    eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)    
+    eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)
+    #eigenvals, eigenvecs = compute_eigs_load(num_modes)    
     omega = jnp.sqrt(eigenvals)
     # reorder to the grid coordinate in X and add 0s of clamped DoF
     _phi1 = jnp.matmul(config.fem.Mfe_order, eigenvecs, precision=precision)
@@ -182,14 +189,14 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     psi1 = reshape_modes(_psi1, num_modes, num_nodes)
     psi1l = coordinate_transform(psi1, C06ab, precision=precision)
     # Nodal forces in global frame (equal to Ka*eigenvec)
-    #nodal_force = _psi1 * eigenvals  # broadcasting (6Nn x Nm)
-    _nodal_force = jnp.matmul(Ka, eigenvecs, precision=precision)
-    nodal_force = jnp.matmul(config.fem.Mfe_order, _nodal_force, precision=precision)
+    nodal_force = _psi1 * -eigenvals  # broadcasting (6Nn x Nm)
+    # _nodal_force = jnp.matmul(Ka, -eigenvecs, precision=precision)
+    # nodal_force = jnp.matmul(config.fem.Mfe_order, _nodal_force, precision=precision)
     _phi2 = reshape_modes(nodal_force, num_modes, num_nodes)  #(Nmx6xNn)
     #  Note: _phi2 are forces at the Nodes due to deformed shape, phi2 are internal forces
     #  as the sum of _phi2 along load-paths
     X3 = coordinates_difftensor(X, config.fem.Mavg, precision)  # (3xNnxNn)
-    X3tilde = axis_tilde(X3)  # (6x6xNnxNn)
+    X3tilde = -axis_tilde(X3)  # (6x6xNnxNn)
     _moments_force = moment_force(_phi2, X3tilde, precision)  # (Nmx6xNnxNn)
     moments_force = contraction(_moments_force,
                                 config.fem.Mload_paths,
