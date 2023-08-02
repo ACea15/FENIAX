@@ -27,6 +27,7 @@ path2config = pathlib.Path("./config.yaml")
 
 sol = fem4inas.fem4inas_main.main(input_obj=config)
 
+
 import numpy as np
 import scipy
 import jax.numpy as jnp
@@ -35,7 +36,7 @@ from jax.config import config; config.update("jax_enable_x64", True)
 
 Ka = np.load("/media/acea/work/projects/FEM4INAS/Models/ArgyrisBeam_25/FEM/Kaa.npy")
 Ma = np.load("/media/acea/work/projects/FEM4INAS/Models/ArgyrisBeam_25/FEM/Maa.npy")
-w, v = scipy.linalg.eigh(Ka, Ma)
+w, v = scipy.linalg.eigh(Ka, Ma, driver='gvx')
 
 def generalized_eigh(A, B):
     L = jnp.linalg.cholesky(B)

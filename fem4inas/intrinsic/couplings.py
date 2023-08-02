@@ -32,7 +32,11 @@ def f_alpha1(phi1: jnp.array, psi1: jnp.array):
     return alpha1
 
 def f_alpha2(phi2: jnp.array,
-             psi2: jnp.array):
+             psi2: jnp.array,
+             delta_s: jnp.array):
 
-    alpha2 = jnp.einsum('isn,jsn->ij', phi2, psi2)
+    phi2i = phi2[:,:,1:]
+    psi2i = psi2[:,:,1:]
+    delta_si = delta_s[1:]
+    alpha2 = jnp.einsum('isn,jsn,n->ij', phi2i, psi2i, delta_si)
     return alpha2

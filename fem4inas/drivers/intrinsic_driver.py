@@ -91,7 +91,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         #    import fem4inas.intrinsic.modes_np as modes
 
         modal_analysis = modes.shapes(
-            self._config.fem.X, self._config.fem.Ka, self._config.fem.Ma, self._config
+            self._config.fem.X.T, self._config.fem.Ka, self._config.fem.Ma, self._config
         )
         modal_analysis_scaled = modes.scale(*modal_analysis)
         modes.check_alphas(

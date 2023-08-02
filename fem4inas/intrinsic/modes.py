@@ -160,7 +160,7 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     precision = config.jax_np.precision
     num_modes = config.fem.num_modes  # Nm
     num_nodes = config.fem.num_nodes  # Nn
-    X_diff = jnp.matmul(X.T, config.fem.Mdiff)
+    X_diff = jnp.matmul(X, config.fem.Mdiff, precision=precision)
     X_xdelta = jnp.linalg.norm(X_diff, axis=0)
     X_xdelta = X_xdelta.at[0].set(1.0)  #  so that there is no devision
     # by 0 below
@@ -170,36 +170,39 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)    
     omega = jnp.sqrt(eigenvals)
     # reorder to the grid coordinate in X and add 0s of clamped DoF
-    _phi1 = jnp.matmul(config.fem.Mfe_order, eigenvecs)
+    _phi1 = jnp.matmul(config.fem.Mfe_order, eigenvecs, precision=precision)
     phi1 = reshape_modes(_phi1, num_modes, num_nodes)  # Becomes  (Nm, 6, Nn)
     # Define mode components in-between nodes
     phi1m = jnp.tensordot(phi1, config.fem.Mavg, axes=(2, 0), precision=precision)
     # Define mode components in the initial local-frame
-    phi1l = coordinate_transform(phi1, C06ab)  # effectively doing C0ba*phi1
-    phi1ml = coordinate_transform(phi1m, C06ab)
+    phi1l = coordinate_transform(phi1, C06ab, precision)  # effectively doing C0ba*phi1
+    phi1ml = coordinate_transform(phi1m, C06ab, precision)
     _psi1 = jnp.matmul(Ma, eigenvecs, precision=precision)
-    _psi1 = jnp.matmul(config.fem.Mfe_order, _psi1)
+    _psi1 = jnp.matmul(config.fem.Mfe_order, _psi1, precision=precision)
     psi1 = reshape_modes(_psi1, num_modes, num_nodes)
-    psi1l = coordinate_transform(psi1, C06ab)
+    psi1l = coordinate_transform(psi1, C06ab, precision=precision)
     # Nodal forces in global frame (equal to Ka*eigenvec)
-    nodal_force = _psi1 * eigenvals  # broadcasting (6Nn x Nm)
+    #nodal_force = _psi1 * eigenvals  # broadcasting (6Nn x Nm)
+    _nodal_force = jnp.matmul(Ka, eigenvecs, precision=precision)
+    nodal_force = jnp.matmul(config.fem.Mfe_order, _nodal_force, precision=precision)
     _phi2 = reshape_modes(nodal_force, num_modes, num_nodes)  #(Nmx6xNn)
     #  Note: _phi2 are forces at the Nodes due to deformed shape, phi2 are internal forces
     #  as the sum of _phi2 along load-paths
-    X3 = coordinates_difftensor(X.T, config.fem.Mavg)  # (3xNnxNn)
+    X3 = coordinates_difftensor(X, config.fem.Mavg, precision)  # (3xNnxNn)
     X3tilde = axis_tilde(X3)  # (6x6xNnxNn)
-    _moments_force = moment_force(_phi2, X3tilde)  # (Nmx6xNnxNn)
+    _moments_force = moment_force(_phi2, X3tilde, precision)  # (Nmx6xNnxNn)
     moments_force = contraction(_moments_force,
-                                config.fem.Mload_paths)  # (Nmx6xNn)
+                                config.fem.Mload_paths,
+                                precision)  # (Nmx6xNn)
     # Sum all forces in the load-path from the present node to the free-ends
     # Each column in config.fem.Mload_paths represents the nodes to sum through
     phi2 = jnp.tensordot(
         _phi2, config.fem.Mload_paths, axes=(2, 0), precision=precision
     )
     phi2 += moments_force
-    phi2l = coordinate_transform(phi2, C06ab)
-    ematt_phi1 = ephi(config.const.EMAT, phi1ml)
-    psi2l = jnp.tensordot(
+    phi2l = coordinate_transform(phi2, C06ab, precision=precision)
+    ematt_phi1 = ephi(config.const.EMAT, phi1ml, precision)
+    psi2l = -jnp.tensordot(
         phi1l, config.fem.Mdiff, axes=(2, 0), precision=precision
     ) / X_xdelta + ematt_phi1
 
@@ -214,17 +217,17 @@ def scale(phi1, psi1, phi2,
           *args, **kwargs):
 
     alpha1 = couplings.f_alpha1(phi1, psi1)
-    alpha2 = couplings.f_alpha2(phi2l, psi2l)
+    alpha2 = couplings.f_alpha2(phi2l, psi2l, X_xdelta)
     num_modes = len(alpha1)
-    # Broadcasting in division    
-    phi1 /= alpha1.diagonal().reshape(num_modes, 1, 1)
-    psi1 /= alpha1.diagonal().reshape(num_modes, 1, 1)
-    phi1l /= alpha1.diagonal().reshape(num_modes, 1, 1)
-    phi1ml /= alpha1.diagonal().reshape(num_modes, 1, 1)
-    psi1l /= alpha1.diagonal().reshape(num_modes, 1, 1)
-    phi2 /= alpha2.diagonal().reshape(num_modes, 1, 1)
-    phi2l /= alpha2.diagonal().reshape(num_modes, 1, 1)
-    psi2l /= alpha2.diagonal().reshape(num_modes, 1, 1)
+    # Broadcasting in division
+    phi1 /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
+    psi1 /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
+    phi1l /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
+    phi1ml /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
+    psi1l /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
+    phi2 /= jnp.sqrt(alpha2.diagonal()).reshape(num_modes, 1, 1)
+    phi2l /= jnp.sqrt(alpha2.diagonal()).reshape(num_modes, 1, 1)
+    psi2l /= jnp.sqrt(alpha2.diagonal()).reshape(num_modes, 1, 1)
 
     return (phi1, psi1, phi2,
             phi1l, phi1ml, psi1l, phi2l, psi2l,
@@ -237,7 +240,7 @@ def check_alphas(phi1, psi1, phi2,
                  tolerance, *args, **kwargs):
 
     alpha1 = couplings.f_alpha1(phi1, psi1)
-    alpha2 = couplings.f_alpha2(phi2l, psi2l)
+    alpha2 = couplings.f_alpha2(phi2l, psi2l, X_xdelta)
     num_modes = len(alpha1)
     assert jnp.allclose(alpha1, jnp.eye(num_modes),
                         **tolerance), \
@@ -293,8 +296,9 @@ def axis_tilde(tensor: jnp.ndarray) -> jnp.ndarray:
 
     return f
 
-@jit
-def contraction(moments: jnp.ndarray, loadpaths: jnp.ndarray) -> jnp.ndarray:
+@partial(jit, static_argnames=["precision"])
+def contraction(moments: jnp.ndarray, loadpaths: jnp.ndarray,
+                precision) -> jnp.ndarray:
     """Sums the moments from the nodal forces along the corresponding load path  
 
     Parameters
@@ -314,25 +318,26 @@ def contraction(moments: jnp.ndarray, loadpaths: jnp.ndarray) -> jnp.ndarray:
 
     """
 
-    f = jax.vmap(lambda u, v: jnp.dot(u, v),
+    f = jax.vmap(lambda u, v: jnp.tensordot(u, v, axes=(2, 0), precision=precision),
                  in_axes=(2, 1), out_axes=2)
     fuv = f(moments, loadpaths)
     return fuv
 
-@jit
-def moment_force(u: jnp.ndarray, v: jnp.ndarray) -> jnp.ndarray:
+@partial(jit, static_argnames=["precision"])
+def moment_force(force: jnp.ndarray, X3t: jnp.ndarray, precision) -> jnp.ndarray:
 
-    f1 = jax.vmap(lambda u, v: jnp.matmul(u, v), in_axes=(2,2), out_axes=2)
-    f2 = jax.vmap(f1, in_axes=(None, 2), out_axes=3)
-    fuv = f2(u, v)
+    f1 = jax.vmap(lambda u, v: jnp.tensordot(u, v, axes=(1,1), precision=precision),
+                  in_axes=(None,2), out_axes=2) # tensordot along coordinate axis (len=6)
+    f2 = jax.vmap(f1, in_axes=(2, 3), out_axes=3)
+    fuv = f2(force, X3t)
 
     return fuv
 
-@jit
-def coordinates_difftensor(X: jnp.ndarray, Mavg: jnp.ndarray) -> jnp.ndarray:
+@partial(jit, static_argnames=["precision"])
+def coordinates_difftensor(X: jnp.ndarray, Mavg: jnp.ndarray, precision) -> jnp.ndarray:
     """Computes coordinates
 
-    The tensor representes the following: Coordinates, middle point of each element,
+    The tensor represents the following: Coordinates, middle point of each element,
     minus the position of each node in the structure
 
     Parameters
@@ -352,18 +357,19 @@ def coordinates_difftensor(X: jnp.ndarray, Mavg: jnp.ndarray) -> jnp.ndarray:
 
     """
 
-    Xm = jnp.matmul(X, Mavg)
+    Xm = jnp.matmul(X, Mavg, precision=precision)
     num_nodes = X.shape[1]
     ones = jnp.ones(num_nodes)
-    Xm3 = jnp.tensordot(Xm, ones, axes=0)  # copy Xm along a 3rd dimension
-    Xn3 = jnp.transpose(jnp.tensordot(X, ones, axes=0),
+    Xm3 = jnp.tensordot(Xm, ones, axes=0, precision=precision)  # copy Xm along a 3rd dimension
+    Xn3 = jnp.transpose(jnp.tensordot(X, ones, axes=0, precision=precision),
                         axes=[0, 2, 1]) # copy X along the 2nd dimension
     X3 = (Xm3 - Xn3)
     return X3
 
-@jit
+@partial(jit, static_argnames=["precision"])
 def coordinate_transform(u1: jnp.ndarray,
-                         v1: jnp.ndarray) -> jnp.ndarray:
+                         v1: jnp.ndarray,
+                         precision) -> jnp.ndarray:
     """Applies a coordinate transformation
 
     to the 6-element component (dim=1) of a 3rd order tensor
@@ -378,13 +384,13 @@ def coordinate_transform(u1: jnp.ndarray,
 
 
     """
-    f = jax.vmap(lambda u, v: jnp.matmul(u, v), in_axes=(2, 2), out_axes=2)
+    f = jax.vmap(lambda u, v: jnp.matmul(u, v, precision=precision), in_axes=(2, 2), out_axes=2)
     fuv = f(u1, v1)
     return fuv
 
-@jit
-def ephi(emat, phi):
-    f = jax.vmap(lambda u, v: jnp.matmul(u, v), in_axes=(2, None), out_axes=2)
+@partial(jit, static_argnames=["precision"])
+def ephi(emat, phi, precision):
+    f = jax.vmap(lambda u, v: jnp.matmul(u, v, precision=precision), in_axes=(2, None), out_axes=2)
     fuv = f(phi, emat)
     return fuv
 
