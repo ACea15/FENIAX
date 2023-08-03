@@ -173,8 +173,8 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     C0ab = compute_C0ab(X_diff, X_xdelta, config)  # shape=(3x3xNn)
     C06ab = make_C6(C0ab)  # shape=(6x6xNn)
     #eigenvals, eigenvecs = compute_eigs(Ka, Ma, num_modes)
-    #eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)
-    eigenvals, eigenvecs = compute_eigs_load(num_modes)    
+    eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)
+    #eigenvals, eigenvecs = compute_eigs_load(num_modes)    
     omega = jnp.sqrt(eigenvals)
     # reorder to the grid coordinate in X and add 0s of clamped DoF
     _phi1 = jnp.matmul(config.fem.Mfe_order, eigenvecs, precision=precision)

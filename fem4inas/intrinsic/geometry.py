@@ -15,7 +15,7 @@ def find_fem(folder, Ka_name, Ma_name, grid):
         Ka_path = list(pathlib.Path(folder).glob(f"*{Ka_name}"))[0]
         Ma_path = list(pathlib.Path(folder).glob(f"*{Ma_name}"))[0]
         if isinstance(grid, str):
-            grid_path = list(pathlib.Path(folder).glob(f"*{grid}*"))[0]
+            grid_path = list(pathlib.Path(folder).glob(f"*{grid}"))[0]
         else:
             grid_path = grid
     else:
