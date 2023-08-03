@@ -155,8 +155,8 @@ def compute_eigs_scpy(
     return reduced_eigenvals, reduced_eigenvecs
 
 def compute_eigs_load(num_modes: int)-> (jnp.ndarray, jnp.ndarray):
-    eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/w.npy")
-    eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/v.npy")
+    eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/w.npy")
+    eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/v.npy")
     reduced_eigenvals = eigenvals[:num_modes]
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
@@ -173,8 +173,8 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     C0ab = compute_C0ab(X_diff, X_xdelta, config)  # shape=(3x3xNn)
     C06ab = make_C6(C0ab)  # shape=(6x6xNn)
     #eigenvals, eigenvecs = compute_eigs(Ka, Ma, num_modes)
-    eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)
-    #eigenvals, eigenvecs = compute_eigs_load(num_modes)    
+    #eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)
+    eigenvals, eigenvecs = compute_eigs_load(num_modes)    
     omega = jnp.sqrt(eigenvals)
     # reorder to the grid coordinate in X and add 0s of clamped DoF
     _phi1 = jnp.matmul(config.fem.Mfe_order, eigenvecs, precision=precision)
@@ -209,9 +209,11 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     phi2 += moments_force
     phi2l = coordinate_transform(phi2, C06ab, precision=precision)
     ematt_phi1 = ephi(config.const.EMAT, phi1ml, precision)
-    psi2l = -jnp.tensordot(
-        phi1l, config.fem.Mdiff, axes=(2, 0), precision=precision
-    ) / X_xdelta + ematt_phi1
+    phi1_diff = jnp.tensordot(
+        phi1, config.fem.Mdiff, axes=(2, 0), precision=precision
+    )
+    phi1l_diff= coordinate_transform(phi1_diff, C06ab, precision=precision)
+    psi2l = -phi1l_diff / X_xdelta + ematt_phi1
 
     return (phi1, psi1, phi2,
             phi1l, phi1ml, psi1l, phi2l, psi2l,
