@@ -155,8 +155,8 @@ def compute_eigs_scpy(
     return reduced_eigenvals, reduced_eigenvecs
 
 def compute_eigs_load(num_modes: int)-> (jnp.ndarray, jnp.ndarray):
-    eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/w.npy")
-    eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/v.npy")
+    eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/w.npy")
+    eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/v.npy")
     reduced_eigenvals = eigenvals[:num_modes]
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
