@@ -25,6 +25,19 @@ def find_fem(folder, Ka_name, Ma_name, grid):
     return Ka_path, Ma_path, grid_path
 
 def list2dict(obj: list | dict):
+    """Converts a list into a dictionary
+
+    as in dict = {k: v for k,v in enumerate(list)}
+
+    Parameters
+    ----------
+    obj : list | dict
+        List to be convert, if it is a dictionary do nothing
+
+    Returns
+    -------
+    dict
+    """
 
     if isinstance(obj, list):
         out = dict()
@@ -75,6 +88,32 @@ def build_grid(grid: str | jnp.ndarray | pd.DataFrame | None,
 
 def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list],
                                              dict[str: list], int):
+    """Computes the clamped characteristics of the model
+
+
+    A negative int in fe_order indicates clamped node; -1 will be the
+    first clamped node, -2 the second, etc. If only DoF are clamped
+    (multibody), the format is as follows: -101011 means
+    clamped-free-clamped-free-clamped-clamped in the first clamped
+    node. -1010112 is the same but in the second clamped node.
+
+    Parameters
+    ----------
+    fe_order : list[int]
+        Array of integers representing the mapping between a node an
+        the index in the stiffness and mass matrices
+
+    Returns
+    -------
+    (list[int], dict[str: list], dict[str: list], int)
+        List of clamped nodes (usually just one); dictionaries
+        relating the clamped nodes index to free and clamped DoF; int
+        with the total number of clampedDoF, usually 6 for one node
+        fully clamped
+
+
+    """
+
     clamped_nodes = list()
     freeDoF = dict()
     clampedDoF = dict()
@@ -106,7 +145,7 @@ def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list],
     return clamped_nodes, freeDoF, clampedDoF, total_clampedDoF
 
 def compute_component_father(component_connectivity:
-                             dict[str:list]) -> (list[str], dict[str:list]):
+                             dict[str:list]) -> (list[str], dict[str:str]):
     """Calculates the father component of each component
 
     Assuming an outwards flow from the first node, every path in the
@@ -121,7 +160,7 @@ def compute_component_father(component_connectivity:
 
     Returns
     -------
-    dict[str:list]
+    dict[str:str]
         Maps the father of each component
 
     """
@@ -147,7 +186,7 @@ def compute_component_nodes(components_range: list[str]) -> dict[str:list]:
     Parameters
     ----------
     components_range : list[str]
-        Component list
+        List of components
 
     Returns
     -------
@@ -165,6 +204,22 @@ def compute_component_nodes(components_range: list[str]) -> dict[str:list]:
 
 @dispatch(pd.DataFrame)
 def compute_component_nodes(df: pd.DataFrame) -> dict[str:list]:
+    """Links components to their nodes 
+
+    Links the nodes (as indexes of DataFrame or list) to the
+    compononent they belong to
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        structuralGrid DataFrame with component column
+
+    Returns
+    -------
+    dict[str:list]
+        Dictionary with component names and the corresponding nodes
+
+    """
 
     component_nodes = dict()
     components = df.component.unique()
@@ -176,6 +231,28 @@ def compute_component_nodes(df: pd.DataFrame) -> dict[str:list]:
 def compute_prevnode(components_range: Sequence[str],
                      component_nodes: dict[str:list[int]],
                      component_father: dict[str:int]) -> list[int]:
+    """Computes the previous node index to each node
+
+    for a simple graph like 0--1--3--2--4 the output will be [None, 0,
+    3, 1, 2]
+
+    Parameters
+    ----------
+    components_range : Sequence[str]
+        List of components corresponding the input nodes belong to.
+    component_nodes : dict[str:list[int]]
+        Map between components and the nodes in each of them
+    component_father : dict[str:int]
+        Maps each component to their father component
+
+    Returns
+    -------
+    list[int]
+        The list with each preceding node assuming an outwards flow
+        from the very first node
+
+
+    """
 
     prevnodes = list()
     j = 0
@@ -201,7 +278,27 @@ def compute_prevnode(components_range: Sequence[str],
 
 def compute_component_children(component_name: str,
                                component_connectivity: dict[str:list[str | int]],
-                               chain:list = None):
+                               chain:list = None) -> list[str]:
+    """Computes the children components on any given component
+
+    Parameters
+    ----------
+    component_name : str
+        The component on which we want to calculate the components
+        that derived from it, again assuming an outward flow from the
+        very first node.
+    component_connectivity : dict[str:list[str | int]]
+        The connectivity dictionary that links each component to its
+        "children"
+    chain : list
+        variable for recursive function, ultimately the output
+
+    Returns
+    -------
+    list[str]
+        All the children on the input component
+
+    """
 
     if chain is None:
         chain = list()
@@ -216,13 +313,46 @@ def compute_component_children(component_name: str,
     return chain
 
 def compute_component_chain(component_names: list[str],
-                            component_connectivity: dict[str:list[str | int]]):
+                            component_connectivity: dict[str:list[str | int]]
+                            ) -> dict[str:list[str]]:
+    """Computes the dictionary that maps all the components to their corresponding children
+
+    Parameters
+    ----------
+    component_names : list[str]
+        List with the components in the model
+    component_connectivity : dict[str:list[str | int]]
+        The connectivity dictionary
+
+    Returns
+    -------
+    dict[str:list[str]]
+       Maps component to all its children
+    """
 
     component_chain = {k: compute_component_children(k, component_connectivity)
                        for k in component_names}
     return component_chain
 
 def compute_Maverage(prevnodes: Sequence[int], num_nodes: int) -> jnp.ndarray:
+    """Calculates the matrix that averages between adjacent nodes
+
+    Parameters
+    ----------
+    prevnodes : Sequence[int]
+        Array with the previous node assuming outwards flow from the
+        first one.
+    num_nodes : int
+        Total number of nodes
+
+    Returns
+    -------
+    jnp.ndarray
+        Matrix where each column represents one node and the
+        components in that column are 0.5 and 0.5 for the
+        corresponding node and its precedent
+
+    """
 
     M = np.eye(num_nodes)
     M[0,0] = 0. # first node should be made 0 since we have Nn - 1 elements:
@@ -235,6 +365,24 @@ def compute_Maverage(prevnodes: Sequence[int], num_nodes: int) -> jnp.ndarray:
 
 def compute_Mdiff(prevnodes: Sequence[int],
                   num_nodes: int) -> jnp.ndarray:
+    """Calculates the matrix that subtracts between adjacent nodes
+
+    Parameters
+    ----------
+    prevnodes : Sequence[int]
+        Array with the previous node assuming outwards flow from the
+        first one.
+    num_nodes : int
+        Total number of nodes
+
+    Returns
+    -------
+    jnp.ndarray
+        Matrix where each column represents one node and the
+        components in that column are 1 and -1 for the
+        corresponding node and its precedent
+
+    """
 
     M = np.eye(num_nodes)
     M[0,0] = 0.
@@ -243,12 +391,42 @@ def compute_Mdiff(prevnodes: Sequence[int],
     return jnp.array(M)
 
 def compute_Mfe_order(fe_order: np.ndarray,
-                      clamped_nodes,
-                      freeDoF,
-                      total_clampedDoF,
-                      component_nodes,
-                      component_chain,
-                      num_nodes) -> jnp.ndarray:
+                      clamped_nodes: list[int],
+                      freeDoF: dict[str: list],
+                      total_clampedDoF: int,
+                      component_nodes: dict[str:list],
+                      component_chain: dict[str:list],
+                      num_nodes: int) -> jnp.ndarray:
+    """Finds the order to swap quantities from the FE model to the input nodes 
+
+    for instance to map eigenvectors to the geometry in the given
+    grid.
+
+    Parameters
+    ----------
+    fe_order : np.ndarray
+        Array of integers representing the mapping between a node an
+        the index in the stiffness and mass matrices    
+    clamped_nodes : list[int]
+       List of clamped nodes (usually just one); dictionaries
+       relating the clamped nodes index to free and clamped DoF.
+    freeDoF : dict[str: list]
+       free DoF for each clamped node
+    total_clampedDoF : int
+        int with the total number of clampedDoF
+    component_nodes : dict[str:list]
+        Dictionary with component names and the corresponding nodes
+    component_chain : dict[str:list]
+        Dictionary mapping component to all of its children
+    num_nodes : int
+
+    Returns
+    -------
+    jnp.ndarray
+        Matrix where each column represents one node and the
+        components in that column are 1s for the DoF for the
+
+    """
 
     clamped_dofs = 0
     M = np.zeros((6 * num_nodes, 6 * num_nodes - total_clampedDoF))
@@ -265,10 +443,33 @@ def compute_Mfe_order(fe_order: np.ndarray,
 
     return jnp.array(M)
 
-def compute_Mloadpaths(components_range,
+def compute_Mloadpaths(components_range: list[str],
                        component_nodes: dict[str:list[int]],
-                       component_chain,
-                       num_nodes) -> jnp.ndarray:
+                       component_chain: dict[str: list[str]],
+                       num_nodes: int) -> jnp.ndarray:
+    """Finds the load paths for the internal forces at each node.
+
+    Parameters
+    ----------
+    components_range : list[str]
+       List of components
+    component_nodes : dict[str:list[int]]
+        Dictionary with component names and the corresponding nodes    
+    component_chain : dict[str: list[str]]
+        Dictionary mapping component to all of its children
+    num_nodes : int
+        Total number of nodes
+
+    Returns
+    -------
+    jnp.ndarray
+        Matrix where each column represents one node and the
+        components in that column are 1s for the nodes one
+        needs to transverse to recover the loads at that node.
+        Note this only works for structures without loops or
+        multiple fully clamped nodes, i.e. determinate structures.
+
+    """
 
     M = np.eye(num_nodes)
     M[:, 0] = 1.
