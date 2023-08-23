@@ -623,9 +623,10 @@ derivatives
   self.solver(self.dq)
 - save
 *** dqs
-| Dynamic   | Nonlinear | Gravity/DeadForces | ModalAero | residualised
-| Static    | Linear    |                    |           |
-| Stability |           |                    |           |
+| Dynamic   | Nonlinear | Gravity/DeadForces | ModalAero | Point Loads | residualised |
+| Static    | Linear    |                    |           | follower    |              |
+| Stability |           |                    |           | dead        |              |
+|           |           |                    |           | both        |              |
 
 dq_2110
 

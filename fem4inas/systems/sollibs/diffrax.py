@@ -24,5 +24,10 @@ def pull_ode(sol):
     qs = jnp.array(sol.ys)
     return qs
 
+def pull_newton_raphson(sol):
+
+    qs = jnp.array(sol.ys)
+    return qs
+
 #__init__(self, rtol: Optional[Scalar] = None, atol: Optional[Scalar] = None, max_steps: Optional[int] = 10, kappa: Scalar = 0.01, norm: Callable = <function rms_norm>, tolerate_nonconvergence: bool = False)
 #__call__(self, fn: Callable, x: PyTree, args: PyTree, jac: Optional[~LU_Jacobian] = None)
