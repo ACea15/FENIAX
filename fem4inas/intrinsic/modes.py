@@ -220,10 +220,41 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
             omega, X_xdelta, C0ab)
 
 
-def scale(phi1, psi1, phi2,
-          phi1l, phi1ml, psi1l, phi2l, psi2l,
-          omega, X_xdelta, C0ab,
+def scale(phi1: jnp.ndarray,
+          psi1: jnp.ndarray,
+          phi2: jnp.ndarray,
+          phi1l: jnp.ndarray,
+          phi1ml: jnp.ndarray,
+          psi1l: jnp.ndarray,
+          phi2l: jnp.ndarray,
+          psi2l: jnp.ndarray,
+          omega: jnp.ndarray,
+          X_xdelta: jnp.ndarray,
+          C0ab: jnp.ndarray,
           *args, **kwargs):
+    """Sacales the intrinsic modes
+
+    The porpuse is that the integrals alpha1 and alpha2 are the
+    identity
+
+    Parameters
+    ----------
+    phi1 : jnp.ndarray
+    psi1 : jnp.ndarray
+    phi2 : jnp.ndarray
+    phi1l : jnp.ndarray
+    phi1ml : jnp.ndarray
+    psi1l : jnp.ndarray
+    phi2l : jnp.ndarray
+    psi2l : jnp.ndarray
+    omega : jnp.ndarray
+    X_xdelta : jnp.ndarray
+    C0ab : jnp.ndarray
+    *args :
+    **kwargs :
+
+
+    """
 
     alpha1 = couplings.f_alpha1(phi1, psi1)
     alpha2 = couplings.f_alpha2(phi2l, psi2l, X_xdelta)
@@ -243,10 +274,11 @@ def scale(phi1, psi1, phi2,
             omega, X_xdelta, C0ab)
 
 
-def check_alphas(phi1, psi1, phi2,
-                 phi1l, phi1ml, psi1l, phi2l, psi2l,
-                 omega, X_xdelta, C0ab,
-                 tolerance, *args, **kwargs):
+def check_alphas(phi1, psi1,
+                 phi2l, psi2l,
+                 X_xdelta,
+                 tolerance,
+                 *args, **kwargs):
 
     alpha1 = couplings.f_alpha1(phi1, psi1)
     alpha2 = couplings.f_alpha2(phi2l, psi2l, X_xdelta)
@@ -257,7 +289,7 @@ def check_alphas(phi1, psi1, phi2,
     assert jnp.allclose(alpha2, jnp.eye(num_modes),
                         **tolerance), \
         f"Alpha2 not equal to Identity: Alpha2: {alpha2}"
-
+    return alpha1, alpha2
 
 @jit
 def tilde0010(vector: jnp.ndarray) -> jnp.ndarray:
@@ -334,6 +366,21 @@ def contraction(moments: jnp.ndarray, loadpaths: jnp.ndarray,
 
 @partial(jit, static_argnames=["precision"])
 def moment_force(force: jnp.ndarray, X3t: jnp.ndarray, precision) -> jnp.ndarray:
+    """Yields moments associated to each node due to the forces
+
+    Parameters
+    ----------
+    force : jnp.ndarray
+        Force tensor (Nmx6xNn) for which we want to obtain the
+        resultant moments
+    X3t : jnp.ndarray
+        Tilde positions tensor (6x6xNnxNn)
+
+    Returns
+    -------
+    jnp.ndarray: (Nmx6xNnxNn)
+    
+    """
 
     f1 = jax.vmap(lambda u, v: jnp.tensordot(u, v, axes=(1,1), precision=precision),
                   in_axes=(None,2), out_axes=2) # tensordot along coordinate axis (len=6)
@@ -399,12 +446,28 @@ def coordinate_transform(u1: jnp.ndarray,
 
 @partial(jit, static_argnames=["precision"])
 def ephi(emat, phi, precision):
-    f = jax.vmap(lambda u, v: jnp.matmul(u, v, precision=precision), in_axes=(2, None), out_axes=2)
+    f = jax.vmap(lambda u, v: jnp.matmul(u, v,
+                                         precision=precision),
+                 in_axes=(2, None), out_axes=2)
     fuv = f(phi, emat)
     return fuv
 
 @jit
-def make_C6(v1):
+def make_C6(v1) -> jnp.ndarray:
+    """Given a 3x3 matrix, make the diagonal 6x6
+
+    It iterates over a third dimension in the input tensor
+
+    Parameters
+    ----------
+    v1 : jnp.ndarray
+        A tensor of the form (3x3xNn)
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
     f = jax.vmap(
         lambda v: jnp.vstack(
             [jnp.hstack([v, jnp.zeros((3, 3))]), jnp.hstack([jnp.zeros((3, 3)), v])]
@@ -417,6 +480,24 @@ def make_C6(v1):
 
 
 @partial(jit, static_argnames=["num_modes", "num_nodes"])
-def reshape_modes(_phi, num_modes, num_nodes):
+def reshape_modes(_phi: jnp.ndarray,
+                  num_modes: int,
+                  num_nodes: int):
+    """Reshapes vectors in the input matrix to form a 3rd-order tensor 
+
+    Each vector is made into a 6xNn matrix
+
+    Parameters
+    ----------
+    _phi : jnp.ndarray
+        Matrix as in the output of eigenvector analysis (6NnxNm)
+    num_modes : int
+        Number of modes
+    num_nodes : int
+        Number of nodes
+
+
+    """
+    
     phi = jnp.reshape(_phi, (num_nodes, 6, num_modes), order="C")
     return phi.T

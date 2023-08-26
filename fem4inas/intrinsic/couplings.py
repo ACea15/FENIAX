@@ -5,7 +5,8 @@ import fem4inas.intrinsic.functions as functions
 
 # TODO: add quadratic approx.
 
-def f_gamma1(phi1: jnp.array, psi1: jnp.array):
+@jit
+def f_gamma1(phi1: jnp.array, psi1: jnp.array) ->  jnp.array:
 
     f1 = jax.vmap(lambda u, v: jnp.tensordot(functions.L1(u), v, axes=(1, 1)),
                   in_axes=(1,2), out_axes=2)  # iterate nodes
@@ -14,10 +15,11 @@ def f_gamma1(phi1: jnp.array, psi1: jnp.array):
     gamma1 = jnp.einsum('isn,jskn->ijk', phi1, L1)
     return gamma1
 
+@jit
 def f_gamma2(phi1m: jnp.array,
              phi2: jnp.array,
              psi2: jnp.array,
-             delta_s: jnp.array):
+             delta_s: jnp.array) -> jnp.array:
 
     f1 = jax.vmap(lambda u, v: jnp.tensordot(functions.L2(u), v, axes=(1, 1)),
                   in_axes=(1,2), out_axes=2)  # iterate nodes
@@ -26,14 +28,16 @@ def f_gamma2(phi1m: jnp.array,
     gamma2 = jnp.einsum('isn,jskn,n->ijk', phi1m, L2, delta_s)
     return gamma2
 
-def f_alpha1(phi1: jnp.array, psi1: jnp.array):
+@jit
+def f_alpha1(phi1: jnp.array, psi1: jnp.array) -> jnp.array:
 
     alpha1 = jnp.einsum('isn,jsn->ij', phi1, psi1)
     return alpha1
 
+@jit
 def f_alpha2(phi2: jnp.array,
              psi2: jnp.array,
-             delta_s: jnp.array):
+             delta_s: jnp.array) -> jnp.array:
 
     phi2i = phi2[:,:,1:]
     psi2i = psi2[:,:,1:]

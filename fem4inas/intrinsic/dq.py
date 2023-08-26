@@ -22,7 +22,24 @@ def contraction_gamma3(gamma2: jnp.ndarray, q1: jnp.ndarray,
                      jnp.tensordot(q1, q2, axes=0))
     return res
 
+def dq_0(q0, t, *args):
 
+    sol, follower_force, *xargs = args
+    gamma2 = sol.couplings.gamma2
+    phi1 = sol.modes.phi1
+    F = omega * q - contraction_gamma2(gamma2, q) + eta_0(q, t, phi1, )
+    
+    
+def eta_0():
+
+    f =  force_follower(t)
+    jnp.tensordot(phi1, f, axes=([1, 2],
+                                 [0, 1]))
+    
+
+    
+
+    
 if __name__ == "__main__":
 
     @jit

@@ -203,7 +203,7 @@ class D_system(DataContainer):
     tn: int = dfield("Number of time steps", default=None)
     dt: float = dfield("Delta time", default=None)
     t: jnp.array = dfield("Time vector", default=None)
-    solver_library: str = dfield("Library solving our system of equations", default="Diffrax")
+    solver_library: str = dfield("Library solving our system of equations", default=None)
     solver_function: str = dfield(
         "Name for the solver of the previously defined library", default=None)
     solver_settings: str = dfield(
@@ -216,34 +216,37 @@ class D_system(DataContainer):
         "number of modes to residualise", default=0)
 
     label: str = dfield("""Description of the loading type:
-    '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""", init=False)
+    '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
+                        default=None)
 
     def __post_init__(self):
 
         self.xloads = initialise_Dclass(self.xloads, D_xloads)
-        if isinstance(self.solution, str):
-            sol_label = Solution[self.solution.upper()].value
-        else:
-            sol_label = self.solution
-        self.label = f"{sol_label}{self.nonlinear}{self.residualise}{self.xloads.label}"
+        if  self.label is not None:
+            if isinstance(self.solution, str):
+                sol_label = Solution[self.solution.upper()].value
+            else:
+                sol_label = self.solution
+            self.label = f"{sol_label}{self.nonlinear}{self.residualise}{self.xloads.label}"
 
-        if self.solver_function is None:  # set default  
-            if self.label[0] == 0:
-                self.solver_function = 'newton_raphson'
-            elif self.label[0] == 1:
-                self.solver_function = 'ode'
-            elif self.label[0] == 2:
-                ...
-                # TODO: implement
-            if self.label[0] == 3:
-                ...
-                # TODO: implement
+            if self.solver_function is None:  # set default  
+                if self.label[0] == 0:
+                    self.solver_function = 'newton_raphson'
+                elif self.label[0] == 1:
+                    self.solver_function = 'ode'
+                elif self.label[0] == 2:
+                    ...
+                    # TODO: implement
+                if self.label[0] == 3:
+                    ...
+                    # TODO: implement
 
 @dataclass(frozen=False)
 class Dsystems(DataContainer):
 
-    settings: dict[str: dict] = dfield("System name")
-    sys: dict[str: D_system]  = dfield("System name")
+    settings: dict[str: dict] = dfield("Settings ")
+    sys: dict[str: D_system]  = dfield("Dictionary with systems in the simulation",
+                                       init=False)
 
     def __post_init__(self):
         self.sys = dict()

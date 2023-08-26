@@ -15,6 +15,20 @@ inp.fem.fe_order_start = 1
 inp.driver.typeof = "intrinsic"
 inp.simulation.typeof = "single"
 inp.ex.Cab_xtol = 1e-4
+inp.systems.s1.solution = "static"
+inp.systems.s1.solver_library = "diffrax"
+inp.systems.s1.solver_function = "newton_raphson"
+inp.systems.s1.xloads.follower_forces = True
+inp.systems.s1.xloads.follower_points = [[0, -1, 1]]
+inp.systems.s1.xloads.follower_interpolation = [[[1., 3.7e3],
+                                                 [2, 12.1e3],
+                                                 [3, 17.5e3],
+                                                 [4, 39.3e3],
+                                                 [5, 61.0e3],
+                                                 [6, 94.5e3],
+                                                 [7, 120e3]
+                                                 ]
+                                                ]
 config =  configuration.Config(inp)
 
 # for k, v in config._data_dict['fem'].items():

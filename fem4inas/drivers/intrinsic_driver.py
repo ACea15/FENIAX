@@ -2,7 +2,8 @@ from fem4inas.drivers.driver import Driver
 
 import fem4inas.simulations
 from fem4inas.preprocessor import solution, configuration
-
+import fem4inas.intrinsic.modes as modes
+import fem4inas.systems
 
 class IntrinsicDriver(Driver, cls_name="intrinsic"):
     """Driver for the modal intrinsic theory
@@ -72,11 +73,14 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
             print("no simulation settings")
 
     def _set_systems(self):
+        print("***** Setting systems *****")
         self.systems = dict()
         if hasattr(self._config, "systems"):
             for k, v in self._config.systems.sys.items():
-                cls_sys = fem4inas.systems.factory(v.typeof)
+                print(f"***** Initialising system {k} *****")
+                cls_sys = fem4inas.systems.factory(f"{v.solution}_intrinsic")
                 self.systems[k] = cls_sys(k, v, self._config.fem, self.sol)
+                print(f"***** Initialised {v.solution}_intrinsic *****")
         self.num_systems = len(self.systems)
 
     def _set_sol(self):
@@ -85,7 +89,6 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
     def _compute_modalshapes(self):
         # if self._config.numlib == "jax":
-        import fem4inas.intrinsic.modes as modes
 
         # elif self._config.numlib == "numpy":
         #    import fem4inas.intrinsic.modes_np as modes
@@ -94,9 +97,6 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
             self._config.fem.X.T, self._config.fem.Ka, self._config.fem.Ma, self._config
         )
         modal_analysis_scaled = modes.scale(*modal_analysis)
-        modes.check_alphas(
-            *modal_analysis_scaled, tolerance=self._config.jax_np.allclose
-        )
         self.sol.add_container("Modes", *modal_analysis_scaled)
 
     def _compute_modalcouplings(self):
@@ -105,7 +105,13 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
         # elif self._config.numlib == "numpy":
         #    import fem4inas.intrinsic.couplings_np as couplings
-
+        alpha1, alpha2 = modes.check_alphas(self.sol.data.modes.phi1,
+                                            self.sol.data.modes.psi1,
+                                            self.sol.data.modes.phi2l,
+                                            self.sol.data.modes.psi2l,
+                                            self.sol.data.modes.X_xdelta,
+                                            tolerance=self._config.jax_np.allclose
+        )
         gamma1 = couplings.f_gamma1(self.sol.data.modes.phi1,
                                     self.sol.data.modes.psi1)
         gamma2 = couplings.f_gamma2(
@@ -115,7 +121,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
             self.sol.data.modes.X_xdelta,
         )
 
-        self.sol.add_container("Couplings", gamma1, gamma2)
+        self.sol.add_container("Couplings", alpha1, alpha2, gamma1, gamma2)
 
     def _load_modalshapes(self):
         self.sol.load_container("Modes")

@@ -18,6 +18,8 @@ class Modes:
     
 @dataclass(slots=True)
 class Couplings:
+    alpha1: jnp.ndarray
+    alpha2: jnp.ndarray    
     gamma1: jnp.ndarray
     gamma2: jnp.ndarray
 
