@@ -38,7 +38,8 @@ setup(
         "jax[cpu]"],
         "plot": [
             "matplotlib",
-            "plotly"
+            "plotly",
+            "pyvista"
             ],
         "docs": [
             "sphinx",
@@ -47,10 +48,12 @@ setup(
             "nbsphinx"
                  ],
         "all": [
+            "pyNastran",
             "jupyterlab",
             "pandas",
             "matplotlib",
             "plotly",
+            "pyvista",
             "sphinx",
             "myst-parser",
             "sphinx_rtd_theme",
