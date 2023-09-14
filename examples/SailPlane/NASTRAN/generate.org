@@ -1,0 +1,575 @@
+* House keeping
+#+begin_src elisp :results none
+  (setq org-confirm-babel-evaluate nil)
+  (require 'org-tempo)
+  (pyvenv-workon "fem4inas")
+#+end_src
+
+#+begin_src python :session py1 :results none
+  machs = [0.8]
+  reduced_freqs = np.linspace(1e-9,1, 20)
+
+#+end_src
+
+* INPUT PARAMETERS
+#+NAME: python_parameters
+#+begin_src python :session py1 :var output="num_modes" :results none
+  import numpy as np
+  import fem4inas.nastran_utils.aero as nasaero
+  mach = 0.8
+  Mach = str(mach).replace('.','_')
+  machs = [mach]
+  reduced_freqs = np.linspace(1e-9,1, 20)
+  num_modes = 20
+  chord_panels = dict(wing=10, hstabilizer=10, vstabilizer=10)
+  #aero['s_ref'] = 361.6
+  #aero['b_ref'] = 58.0
+  #aero['X_ref'] = 36.3495
+  flutter_id = 9010
+  density_fact = [1.225]
+  mach_fact = machs
+  kv_fact = [200., 220.]
+  u_inf=1.
+  c_ref=1.
+  rho_ref=1.
+  flutter_method="PK"
+  flutter_sett = dict()
+  aero_sett = dict()
+  eval(output)
+#+end_src
+
+#+begin_src python :session py1  :results none
+def wb2w(point_le, x_te, z_bottom, pct2le, pct2te):
+    """ Wing-box to wing"""
+
+    x = x_te - point_le[0]
+    pct_wb = (pct2te - pct2le)
+    chord = x / pct_wb
+    LE = point_le[0] - chord * pct2le
+    point_LE = [LE, point_le[1], (point_le[2] +
+                                  z_bottom) / 2]
+    return point_LE, chord
+
+#+end_src
+
+* Modal Solution
+#+begin_src org :tangle "./SOL103/run_cao.bdf" :mkdirp yes :noweb yes
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ EXECUTIVE CONTROL								  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  SOL 103
+  DIAG  20
+
+  CEND
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CASE CONTROL									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  TITLE=SailPlane #                                 
+  ECHO=NONE                      	  
+  DISP=ALL                                
+  SPC = 2
+  METHOD = 100
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  BEGIN BULK
+  PARAM,BAILOUT,0
+  PARAM,GRDPNT,0                                                              
+  PARAM,K6ROT,1.0
+  PARAM,SNORM,20.0
+  PARAM,POST,-1
+  PARAM,MAXRATIO,1.0E07
+  $PARAM,EXTOUT,DMIGPCH
+  EIGRL,100,,,<<python_parameters(output="num_modes")>>
+
+  SPC1           1  123456  999079
+  SPCADD         2       1
+  INCLUDE '../base.bdf'
+  INCLUDE '../asets_clamped.bdf'
+
+  ENDDATA
+
+#+end_src
+#+begin_src bash :tangle "./SOL103/run.sh" :mkdirp yes :shebang   #!/usr/bin/zsh
+  cd SOL103
+  nastran run_cao.bdf
+#+end_src
+
+#+RESULTS:
+
+** Build modes in OP4
+#+begin_src python :session py1  :results none
+  from fem4inas.utils import write_op4modes
+  modes = write_op4modes("./SOL103/run_cao",
+                         num_modes,
+                         op4_name=f"./SOL103/Phi{num_modes}",
+                         return_modes=True)
+
+#+end_src
+
+* DLM model
+** Inputs
+#+begin_src python :session py1  :results none
+  NumSurfaces = 9
+  p1 = []
+  x12 = []
+  p4 = []
+  x43 = []
+  nspan = []
+  nchord = []
+  set1x = []
+  components = []
+  ##############FUSELAGE#######################
+  ###
+  ##############InnerWingR#######################
+  components.append("InnerWingR")
+  zcorr = 0.40135 / 0.3795
+  point_LE1, l1 = wb2w(point_le=[3.94, 0, zcorr * 0.231],
+                       x_te=8.49,
+                       z_bottom=-0.49 * zcorr,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  point_LE2, l2 = wb2w(point_le=[3.94, 2.793, 0.231 * zcorr],
+                       x_te=8.49,
+                       z_bottom=-0.49 * zcorr,
+                       pct2le=0.15,
+                       pct2te=0.6)
+
+  p1.append(point_LE1)
+  x12.append(l1)
+  p4.append(point_LE2)
+  x43.append(l2)
+  nspan.append(4)
+  nchord.append(chord_panels['wing'])
+  #set1x.append([10040069, 10040066, 10040063, 10040060, 10040000])
+  set1x.append([999023, 999022, 999021, 999020, 999000])
+  ##################OuterWingR#####################
+  components.append("OuterWingR")
+  point_LE1, l1 = wb2w(point_le=[3.94, 2.793, 0.231 * zcorr],
+                       x_te=8.49,
+                       z_bottom=-0.49 * zcorr,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  point_LE2, l2 = wb2w(point_le=[19.23, 28.8, -0.304 * zcorr],
+                       x_te=20.47,
+                       z_bottom=-0.455 * zcorr,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  p1.append(point_LE1)
+  x12.append(l1)
+  p4.append(point_LE2)
+  x43.append(l2)
+  nspan.append(19)
+  nchord.append(chord_panels['wing'])
+  set1x.append([999000,
+                999001,
+                999002,
+                999003,
+                999004,
+                999005,
+                999006,
+                999007,
+                999008,
+                999009,
+                999010,
+                999011,
+                999012,
+                999013,
+                999014,
+                999015,
+                999016,
+                999017,
+                999018,
+                999019])
+
+  ##############InnerWingL#######################
+  components.append("InnerWingL")
+  point_LE1, l1 = wb2w(point_le=[3.94, 0, 0.231 * zcorr],
+                       x_te=8.49,
+                       z_bottom=-0.49 * zcorr,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  point_LE2, l2 = wb2w(point_le=[3.94, -2.793, 0.231 * zcorr],
+                       x_te=8.49,
+                       z_bottom=-0.49 * zcorr,
+                       pct2le=0.15,
+                       pct2te=0.6)
+
+  p1.append(point_LE1)
+  x12.append(l1)
+  p4.append(point_LE2)
+  x43.append(l2)
+  nspan.append(4)
+  nchord.append(chord_panels['wing'])
+  #set1x.append([10040069, 10040066, 10040063, 10040060, 10040000])
+  set1x.append([999023, 999057, 999056, 999055, 999035])
+  ##################OuterWingL#####################
+  components.append("OuterWingL")
+  point_LE1, l1 = wb2w(point_le=[3.94, -2.793, 0.231 * zcorr],
+                       x_te=8.49,
+                       z_bottom=-0.49,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  point_LE2, l2 = wb2w(point_le=[19.23, -28.8, -0.304 * zcorr],
+                       x_te=20.47,
+                       z_bottom=-0.455,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  p1.append(point_LE1)
+  x12.append(l1)
+  p4.append(point_LE2)
+  x43.append(l2)
+  nspan.append(19)
+  nchord.append(chord_panels['wing'])
+  set1x.append([999035,
+                999036,
+                999037,
+                999038,
+                999039,
+                999040,
+                999041,
+                999042,
+                999043,
+                999044,
+                999045,
+                999046,
+                999047,
+                999048,
+                999049,
+                999050,
+                999051,
+                999052,
+                999053,
+                999054])
+
+  ##################ENGINES######################
+  ###
+  #####################TAILPLANE######
+  #hstabilizerInnerR
+  components.append("hstabilizerInnerR")
+  point_LE1, l1 = wb2w(point_le=[36.363, 0, 3.225],
+                       x_te=40.236,
+                       z_bottom=2.875,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  point_LE2, l2 = wb2w(point_le=[36.363, 0.5, 3.225],
+                       x_te=40.236,
+                       z_bottom=2.875,
+                       pct2le=0.15,
+                       pct2te=0.6)
+
+  p1.append(point_LE1)
+  x12.append(l1)
+  p4.append(point_LE2)
+  x43.append(l2)
+  nspan.append(1)
+  nchord.append(chord_panels['hstabilizer'])
+  set1x.append([999034, 999024])
+  #hstabilizerOuterR
+  components.append("hstabilizerOuterR")
+  point_LE1, l1 = wb2w(point_le=[36.363, 0.5, 3.225],
+                       x_te=40.236,
+                       z_bottom=2.875,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  point_LE2, l2 = wb2w(point_le=[42.377, 8.9, 3.96],
+                       x_te=43.781,
+                       z_bottom=3.82,
+                       pct2le=0.15,
+                       pct2te=0.6)
+
+  p1.append(point_LE1)
+  x12.append(l1)
+  p4.append(point_LE2)
+  x43.append(l2)
+  nspan.append(9)
+  nchord.append(chord_panels['hstabilizer'])
+  set1x.append([999024,
+                999025,
+                999026,
+                999027,
+                999028,
+                999029,
+                999030,
+                999031,
+                999032,
+                999033])
+  #hstabilizerInnerL
+  components.append("hstabilizerInnerL")
+  point_LE1, l1 = wb2w(point_le=[36.363, 0, 3.225],
+                       x_te=40.236,
+                       z_bottom=2.875,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  point_LE2, l2 = wb2w(point_le=[36.363, -0.5, 3.225],
+                       x_te=40.236,
+                       z_bottom=2.875,
+                       pct2le=0.15,
+                       pct2te=0.6)
+
+  p1.append(point_LE1)
+  x12.append(l1)
+  p4.append(point_LE2)
+  x43.append(l2)
+  nspan.append(1)
+  nchord.append(chord_panels['hstabilizer'])
+  set1x.append([999034,
+                999068])
+
+  #hstabilizerOuterL
+  components.append("hstabilizerOuterL")
+  point_LE1, l1 = wb2w(point_le=[36.363, -0.5, 3.225],
+                       x_te=40.236,
+                       z_bottom=2.875,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  point_LE2, l2 = wb2w(point_le=[42.377, -8.9, 3.96],
+                       x_te=43.781,
+                       z_bottom=3.82,
+                       pct2le=0.15,
+                       pct2te=0.6)
+
+  p1.append(point_LE1)
+  x12.append(l1)
+  p4.append(point_LE2)
+  x43.append(l2)
+  nspan.append(9)
+  nchord.append(chord_panels['hstabilizer'])
+  set1x.append([999058,
+                999059,
+                999060,
+                999061,
+                999062,
+                999063,
+                999064,
+                999065,
+                999066,
+                999067])
+  #vstabilizer
+  # WARNING: y-midplane not implemented
+  components.append("vstabilizer")
+  point_LE1, l1 = wb2w(point_le=[34.54, 0., 3.3],
+                       x_te=39.983,
+                       z_bottom=3.3,
+                       pct2le=0.15,
+                       pct2te=0.6)
+  point_LE2, l2 = wb2w(point_le=[42.236, 0., 13],
+                       x_te=44.227,
+                       z_bottom=13,
+                       pct2le=0.15,
+                       pct2te=0.6)
+
+  p1.append(point_LE1)
+  x12.append(l1)
+  p4.append(point_LE2)
+  x43.append(l2)
+  nspan.append(9)
+  nchord.append(chord_panels['vstabilizer'])
+  set1x.append([999068,
+                999069,
+                999070,
+                999071,
+                999072,
+                999073,
+                999074,
+                999075,
+                999076,
+                999077])
+
+#+end_src
+** Build
+#+begin_src python :session py1 :results none
+  dlm_panels = nasaero.GenDLMPanels(components,
+                                    NumSurfaces,
+                                    p1,
+                                    x12,
+                                    p4,
+                                    x43,
+                                    nspan,
+                                    nchord,
+                                    set1x,
+                                    spline_type=6)
+  dlm_panels.build_model()
+  dlm_panels.model.write_bdf("./dlm_model.bdf")
+
+#+end_src
+
+
+* GAFs extraction
+#+begin_src python :session py1 :results none
+  dlm_panels = nasaero.GenFlutter(flutter_id,
+                                  density_fact,
+                                  mach_fact,
+                                  kv_fact,
+                                  machs,
+                                  reduced_freqs,
+                                  u_inf,
+                                  c_ref,
+                                  rho_ref,
+                                  flutter_method,
+                                  flutter_sett,
+                                  aero_sett)
+
+  dlm_panels.build_model()
+  dlm_panels.model.write_bdf("./dlm_model.bdf")
+
+#+end_src
+
+#+begin_src python :session py1 :results none
+  dlm_gafs = nasaero.GenFlutter(flutter_id,
+                                density_fact,
+                                mach_fact,
+                                kv_fact,
+                                machs,
+                                reduced_freqs,
+                                u_inf,
+                                c_ref,
+                                rho_ref,
+                                flutter_method,
+                                flutter_sett,
+                                aero_sett)
+
+  dlm_gafs.build_model()
+  dlm_gafs.model.write_bdf("./GAFs/aero_flutter.bdf")
+
+#+end_src
+
+#+begin_src org :tangle "./GAFs/run_cao.bdf" :mkdirp yes :noweb yes
+  $EXECUTIVE CONTROL DECK
+  assign OUTPUT4='./Qhh<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=11
+  assign OUTPUT4='./Qhj<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=12
+  assign INPUTT4='../SOL103/Phi<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=90
+  $assign INPUTT4= 'Phi1.op4',formatted,UNIT=91
+  $NASTRAN NLINES=999999
+  NASTRAN QUARTICDLM=1
+  SOL 145
+  $TIME 10000
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $   K : AERODYNAMIC DOF = 2 * N AERO BOX
+  $   A : STRUCTURAL DOF  = 6 * N GRID
+  $   J : N AERO BOX
+  $   H : N MODES012
+  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ Retrieve the Spline Matrices form AERO0 and store them in DBALL
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  COMPILE AERO0
+  ALTER 'CALL.*PLINOUT.*AECASE.*AEBGPDTS.*AEUSETS.*GPGK0.*GDGK0'
+  EQUIVX GPGK0/SPL_F_AK/ALWAYS
+  EQUIVX GDGK0/SPL_D_AK/ALWAYS $
+  CALL DBSTORE SPL_F_AK,,,,//111/112/'DBALL'/0 $
+  CALL DBSTORE SPL_D_AK,,,,//113/114/'DBALL'/0 $
+  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ Retrieve the Matrices AJJ D12JK SKJ form PFAERO and store them in DBALL
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  COMPILE PFAERO
+  ALTER 'AMG.*MKLIST,ACPT/'
+  TYPE PARM,,I,N,EXIST $
+  TYPE PARM,,CS,N,CK $
+  CALL DBFETCH /SPL_F_AK,,,,/111/112/0/0/S,EXIST $
+  CALL DBFETCH /SPL_D_AK,,,,/113/114/0/0/S,EXIST $
+  EQUIVX AJJT/A_JJT/ALWAYS $
+  EQUIVX SKJ/S_KJ/ALWAYS $
+  EQUIVX D1JK/D1_KJ/ALWAYS $
+  EQUIVX D2JK/D2_KJ/ALWAYS $
+  IF ( YESWKK ) THEN $
+      EQUIVX WKK/W_KK/ALWAYS $
+      MPYAD W_KK,S_KJ,/WS_KJ $
+      EQUIVX WS_KJ/S_KJ/ALWAYS $
+  ENDIF $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $
+  $    EVALUATE THE QAA_ MATRIX:
+  $
+  $    Q_HH=Phi_HA*SPL_F_AK*S_KJ*INV(A_JJ)*D_JK*SPL_D_KA*Phi_AH
+  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  INPUTT4 /Phi_AH,,,,/1/90 $
+  $INPUTT4 /Phi_AH1,,,,/1/91 $
+  TRNSP Phi_AH/Phi_HA $
+  $TRNSP Phi_AH1/Phi_HA $
+  TRNSP A_JJT/A_JJ $
+  TRNSP SPL_D_AK/SPL_D_KA $
+  DECOMP A_JJ/L_AJJ,U_AJJ,, $
+  CK = CMPLX(0.,KBAR) $
+  ADD5 D1_KJ,D2_KJ,,,/D_KJ//CK $
+  TRNSP D_KJ/D_JK $
+  MPYAD D_JK,SPL_D_KA,/D_JA $
+  FBS L_AJJ,U_AJJ,D_JA/Q_JA $
+  MPYAD S_KJ,Q_JA,/Q_KA $
+  MPYAD SPL_F_AK,Q_KA,/Q_AA $
+  MPYAD Phi_HA,Q_AA,/Q_HA $
+  MPYAD Q_HA,Phi_AH,/Q_HH $
+  OUTPUT4 Q_HH,,,,//0/11///9 $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $
+  $    EVALUATE THE QHJ_ MATRIX:
+  $
+  $    Q_HJ=Phi_HA*SPL_F_AK*S_KJ*INV(A_JJ)*D_JK*SPL_D_KA
+  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  PARAML A_JJ//'TRAILER'/1/S,N,COL $
+  MATGEN ,/ID/1/COL $
+  FBS L_AJJ,U_AJJ,ID/INVAJJ $
+  MPYAD S_KJ,INVAJJ,/Q_KJ $
+  MPYAD SPL_F_AK,Q_KJ,/Q_AJ $
+  MPYAD Phi_HA,Q_AJ,/Q_HJ $
+  OUTPUT4 Q_HJ,,,,//0/12///9 $
+  CEND
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CASE CONTROL									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  TITLE=Sailplane #                                 
+  $SPC=  100001                                                            
+  $MPC=  100001
+  SPC = 2                  
+  METHOD = 100
+  FMETHOD = <<python_parameters(output="flutter_id")>>
+  $
+  DISP(PLOT) = ALL
+  $
+  RESVEC = YES
+  MODESELECT (STRUCTURE, LMODES = 20)
+  $ MODESELECT (STRUCTURE,LFREQ=0.001,HFREQ=15.0) 
+  $ MODESELECT (FLUID,LFREQ=0.001,HFREQ=15.0)
+  ECHO=NONE
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  BEGIN BULK
+  PARAM,BAILOUT,0
+  PARAM,GRDPNT,0                                                              
+  PARAM,K6ROT,1.0
+  PARAM,SNORM,20.0
+  PARAM,POST,0
+  $PARAM,MAXRATIO,1.0E07 $Default anyway
+  $PARAM   AUTOSPC YES
+  MDLPRM  MLTSPLIN 1 $Aero grids can be defined in multiple splines (dafault 0)
+  PARAM   WTMASS  1.0  
+  PARAM   OPPHIB  1
+  PARAM   OPPHIPA 1
+
+  EIGRL,100,,,<<python_parameters(output="num_modes")>>
+  SPC1           1  123456  999079
+  SPCADD         2       1
+  INCLUDE ../base.bdf
+  INCLUDE ../dlm_model.bdf
+  INCLUDE ./aero_flutter.bdf
+
+#+end_src
+
+#+begin_src bash :tangle "./GAFs/run.sh" :mkdirp yes
+  cd GAFs
+  nastran run_cao.bdf
+#+end_src
+* Flutter analysis

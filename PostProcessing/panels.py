@@ -111,10 +111,11 @@ def build_pyvista(le, te, chordwise_points=10) -> tuple[np.ndarray, np.ndarray]:
     return points, np.array(cells)
 
 def build_gridmesh(components, save_file=None,
-                   save_dir=None):
+                   save_dir=None) -> dict:
 
+    grid = dict()
     for k, v in components.items():
-    
+        grid[k] = dict() 
         _points, _cells = build_pyvista(v['leading_edge'],
                                         v['trailing_edge'],
                                         v['chordwise_points'])
@@ -127,3 +128,6 @@ def build_gridmesh(components, save_file=None,
             file_path.mkdir(parents=True, exist_ok=True)
             mesh.save(file_path / f"{save_file}_{k}.ply",
                       binary=False)
+        grid[k]['points'] = _points
+        grid[k]['cells'] = _cells
+    return grid
