@@ -104,8 +104,8 @@ class Dfem(DataContainer):
     grid: str | pathlib.Path | jnp.ndarray | pd.DataFrame = dfield(
         """Grid file or array with Nodes Coordinates, node ID in the FEM,
         and associated component""", default='structuralGrid')
-    df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)
-    X: jnp.ndarray = dfield("Grid coordinates", default=None)
+    df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)    
+    X: jnp.ndarray = dfield("Grid coordinates", default=None, yaml_save=False)
     num_nodes: int = dfield("Number of nodes", init=False)    
     fe_order: list[int] | jnp.ndarray = dfield("node ID in the FEM", default=None)
     fe_order_start: int = dfield("fe_order starting with this index", default=0)
@@ -223,7 +223,9 @@ class D_system(DataContainer):
     def __post_init__(self):
 
         self.xloads = initialise_Dclass(self.xloads, D_xloads)
-        if  self.label is not None:
+        if self.solver_settings is None:
+            self.solver_settings = dict()
+        if  self.label is None:
             if isinstance(self.solution, str):
                 sol_label = Solution[self.solution.upper()].value
             else:
@@ -245,13 +247,13 @@ class D_system(DataContainer):
 @dataclass(frozen=False)
 class Dsystems(DataContainer):
 
-    settings: dict[str: dict] = dfield("Settings ")
+    sett: dict[str: dict] = dfield("Settings ", yaml_save=False)
     sys: dict[str: D_system]  = dfield("Dictionary with systems in the simulation",
                                        init=False)
 
     def __post_init__(self):
         self.sys = dict()
-        for k, v in self.settings.items():
+        for k, v in self.sett.items():
             self.sys[k] = initialise_Dclass(
                 v, D_system, name=k)
 

@@ -1,9 +1,11 @@
 from  fem4inas.systems.system import System
 import fem4inas.systems.sollibs as sollibs
 import fem4inas.intrinsic.dq as dq
+import fem4inas.intrinsic.xforces as xforces
 import fem4inas.intrinsic.postprocess as postprocess
 import fem4inas.preprocessor.containers.intrinsicmodal as intrinsic
 import fem4inas.preprocessor.solution as solution
+import jax.numpy as jnp
 
 class IntrinsicSystem(System, cls_name="intrinsic"):
 
@@ -17,12 +19,18 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         self.settings = settings
         self.fem = fem
         self.sol = sol
+        self._set_xloading()
+        #self._set_generator()
+        #self._set_solver()
         
-    def set_ic(self):
-        self.q0 = jnp.zeros(self.fem.num_modes)
+        
+    def set_ic(self, q0):
+        self.q0 = q0
 
-    def set_name(self):
-        pass
+    def _set_xloading(self):
+
+        self.xloadings = xforces.build_point_follower(self.settings.xloads,
+                                                      self.fem.num_nodes)
 
     def set_generator(self):
 
@@ -60,15 +68,22 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
     def solve(self):
 
-        args = (self.sol, )
-        for ti in self.settings.t:
-            
+        qs = [jnp.zeros(self.fem.num_modes)]
+        for i, ti in enumerate(self.settings.t):
+            if self.settings.solver_library == "diffrax":
+                args = (self.sol, self.xloadings[i])
+            elif self.settings.solver_library == "scipy":
+                args = ((self.sol, self.xloadings[i]),)
             sol = self.eqsolver(self.dFq,
-                                self.q0,
+                                qs[-1],
                                 args,
                                 **self.settings.solver_settings)
+            self.sol.add_dict('dsys_sol', self.name, sol)
             qi = self.states_puller(sol)
-            
+            qs.append(qi)
+        self.sol.add_container("StaticSystem",
+                               jnp.array(qs),
+                               label=self.name)
 
     def build_solution(self, sol: solution.IntrinsicSolution):
 
@@ -82,4 +97,4 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         ra = postprocess.velocity_ra(X1, Rab)
         sol.add_container('DynamicSystem', label=self.name,
                           q=qs, X1=X1, X2=X2, X3=X3,
-                          Rab=Rab, ra=ra)
+                          Rab=Rab, ra=ra)    

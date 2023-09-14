@@ -11,13 +11,13 @@ class System(ABC):
         self.name = name
         self.settings = settings
         
-    @abstractmethod
-    def set_init(self):
-        pass
+    # @abstractmethod
+    # def set_init(self):
+    #     pass
 
-    @abstractmethod
-    def set_name(self):
-        pass
+    # @abstractmethod
+    # def set_name(self):
+    #     pass
 
     @abstractmethod
     def set_generator(self):
@@ -35,9 +35,9 @@ class System(ABC):
     def save(self):
         pass
 
-    @abstractmethod
-    def pull_solution(self):
-        pass
+    # @abstractmethod
+    # def pull_solution(self):
+    #     pass
 
     def __init_subclass__(cls, **kwargs):
         assert "cls_name" in kwargs

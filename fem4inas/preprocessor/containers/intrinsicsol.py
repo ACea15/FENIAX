@@ -34,9 +34,9 @@ class DynamicSystem:
 @dataclass(slots=True)
 class StaticSystem:
     q: jnp.ndarray
-    ra: jnp.ndarray
-    Rab: jnp.ndarray
-    X2: jnp.ndarray
+    ra: jnp.ndarray = None
+    Rab: jnp.ndarray = None
+    X2: jnp.ndarray = None
 
 # import dataclasses    
 # field_types = {field.name: field.type for field in dataclasses.fields(Modes)}

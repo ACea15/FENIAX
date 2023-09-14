@@ -51,7 +51,7 @@ class Config:
             setattr(self, k, v)
         
     @classmethod
-    def from_file(cls, file_dir: str|pathlib. Path, **kwargs):
+    def from_file(cls, file_dir: str|pathlib.Path, **kwargs):
         yaml = YAML()
         yaml_dict = yaml.load(file_dir)
         return cls(yaml_dict)
@@ -80,7 +80,11 @@ def serialize(obj: Config | DataContainer):
         if k[0] != "_":
             if isinstance(v, DataContainer):
                 dictionary[k] = serialize(v)
+            elif k == "systems":
+                dictionary[k] = serialize(v)
             else:
+                if isinstance(v, dict) and 'anchor' in v.keys():
+                    anchor = v.pop('anchor')
                 # ensure v is not an uninitialised field, which should not be saved
                 if (isinstance(obj, DataContainer) and
                     obj.__dataclass_fields__[k].init):

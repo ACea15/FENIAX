@@ -22,7 +22,7 @@ class Solution(ABC):
 
     def add_container(self, name: str, *args, label="", **kwargs):
         try:
-            Container = getattr(self.solcontainer, name.capitalize())
+            Container = getattr(self.solcontainer, name)
         except AttributeError:
             raise AttributeError(
                 f"Container {name} is not a valid name \
@@ -75,8 +75,8 @@ class Solution(ABC):
     def add_dict(self, name, label, obj):
         if not hasattr(self.data, name):
             setattr(self.data, name, dict())
-        self.data.name[label] = obj
-
+        dattr = getattr(self.data, name)
+        dattr[label] = obj
 
 class IntrinsicSolution(Solution):
     def set_solcontainer(self):

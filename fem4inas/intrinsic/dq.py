@@ -22,25 +22,25 @@ def contraction_gamma3(gamma2: jnp.ndarray, q1: jnp.ndarray,
                      jnp.tensordot(q1, q2, axes=0))
     return res
 
-def dq_0(q0, t, *args):
+def dq_0(q0, *args):
 
-    sol, follower_force, *xargs = args
-    gamma2 = sol.couplings.gamma2
-    phi1 = sol.modes.phi1
-    F = omega * q - contraction_gamma2(gamma2, q) + eta_0(q, t, phi1, )
+    sol, follower_force, *xargs = args[0]
+    gamma2 = sol.data.couplings.gamma2
+    phi1 = sol.data.modes.phi1
+    omega = sol.data.modes.omega
+    F = (omega * q0
+         - contraction_gamma2(gamma2, q0)
+         + eta_0(q0, 0, phi1, follower_force))
+    return F
     
-    
-def eta_0():
+def eta_0(q, t, phi1, follower_force):
 
-    f =  force_follower(t)
-    jnp.tensordot(phi1, f, axes=([1, 2],
-                                 [0, 1]))
-    
+    f =  follower_force #force_follower(t)
+    eta = jnp.tensordot(phi1, f, axes=([1, 2],
+                                       [0, 1]))
+    return eta
 
-    
-
-    
-if __name__ == "__main__":
+if (__name__ == "__main__"):
 
     @jit
     def q_static_ein(q2, omega, gamma2, eta=0.):

@@ -40,9 +40,9 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         self.sol = None
         self.systems = None
         self.num_systems = 0
+        self._set_sol()        
         self._set_systems()
         self._set_simulation()
-        self._set_sol()
 
     def pre_simulation(self):
         # TODO: here the RFA for aerodynamics should be included

@@ -59,6 +59,7 @@ def initialise_Dclass(data, Dclass, **kwargs):
 def dump_inputs(data: dict[str:list[Any, str]], ind=0,
                 with_comments:bool=True):
 
+    #if ind == 0:
     data = CommentedMap(data)
     for k, v in data.items():
         if isinstance(v, dict):

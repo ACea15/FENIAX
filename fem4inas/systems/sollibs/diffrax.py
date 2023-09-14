@@ -13,9 +13,12 @@ def ode(F: callable, solver_name: str, q0, t0, t1, tn, dt, **kwargs) -> Solution
 
 def newton_raphson(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **kwargs):
 
-    solver = diffrax.NewtonNonlinearSolver(rtol=rtol, atol=atol,
-                                           max_steps=max_steps, kappa=kappa,
-                                           norm=norm, tolerate_nonconvergence=False)
+    solver = diffrax.NewtonNonlinearSolver(rtol=rtol,
+                                           atol=atol,
+                                           max_steps=max_steps,
+                                           kappa=kappa,
+                                           norm=norm,
+                                           tolerate_nonconvergence=False)
     sol = solver(F, q0, args, jac)
     return sol
 
@@ -26,7 +29,7 @@ def pull_ode(sol):
 
 def pull_newton_raphson(sol):
 
-    qs = jnp.array(sol.ys)
+    qs = jnp.array(sol.root)
     return qs
 
 #__init__(self, rtol: Optional[Scalar] = None, atol: Optional[Scalar] = None, max_steps: Optional[int] = 10, kappa: Scalar = 0.01, norm: Callable = <function rms_norm>, tolerate_nonconvergence: bool = False)
