@@ -463,10 +463,6 @@ def make_C6(v1) -> jnp.ndarray:
     v1 : jnp.ndarray
         A tensor of the form (3x3xNn)
 
-    Examples
-    --------
-    FIXME: Add docs.
-
     """
     f = jax.vmap(
         lambda v: jnp.vstack(

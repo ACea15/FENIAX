@@ -104,7 +104,7 @@ class Dfem(DataContainer):
     grid: str | pathlib.Path | jnp.ndarray | pd.DataFrame = dfield(
         """Grid file or array with Nodes Coordinates, node ID in the FEM,
         and associated component""", default='structuralGrid')
-    df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)    
+    df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)
     X: jnp.ndarray = dfield("Grid coordinates", default=None)
     num_nodes: int = dfield("Number of nodes", init=False)    
     fe_order: list[int] | jnp.ndarray = dfield("node ID in the FEM", default=None)
@@ -114,8 +114,9 @@ class Dfem(DataContainer):
     num_nodes: int = dfield("Number of nodes", init=False)
     component_names: list = dfield("Name of components defining the structure", init=False)
     component_father: dict[str: str] = dfield(
-        "Name of components defining the structure", init=False)
-    component_nodes: list[str | int] | jnp.ndarray = dfield("Grid coordinates", init=False)    
+        "", init=False)
+    component_nodes: dict[str: list[int]] = dfield("Node indexes of the component",
+                                                            init=False)    
     component_chain: dict[str:list[str]] = dfield(" ", init=False)
     #
     clamped_nodes: list[int] = dfield("List of clamped or multibody nodes", init=False)
@@ -123,7 +124,7 @@ class Dfem(DataContainer):
     clampedDoF: dict[str: list] = dfield("Grid coordinates", init=False)
     total_clampedDoF: int = dfield("Grid coordinates", init=False)
     #
-    prevnodes: list[int] = dfield("Name of components defining the structure", init=False)    
+    prevnodes: list[int] = dfield("""Immediate previous node following """, init=False)    
     Mavg: jnp.ndarray = dfield("Matrix for tensor average between nodes", init=False)
     Mdiff: jnp.ndarray = dfield("Matrix for tensor difference between nodes", init=False)
     Mfe_order: jnp.ndarray = dfield("""Matrix with 1s and 0s that reorders quantities
