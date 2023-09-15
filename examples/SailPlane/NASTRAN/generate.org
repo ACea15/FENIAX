@@ -7,7 +7,7 @@
 
 #+begin_src python :session py1 :results none
   machs = [0.8]
-  reduced_freqs = np.linspace(1e-9,1, 20)
+  reduced_freqs = np.hstack([np.linspace(1e-5,10, 50), [10.01, 10.02]])
 
 #+end_src
 
@@ -572,4 +572,16 @@ def wb2w(point_le, x_te, z_bottom, pct2le, pct2te):
   cd GAFs
   nastran run_cao.bdf
 #+end_src
+
+#+begin_src python :session py1  :results none :noweb yes
+  import pyNastran.op4.op4 as op4
+  from scipy.io import savemat
+
+  Qhh = op4.read_op4(f"/home/ac5015/programs/FEM4INAS/examples/SailPlane/NASTRAN/GAFs/Qhh{Mach}-{num_modes}.op4")
+  savemat(f"./GAFs/matlab_Qhh{Mach}-{num_modes}.mat", dict(Qhh=Qhh['Q_HH'][1],
+                                                           reduced_freqs=reduced_freqs))
+
+#+end_src
+
+
 * Flutter analysis
