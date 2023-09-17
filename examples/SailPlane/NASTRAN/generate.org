@@ -5,11 +5,6 @@
   (pyvenv-workon "fem4inas")
 #+end_src
 
-#+begin_src python :session py1 :results none
-  machs = [0.8]
-  reduced_freqs = np.hstack([np.linspace(1e-5,10, 50), [10.01, 10.02]])
-
-#+end_src
 
 * INPUT PARAMETERS
 #+NAME: python_parameters
@@ -19,9 +14,9 @@
   mach = 0.8
   Mach = str(mach).replace('.','_')
   machs = [mach]
-  reduced_freqs = np.linspace(1e-9,1, 20)
+  reduced_freqs = np.hstack([np.linspace(1e-5,1, 50), [10-0.001, 10., 10+0.001]])
   num_modes = 20
-  chord_panels = dict(wing=10, hstabilizer=10, vstabilizer=10)
+  chord_panels = dict(wing=15, hstabilizer=10, vstabilizer=10)
   #aero['s_ref'] = 361.6
   #aero['b_ref'] = 58.0
   #aero['X_ref'] = 36.3495
@@ -400,24 +395,6 @@ def wb2w(point_le, x_te, z_bottom, pct2le, pct2te):
 
 
 * GAFs extraction
-#+begin_src python :session py1 :results none
-  dlm_panels = nasaero.GenFlutter(flutter_id,
-                                  density_fact,
-                                  mach_fact,
-                                  kv_fact,
-                                  machs,
-                                  reduced_freqs,
-                                  u_inf,
-                                  c_ref,
-                                  rho_ref,
-                                  flutter_method,
-                                  flutter_sett,
-                                  aero_sett)
-
-  dlm_panels.build_model()
-  dlm_panels.model.write_bdf("./dlm_model.bdf")
-
-#+end_src
 
 #+begin_src python :session py1 :results none
   dlm_gafs = nasaero.GenFlutter(flutter_id,
@@ -577,7 +554,7 @@ def wb2w(point_le, x_te, z_bottom, pct2le, pct2te):
   import pyNastran.op4.op4 as op4
   from scipy.io import savemat
 
-  Qhh = op4.read_op4(f"/home/ac5015/programs/FEM4INAS/examples/SailPlane/NASTRAN/GAFs/Qhh{Mach}-{num_modes}.op4")
+  Qhh = op4.read_op4(f"./GAFs/Qhh{Mach}-{num_modes}.op4")
   savemat(f"./GAFs/matlab_Qhh{Mach}-{num_modes}.mat", dict(Qhh=Qhh['Q_HH'][1],
                                                            reduced_freqs=reduced_freqs))
 

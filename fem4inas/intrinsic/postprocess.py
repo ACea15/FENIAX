@@ -32,10 +32,12 @@ def strains_ra():
 
 def integrate_X3(carry, x):
 
-    import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     Cab0_x = x[:, :3]
-    kappa = x[:, 3]
-    strain = x[:, 4]
+    strain = x[:, 3]
+    kappa = x[:, 4]
+    #jax.debug.print("kappa: {k}", k=kappa)
+    #jax.debug.print("strain: {s}", s=strain)
     ds = x[0, 5]
     Cab_carry = carry[:, :3]
     Cab0_carry = carry[:, 3:6]
@@ -50,14 +52,13 @@ def integrate_X3(carry, x):
 
 def integrate_strains(ra_0n, Cab_0n, X3t, sol, fem):
 
-    integrate_X3
     ds = sol.data.modes.X_xdelta
     C0ab = sol.data.modes.C0ab  # 3x3xNn
     # TODO: make as fori loop
     Cab = jnp.zeros((3, 3, fem.num_nodes))
     ra = jnp.zeros((3, fem.num_nodes))
 
-    comp_nodes = jnp.array(fem.component_nodes[fem.component_names[0]])
+    comp_nodes = jnp.array(fem.component_nodes[fem.component_names[0]])[1:]
     numcomp_nodes = len(comp_nodes)
     Cab0_init = C0ab[:, :, 0]
     init = jnp.hstack([Cab_0n,
@@ -71,6 +72,8 @@ def integrate_strains(ra_0n, Cab_0n, X3t, sol, fem):
     C0ab_i = C0ab[:, :, comp_nodes].transpose((2, 0, 1))
     xs = jnp.concatenate([C0ab_i, strains_i, kappas_i,  ds_i], axis=2)
     last_carry, Cra = jax.lax.scan(integrate_X3, init, xs)
+    ra = ra.at[:, 0].set(ra_0n)
+    Cab = Cab.at[:, :, 0].set(Cab_0n)
     ra = ra.at[:, comp_nodes].set(Cra[:, :, 3].T)
     Cab = Cab.at[:, :, comp_nodes].set(Cra[:, :, :3].transpose((1, 2, 0)))
     

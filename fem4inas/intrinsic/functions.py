@@ -47,7 +47,7 @@ def H1(Itheta: float, Ipsi: jnp.ndarray, ds: float):
                    ds * (I3 + (1 - jnp.cos(Itheta)) / Itheta**2 * tilde(Ipsi)
                         + (Itheta - jnp.sin(Itheta)) / (Itheta**3) * jnp.matmul(tilde(Ipsi),
                                                                                 tilde(Ipsi))),
-                   I3)
+                   ds * I3)
     return y
 
 @jit
