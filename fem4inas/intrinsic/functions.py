@@ -28,23 +28,27 @@ def tilde(vector3: jnp.ndarray):
 def H0(Itheta: float, Ipsi: jnp.ndarray):
 
     I3 = jnp.eye(3)
-    if Itheta == 0.0:
-        return I3
-    else:
-        return (I3 + jnp.sin(Itheta) / Itheta * tilde(Ipsi)
-                + (1 - jnp.cos(Itheta)) / Itheta**2 * jnp.matmul(tilde(Ipsi),
-                                                                 tilde(Ipsi)))
+    cond = jnp.abs(Itheta) > 1e-9 # if not true,
+    # local-x is almost parallel to global-z, z direction parallel to global y
+    y = lax.select(cond,
+                   (I3 + jnp.sin(Itheta) / Itheta * tilde(Ipsi)
+                   + (1 - jnp.cos(Itheta)) / Itheta**2 * jnp.matmul(tilde(Ipsi),
+                                                                    tilde(Ipsi))),
+                   I3)
+    return y
 
 @jit
 def H1(Itheta: float, Ipsi: jnp.ndarray, ds: float):
 
     I3 = jnp.eye(3)
-    if Itheta == 0.0:
-        return I3*ds
-    else:
-        return ds *(I3 + (1 - jnp.cos(Itheta)) / Itheta**2 * tilde(Ipsi)
-                    + (Itheta - jnp.sin(Itheta)) / (Itheta**3) * jnp.matmul(tilde(Ipsi),
-                                                                            tilde(Ipsi)))
+    cond = jnp.abs(Itheta) > 1e-9 # if not true,
+    # local-x is almost parallel to global-z, z direction parallel to global y
+    y = lax.select(cond,
+                   ds * (I3 + (1 - jnp.cos(Itheta)) / Itheta**2 * tilde(Ipsi)
+                        + (Itheta - jnp.sin(Itheta)) / (Itheta**3) * jnp.matmul(tilde(Ipsi),
+                                                                                tilde(Ipsi))),
+                   I3)
+    return y
 
 @jit
 def L1(x1: jnp.ndarray):

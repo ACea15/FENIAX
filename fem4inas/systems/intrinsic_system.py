@@ -81,20 +81,30 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             self.sol.add_dict('dsys_sol', self.name, sol)
             qi = self.states_puller(sol)
             qs.append(qi)
-        self.sol.add_container("StaticSystem",
-                               jnp.array(qs),
-                               label=self.name)
+        self.qs = jnp.array(qs)
 
     def build_solution(self, sol: solution.IntrinsicSolution):
 
-        qs = self.states_puller(self.state_sol)
-        q1 = qs[self.settings.q1_index, :]
-        q2 = qs[self.settings.q2_index, :]
-        X1 = postprocess.compute_velocities(self.fem.phi1l, q1)
-        X2 = postprocess.compute_internalforces(self.fem.phi2l, q2)
-        X3 = postprocess.compute_strains(self.fem.cphi2l, q2)
-        Rab = postprocess.velocity_Rab(X1)
-        ra = postprocess.velocity_ra(X1, Rab)
-        sol.add_container('DynamicSystem', label=self.name,
-                          q=qs, X1=X1, X2=X2, X3=X3,
-                          Rab=Rab, ra=ra)    
+        # q1 = qs[self.settings.q1_index, :]
+        # q2 = qs[self.settings.q2_index, :]
+        X2 = []
+        X3 = []
+        Cab = []
+        ra = []
+        for i, ti in enumerate(self.settings.t):
+            X2t = postprocess.compute_internalforces(self.sol.data.modes.phi2l, self.qs[i])
+            X3t = postprocess.compute_strains(self.sol.data.modes.psi2l, self.qs[i])
+            Cabt, rat = postprocess.integrate_strains(jnp.zeros(3),
+                                                    jnp.eye(3),
+                                                    X3t,
+                                                    self.sol,
+                                                    self.fem
+                                                    )
+            X2.append(X2t)
+            X3.append(X3t)
+            Cab.append(Cabt)
+            ra.append(rat)
+            
+        sol.add_container('StaticSystem', label=self.name,
+                          q=self.qs, X2=jnp.array(X2), X3=jnp.array(X3),
+                          Cab=jnp.array(Cab), ra=jnp.array(ra))

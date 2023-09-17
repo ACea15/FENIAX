@@ -27,16 +27,17 @@ class Couplings:
 class DynamicSystem:
     q: jnp.ndarray
     ra: jnp.ndarray
-    Rab: jnp.ndarray
+    Cab: jnp.ndarray
     X1: jnp.ndarray
     X2: jnp.ndarray
 
 @dataclass(slots=True)
 class StaticSystem:
     q: jnp.ndarray
-    ra: jnp.ndarray = None
-    Rab: jnp.ndarray = None
     X2: jnp.ndarray = None
+    X3: jnp.ndarray = None
+    Cab: jnp.ndarray = None
+    ra: jnp.ndarray = None
 
 # import dataclasses    
 # field_types = {field.name: field.type for field in dataclasses.fields(Modes)}
