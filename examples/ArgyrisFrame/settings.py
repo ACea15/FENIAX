@@ -11,7 +11,7 @@ inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.connectivity = [[1], []]
 inp.fem.folder = pathlib.Path('./FEM/')
-inp.fem.num_modes = 10
+inp.fem.num_modes = 120
 inp.fem.fe_order_start = 1
 inp.driver.typeof = "intrinsic"
 inp.simulation.typeof = "single"
@@ -31,20 +31,15 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 inp.systems.sett.s1.label = 'dq_0'
 inp.systems.sett.s1.xloads.follower_forces = True
 inp.systems.sett.s1.xloads.follower_points = [[21, 1]]
-inp.systems.sett.s1.xloads.follower_interpolation = [[[1., -3.7e3],
-                                                      [2, -12.1e3],
-                                                      [3, -17.5e3],
-                                                      [4, -39.3e3],
-                                                      [5, -61.0e3],
-                                                      [6, -94.5e3],
-                                                      [7, -120e3]
+inp.systems.sett.s1.xloads.follower_interpolation = [[[1., 50.],
+                                                      [2, 100.],
+                                                      [3, 300.],
+                                                      [4, 430.],
+                                                      [5, 700.],
+                                                      [6, 1040.]
                                                       ]
                                                      ]
-inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6, 7]
-
-NumFLoads = 1
-Follower_points_app = [[1,-1,[1]]]
-Follower_interpol = [[[[0.,2000],[0.,2000]]]]
+inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]
 
 
 config =  configuration.Config(inp)

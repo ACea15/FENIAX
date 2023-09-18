@@ -78,7 +78,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
                                 qs[-1],
                                 args,
                                 **self.settings.solver_settings)
-            self.sol.add_dict('dsys_sol', self.name, sol)
+            #self.sol.add_dict('dsys_sol', self.name, sol)
             qi = self.states_puller(sol)
             qs.append(qi)
         self.qs = jnp.array(qs)
@@ -91,7 +91,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         X3 = []
         Cab = []
         ra = []
-        for i, ti in enumerate(self.settings.t):
+        for i in range(len(self.settings.t) + 1):
             X2t = postprocess.compute_internalforces(self.sol.data.modes.phi2l, self.qs[i])
             X3t = postprocess.compute_strains(self.sol.data.modes.psi2l, self.qs[i])
             Cabt, rat = postprocess.integrate_strains(jnp.zeros(3),
