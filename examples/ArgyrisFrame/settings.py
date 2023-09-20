@@ -30,13 +30,13 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 #                                            tolerance=1e-9)
 inp.systems.sett.s1.label = 'dq_0'
 inp.systems.sett.s1.xloads.follower_forces = True
-inp.systems.sett.s1.xloads.follower_points = [[21, 1]]
-inp.systems.sett.s1.xloads.follower_interpolation = [[[1., 50.],
-                                                      [2, 100.],
-                                                      [3, 300.],
-                                                      [4, 430.],
-                                                      [5, 700.],
-                                                      [6, 1040.]
+inp.systems.sett.s1.xloads.follower_points = [[20, 1]]
+inp.systems.sett.s1.xloads.follower_interpolation = [[[1., -50.],
+                                                      [2, -100.],
+                                                      [3, -300.],
+                                                      [4, -430.],
+                                                      [5, -700.],
+                                                      [6, -1040.]
                                                       ]
                                                      ]
 inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]
@@ -49,6 +49,17 @@ path2config = pathlib.Path("./config.yaml")
 #configuration.dump_to_yaml(path2config, config)
 
 sol = fem4inas.fem4inas_main.main(input_obj=config)
+
+# import jax
+# import fem4inas.intrinsic.functions as functions
+# f1 = jax.vmap(lambda u, v: jnp.tensordot(functions.L2(u), v, axes=(1, 1)),
+#               in_axes=(1,2), out_axes=2)  # iterate nodes
+# f2 = jax.vmap(f1, in_axes=(0, None), out_axes=0)  # modes in 1st tensor
+# L2 = f2(sol.modes.phi2l, sol.modes.psi2l) # Nmx6xNmxNm
+# gamma2 = jnp.einsum('isn,jskn,n->ijk', sol.modes.phi1ml, L2, sol.modes.X_xdelta)
+
+
+
 # config2 = configuration.Config.from_file(path2config)
 
 # yaml = YAML()

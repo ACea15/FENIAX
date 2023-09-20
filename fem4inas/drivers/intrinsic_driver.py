@@ -116,7 +116,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
                                     self.sol.data.modes.psi1)
         gamma2 = couplings.f_gamma2(
             self.sol.data.modes.phi1ml,
-            self.sol.data.modes.phi2,
+            self.sol.data.modes.phi2l,
             self.sol.data.modes.psi2l,
             self.sol.data.modes.X_xdelta,
         )

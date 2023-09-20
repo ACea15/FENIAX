@@ -20,12 +20,18 @@ def f_gamma2(phi1m: jnp.array,
              phi2: jnp.array,
              psi2: jnp.array,
              delta_s: jnp.array) -> jnp.array:
-
+    
+    phi1mi = phi1m[:,:,1:]
+    phi2i = phi2[:,:,1:]
+    psi2i = psi2[:,:,1:]
+    delta_si = delta_s[1:]
     f1 = jax.vmap(lambda u, v: jnp.tensordot(functions.L2(u), v, axes=(1, 1)),
                   in_axes=(1,2), out_axes=2)  # iterate nodes
     f2 = jax.vmap(f1, in_axes=(0, None), out_axes=0)  # modes in 1st tensor
-    L2 = f2(phi2, psi2) # Nmx6xNmxNm
-    gamma2 = jnp.einsum('isn,jskn,n->ijk', phi1m, L2, delta_s)
+    L2 = f2(phi2i, psi2i) # Nmx6xNmxNm
+    gamma2 = jnp.einsum('isn,jskn,n->ijk', phi1mi, L2, delta_si)
+    # L2 = f2(phi2, psi2) # Nmx6xNmxNm
+    # gamma2 = jnp.einsum('isn,jskn,n->ijk', phi1m, L2, delta_s)
     return gamma2
 
 @jit

@@ -45,7 +45,8 @@ def integrate_X3(carry, x):
     Ipsi = kappa * ds
     Itheta = jnp.linalg.norm(Ipsi)
     Cab = Cab0_x @ Cab0_carry.T @ Cab_carry @ H0(Itheta, Ipsi)
-    ra = ra0 + Cab_carry @ (H1(Itheta, Ipsi, ds) @ (strain + jnp.array([1, 0, 0])))
+    ra = ra0 + Cab0_x @ Cab0_carry.T @ Cab_carry @ (
+        H1(Itheta, Ipsi, ds) @ (strain + jnp.array([1, 0, 0])))
     y = jnp.hstack([Cab, ra.reshape((3, 1))])
     carry = jnp.hstack([Cab, Cab0_x, ra.reshape((3, 1))])
     return carry, y
@@ -76,10 +77,10 @@ def integrate_strains(ra_0n, Cab_0n, X3t, sol, fem):
     Cab = Cab.at[:, :, 0].set(Cab_0n)
     ra = ra.at[:, comp_nodes].set(Cra[:, :, 3].T)
     Cab = Cab.at[:, :, comp_nodes].set(Cra[:, :, :3].transpose((1, 2, 0)))
-    
+
     for ci in fem.component_names[1:]:
 
-        comp_father = fem.component_father
+        comp_father = fem.component_father[ci]
         comp_nodes = jnp.array(fem.component_nodes[ci])
         node_father = fem.component_nodes[comp_father][-1]
         Cab_init = Cab[:, :, node_father]
@@ -88,14 +89,16 @@ def integrate_strains(ra_0n, Cab_0n, X3t, sol, fem):
         init = jnp.hstack([Cab_init, Cab0_init,
                            ra_init.reshape((3,1))])
         ds_i = ds[comp_nodes]
-        ds_i = jnp.broadcast_to(3, ds_i.shape[0]).T.reshape((numcomp_nodes, 3, 1))
+        ds_i = jnp.broadcast_to(ds_i,
+                                (3, ds_i.shape[0])).T.reshape((numcomp_nodes, 3, 1))
         strains_i = X3t[:3, comp_nodes].T.reshape((numcomp_nodes, 3, 1))
         kappas_i = X3t[3:, comp_nodes].T.reshape((numcomp_nodes, 3, 1))
-        C0ab_i = C0ab[:, :, comp_nodes].transponse((1,2,0))
+        C0ab_i = C0ab[:, :, comp_nodes].transpose((2, 0, 1))
         xs = jnp.concatenate([C0ab_i, strains_i, kappas_i,  ds_i], axis=2)
         last_carry, Cra = jax.lax.scan(integrate_X3, init, xs)
-        ra = ra.at[:, comp_nodes].set(Cra[:, :, 3])
-        Cab = Cab.at[:, comp_nodes].set(Cra[:, :, :3])
-    return Cab, ra
+        ra = ra.at[:, comp_nodes].set(Cra[:, :, 3].T)
+        Cab = Cab.at[:, :, comp_nodes].set(Cra[:, :, :3].transpose((1, 2, 0)))
         
+    return Cab, ra
+
         
