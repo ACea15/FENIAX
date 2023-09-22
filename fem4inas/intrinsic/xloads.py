@@ -1,14 +1,15 @@
 import jax.numpy as jnp
+from jax import jit
 
-def build_point_follower(xloads, num_nodes):
+def eta_0(q, t, phi1, follower_force):
 
-    num_loadings = len(xloads.follower_interpolation[0])
-    num_forces = len(xloads.follower_interpolation)
-    force = jnp.zeros(num_loadings, 6, num_nodes)
-    for li in range(num_loadings):
-        for fi in range(num_forces):
-            fnode= xloads.follower_points[fi][0]
-            dim = xloads.follower_points[fi][1]
-            force = force.at[li, dim, fnode].set(xloads.follower_interpolation[fi, li, 1])
+    f =  follower_force #force_follower(t)
+    eta = jnp.tensordot(phi1, f, axes=([1, 2],
+                                       [0, 1]))
+    return eta
 
-    return force
+def project_phi1(force, phi1):
+
+    eta = jnp.tensordot(phi1, force, axes=([1, 2],
+                                           [0, 1]))
+    return eta

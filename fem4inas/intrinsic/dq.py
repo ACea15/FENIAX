@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import numpy as np
 from jax import jit
 from jax.config import config; config.update("jax_enable_x64", True)
+import fem4inas.intrinsic.eta as xloads
 
 def contraction_gamma1(gamma1: jnp.ndarray, q1:jnp.ndarray) -> jnp.ndarray:
 
@@ -22,23 +23,62 @@ def contraction_gamma3(gamma2: jnp.ndarray, q1: jnp.ndarray,
                      jnp.tensordot(q1, q2, axes=0))
     return res
 
-def dq_0(q0, *args):
+def f_12(omega, gamma1, gamma2, q1, q2):
 
-    sol, follower_force, *xargs = args[0]
+    F1 = (omega * q2 + contraction_gamma1(gamma1, q1)
+          - contraction_gamma2(gamma2, q2))
+    F2 = -omega * q1 + contraction_gamma3(gamma2, q1, q2)
+
+    return F1, F2
+
+def dq_001001(t, q, *args):
+    
+    sol, system,  *xargs = args[0]
     gamma2 = sol.data.couplings.gamma2
     phi1 = sol.data.modes.phi1
     omega = sol.data.modes.omega
-    F = (omega * q0
-         - contraction_gamma2(gamma2, q0)
-         + eta_0(q0, 0, phi1, follower_force))
+    F = (omega * q
+         - contraction_gamma2(gamma2, q)
+         + xloads.eta_0(q, t, phi1))
     return F
-    
-def eta_0(q, t, phi1, follower_force):
 
-    f =  follower_force #force_follower(t)
-    eta = jnp.tensordot(phi1, f, axes=([1, 2],
-                                       [0, 1]))
-    return eta
+def dq_000001(t, q, *args):
+    
+    sol, system,  *xargs = args[0]
+    phi1 = sol.data.modes.phi1
+    omega = sol.data.modes.omega
+    F = (omega * q
+         + xloads.eta_0(q, t, phi1))
+    return F
+
+
+def dq_101001(t, q, *args):
+    """Solver for structural dynamics with follower forces."""
+
+    sol, system,  *xargs = args[0]
+    gamma1 = sol.couplings.gamma1
+    gamma2 = sol.couplings.gamma2
+    omega = sol.fem.omega
+    q1 = q[system.states['q1']]
+    q2 = q[system.states['q2']]
+    eta = xloads.eta_101001()
+    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
+    F1 += eta
+    F = jnp.hstack([F1, F2])
+    return F
+
+def dq_100001(t, q, *args):
+    """Solver for structural dynamics with follower forces."""
+
+    sol, system,  *xargs = args[0]
+    q1 = q[system.states['q1']]
+    q2 = q[system.states['q2']]
+    F1 = omega * q2
+    F2 = -omega * q1
+    eta = xloads.eta_101001()
+    F1 += eta
+    F = jnp.hstack([F1, F2])
+    return F
 
 if (__name__ == "__main__"):
 

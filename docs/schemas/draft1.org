@@ -2,6 +2,11 @@
 #+AUTHOR: Alvaro Cea
 #+Date: 6/06/2023
 #+STARTUP: inlineimages
+* HouseKeeping
+#+begin_src elisp :results none :tangle no 
+  (setq org-image-actual-width nil)
+  (setq org-confirm-babel-evaluate nil)
+#+end_src
 
 * UML
 ** RHEA
@@ -491,8 +496,6 @@
 
 #+end_src
 
-#+RESULTS: classes_architecture2
-[[file:classes2.png]]
 
 #+Name: classes_architecture3
 #+begin_src plantuml :file classes3.png
@@ -547,29 +550,27 @@ Centre of mass, very important! it needs to be given. Actually is only used for 
   MPhi1xl=[np.zeros((V.NumModes,BeamSeg[i].EnumNodes,6))  for i in range(V.NumBeams)]
 #+end_src
 
-* inputs
-** container
-** fields
-- value
-- description
-- default
-- options
-* Challenging problems driving the design
-** Max speed:
+* Challenging problems driving the research
+** Geometrically nonlinear aeroelastic analysis using complex GFEMs
+- Flight loads
+- Airframe integrity: flutter or divergence assessment
+- Multidisciplinary design optimisation
+** Max performance:
+- Critical for time-domain simulations
 - JAX Just in Time Compilation (JIT)
-- Code vectorisation.
-- JAX seemingly runs on accelerators (GPUs, TPUs, etc.)
-
-Ultimately the goal is to know that even if industry could implement a more efficient version of the software, the gain in speed would be in the order of percentage and not magnitude, which gives a valuable idea of what problems might be feasible using this approach. 
-** Efficient derivatives
+- Code vectorisation and parallelisation.
+- Run on accelerators (GPUs, TPUs, etc.)
+** Derivatives of aeroelastic  for design optimisation.
+- Using JAX algorithmic differentiation.
+*** Efficient derivatives
 JAX AD package using pure functions from functional programming style.
-** Compute and arbitrary number of loads cases
+*** Compute and arbitrary number of loads cases
 Via subcase option of driver class that modifies the xloads option in each case. For example to get the max. loads envelope without having to manage an array of simulations which might also overlap computations.
-** Compute the derivative of function applied to the previous point
+*** Compute the derivative of function applied to the previous point
 If for instance one wants to set an optimisation with boundaries on the maximum loads, it would not make sense to do it for only one atmospheric load case.
-** Perform calculations on different models in a single run
+*** Perform calculations on different models in a single run
 Via the supercase option of driver. This might be used to compute finite differences; or if the response of if the response of a fractured component is to be compared.
-* Architecture
+* Code design
 ** Config
 config.engine = intrinsic
 config.supercase.fems[dict]
@@ -622,45 +623,64 @@ derivatives
 - solve -> q
   self.solver(self.dq)
 - save
-*** dqs
-| Dynamic   | Nonlinear | Gravity/DeadForces | ModalAero | Point Loads | residualised |
-| Static    | Linear    |                    |           | follower    |              |
-| Stability |           |                    |           | dead        |              |
-|           |           |                    |           | both        |              |
+** XForces
+*** prescribed_follower
+*** prescribed_dead
+*** gravity
+*** modal_aero
+** inputs
+*** container
+*** fields
+- value
+- description
+- default
+- options
 
-dq_2110
+* Simulation options 
+|           | Flight mechanics | (geometrically) Nonlinear | ModalAero | dead loads  | Point follower | gust loads | quaternions | residualised |
+|-----------+------------------+---------------------------+-----------+-------------+----------------+------------+-------------+--------------|
+| Dynamic   | Clamped model    | Linear                    |           | gravity     |                |            |             |              |
+| static    | Trimmed flight   |                           |           | point loads |                |            |             |              |
+| Stability | Control devices  |                           |           |             |                |            |             |              |
+| Multibody |                  | 1,0                       | 0,1,2*    | 0,1,2(both) | 0,1            |            | 0, 1        | 0,1          |
 
-def dq_2110:
+modalaero -> 0, 1-static, 2-dynamic,rogers, 
 
-* XForces
 
-** prescribed_follower
-** prescribed_dead
-** gravity
-** modal_aero
 * Connection with High Fidelity structural model
 ** Initial Model
-- Clamped wing
-- Mass model? Lumped masses may be needed at some point, for instance to account for the engine
+- Clamped wing -> good for steady loads and aircraft stability.
+- Full A/C model -> Needed for dynamic loads.
+- Mass model: Both continuous mass model and lumped masses are suitable for analysis.
+  Engines and other components definitely as  lumped masses.
 ** Input requirements
 
-#+ATTR_ORG: :width 400
-[[./3Dinterpolation.png]]
-
+#+ATTR_ORG: :width  600
+[[./FEM3d.png]]
 *** Load paths
-Interpolation: Spider interpolation elements?
+- interpolation elements to connect to other FE nodes.
+- aerodynamic forces applied along these paths
 
 *** Condensed stiffness and mass matrices along load paths
 - Should be suitable for eigenvalue analysis
 
-*** Aerodynamic model
+*** Aerodynamic model via GAFs.
 - Preliminary DLM model. Automatically built from wing-box?
-- Steady loads?
+- Steady loads: Corrections may be needed. 
   
 ** Output requirements
-
-*** Sectional loads
-- Map to the FEM via the same interpolation elements?
-  
-** Data architecture
-- should we already  think of a workflow
+*** Sectional loads along load-paths
+Steady and dynamic aeroelastic loads due to trimmed flight, gusts etc.
+*** Aeroelastic stability of configuration
+Flutter and divergence points
+*** Potentially derivatives of the above via AD.
+Critical for large design optimisation problems.
+** Data workflow
+ Well in place for Nastran Models  except for the derivatives provided by Nastran using Sol 200.
+* Software architecture
+Extensive  work carried out into a software architecture that complies with good design principles.
+#+RESULTS: classes_architecture2
+[[file:classes2.png]]
+* Short term goals
+- Set up a testing framework with well-known problems in nonlinear structural-mechanics/aeroelasticity.
+- Application to the Bristol model provided by Airbus.
