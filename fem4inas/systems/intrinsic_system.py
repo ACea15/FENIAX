@@ -19,18 +19,20 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         self.settings = settings
         self.fem = fem
         self.sol = sol
-        self._set_xloading()
+        #self._set_xloading()
         #self._set_generator()
         #self._set_solver()
-        
-        
+
     def set_ic(self, q0):
         self.q0 = q0
 
-    def _set_xloading(self):
-
-        self.xloadings = xforces.build_point_follower(self.settings.xloads,
-                                                      self.fem.num_nodes)
+    def set_xloading(self):
+        if self.settings.xloads.follower_forces:
+            self.settings.xloads.build_point_follower(
+                self.fem.num_nodes, self.sol.data.modes.C06ab)
+        if self.settings.xloads.dead_forces:
+            self.settings.xloads.build_point_dead(
+                self.fem.num_nodes, self.sol.data.modes.C06ab)
 
     def set_generator(self):
 
@@ -68,17 +70,18 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
     def solve(self):
 
+        solver_args = dict(diffrax=(self.sol, self.settings),
+                           scipy=((self.sol, self.settings),)
+                           )
+        #args1 = (self.sol, self.settings,)
+        args = solver_args[self.settings.solver_library]
         qs = [jnp.zeros(self.fem.num_modes)]
         for i, ti in enumerate(self.settings.t):
-            if self.settings.solver_library == "diffrax":
-                args = (self.sol, self.xloadings[i])
-            elif self.settings.solver_library == "scipy":
-                args = ((self.sol, self.xloadings[i]),)
+            args1 = (ti,) + args
             sol = self.eqsolver(self.dFq,
                                 qs[-1],
-                                args,
+                                args1,
                                 **self.settings.solver_settings)
-            #self.sol.add_dict('dsys_sol', self.name, sol)
             qi = self.states_puller(sol)
             qs.append(qi)
         self.qs = jnp.array(qs)

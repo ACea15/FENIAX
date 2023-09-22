@@ -4,8 +4,10 @@ import scipy
 import jax
 import jax.numpy as jnp
 import jax.scipy as jscipy
+import pathlib
 from fem4inas.preprocessor.containers.intrinsicmodal import Dfem
-from fem4inas.intrinsic.functions import compute_C0ab, tilde
+from fem4inas.intrinsic.functions import (compute_C0ab, tilde,
+                                          coordinate_transform)
 from functools import partial
 import fem4inas.intrinsic.couplings as couplings
 # TODO: implement from jnp.eigh and compare with jscipy.eigh
@@ -138,8 +140,12 @@ def eigh_jvp_rule(primals, tangents):
 
 @partial(jit, static_argnames=["num_modes"])
 def compute_eigs(
-    Ka: jnp.ndarray, Ma: jnp.ndarray, num_modes: int
-) -> (jnp.ndarray, jnp.ndarray):
+        Ka: jnp.ndarray,
+        Ma: jnp.ndarray,
+        num_modes: int,
+        path: str | pathlib.Path,
+        *args, **kwargs) -> (jnp.ndarray, jnp.ndarray):
+    
     eigenvals, eigenvecs = generalized_eigh(Ka, Ma)
     #eigenvals, eigenvecs = eigh(Ka, Ma)
     reduced_eigenvals = eigenvals[:num_modes]
@@ -147,21 +153,27 @@ def compute_eigs(
     return reduced_eigenvals, reduced_eigenvecs
 
 def compute_eigs_scipy(
-    Ka: jnp.ndarray, Ma: jnp.ndarray,
-        num_modes: int) -> (jnp.ndarray, jnp.ndarray):
+        Ka: jnp.ndarray,
+        Ma: jnp.ndarray,
+        num_modes: int,
+        path: str | pathlib.Path,
+        *args, **kwargs) -> (jnp.ndarray, jnp.ndarray):
     eigenvals, eigenvecs = scipy.linalg.eigh(Ka, Ma)
     reduced_eigenvals = eigenvals[:num_modes]
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
 
-def compute_eigs_load(num_modes: int, *args, **kwargs)-> (jnp.ndarray, jnp.ndarray):
+def compute_eigs_load(num_modes: int,
+                      path: str | pathlib.Path,
+                      *args, **kwargs)-> (jnp.ndarray, jnp.ndarray):
     #eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/w.npy")
     #eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/v.npy")
-    eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/w.npy")
-    eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/v.npy")
+    #eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/w.npy")
+    #eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/v.npy")
     # eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/w.npy")
     # eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/v.npy")    
-    
+    eigenvals = jnp.load(pathlib.Path(path) / "eigenvals.npy")
+    eigenvecs = jnp.load(pathlib.Path(path) / "eigenvecs.npy")
     reduced_eigenvals = eigenvals[:num_modes]
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
@@ -227,7 +239,7 @@ def shapes(X: jnp.ndarray,
 
     return (phi1, psi1, phi2,
             phi1l, phi1ml, psi1l, phi2l, psi2l,
-            omega, X_xdelta, C0ab)
+            omega, X_xdelta, C0ab, C06ab)
 
 
 def scale(phi1: jnp.ndarray,
@@ -241,6 +253,7 @@ def scale(phi1: jnp.ndarray,
           omega: jnp.ndarray,
           X_xdelta: jnp.ndarray,
           C0ab: jnp.ndarray,
+          C06ab: jnp.ndarray,          
           *args, **kwargs):
     """Sacales the intrinsic modes
 
@@ -260,6 +273,7 @@ def scale(phi1: jnp.ndarray,
     omega : jnp.ndarray
     X_xdelta : jnp.ndarray
     C0ab : jnp.ndarray
+    C06ab : jnp.ndarray
     *args :
     **kwargs :
 
@@ -281,7 +295,7 @@ def scale(phi1: jnp.ndarray,
 
     return (phi1, psi1, phi2,
             phi1l, phi1ml, psi1l, phi2l, psi2l,
-            omega, X_xdelta, C0ab)
+            omega, X_xdelta, C0ab, C06ab)
 
 
 def check_alphas(phi1, psi1,
@@ -433,28 +447,6 @@ def coordinates_difftensor(X: jnp.ndarray, Mavg: jnp.ndarray, precision) -> jnp.
     return X3
 
 @partial(jit, static_argnames=["precision"])
-def coordinate_transform(u1: jnp.ndarray,
-                         v1: jnp.ndarray,
-                         precision) -> jnp.ndarray:
-    """Applies a coordinate transformation
-
-    to the 6-element component (dim=1) of a 3rd order tensor
-
-    Parameters
-    ----------
-    u1 : jnp.ndarray
-        Tensor to transform coordinates
-    v1 : jnp.ndarray
-        Node by node transpose transformation matrix:
-    v1=Cab(6x6xNn) effectively does Cba.u1 along the Nn dimension
-
-
-    """
-    f = jax.vmap(lambda u, v: jnp.matmul(u, v, precision=precision), in_axes=(2, 2), out_axes=2)
-    fuv = f(u1, v1)
-    return fuv
-
-@partial(jit, static_argnames=["precision"])
 def ephi(emat, phi, precision):
     f = jax.vmap(lambda u, v: jnp.matmul(u, v,
                                          precision=precision),
@@ -464,7 +456,7 @@ def ephi(emat, phi, precision):
 
 @jit
 def make_C6(v1) -> jnp.ndarray:
-    """Given a 3x3 matrix, make the diagonal 6x6
+    """Given a 3x3xNn tensor, make the diagonal 6x6xNn
 
     It iterates over a third dimension in the input tensor
 

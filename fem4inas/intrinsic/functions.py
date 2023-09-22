@@ -117,3 +117,24 @@ def compute_C0ab(X_diff: jnp.ndarray, X_xdelta: jnp.ndarray,
     C0ab = jnp.stack([x, y, z], axis=1)
     return C0ab
 
+@partial(jit, static_argnames=["precision"])
+def coordinate_transform(u1: jnp.ndarray,
+                         v1: jnp.ndarray,
+                         precision) -> jnp.ndarray:
+    """Applies a coordinate transformation
+
+    to the 6-element component (dim=1) of a 3rd order tensor
+
+    Parameters
+    ----------
+    u1 : jnp.ndarray
+        Tensor to transform coordinates
+    v1 : jnp.ndarray
+        Node by node transpose transformation matrix:
+    v1=Cab(6x6xNn) effectively does Cba.u1 along the Nn dimension
+
+
+    """
+    f = jax.vmap(lambda u, v: jnp.matmul(u, v, precision=precision), in_axes=(2, 2), out_axes=2)
+    fuv = f(u1, v1)
+    return fuv

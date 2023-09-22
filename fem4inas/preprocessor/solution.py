@@ -22,22 +22,22 @@ class Solution(ABC):
 
     def add_container(self, name: str, *args, label="", **kwargs):
         try:
-            Container = getattr(self.solcontainer, name.capitalize())
+            Container = getattr(self.sol_container, name.capitalize())
         except AttributeError:
             raise AttributeError(
                 f"Container {name} is not a valid name \
-            in {self.solcontainer.__file__}"
+            in {self.sol_container.__file__}"
             )
         setattr(self.data, name.lower() + label, Container(*args, **kwargs))
         self.containers.append(name + label)
 
     def load_container(self, name: str, label=""):
         try:
-            Container = getattr(self.solcontainer, name.capitalize())
+            Container = getattr(self.sol_container, name.capitalize())
         except AttributeError:
             raise AttributeError(
                 f"Container {name} is not a valid name \
-            in {self.solcontainer.__file__}"
+            in {self.sol_container.__file__}"
             )
         pathc = self.path / (name + label)
         solcontainer = load_container(pathc, Container)

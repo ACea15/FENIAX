@@ -7,6 +7,8 @@ import pandas as pd
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass, load_jnp
 from fem4inas.preprocessor.containers.data_container import DataContainer
 import fem4inas.intrinsic.geometry as geometry
+from fem4inas.intrinsic.functions import coordinate_transform
+import jax
 from enum import Enum
 
 class Solution(Enum):
@@ -43,22 +45,41 @@ class Dfiles(DataContainer):
 
 
 @dataclass(frozen=False)
-class D_xloads(DataContainer):
+class Dxloads(DataContainer):
     
-    follower_points: list[list[int | str]] = dfield(
-        "Follower force points [component, Node, coordinate]",
+    follower_forces: bool = dfield("Include point follower forces",
+                                   default=False)
+    dead_forces: bool = dfield("Include point dead forces",
+                               default=False)
+    gravity_forces: bool = dfield("Include gravity in the analysis",
+                                  default=False)    
+    aero_forces: bool = dfield("Include aerodynamic forces",
+                               default=False)
+    x: jnp.array = dfield("x-axis vector for interpolation",
+                          default=None)
+    force_follower: jnp.ndarray = dfield("""Point follower forces
+    (len(x)x6xnum_nodes)""",
+                                         default=None)
+    force_dead: jnp.ndarray = dfield("""Point follower forces
+    (len(x)x6xnum_nodes)""",
+                                     default=None)
+    follower_points: list[list[int, int]] = dfield(
+        "Follower force points [Node, coordinate]",
         default=None,
-    )    
-    dead_points: list[list[int]] = dfield("Dead force points [component, Node, coordinate]", default=None,
     )
-    follower_interpolation: list[list[int]] = dfield(
-        "(Linear) interpolation of the follower forces \
-    [[ti, fi]..](time_points * 2 * NumForces) [seconds, Newton]",
+    dead_points: list[list[int, int]] = dfield(
+        "Dead force points [Node, coordinate]",
+        default=None,
+    )
+
+    follower_interpolation: list[list[float]] = dfield(
+        "(Linear) interpolation of the follower forces on t \
+        [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]",
         default=None,
     )
     dead_interpolation: list[list[int]] = dfield(
-        "(Linear) interpolation of the dead forces \
-    [[ti, fi]] [seconds, Newton]",
+        "(Linear) interpolation of the dead forces on t \
+        [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]",
         default=None,
     )
 
@@ -66,10 +87,6 @@ class D_xloads(DataContainer):
                             default=9.807)
     gravity_vect: jnp.ndarray = dfield("gravity vector",
                                        default=jnp.array([0, 0, -1]))
-    follower_forces: bool = dfield("Include follower forces", default=False)
-    dead_forces: bool = dfield("Include dead forces", default=False)
-    gravity_forces: bool = dfield("Include gravity in the analysis", default=False)    
-    aero_forces: bool = dfield("Include aerodynamic forces", default=False)
     label: str = dfield("""Description of the loading type:
     '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
                         init=False)
@@ -77,7 +94,37 @@ class D_xloads(DataContainer):
 
         self.label = f"{int(self.follower_forces)}\
         {int(self.dead_forces)}{self.gravity_forces}{self.aero_forces}"
-    
+        
+    def build_point_follower(self, num_nodes, C06ab):
+
+        num_interpol_points = len(self.x)
+        forces = jnp.zeros((num_interpol_points, 6, num_nodes))
+        num_forces = len(self.follower_interpolation)
+        for li in range(num_interpol_points):
+            for fi in range(num_forces):
+                fnode = self.follower_points[fi][0]
+                dim = self.follower_points[fi][1]
+                forces = forces.at[li, dim, fnode].set(
+                    self.follower_interpolation[fi][li]) # Nx_6_Nn
+        self.force_follower = coordinate_transform(forces, C06ab,
+                                                   jax.lax.Precision.HIGHEST)
+        #return self.force_follower
+
+    def build_point_dead(self, num_nodes):
+
+        # TODO: add gravity force, also in modes as M@g
+        num_interpol_points = len(self.x)
+        self.force_dead = jnp.zeros((num_interpol_points, 6, num_nodes))
+        num_forces = len(self.dead_interpolation)
+        for li in range(num_interpol_points):
+            for fi in range(num_forces):
+                fnode = self.dead_points[fi][0]
+                dim = self.dead_points[fi][1]
+                self.force_dead = self.force_dead.at[li, dim, fnode].set(
+                    self.dead_interpolation[fi][li])
+
+        #return self.force_dead
+
 # @dataclass(frozen=True)
 # class Dgeometry:
 
@@ -175,14 +222,13 @@ class Dfem(DataContainer):
                                                        self.component_chain,
                                                        self.num_nodes)
 
-@dataclass(frozen=True)
-class Dpresimulation(DataContainer):
+# @dataclass(frozen=True)
+# class Dpresimulation(DataContainer):
 
-    load: bool = dfield("""Load presimulation data vs
-    load from solution_path""",
-                                         default=True)
+#     load: bool = dfield("""Load presimulation data vs
+#     load from solution_path""",
+#                                          default=True)
 
-    
 @dataclass(frozen=False)
 class Ddriver(DataContainer):
 
@@ -190,18 +236,16 @@ class Ddriver(DataContainer):
                          default=True,
                          options=['intrinsic']
                          )
-    solution_path: str | pathlib.Path = dfield("Folder path to save results",
-                                                default=None)
-    presimulation: dict | Dpresimulation = dfield("""Presimulation settings""",
-                                           default=True)
+    sol_path: str | pathlib.Path = dfield("Folder path to save results",
+                                                default='./')
+    compute_presimulation: bool = dfield("""Compute or load presimulation data""",
+                                         default=True)
+    save_presimulation: bool = dfield("""Save presimulation data""",
+                                         default=True)
 
-    subcases: dict[str:D_xloads] = dfield("", default=None)
+    subcases: dict[str:Dxloads] = dfield("", default=None)
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
-    def __post_init__(self):
-
-        self.presimulation = initialise_Dclass(self.presimulation,
-                                               Dpresimulation)
 
 @dataclass(frozen=False)
 class Dsystem(DataContainer):
@@ -212,7 +256,7 @@ class Dsystem(DataContainer):
                                           'dynamic',
                                           'multibody',
                                           'stability'])    
-    xloads: dict | D_xloads = dfield("External loads dataclass", default=None)
+    xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
     t0: float = dfield("Initial time", default=0.)
     t1: float = dfield("Final time", default=1.)
     tn: int = dfield("Number of time steps", default=None)
@@ -236,9 +280,10 @@ class Dsystem(DataContainer):
 
     def __post_init__(self):
 
-        self.xloads = initialise_Dclass(self.xloads, D_xloads)
+        self.xloads = initialise_Dclass(self.xloads, Dxloads)
         if self.solver_settings is None:
             self.solver_settings = dict()
+        
         if  self.label is None:
             if isinstance(self.solution, str):
                 sol_label = Solution[self.solution.upper()].value
@@ -299,4 +344,4 @@ class Dsimulation(DataContainer):
 
 if (__name__ == '__main__'):
 
-    d1 = D_xloads()
+    d1 = Dxloads()

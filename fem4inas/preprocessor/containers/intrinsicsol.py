@@ -15,6 +15,7 @@ class Modes:
     omega: jnp.ndarray    
     X_xdelta: jnp.ndarray
     C0ab: jnp.ndarray
+    C06ab: jnp.ndarray
     
 @dataclass(slots=True)
 class Couplings:

@@ -13,6 +13,7 @@ class SingleSimulation(Simulation, cls_name="single"):
             #sys.set_ic()
             sys.set_generator()
             sys.set_solver()
+            sys.set_xloading()
             sys.solve()
             sys.build_solution(self.sol)
             #self._post_run(k, sol_obj)
