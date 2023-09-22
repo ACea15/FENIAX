@@ -11,7 +11,7 @@ class Solution(ABC):
         ...
 
     def __init__(self, path: str | pathlib.Path = None):
-        self.solcontainer = self.set_solcontainer()
+        self.set_solcontainer()
         if path is not None:
             self.path = pathlib.Path(path)
             self.path.mkdir(parents=True, exist_ok=True)
@@ -22,7 +22,7 @@ class Solution(ABC):
 
     def add_container(self, name: str, *args, label="", **kwargs):
         try:
-            Container = getattr(self.solcontainer, name)
+            Container = getattr(self.solcontainer, name.capitalize())
         except AttributeError:
             raise AttributeError(
                 f"Container {name} is not a valid name \
@@ -31,13 +31,13 @@ class Solution(ABC):
         setattr(self.data, name.lower() + label, Container(*args, **kwargs))
         self.containers.append(name + label)
 
-    def load_container(self, name: str, label="", *args, **kwargs):
+    def load_container(self, name: str, label=""):
         try:
-            Container = getattr(self.isol, name.capitalize())
+            Container = getattr(self.solcontainer, name.capitalize())
         except AttributeError:
             raise AttributeError(
                 f"Container {name} is not a valid name \
-            in {self.solcont.__file__}"
+            in {self.solcontainer.__file__}"
             )
         pathc = self.path / (name + label)
         solcontainer = load_container(pathc, Container)
@@ -64,14 +64,6 @@ class Solution(ABC):
         if del_obj:
             self.del_container(name, label)
 
-    def load_pickle(self):
-        """Save the self object to pickle file"""
-        ...
-
-    def save_pickle(self):
-        """Save the self object to pickle file"""
-        ...
-
     def add_dict(self, name, label, obj):
         if not hasattr(self.data, name):
             setattr(self.data, name, dict())
@@ -80,10 +72,9 @@ class Solution(ABC):
 
 class IntrinsicSolution(Solution):
     def set_solcontainer(self):
+        
         import fem4inas.preprocessor.containers
-
-        sol_container = fem4inas.preprocessor.containers.intrinsicsol
-        return sol_container
+        self.sol_container = fem4inas.preprocessor.containers.intrinsicsol
 
 
 def save_container(path, container):
@@ -102,7 +93,6 @@ def save_container(path, container):
                 f"Not recognised attribute {attr_name} \
             type: {type(attr)}"
             )
-
 
 def load_container(path: pathlib.Path, Container):
     container_path = path / Container.__name__.lower()

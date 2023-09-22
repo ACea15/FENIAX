@@ -11,7 +11,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
     def __init__(self,
                  name: str,
-                 settings: intrinsic.D_system,
+                 settings: intrinsic.Dsystem,
                  fem: intrinsic.Dfem,
                  sol: solution.IntrinsicSolution):
 
@@ -95,16 +95,16 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             X2t = postprocess.compute_internalforces(self.sol.data.modes.phi2l, self.qs[i])
             X3t = postprocess.compute_strains(self.sol.data.modes.psi2l, self.qs[i])
             Cabt, rat = postprocess.integrate_strains(jnp.zeros(3),
-                                                    jnp.eye(3),
-                                                    X3t,
-                                                    self.sol,
-                                                    self.fem
-                                                    )
+                                                      jnp.eye(3),
+                                                      X3t,
+                                                      self.sol,
+                                                      self.fem
+                                                      )
             X2.append(X2t)
             X3.append(X3t)
             Cab.append(Cabt)
             ra.append(rat)
             
-        sol.add_container('StaticSystem', label=self.name,
+        sol.add_container('StaticSystem_', label=self.name,
                           q=self.qs, X2=jnp.array(X2), X3=jnp.array(X3),
                           Cab=jnp.array(Cab), ra=jnp.array(ra))

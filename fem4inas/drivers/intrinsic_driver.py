@@ -87,17 +87,34 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         # Configure the simulation
         self.sol = solution.IntrinsicSolution(self._config.driver.solution_path)
 
+    def _compute_eigs(self):
+        eig_funcs = dict(scipy=modes.compute_eigs_scipy,
+                         jax_custom=modes.compute_eigs,
+                         inputs=modes.compute_eigs_load)
+
+        eig_solver = eig_funcs[self._config.fem.eig_type]
+        eigenvals, eigenvecs = eig_solver(Ka = self._config.fem.Ka,
+                                          Ma = self._config.fem.Ma,
+                                          num_modes=self._config.fem.num_modes,
+                                          path=self._config.dirver)
+        elif self._config.fem.eig_type == "jax_custom":
+
+                         elif self._config.fem.eig_type == "input":
+            eigenvals, eigenvecs = modes.compute_eigs_scipy(self._config.fem.Ka,
+                                                            self._config.fem.Ma,
+                                                            self._config.fem.num_modes)
+
+
     def _compute_modalshapes(self):
-        # if self._config.numlib == "jax":
 
-        # elif self._config.numlib == "numpy":
-        #    import fem4inas.intrinsic.modes_np as modes
-
-        modal_analysis = modes.shapes(
-            self._config.fem.X.T, self._config.fem.Ka, self._config.fem.Ma, self._config
-        )
-        modal_analysis_scaled = modes.scale(*modal_analysis)
-        self.sol.add_container("Modes", *modal_analysis_scaled)
+        eigenvals, eigenvecs = self._compute_eigs()
+        if self._config.driver.compute_modes:
+            modal_analysis = modes.shapes(
+                self._config.fem.X.T, self._config.fem.Ka, self._config.fem.Ma,
+                eigenvals, eigenvecs, self._config
+            )
+            modal_analysis_scaled = modes.scale(*modal_analysis)
+            self.sol.add_container("Modes", *modal_analysis_scaled)
 
     def _compute_modalcouplings(self):
         # if self._config.numlib == "jax":

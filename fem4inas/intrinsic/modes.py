@@ -146,7 +146,7 @@ def compute_eigs(
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
 
-def compute_eigs_scpy(
+def compute_eigs_scipy(
     Ka: jnp.ndarray, Ma: jnp.ndarray,
         num_modes: int) -> (jnp.ndarray, jnp.ndarray):
     eigenvals, eigenvecs = scipy.linalg.eigh(Ka, Ma)
@@ -154,7 +154,7 @@ def compute_eigs_scpy(
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
 
-def compute_eigs_load(num_modes: int)-> (jnp.ndarray, jnp.ndarray):
+def compute_eigs_load(num_modes: int, *args, **kwargs)-> (jnp.ndarray, jnp.ndarray):
     #eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/w.npy")
     #eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/v.npy")
     eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/w.npy")
@@ -167,7 +167,12 @@ def compute_eigs_load(num_modes: int)-> (jnp.ndarray, jnp.ndarray):
     return reduced_eigenvals, reduced_eigenvecs
 
 # @partial(jit, static_argnames=['config'])
-def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
+def shapes(X: jnp.ndarray,
+           Ka: jnp.ndarray,
+           Ma: jnp.ndarray,
+           eigenvals: jnp.ndarray,
+           eigenvecs: jnp.ndarray,
+           config: Dfem):
     precision = config.jax_np.precision
     num_modes = config.fem.num_modes  # Nm
     num_nodes = config.fem.num_nodes  # Nn
@@ -179,7 +184,7 @@ def shapes(X: jnp.ndarray, Ka: jnp.ndarray, Ma: jnp.ndarray, config: Dfem):
     C06ab = make_C6(C0ab)  # shape=(6x6xNn)
     #eigenvals, eigenvecs = compute_eigs(Ka, Ma, num_modes)
     #eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)
-    eigenvals, eigenvecs = compute_eigs_load(num_modes)    
+    #eigenvals, eigenvecs = compute_eigs_load(num_modes)    
     omega = jnp.sqrt(eigenvals)
     # reorder to the grid coordinate in X and add 0s of clamped DoF
     _phi1 = jnp.matmul(config.fem.Mfe_order, eigenvecs, precision=precision)

@@ -100,7 +100,9 @@ class Dfem(DataContainer):
     Ma: jnp.ndarray  = dfield("Condensed mass matrix",
                               default=None, yaml_save=False)
     num_modes: int = dfield("Number of modes in the solution", default=None)
-    #
+    eig_type: str = dfield("Calculation of eigenvalues/vectors",
+                           default="scipy",
+                           options=["scipy", "jax_custom", "inputs"])
     grid: str | pathlib.Path | jnp.ndarray | pd.DataFrame = dfield(
         """Grid file or array with Nodes Coordinates, node ID in the FEM,
         and associated component""", default='structuralGrid')
@@ -174,6 +176,14 @@ class Dfem(DataContainer):
                                                        self.num_nodes)
 
 @dataclass(frozen=True)
+class Dpresimulation(DataContainer):
+
+    load: bool = dfield("""Load presimulation data vs
+    load from solution_path""",
+                                         default=True)
+
+    
+@dataclass(frozen=False)
 class Ddriver(DataContainer):
 
     typeof: str = dfield("Driver to manage the simulation",
@@ -182,15 +192,19 @@ class Ddriver(DataContainer):
                          )
     solution_path: str | pathlib.Path = dfield("Folder path to save results",
                                                 default=None)
-    compute_presimulation: bool = dfield("Folder path to save results",
-                                         default=True)
+    presimulation: dict | Dpresimulation = dfield("""Presimulation settings""",
+                                           default=True)
 
     subcases: dict[str:D_xloads] = dfield("", default=None)
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
+    def __post_init__(self):
+
+        self.presimulation = initialise_Dclass(self.presimulation,
+                                               Dpresimulation)
 
 @dataclass(frozen=False)
-class D_system(DataContainer):
+class Dsystem(DataContainer):
 
     name: str = dfield("System name")
     solution: str | int = dfield("Type of solution to be solved",
@@ -248,14 +262,14 @@ class D_system(DataContainer):
 class Dsystems(DataContainer):
 
     sett: dict[str: dict] = dfield("Settings ", yaml_save=False)
-    sys: dict[str: D_system]  = dfield("Dictionary with systems in the simulation",
+    sys: dict[str: Dsystem]  = dfield("Dictionary with systems in the simulation",
                                        init=False)
 
     def __post_init__(self):
         self.sys = dict()
         for k, v in self.sett.items():
             self.sys[k] = initialise_Dclass(
-                v, D_system, name=k)
+                v, Dsystem, name=k)
 
 @dataclass(frozen=True)
 class Dsimulation(DataContainer):
@@ -281,7 +295,7 @@ class Dsimulation(DataContainer):
 
         if self.systems is not None:
             for k, v in self.systems:
-                setattr(self, k, initialise_Dclass(v, D_system))
+                setattr(self, k, initialise_Dclass(v, Dsystem))
 
 if (__name__ == '__main__'):
 
