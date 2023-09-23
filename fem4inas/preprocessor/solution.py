@@ -22,7 +22,7 @@ class Solution(ABC):
 
     def add_container(self, name: str, *args, label="", **kwargs):
         try:
-            Container = getattr(self.sol_container, name.capitalize())
+            Container = getattr(self.sol_container, name)
         except AttributeError:
             raise AttributeError(
                 f"Container {name} is not a valid name \
@@ -33,7 +33,7 @@ class Solution(ABC):
 
     def load_container(self, name: str, label=""):
         try:
-            Container = getattr(self.sol_container, name.capitalize())
+            Container = getattr(self.sol_container, name)
         except AttributeError:
             raise AttributeError(
                 f"Container {name} is not a valid name \

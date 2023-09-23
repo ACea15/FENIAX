@@ -92,6 +92,8 @@ class Dxloads(DataContainer):
                         init=False)
     def __post_init__(self):
 
+        if self.x is not None:
+            self.x = jnp.array(self.x)
         self.label = f"{int(self.follower_forces)}\
         {int(self.dead_forces)}{self.gravity_forces}{self.aero_forces}"
         

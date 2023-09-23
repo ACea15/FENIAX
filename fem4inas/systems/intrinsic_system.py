@@ -1,7 +1,6 @@
 from  fem4inas.systems.system import System
 import fem4inas.systems.sollibs as sollibs
 import fem4inas.intrinsic.dq as dq
-import fem4inas.intrinsic.xforces as xforces
 import fem4inas.intrinsic.postprocess as postprocess
 import fem4inas.preprocessor.containers.intrinsicmodal as intrinsic
 import fem4inas.preprocessor.solution as solution
@@ -68,16 +67,20 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
 class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
+    def _args_diffrax(self, t):
+
+        return (t, self.sol, self.settings)
+
+    def _args_scipy(self, t):
+
+        return ((t, self.sol, self.settings),)
+
     def solve(self):
 
-        solver_args = dict(diffrax=(self.sol, self.settings),
-                           scipy=((self.sol, self.settings),)
-                           )
-        #args1 = (self.sol, self.settings,)
-        args = solver_args[self.settings.solver_library]
+        solver_args = getattr(self, f"_args_{self.settings.solver_library}")
         qs = [jnp.zeros(self.fem.num_modes)]
         for i, ti in enumerate(self.settings.t):
-            args1 = (ti,) + args
+            args1 = solver_args(ti)
             sol = self.eqsolver(self.dFq,
                                 qs[-1],
                                 args1,
@@ -108,6 +111,6 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             Cab.append(Cabt)
             ra.append(rat)
             
-        sol.add_container('StaticSystem_', label=self.name,
+        sol.add_container('StaticSystem', label="_"+self.name,
                           q=self.qs, X2=jnp.array(X2), X3=jnp.array(X3),
                           Cab=jnp.array(Cab), ra=jnp.array(ra))

@@ -33,7 +33,7 @@ def f_12(omega, gamma1, gamma2, q1, q2):
 
 def dq_001001(q, *args):
 
-    t, sol, system,  *xargs = args
+    t, sol, system,  *xargs = args[0]
     gamma2 = sol.data.couplings.gamma2
     phi1 = sol.data.modes.phi1l
     omega = sol.data.modes.omega
