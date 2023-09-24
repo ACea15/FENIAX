@@ -1,4 +1,5 @@
 import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from fem4inas.preprocessor import solution
 from fem4inas.preprocessor.inputs import Inputs
 import fem4inas.fem4inas_main
 import jax.numpy as jnp
@@ -11,27 +12,55 @@ file_path = pathlib.Path(__file__).parent
 class TestBeamModal:
 
     @pytest.fixture(scope="class")
-    def sol(self):
+    def sol_path(self):
+        path = pathlib.Path(
+            "./ArgyrisBeam")
+        return path
+
+    @pytest.fixture(scope="class")
+    def sol(self, sol_path):
 
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = [[]]
-        inp.fem.folder = fem4inas.PATH / "examples/ArgyrisBeam/FEM"
-        inp.fem.num_modes = 10
+        inp.fem.folder = fem4inas.PATH / "../examples/ArgyrisBeam/FEM"
+        inp.fem.num_modes = 150
+        inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
+        inp.driver.sol_path = pathlib.Path(
+                    "./ArgyrisBeam")
         inp.simulation.typeof = "single"
-        inp.ex.Cab_xtol = 1e-4
-        config =  configuration.Config(inp)
+        inp.systems.sett.s1.solution = "static"
+        inp.systems.sett.s1.solver_library = "diffrax"
+        inp.systems.sett.s1.solver_function = "newton_raphson"
+        inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
+                                                   atol=1e-6,
+                                                   max_steps=50,
+                                                   norm=jnp.linalg.norm,
+                                                   kappa=0.01)
+        inp.systems.sett.s1.label = 'dq_001001'
+        inp.systems.sett.s1.xloads.follower_forces = True
+        inp.systems.sett.s1.xloads.follower_points = [[25, 1]]
+        inp.systems.sett.s1.xloads.x = [0, 1, 2]
+        inp.systems.sett.s1.xloads.follower_interpolation = [[0.,
+                                                             -3.7e3,
+                                                             -12.1e3
+                                                              ]
+                                                             ]
+        inp.systems.sett.s1.t = [1, 2]
+        config = configuration.Config(inp)
         obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
+
         return obj_sol
 
     @pytest.fixture
     def data(self):
 
-        sol_path = file_path / "data/argyris_beam_modal"
-        with open(sol_path.with_suffix('pickle'), 'rb') as handle:
-            solution = pickle.load(handle)
-        return solution
+        sol_path = file_path / "data/ArgyrisBeam"
+        sol = solution.IntrinsicSolution(sol_path)
+        sol.load_container("Modes")
+        sol.load_container("Couplings")
+        return sol.data
 
     def test_phi1(self, sol, data):
         
