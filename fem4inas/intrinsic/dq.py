@@ -1,22 +1,26 @@
 import jax.numpy as jnp
 import numpy as np
 from jax import jit
+from functools import partial
 from jax.config import config; config.update("jax_enable_x64", True)
 import fem4inas.intrinsic.xloads as xloads
 
-def contraction_gamma1(gamma1: jnp.ndarray, q1:jnp.ndarray) -> jnp.ndarray:
+def contraction_gamma1(gamma1: jnp.ndarray,
+                       q1:jnp.ndarray) -> jnp.ndarray:
 
     res = jnp.einsum('ijk,jk->i', gamma1,
                      jnp.tensordot(q1, q1, axes=0))
     return res
 
-def contraction_gamma2(gamma2: jnp.ndarray, q2:jnp.ndarray) -> jnp.ndarray:
+def contraction_gamma2(gamma2: jnp.ndarray,
+                       q2:jnp.ndarray) -> jnp.ndarray:
 
     res = jnp.einsum('ijk,jk->i', gamma2,
                      jnp.tensordot(q2, q2, axes=0))
     return res
 
-def contraction_gamma3(gamma2: jnp.ndarray, q1: jnp.ndarray,
+def contraction_gamma3(gamma2: jnp.ndarray,
+                       q1: jnp.ndarray,
                        q2: jnp.ndarray) -> jnp.ndarray:
 
     res = jnp.einsum('jik,jk->i', gamma2,
@@ -31,9 +35,12 @@ def f_12(omega, gamma1, gamma2, q1, q2):
 
     return F1, F2
 
-def dq_001001(q, *args):
+#@partial(jit, static_argnums=(2, 3))
+#@jit
+#@partial(jit, static_argnames=['sol','system'])
+def _dq_001001(t, q, sol, system):
 
-    t, sol, system,  *xargs = args[0]
+    #t, sol, system,  *xargs = args[0]
     gamma2 = sol.data.couplings.gamma2
     phi1 = sol.data.modes.phi1l
     omega = sol.data.modes.omega
@@ -42,6 +49,12 @@ def dq_001001(q, *args):
          + xloads.eta_001001(t, phi1,
                              system.xloads.x,
                              system.xloads.force_follower))
+    return F
+
+def dq_001001(q, *args):
+
+    t, sol, system,  *xargs = args[0]
+    F = _dq_001001(t, q, sol, system)
     return F
 
 def dq_000001(q, *args):

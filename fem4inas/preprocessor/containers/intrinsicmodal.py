@@ -21,7 +21,7 @@ class Solution(Enum):
 class Dconst(DataContainer):
 
     I3: jnp.ndarray = dfield("3x3 Identity matrix", default=jnp.eye(3))
-    e1: jnp.ndarray = dfield("3x3 Identity matrix",
+    e1: jnp.ndarray = dfield("3-component vector with beam direction in local frame",
                              default=jnp.array([1., 0., 0.]))
     EMAT: jnp.ndarray = dfield("3x3 Identity matrix",
                                default=jnp.array([[0, 0, 0, 0, 0, 0],
@@ -152,11 +152,16 @@ class Dfem(DataContainer):
     eig_type: str = dfield("Calculation of eigenvalues/vectors",
                            default="scipy",
                            options=["scipy", "jax_custom", "inputs"])
+    eig_names: list[str | pathlib.Path] = dfield("""name to load
+    eigenvalues/vectors in folder""",
+                                                 default=["eigenvals.npy",
+                                                          "eigenvecs.npy"])
     grid: str | pathlib.Path | jnp.ndarray | pd.DataFrame = dfield(
         """Grid file or array with Nodes Coordinates, node ID in the FEM,
         and associated component""", default='structuralGrid')
     df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)    
     X: jnp.ndarray = dfield("Grid coordinates", default=None, yaml_save=False)
+    Cab_xtol: float = dfield("Tolerance for building the local frame", default=1e-4)    
     num_nodes: int = dfield("Number of nodes", init=False)    
     fe_order: list[int] | jnp.ndarray = dfield("node ID in the FEM", default=None)
     fe_order_start: int = dfield("fe_order starting with this index", default=0)
@@ -249,7 +254,7 @@ class Ddriver(DataContainer):
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
 
-@dataclass(frozen=False)
+@dataclass(frozen=True, eq=True, unsafe_hash=True)
 class Dsystem(DataContainer):
 
     name: str = dfield("System name")
@@ -257,7 +262,8 @@ class Dsystem(DataContainer):
                                  options=['static',
                                           'dynamic',
                                           'multibody',
-                                          'stability'])    
+                                          'stability'])
+    save: bool = dfield("Save results of the run system", default=True)    
     xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
     t0: float = dfield("Initial time", default=0.)
     t1: float = dfield("Final time", default=1.)
@@ -282,7 +288,8 @@ class Dsystem(DataContainer):
 
     def __post_init__(self):
 
-        self.xloads = initialise_Dclass(self.xloads, Dxloads)
+        object.__setattr__(self, 'xloads', initialise_Dclass(self.xloads, Dxloads))
+        #self.xloads = initialise_Dclass(self.xloads, Dxloads)
         if self.solver_settings is None:
             self.solver_settings = dict()
         

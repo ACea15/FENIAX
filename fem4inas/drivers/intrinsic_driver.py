@@ -83,7 +83,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
             for k, v in self._config.systems.sys.items():
                 print(f"***** Initialising system {k} *****")
                 cls_sys = fem4inas.systems.factory(f"{v.solution}_intrinsic")
-                self.systems[k] = cls_sys(k, v, self._config.fem, self.sol)
+                self.systems[k] = cls_sys(k, v, self._config.fem, self.sol, self._config)
                 print(f"***** Initialised {v.solution}_intrinsic *****")
         self.num_systems = len(self.systems)
 
@@ -96,11 +96,14 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
                          jax_custom=modes.compute_eigs,
                          inputs=modes.compute_eigs_load)
 
+        eig_type = self._config.fem.eig_type
         eig_solver = eig_funcs[self._config.fem.eig_type]
         eigenvals, eigenvecs = eig_solver(Ka=self._config.fem.Ka,
                                           Ma=self._config.fem.Ma,
                                           num_modes=self._config.fem.num_modes,
-                                          path=self._config.driver.sol_path)
+                                          path=self._config.fem.folder,
+                                          eig_names=self._config.fem.eig_names)
+        print(f"***** Computing eigen problem from {eig_type} *****")
         return eigenvals, eigenvecs
 
     def _compute_modalshapes(self):

@@ -5,7 +5,8 @@ import jax
 import jax.numpy as jnp
 import jax.scipy as jscipy
 import pathlib
-from fem4inas.preprocessor.containers.intrinsicmodal import Dfem
+#from fem4inas.preprocessor.containers.intrinsicmodal import Dfem
+from fem4inas.preprocessor import configuration
 from fem4inas.intrinsic.functions import (compute_C0ab, tilde,
                                           coordinate_transform)
 from functools import partial
@@ -143,7 +144,6 @@ def compute_eigs(
         Ka: jnp.ndarray,
         Ma: jnp.ndarray,
         num_modes: int,
-        path: str | pathlib.Path,
         *args, **kwargs) -> (jnp.ndarray, jnp.ndarray):
     
     eigenvals, eigenvecs = generalized_eigh(Ka, Ma)
@@ -156,7 +156,6 @@ def compute_eigs_scipy(
         Ka: jnp.ndarray,
         Ma: jnp.ndarray,
         num_modes: int,
-        path: str | pathlib.Path,
         *args, **kwargs) -> (jnp.ndarray, jnp.ndarray):
     eigenvals, eigenvecs = scipy.linalg.eigh(Ka, Ma)
     reduced_eigenvals = eigenvals[:num_modes]
@@ -164,7 +163,8 @@ def compute_eigs_scipy(
     return reduced_eigenvals, reduced_eigenvecs
 
 def compute_eigs_load(num_modes: int,
-                      path: str | pathlib.Path,
+                      path: pathlib.Path,
+                      eig_names: list[str],
                       *args, **kwargs)-> (jnp.ndarray, jnp.ndarray):
     #eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/w.npy")
     #eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/v.npy")
@@ -172,19 +172,19 @@ def compute_eigs_load(num_modes: int,
     #eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/v.npy")
     # eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/w.npy")
     # eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/v.npy")    
-    eigenvals = jnp.load(pathlib.Path(path) / "eigenvals.npy")
-    eigenvecs = jnp.load(pathlib.Path(path) / "eigenvecs.npy")
+    eigenvals = jnp.load(path / eig_names[0])
+    eigenvecs = jnp.load(path / eig_names[1])
     reduced_eigenvals = eigenvals[:num_modes]
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
 
-# @partial(jit, static_argnames=['config'])
+@partial(jit, static_argnames=['config'])
 def shapes(X: jnp.ndarray,
            Ka: jnp.ndarray,
            Ma: jnp.ndarray,
            eigenvals: jnp.ndarray,
            eigenvecs: jnp.ndarray,
-           config: Dfem):
+           config: configuration.Config):
     precision = config.jax_np.precision
     num_modes = config.fem.num_modes  # Nm
     num_nodes = config.fem.num_nodes  # Nn
@@ -240,7 +240,6 @@ def shapes(X: jnp.ndarray,
     return (phi1, psi1, phi2,
             phi1l, phi1ml, psi1l, phi2l, psi2l,
             omega, X_xdelta, C0ab, C06ab)
-
 
 def scale(phi1: jnp.ndarray,
           psi1: jnp.ndarray,

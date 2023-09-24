@@ -107,7 +107,8 @@ def compute_C0ab(X_diff: jnp.ndarray, X_xdelta: jnp.ndarray,
     x = x.at[:, 0].set(jnp.array([1, 0, 0])) # WARNING: this says the first node FoR at time 0
     # aligns with the global reference frame.
     # TODO: check this works when x_local = [0,0,1]
-    cond = jnp.linalg.norm(x - jnp.array([[0,0,1]]).T) > config.ex.Cab_xtol # if not true,
+    cond = (jnp.linalg.norm(x - jnp.array([[0,0,1]]).T) >
+            config.fem.Cab_xtol) # if not true,
     # local-x is almost parallel to global-z, z direction parallel to global y
     y = lax.select(cond,
                    jnp.cross(jnp.array([0, 0, 1]), x, axisb=0, axisc=0),

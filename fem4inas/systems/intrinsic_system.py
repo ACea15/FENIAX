@@ -12,12 +12,14 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
                  name: str,
                  settings: intrinsic.Dsystem,
                  fem: intrinsic.Dfem,
-                 sol: solution.IntrinsicSolution):
+                 sol: solution.IntrinsicSolution,
+                 config):
 
         self.name = name
         self.settings = settings
         self.fem = fem
         self.sol = sol
+        self.config = config
         #self._set_xloading()
         #self._set_generator()
         #self._set_solver()
@@ -87,7 +89,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
                                 **self.settings.solver_settings)
             qi = self.states_puller(sol)
             qs.append(qi)
-        self.qs = jnp.array(qs)
+        self.qs = jnp.array(qs[1:])
 
     def build_solution(self, sol: solution.IntrinsicSolution):
 
@@ -97,7 +99,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         X3 = []
         Cab = []
         ra = []
-        for i in range(len(self.settings.t) + 1):
+        for i, ti in enumerate(self.settings.t):
             X2t = postprocess.compute_internalforces(self.sol.data.modes.phi2l, self.qs[i])
             X3t = postprocess.compute_strains(self.sol.data.modes.psi2l, self.qs[i])
             Cabt, rat = postprocess.integrate_strains(jnp.zeros(3),
@@ -114,3 +116,6 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         sol.add_container('StaticSystem', label="_"+self.name,
                           q=self.qs, X2=jnp.array(X2), X3=jnp.array(X3),
                           Cab=jnp.array(Cab), ra=jnp.array(ra))
+        if self.settings.save:
+            sol.save_container('StaticSystem', label="_"+self.name)
+
