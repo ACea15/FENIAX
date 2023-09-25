@@ -82,7 +82,11 @@ def integrate_strains(ra_0n, Cab_0n, X3t, sol, fem):
 
         comp_father = fem.component_father[ci]
         comp_nodes = jnp.array(fem.component_nodes[ci])
-        node_father = fem.component_nodes[comp_father][-1]
+        numcomp_nodes = len(comp_nodes)
+        if comp_father is None:
+            node_father = 0
+        else:
+            node_father = fem.component_nodes[comp_father][-1]
         Cab_init = Cab[:, :, node_father]
         Cab0_init = C0ab[:, :, node_father]
         ra_init = ra[:, node_father]
