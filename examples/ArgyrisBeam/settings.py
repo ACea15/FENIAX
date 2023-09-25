@@ -13,6 +13,7 @@ inp.engine = "intrinsicmodal"
 inp.fem.connectivity = [[]]
 inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.num_modes = 150
+inp.fem.eig_type = "inputs"
 #inp.fem.fe_order_start = 1
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(

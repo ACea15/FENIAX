@@ -33,3 +33,8 @@ Ma = np.load("/home/ac5015/programs/FEM4INAS/Models/ArgyrisBeam_25/FEM/Maa.npy")
 w, v = scipy.linalg.eigh(Ka, Ma)
 np.save("./FEM/w.npy", w)
 np.save("./FEM/v.npy", v)
+
+save_eigs = False
+if save_eigs:
+    np.save("../ArgyrisBeam/FEM/eigenvals.npy", w)
+    np.save("../ArgyrisBeam/FEM/eigenvecs.npy", v)

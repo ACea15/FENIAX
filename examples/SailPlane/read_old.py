@@ -7,8 +7,8 @@ import pickle
 import scipy.linalg
 
 
-directory = "/home/ac5015/programs/FEM4INAS/Models/ArgyrisBeam_25/Test/EndLoad/results_2-8-2023_11-0"
-directory = "/media/acea/work/projects/FEM4INAS/Models/SailPlane/Test/Static/results_25-9-2023_7-20/"
+directory = "/home/ac5015/programs/FEM4INAS/Models/SailPlane/Test/Static/results_5-6-2023_13-37/"
+#directory = "/media/acea/work/projects/FEM4INAS/Models/SailPlane/Test/Static/results_25-9-2023_7-20/"
 nmodes = 50
 
 q = np.load("%s/q_%s.npy"%(directory, nmodes))
@@ -36,5 +36,12 @@ with open ("%s/Sols_%s"%(directory, nmodes), 'rb') as fp:
 Ka = np.load("../../Models/SailPlane/FEM/Kaa.npy")
 Ma = np.load("../../Models/SailPlane/FEM/Maa.npy")
 w, v = scipy.linalg.eigh(Ka, Ma)
-np.save("./FEM/eigenvals.npy", w)
-np.save("./FEM/eigenvecs.npy", v)
+
+save_eigs = False
+if save_eigs:
+    np.save("../SailPlane/FEM/eigenvals.npy", w)
+    np.save("../SailPlane/FEM/eigenvecs.npy", v)
+
+
+
+nastran = np.load("/home/ac5015/programs/FEM4INAS/Tests/StaticData/SailPlane_rt.npy")

@@ -55,6 +55,13 @@ inp.systems.sett.s1.xloads.follower_interpolation = [[0.,
                                                       3.e5,
                                                       4.e5,
                                                       4.8e5,
+                                                      5.3e5],
+                                                     [0.,
+                                                      2e5,
+                                                      2.5e5,
+                                                      3.e5,
+                                                      4.e5,
+                                                      4.8e5,
                                                       5.3e5]
                                                      ]
 inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]

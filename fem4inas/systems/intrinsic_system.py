@@ -102,7 +102,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         for i, ti in enumerate(self.settings.t):
             X2t = postprocess.compute_internalforces(self.sol.data.modes.phi2l, self.qs[i])
             X3t = postprocess.compute_strains(self.sol.data.modes.psi2l, self.qs[i])
-            Cabt, rat = postprocess.integrate_strains(jnp.zeros(3),
+            Cabt, rat = postprocess.integrate_strains(self.fem.X[0],
                                                       jnp.eye(3),
                                                       X3t,
                                                       self.sol,
