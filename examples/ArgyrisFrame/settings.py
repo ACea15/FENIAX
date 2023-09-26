@@ -9,7 +9,9 @@ import fem4inas.fem4inas_main
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
-inp.fem.connectivity = [[1], []]
+# inp.fem.connectivity = [[1], []]
+inp.fem.connectivity = [[]]
+inp.fem.grid = "structuralGrid2"
 inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.num_modes = 120
 inp.fem.fe_order_start = 1

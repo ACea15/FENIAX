@@ -35,7 +35,7 @@ class TestSailPlane:
         inp.fem.num_modes = 50
         inp.driver.typeof = "intrinsic"
         inp.driver.save_presimulation = False
-        inp.driver.sol_path = pathlib.Path("./SailPlane")
+        #inp.driver.sol_path = pathlib.Path("./SailPlane")
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.save = False 

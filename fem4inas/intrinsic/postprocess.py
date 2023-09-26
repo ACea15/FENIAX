@@ -44,8 +44,9 @@ def integrate_X3(carry, x):
     ra0 = carry[:, 6]
     Ipsi = kappa * ds
     Itheta = jnp.linalg.norm(Ipsi)
-    Cab = Cab0_x @ Cab0_carry.T @ Cab_carry @ H0(Itheta, Ipsi)
-    ra = ra0 + Cab0_x @ Cab0_carry.T @ Cab_carry @ (
+    #Cab = Cab0_x @ Cab0_carry.T @ Cab_carry @ H0(Itheta, Ipsi)
+    Cab = Cab_carry @ Cab0_carry.T @ Cab0_x  @ H0(Itheta, Ipsi)
+    ra = ra0 + Cab_carry @ Cab0_carry.T @ Cab0_x @ (
         H1(Itheta, Ipsi, ds) @ (strain + jnp.array([1, 0, 0])))
     y = jnp.hstack([Cab, ra.reshape((3, 1))])
     carry = jnp.hstack([Cab, Cab0_x, ra.reshape((3, 1))])

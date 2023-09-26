@@ -8,7 +8,7 @@ import pathlib
 
 file_path = pathlib.Path(__file__).parent
 
-# sol_path = "./data/ArgyrisBeam"
+# sol_path = "./data/ArgyrisFrame3D"#"./data/ArgyrisBeam"
 # sol = solution.IntrinsicSolution(sol_path)
 # sol.load_container("Modes")
 # sol.load_container("Couplings")
@@ -109,8 +109,8 @@ class TestBeamSolution:
         inp.fem.num_modes = 150
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
-        inp.driver.sol_path = pathlib.Path(
-                    "./ArgyrisBeam")
+        # inp.driver.sol_path = pathlib.Path(
+        #             "./ArgyrisBeam")
         inp.driver.save_presimulation = False
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
@@ -191,7 +191,8 @@ class TestFrameModal:
         inp.fem.num_modes = 120
         inp.fem.fe_order_start = 1
         inp.driver.typeof = "intrinsic"
-        inp.driver.sol_path = sol_path
+        inp.driver.save_presimulation = False
+        #inp.driver.sol_path = sol_path
         inp.simulation.typeof = "single"
         config = configuration.Config(inp)
         obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
@@ -262,6 +263,7 @@ class TestFrameSolution:
         inp.fem.fe_order_start = 1
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
+        inp.driver.save_presimulation = False        
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.save = False 
@@ -325,3 +327,84 @@ class TestFrameSolution:
         
         assert jnp.allclose(sol.staticsystem_s1.Cab,
                             data.staticsystem_s1.Cab[:3])
+
+class TestFrame3D:
+
+    @pytest.fixture(scope="class")
+    def sol(self):
+
+        inp = Inputs()
+        inp.engine = "intrinsicmodal"
+        inp.fem.connectivity = [[1], []]
+        #inp.fem.connectivity = [[]]
+        #inp.fem.grid = "structuralGrid2"
+        inp.fem.folder = fem4inas.PATH / "../examples/ArgyrisFrame/FEM"
+        inp.fem.num_modes = 120
+        inp.fem.fe_order_start = 1
+        inp.fem.eig_type = "inputs"
+        inp.driver.typeof = "intrinsic"
+        #inp.driver.sol_path= pathlib.Path()
+        inp.driver.save_presimulation = False        
+        inp.simulation.typeof = "single"
+        #inp.ex.Cab_xtol = 1e-4
+        inp.systems.sett.s1.solution = "static"
+        inp.systems.sett.s1.save = False         
+        inp.systems.sett.s1.solver_library = "diffrax"
+        inp.systems.sett.s1.solver_function = "newton_raphson"
+        inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
+                                                   atol=1e-6,
+                                                   max_steps=50,
+                                                   norm=jnp.linalg.norm,
+                                                   kappa=0.01)
+        # inp.systems.sett.s1.solver_library = "scipy"
+        # inp.systems.sett.s1.solver_function = "root"
+        # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
+        #                                            tolerance=1e-9)
+        inp.systems.sett.s1.label = 'dq_001001'
+        inp.systems.sett.s1.xloads.follower_forces = True
+        inp.systems.sett.s1.xloads.follower_points = [[20, 1],
+                                                      [20, 4]]
+        inp.systems.sett.s1.xloads.x = [0, 1, 2, 3, 4]
+        inp.systems.sett.s1.xloads.follower_interpolation = [
+            [0., -50., -75,    -100, -150],
+            [0., -5e3, -6.5e3, -8e3, -9e3]]
+
+        inp.systems.sett.s1.t = [1, 2, 3, 4]
+
+        config = configuration.Config(inp)
+        obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
+        return obj_sol
+
+    @pytest.fixture
+    def data(self):
+        sol_path = file_path / "data/ArgyrisFrame3D"
+        sol = solution.IntrinsicSolution(sol_path)
+        sol.load_container("Modes")
+        sol.load_container("Couplings")
+        sol.load_container("StaticSystem", label="_s1")
+
+        return sol.data
+
+    
+    def test_qs(self, sol, data):
+        
+        assert jnp.allclose(sol.staticsystem_s1.q,
+                            data.staticsystem_s1.q[:4])
+
+    def test_Xs(self, sol, data):
+        
+        assert jnp.allclose(sol.staticsystem_s1.X2,
+                            data.staticsystem_s1.X2[:4],
+                            atol=1e-5)
+        assert jnp.allclose(sol.staticsystem_s1.X3,
+                            data.staticsystem_s1.X3[:4])
+
+    def test_ra(self, sol, data):
+        
+        assert jnp.allclose(sol.staticsystem_s1.ra,
+                            data.staticsystem_s1.ra[:4])
+
+    def test_Cab(self, sol, data):
+        
+        assert jnp.allclose(sol.staticsystem_s1.Cab,
+                            data.staticsystem_s1.Cab[:4])
