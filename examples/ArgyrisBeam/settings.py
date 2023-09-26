@@ -19,7 +19,6 @@ inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
     f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.simulation.typeof = "single"
-inp.ex.Cab_xtol = 1e-4
 inp.systems.sett.s1.solution = "static"
 inp.systems.sett.s1.solver_library = "diffrax"
 inp.systems.sett.s1.solver_function = "newton_raphson"
