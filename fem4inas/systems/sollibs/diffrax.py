@@ -2,13 +2,32 @@ import diffrax
 from diffrax.solution import Solution
 import jax.numpy as jnp
 
-def ode(F: callable, solver_name: str, q0, t0, t1, tn, dt, **kwargs) -> Solution:
+def ode(F: callable,
+        args,
+        solver_name: str,
+        q0,
+        t0,
+        t1,
+        tn,
+        dt,
+        save_at=None,
+        **kwargs) -> Solution:
     term = diffrax.ODETerm(F)
-    saveat = jnp.linspace(t0, t1, tn)
+    if save_at is None:
+        saveat = jnp.linspace(t0, t1, tn)
+    else:
+        saveat = save_at
     _solver = getattr(diffrax, solver_name)
     solver = _solver()
-    sol = diffrax.diffeqsolve(term, solver,saveat=saveat,
-                              t0=t0, t1=t1, dt0=dt, y0=q0)
+    sol = diffrax.diffeqsolve(term,
+                              solver,
+                              t0=t0,
+                              t1=t1,
+                              dt0=dt,
+                              y0=q0,
+                              args=args,
+                              saveat=saveat
+                              )
     return sol
 
 def newton_raphson(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **kwargs):

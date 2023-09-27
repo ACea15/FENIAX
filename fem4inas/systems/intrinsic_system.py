@@ -34,7 +34,10 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         if self.settings.xloads.dead_forces:
             self.settings.xloads.build_point_dead(
                 self.fem.num_nodes, self.sol.data.modes.C06ab)
-
+            
+    def set_states(self):
+        self.settings.build_states(self.fem.num_modes)
+        
     def set_generator(self):
 
         self.dFq = getattr(dq, self.settings.label)
@@ -119,3 +122,56 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         if self.settings.save:
             sol.save_container('StaticSystem', label="_"+self.name)
 
+
+class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
+
+    def _args_diffrax(self):
+
+        return (self.sol, self.settings)
+
+    def _args_scipy(self):
+
+        return ((self.sol, self.settings),)
+
+    def solve(self):
+
+        solver_args = getattr(self, f"_args_{self.settings.solver_library}")
+        args1 = solver_args()
+        q0 = jnp.zeros(2 * self.fem.num_modes)
+        sol = self.eqsolver(self.dFq,
+                            args1,
+                            q0=q0,
+                            t0=self.settings.t0,
+                            t1=self.settings.t1,
+                            tn=self.settings.tn,
+                            dt=self.dt,
+                            **self.settings.solver_settings)
+        self.qs = self.states_puller(sol)
+
+    def build_solution(self, sol: solution.IntrinsicSolution):
+
+        # q1 = qs[self.settings.q1_index, :]
+        # q2 = qs[self.settings.q2_index, :]
+        X2 = []
+        X3 = []
+        Cab = []
+        ra = []
+        for i, ti in enumerate(self.settings.t):
+            X2t = postprocess.compute_internalforces(self.sol.data.modes.phi2l, self.qs[i])
+            X3t = postprocess.compute_strains(self.sol.data.modes.psi2l, self.qs[i])
+            Cabt, rat = postprocess.integrate_strains(self.fem.X[0],
+                                                      jnp.eye(3),
+                                                      X3t,
+                                                      self.sol,
+                                                      self.fem
+                                                      )
+            X2.append(X2t)
+            X3.append(X3t)
+            Cab.append(Cabt)
+            ra.append(rat)
+            
+        sol.add_container('StaticSystem', label="_"+self.name,
+                          q=self.qs, X2=jnp.array(X2), X3=jnp.array(X3),
+                          Cab=jnp.array(Cab), ra=jnp.array(ra))
+        if self.settings.save:
+            sol.save_container('StaticSystem', label="_"+self.name)

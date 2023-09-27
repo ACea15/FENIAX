@@ -254,7 +254,8 @@ class Ddriver(DataContainer):
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
 
-@dataclass(frozen=True, eq=True, unsafe_hash=True)
+#@dataclass(frozen=True, eq=True, unsafe_hash=True)
+@dataclass(frozen=False)
 class Dsystem(DataContainer):
 
     name: str = dfield("System name")
@@ -263,16 +264,25 @@ class Dsystem(DataContainer):
                                           'dynamic',
                                           'multibody',
                                           'stability'])
-    save: bool = dfield("Save results of the run system", default=True)    
-    xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
-    t0: float = dfield("Initial time", default=0.)
-    t1: float = dfield("Final time", default=1.)
-    tn: int = dfield("Number of time steps", default=None)
-    dt: float = dfield("Delta time", default=None)
-    t: jnp.array = dfield("Time vector", default=None)
-    solver_library: str = dfield("Library solving our system of equations", default=None)
+    save: bool = dfield("Save results of the run system",
+                        default=True)
+    xloads: dict | Dxloads = dfield("External loads dataclass",
+                                    default=None)
+    t0: float = dfield("Initial time",
+                       default=0.)
+    t1: float = dfield("Final time",
+                       default=1.)
+    tn: int = dfield("Number of time steps",
+                     default=None)
+    dt: float = dfield("Delta time",
+                       default=None)
+    t: jnp.array = dfield("Time vector",
+                          default=None)
+    solver_library: str = dfield("Library solving our system of equations",
+                                 default=None)
     solver_function: str = dfield(
-        "Name for the solver of the previously defined library", default=None)
+        "Name for the solver of the previously defined library",
+        default=None)
     solver_settings: str = dfield(
         "Name for the solver of the previously defined library", default=None)
     nonlinear: bool = dfield(
@@ -281,13 +291,18 @@ class Dsystem(DataContainer):
         "average the higher frequency eqs and make them algebraic", default=False)
     residual_modes: int = dfield(
         "number of modes to residualise", default=0)
-
     label: str = dfield("""Description of the loading type:
     '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
+                        default=None)
+    states: dict = dfield("""Dictionary with the state variables.""",
                         default=None)
 
     def __post_init__(self):
 
+        if self.t is None:
+            self.t = jnp.linspace(self.t0, self.t1, self.tn)
+        if self.dt is None:
+            self.dt = self.t[1] - self.t[0]
         object.__setattr__(self, 'xloads', initialise_Dclass(self.xloads, Dxloads))
         #self.xloads = initialise_Dclass(self.xloads, Dxloads)
         if self.solver_settings is None:
@@ -311,7 +326,11 @@ class Dsystem(DataContainer):
                 if self.label[0] == 3:
                     ...
                     # TODO: implement
-
+    def build_states(self, num_modes):
+        # TODO: label dependent
+        self.states = dict(q1=jnp.arange(num_modes),
+                           q2=jnp.arange(num_modes, 2 * num_modes))
+            
 @dataclass(frozen=False)
 class Dsystems(DataContainer):
 
