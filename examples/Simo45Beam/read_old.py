@@ -3,6 +3,7 @@ import pickle
 import scipy.linalg
 
 directory = "/home/ac5015/programs/FEM4INAS/Models/Simo45_15/Test/FollowerForce/results_5-6-2023_13-46/"
+directory = "/media/acea/work/projects/FEM4INAS/Models/Simo45_15/Test/FollowerForce/results_26-4-2023_7-20/"
 nmodes = 90
 
 q = np.load("%s/q_%s.npy"%(directory, nmodes))
@@ -30,14 +31,15 @@ with open ("%s/Sols_%s"%(directory, nmodes), 'rb') as fp:
 Ka = np.load("../../Models/Simo45_15/FEM/Kaa.npy")
 Ma = np.load("../../Models/Simo45_15/FEM/Maa.npy")
 w, v = scipy.linalg.eigh(Ka, Ma)
-np.save("./FEM/w.npy", w)
-np.save("./FEM/v.npy", v)
 
 Ka2 = np.load("./FEM/Ka.npy")
 Ma2 = np.load("./FEM/Ma.npy")
 w2, v2 = scipy.linalg.eigh(Ka2, Ma2)
 
-save_eigs = False
+save_eigs = True
 if save_eigs:
+    np.save("../Simo45Beam/FEM/Ka.npy", Ka)
+    np.save("../Simo45Beam/FEM/Ma.npy", Ma)
+    
     np.save("../Simo45Beam/FEM/eigenvals.npy", w)
     np.save("../Simo45Beam/FEM/eigenvecs.npy", v)
