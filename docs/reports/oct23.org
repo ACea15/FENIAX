@@ -1,0 +1,64 @@
+#+TITLE: First deliverable Report 
+#+AUTHOR: Alvaro Cea
+#+PROPERTY: header-args :tangle ./main.py :mkdirp yes
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{mathtools}
+#+OPTIONS: broken-links:tc
+#+begin_comment
+#+OPTIONS: toc:nil
+#+LATEX_HEADER: \let\oldsection\section
+#+LATEX_HEADER: \renewcommand{\section}{\clearpage\oldsection}
+#+LATEX_HEADER: \let\oldsubsection\subsection
+#+LATEX_HEADER: \renewcommand{\subsection}{\clearpage\oldsubsection}
+#+end_comment
+
+* House keeping :noexport:
+#+begin_src elisp :results none :exports none
+  (add-to-list 'org-structure-template-alist
+  '("sp" . "src python :session py1"))
+  (add-to-list 'org-structure-template-alist
+  '("se" . "src elisp"))
+
+  (setq org-confirm-babel-evaluate nil)
+  (pyvenv-workon "fem4inas")
+  (require 'org-tempo)
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
+  (setq org-latex-pdf-process (list "latexmk -f -synctex=1 -pdf %f"))
+  ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+
+#+end_src
+
+#+begin_src python :session py1 :tangle yes :results none :exports none
+  import pandas as pd
+  import numpy as np
+  import pathlib
+  import datetime
+  import importlib
+  from tabulate import tabulate
+  import plotly.express as px
+  import plotly.graph_objects as go
+  import matplotlib.pyplot as plt
+  img_dir = pathlib.Path("./img/")
+  img_dir.mkdir(parents=True, exist_ok=True)
+  import warnings
+  warnings.filterwarnings("ignore")
+#+end_src
+
+* Introduction
+
+* Theoretical background
+** Airframe idealisation
+** Time domain unsteady aerodynamics
+** Aeroelastic system for dynamic loads
+* Computational implementation
+** A new aeroelastic framework for nonlinear computations on modern hardware architectures
+
+** Software design
+
+* Preliminary results
+
+** Unittest framework and benchmarks
+** Representative aircraft configuration
+*** Geometrically nonlinear static response
+*** Extreme nonlinear dynamics
+*** Preliminary aeroelastic assessment
