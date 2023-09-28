@@ -72,6 +72,13 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
 class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
+    # def _args_diffrax(self, t):
+
+    #     return (t, self.sol, self.settings)
+
+    # def _args_scipy(self, t):
+
+    #     return ((t, self.sol, self.settings),)
     def _args_diffrax(self, t):
 
         return (t, self.sol, self.settings)
@@ -94,7 +101,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             qs.append(qi)
         self.qs = jnp.array(qs[1:])
 
-    def build_solution(self, sol: solution.IntrinsicSolution):
+    def build_solution(self):
 
         # q1 = qs[self.settings.q1_index, :]
         # q2 = qs[self.settings.q2_index, :]
@@ -116,22 +123,39 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             Cab.append(Cabt)
             ra.append(rat)
             
-        sol.add_container('StaticSystem', label="_"+self.name,
+        self.sol.add_container('StaticSystem', label="_"+self.name,
                           q=self.qs, X2=jnp.array(X2), X3=jnp.array(X3),
                           Cab=jnp.array(Cab), ra=jnp.array(ra))
         if self.settings.save:
-            sol.save_container('StaticSystem', label="_"+self.name)
-
+            self.sol.save_container('StaticSystem', label="_"+self.name)
 
 class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
     def _args_diffrax(self):
 
-        return (self.sol, self.settings)
+        #return (self.sol, self.settings)
+        return (self.sol, self.config)
 
     def _args_scipy(self):
 
-        return ((self.sol, self.settings),)
+        # return ((self.sol, self.settings),)
+        return ((self.sol, self.config),)
+    
+    def _args_jax(self):
+
+        #return (self.sol, self.settings)
+        return (self.sol, self.config)
+
+    def _args_runge_kutta(self):
+
+        #return (self.sol, self.settings)
+        return (self.sol.data.couplings.gamma1,
+                self.sol.data.couplings.gamma2,
+                self.sol.data.modes.omega,
+                self.sol.data.modes.phi1,
+                self.settings.xloads.force_follower,
+                self.settings.xloads.x,
+                self.settings.states)
 
     def solve(self):
 
@@ -144,12 +168,13 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
                             t0=self.settings.t0,
                             t1=self.settings.t1,
                             tn=self.settings.tn,
-                            dt=self.dt,
+                            dt=self.settings.dt,
+                            t=self.settings.t,
                             **self.settings.solver_settings)
         self.qs = self.states_puller(sol)
 
-    def build_solution(self, sol: solution.IntrinsicSolution):
-
+    def build_solution(self):
+        return
         # q1 = qs[self.settings.q1_index, :]
         # q2 = qs[self.settings.q2_index, :]
         X2 = []
@@ -170,8 +195,8 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
             Cab.append(Cabt)
             ra.append(rat)
             
-        sol.add_container('StaticSystem', label="_"+self.name,
+        self.sol.add_container('DynamicSystem', label="_"+self.name,
                           q=self.qs, X2=jnp.array(X2), X3=jnp.array(X3),
                           Cab=jnp.array(Cab), ra=jnp.array(ra))
         if self.settings.save:
-            sol.save_container('StaticSystem', label="_"+self.name)
+            self.sol.save_container('DynamicSystem', label="_"+self.name)

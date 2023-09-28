@@ -20,18 +20,19 @@ class Modes:
 @dataclass(slots=True)
 class Couplings:
     alpha1: jnp.ndarray
-    alpha2: jnp.ndarray    
+    alpha2: jnp.ndarray
     gamma1: jnp.ndarray
     gamma2: jnp.ndarray
 
 @dataclass(slots=True)
 class DynamicSystem:
     q: jnp.ndarray
-    ra: jnp.ndarray
-    Cab: jnp.ndarray
     X1: jnp.ndarray
     X2: jnp.ndarray
-
+    X3: jnp.ndarray
+    Cab: jnp.ndarray
+    ra: jnp.ndarray
+    
 @dataclass(slots=True)
 class StaticSystem:
     q: jnp.ndarray

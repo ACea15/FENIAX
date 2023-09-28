@@ -14,7 +14,7 @@ def ode(F: callable,
         **kwargs) -> Solution:
     term = diffrax.ODETerm(F)
     if save_at is None:
-        saveat = jnp.linspace(t0, t1, tn)
+        saveat = diffrax.SaveAt(ts=jnp.linspace(t0, t1, tn))#diffrax.SaveAt(steps=True) #
     else:
         saveat = save_at
     _solver = getattr(diffrax, solver_name)
@@ -26,6 +26,8 @@ def ode(F: callable,
                               dt0=dt,
                               y0=q0,
                               args=args,
+                              #throw=False,
+                              max_steps=20000,
                               saveat=saveat
                               )
     return sol

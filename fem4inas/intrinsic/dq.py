@@ -71,13 +71,22 @@ def dq_000001(q, *args):
     return F
 
 #@partial(jit, static_argnames=['sol','system'])
-def _dq_101001(t, q, sol, system):
+@partial(jit, static_argnames=['sol', 'config'])
+def _dq_101001(t, q, sol, config):
+#def _dq_101001(t, q, x, force_follower, states, sol):    
     """Solver for structural dynamics with follower forces."""
-
-    gamma1 = sol.couplings.gamma1
-    gamma2 = sol.couplings.gamma2
-    omega = sol.fem.omega
+    system = config.systems.sys['s1']
+    gamma1 = sol.data.couplings.gamma1
+    gamma2 = sol.data.couplings.gamma2
+    omega = sol.data.modes.omega
     phi1 = sol.data.modes.phi1l
+    # q1 = q[states[0]]
+    # q2 = q[states[1]]
+    # eta = xloads.eta_001001(t,
+    #                         phi1,
+    #                         x,
+    #                         force_follower)
+    
     q1 = q[system.states['q1']]
     q2 = q[system.states['q2']]
     eta = xloads.eta_001001(t,
@@ -89,10 +98,38 @@ def _dq_101001(t, q, sol, system):
     F = jnp.hstack([F1, F2])
     return F
 
+@jit
+def dq_101001x(t, q, gamma1, gamma2, omega, phi1, force_follower, x, states):
+#def _dq_101001(t, q, x, force_follower, states, sol):    
+    """Solver for structural dynamics with follower forces."""
+
+    # q1 = q[states[0]]
+    # q2 = q[states[1]]
+    # eta = xloads.eta_001001(t,
+    #                         phi1,
+    #                         x,
+    #                         force_follower)
+    
+    q1 = q[states['q1']]
+    q2 = q[states['q2']]
+    eta = xloads.eta_001001(t,
+                            phi1,
+                            x,
+                            force_follower)
+    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
+    F1 += eta
+    F = jnp.hstack([F1, F2])
+    return F
+
+
 def dq_101001(t, q, *args):
 
-    sol, system,  *xargs = args[0]
-    F = _dq_101001(t, q, sol, system)
+    #sol, system,  *xargs = args[0]
+    sol, config,  *xargs = args[0]
+    #F = _dq_101001(t, q, sol, system)
+    #sol, x, force_follower, states,  *xargs = args[0]
+    F = _dq_101001(t, q, sol, config)
+    
     return F
 
 def dq_100001(t, q, *args):

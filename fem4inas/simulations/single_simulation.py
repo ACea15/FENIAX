@@ -14,8 +14,9 @@ class SingleSimulation(Simulation, cls_name="single"):
             sys.set_generator()
             sys.set_solver()
             sys.set_xloading()
+            sys.set_states()
             sys.solve()
-            #sys.build_solution(self.sol)
+            sys.build_solution()
             #self._post_run(k, sol_obj)
 
     def _post_run(self, sys_name, sol_obj):
