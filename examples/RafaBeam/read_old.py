@@ -4,7 +4,8 @@ import scipy.linalg
 
 
 directory = "~/programs/FEM4INAS/Models/RafaBeam30_lum/Test/V30y/results_26-9-2023_11-6/"
-nmodes = 150
+directory = "/media/acea/work/projects/FEM4INAS/Models/RafaBeam30_lum/Test/V30y/results_14-5-2023_19-20/"
+nmodes = 109
 
 q = np.load("%s/q_%s.npy"%(directory, nmodes))
 omega = np.load("%s/Results_modes/Omega_%s.npy"%(directory, nmodes))
@@ -29,12 +30,12 @@ with open ("%s/Sols_%s"%(directory, nmodes), 'rb') as fp:
 
 
 Ka = np.load("../../Models/RafaBeam30_lum//FEM/Kaa.npy")
-Ma = np.load("../../Models/RafaBeam30_lum//FEM/Kaa.npy")
+Ma = np.load("../../Models/RafaBeam30_lum//FEM/Maa.npy")
 w, v = scipy.linalg.eigh(Ka, Ma)
 
-save_eigs = False
+save_eigs = True
 if save_eigs:
     np.save("./FEM/Ka.npy", Ka)
     np.save("./FEM/Ma.npy", Ma)
-    np.save("../ArgyrisBeam/FEM/eigenvals.npy", w)
-    np.save("../ArgyrisBeam/FEM/eigenvecs.npy", v)
+    np.save("../RafaBeam/FEM/eigenvals.npy", w)
+    np.save("../RafaBeam/FEM/eigenvecs.npy", v)
