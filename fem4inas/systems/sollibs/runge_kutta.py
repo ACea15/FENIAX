@@ -1,23 +1,42 @@
-from jax.experimental.ode import odeint
 import jax.numpy as jnp
 from functools import partial
 import jax
 
-@jax.jit
-def rk4(y0, dt, N, f, args):
-  @jax.jit
-  def step(i, ys0):
-    h = dt
-    t = dt * i
-    k1 = f(t, ys0, *args)
-    k2 = f(t + 0.5 * h, ys0 + 0.5 * k1 * h)
-    k3 = f(t + 0.5 * h, ys0 + 0.5 * k2 * h)
-    k4 = f(t + h, ys0 + k3)
-    ysi = ys0 + 1./6 * (k1 + 2 * k2 + 2 * k3 + k4) * h
-    return ysi
+@partial(jax.jit, static_argnames=['f'])
+def rk4(ys, dt, N, f, args):
 
-  return jax.lax.fori_loop(1, N, step, y0)
- 
+    @jax.jit
+    def step(i, ys):
+        h = dt
+        t = dt * i
+        ys0 = ys[i - 1]
+        k1 = f(t, ys0, *args)
+        k2 = f(t + 0.5 * h, ys0 + 0.5 * k1 * h, *args)
+        k3 = f(t + 0.5 * h, ys0 + 0.5 * k2 * h, *args)
+        k4 = f(t + h, ys0 + k3, *args)
+        ysi = ys0 + 1./6 * (k1 + 2 * k2 + 2 * k3 + k4) * h
+        ys = ys.at[i].set(ysi)
+        #jax.debug.breakpoint()
+        return ys
+  
+    return jax.lax.fori_loop(1, N, step, ys)
+
+@partial(jax.jit, static_argnames=['f'])
+def rk2(ys, dt, N, f, args):
+
+    @jax.jit
+    def step(i, ys):
+        h = dt
+        t = dt * i
+        ys0 = ys[i - 1]
+        k1 = f(t, ys0, *args)
+        ysi = ys0 + k1 * h
+        ys = ys.at[i].set(ysi)
+        #jax.debug.breakpoint()
+        return ys
+  
+    return jax.lax.fori_loop(1, N, step, ys)
+
 
 def ode(F: callable,
         args,
@@ -26,9 +45,11 @@ def ode(F: callable,
         tn,
         solver_name: str,
         **kwargs) -> jnp.ndarray:
-    
-    _solver = locals()[solver_name]
-    sol = _solver(q0, dt, tn, F, args)
+  
+    ys = jnp.zeros((tn, len(q0)))
+    ys  = ys.at[0].set(q0)
+    _solver = globals()[solver_name]
+    sol = _solver(ys, dt, tn, F, args)
     return sol
 
 def pull_ode(sol):

@@ -152,7 +152,7 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
         return (self.sol.data.couplings.gamma1,
                 self.sol.data.couplings.gamma2,
                 self.sol.data.modes.omega,
-                self.sol.data.modes.phi1,
+                self.sol.data.modes.phi1l,
                 self.settings.xloads.force_follower,
                 self.settings.xloads.x,
                 self.settings.states)

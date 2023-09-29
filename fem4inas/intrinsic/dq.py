@@ -5,6 +5,7 @@ from functools import partial
 from jax.config import config; config.update("jax_enable_x64", True)
 import fem4inas.intrinsic.xloads as xloads
 
+@jit
 def contraction_gamma1(gamma1: jnp.ndarray,
                        q1:jnp.ndarray) -> jnp.ndarray:
 
@@ -12,6 +13,7 @@ def contraction_gamma1(gamma1: jnp.ndarray,
                      jnp.tensordot(q1, q1, axes=0))
     return res
 
+@jit
 def contraction_gamma2(gamma2: jnp.ndarray,
                        q2:jnp.ndarray) -> jnp.ndarray:
 
@@ -19,6 +21,7 @@ def contraction_gamma2(gamma2: jnp.ndarray,
                      jnp.tensordot(q2, q2, axes=0))
     return res
 
+@jit
 def contraction_gamma3(gamma2: jnp.ndarray,
                        q1: jnp.ndarray,
                        q2: jnp.ndarray) -> jnp.ndarray:
@@ -27,9 +30,10 @@ def contraction_gamma3(gamma2: jnp.ndarray,
                      jnp.tensordot(q1, q2, axes=0))
     return res
 
+@jit
 def f_12(omega, gamma1, gamma2, q1, q2):
 
-    F1 = (omega * q2 + contraction_gamma1(gamma1, q1)
+    F1 = (omega * q2 - contraction_gamma1(gamma1, q1)
           - contraction_gamma2(gamma2, q2))
     F2 = -omega * q1 + contraction_gamma3(gamma2, q1, q2)
 

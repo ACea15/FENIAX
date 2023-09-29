@@ -22,10 +22,10 @@ inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 15.
 inp.systems.sett.s1.tn = 15001
 
-# inp.systems.sett.s1.solver_library = "diffrax"
-inp.systems.sett.s1.solver_library = "jax"
+inp.systems.sett.s1.solver_library = "diffrax"
+#inp.systems.sett.s1.solver_library = "runge_kutta"
 inp.systems.sett.s1.solver_function = "ode"
-inp.systems.sett.s1.solver_settings = dict(solver_name="Tsit5")
+inp.systems.sett.s1.solver_settings = dict(solver_name="Euler")
 # inp.systems.sett.s1.solver_library = "scipy"
 # inp.systems.sett.s1.solver_function = "root"
 # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
