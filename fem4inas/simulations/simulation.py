@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 import fem4inas.drivers.driver as driver
 import fem4inas.preprocessor.solution as solution
-
+import fem4inas.systems.system as system
 __SIMULATION_DICT__ = dict()
 
     
 class Simulation(ABC):
 
-    def __init__(self, systems: dict,
+    def __init__(self, systems: dict[system.System],
                  sol: solution.Solution,
                  settings):
 

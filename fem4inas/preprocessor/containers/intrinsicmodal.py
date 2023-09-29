@@ -296,6 +296,12 @@ class Dsystem(DataContainer):
                         default=None)
     states: dict = dfield("""Dictionary with the state variables.""",
                         default=None)
+    num_states: int = dfield("""Total number of states""",
+                        default=None)
+    init_states: dict[str:list] = dfield("""Dictionary with initial conditions for each state""",
+                               default=None)
+    init_mapper: dict[str:str] = dfield("""Dictionary mapping states types to functions in initcond""",
+                                        default=dict(q1="velocity", q2="force"))
 
     def __post_init__(self):
 
@@ -330,7 +336,8 @@ class Dsystem(DataContainer):
         # TODO: label dependent
         self.states = dict(q1=jnp.arange(num_modes),
                            q2=jnp.arange(num_modes, 2 * num_modes))
-            
+        self.num_states = sum([len(i) for i in self.states.values()])
+
 @dataclass(frozen=False)
 class Dsystems(DataContainer):
 

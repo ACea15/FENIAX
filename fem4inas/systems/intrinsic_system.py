@@ -4,6 +4,7 @@ import fem4inas.intrinsic.dq as dq
 import fem4inas.intrinsic.postprocess as postprocess
 import fem4inas.preprocessor.containers.intrinsicmodal as intrinsic
 import fem4inas.preprocessor.solution as solution
+import fem4inas.intrinsic.initcond as initcond
 import jax.numpy as jnp
 
 class IntrinsicSystem(System, cls_name="intrinsic"):
@@ -25,7 +26,22 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         #self._set_solver()
 
     def set_ic(self, q0):
-        self.q0 = q0
+        if q0 is None:
+            self.q0 = jnp.zeros(self.settings.num_states)
+            if self.settings.init_states is not None:
+                for k, v in self.settings.init_states.items():
+                    if callable(v[0]):
+                        init_f = v[0]
+                    else:
+                        init_f = getattr(initcond.Container, v[0])
+                    x = init_f(*v[1], fem=self.fem) #6xNn inputs to approx.
+                    # function to calculate qs
+                    init_x = initcond.mapper[self.settings.init_mapper[k]]
+                    sol_lstsq = init_x(self.sol.data.modes, x)
+                    qi0 = sol_lstsq[0] # TODO: save to sol
+                    self.q0 = self.q0.at[self.settings.states[k]].set(qi0)
+        else:
+            self.q0 = q0
 
     def set_xloading(self):
         if self.settings.xloads.follower_forces:
@@ -87,10 +103,16 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
         return ((t, self.sol, self.settings),)
 
+    def set_ic(self, q0):
+        if q0 is None:
+            self.q0 = jnp.zeros(self.fem.num_modes)
+        else:
+            self.q0 = q0
+
     def solve(self):
 
         solver_args = getattr(self, f"_args_{self.settings.solver_library}")
-        qs = [jnp.zeros(self.fem.num_modes)]
+        qs = [self.q0]
         for i, ti in enumerate(self.settings.t):
             args1 = solver_args(ti)
             sol = self.eqsolver(self.dFq,
@@ -161,10 +183,9 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
         solver_args = getattr(self, f"_args_{self.settings.solver_library}")
         args1 = solver_args()
-        q0 = jnp.zeros(2 * self.fem.num_modes)
         sol = self.eqsolver(self.dFq,
                             args1,
-                            q0=q0,
+                            q0=self.q0,
                             t0=self.settings.t0,
                             t1=self.settings.t1,
                             tn=self.settings.tn,

@@ -13,7 +13,7 @@ def rk4(ys, dt, N, f, args):
         k1 = f(t, ys0, *args)
         k2 = f(t + 0.5 * h, ys0 + 0.5 * k1 * h, *args)
         k3 = f(t + 0.5 * h, ys0 + 0.5 * k2 * h, *args)
-        k4 = f(t + h, ys0 + k3, *args)
+        k4 = f(t + h, ys0 + k3 * h, *args)
         ysi = ys0 + 1./6 * (k1 + 2 * k2 + 2 * k3 + k4) * h
         ys = ys.at[i].set(ysi)
         #jax.debug.breakpoint()
