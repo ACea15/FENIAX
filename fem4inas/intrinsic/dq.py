@@ -110,7 +110,7 @@ def _dq_101000(t, q, sol, config):
     gamma1 = sol.data.couplings.gamma1
     gamma2 = sol.data.couplings.gamma2
     omega = sol.data.modes.omega
-    phi1 = sol.data.modes.phi1l
+    # phi1 = sol.data.modes.phi1l
     # q1 = q[states[0]]
     # q2 = q[states[1]]
     # eta = xloads.eta_001001(t,

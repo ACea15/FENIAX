@@ -28,6 +28,7 @@ def tilde(vector3: jnp.ndarray):
 def H0(Itheta: float, Ipsi: jnp.ndarray):
 
     I3 = jnp.eye(3)
+    # TODO: move 1e-9 to settings
     cond = jnp.abs(Itheta) > 1e-9 # if not true,
     # local-x is almost parallel to global-z, z direction parallel to global y
     y = lax.select(cond,
@@ -48,6 +49,61 @@ def H1(Itheta: float, Ipsi: jnp.ndarray, ds: float):
                         + (Itheta - jnp.sin(Itheta)) / (Itheta**3) * jnp.matmul(tilde(Ipsi),
                                                                                 tilde(Ipsi))),
                    ds * I3)
+    return y
+
+@jit
+def H0_t(Itheta: jnp.ndarray, Ipsi: jnp.ndarray):
+
+    tn = len(Itheta)
+    I3 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3)).T
+    f_tilde = jax.vmap(tilde, in_axes=1, out_axes=2)
+    f_tilde2 = jax.vmap(lambda u: u @ u, in_axes=2, out_axes=2)
+    tilde_Ipsi = f_tilde(Ipsi)  # 3x3xNt
+    tilde_Ipsi_square = f_tilde2(tilde_Ipsi) # 3x3xNt
+    # TODO: move 1e-9 to settings
+    cond = jnp.abs(Itheta) > 1e-9 # if not true,
+    # local-x is almost parallel to global-z, z direction parallel to global y
+    cond_broadcast = jnp.broadcast_to(cond, (3, 3, tn))
+    y = lax.select(cond_broadcast,
+                   (I3 + jnp.sin(Itheta) / Itheta * tilde_Ipsi
+                    + (1 - jnp.cos(Itheta)) / Itheta**2 * tilde_Ipsi_square),
+                   I3)
+    return y
+
+@jit
+def H1_t(Itheta: float, Ipsi: jnp.ndarray, ds: float):
+
+    tn = len(Itheta)
+    I3 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3)).T
+    f_tilde = jax.vmap(tilde, in_axes=1, out_axes=2)
+    f_tilde2 = jax.vmap(lambda u: u @ u, in_axes=2, out_axes=2)
+    tilde_Ipsi = f_tilde(Ipsi)  # 3x3xNt
+    tilde_Ipsi_square = f_tilde2(tilde_Ipsi) # 3x3xNt
+    # TODO: move 1e-9 to settings
+    cond = jnp.abs(Itheta) > 1e-9 # if not true,
+    cond_broadcast = jnp.broadcast_to(cond, (3, 3, tn))
+    # local-x is almost parallel to global-z, z direction parallel to global y
+    y = lax.select(cond_broadcast,
+                   ds * (I3 + (1 - jnp.cos(Itheta)) / Itheta**2 * tilde_Ipsi
+                        + (Itheta - jnp.sin(Itheta)) / (Itheta**3) * tilde_Ipsi_square),
+                   ds * I3) #3x3xNt
+    return y
+
+@jit
+def H01_t(Itheta: jnp.ndarray, Ipsi: jnp.ndarray):
+
+    I3 = jnp.eye(3).reshape(3, 3, 1)
+    f_tilde = jax.vmap(tilde, in_axes=1, out_axes=2)
+    f_tilde2 = jax.vmap(lambda u: u @ u, in_axes=2, out_axes=2)
+    tilde_Ipsi = f_tilde(Ipsi)  # 3x3xNt
+    tilde_Ipsi_square = f_tilde2(tilde_Ipsi) # 3x3xNt
+    # TODO: move 1e-9 to settings
+    cond = jnp.abs(Itheta) > 1e-9 # if not true,
+    # local-x is almost parallel to global-z, z direction parallel to global y
+    y = lax.select(cond,
+                   (I3 + jnp.sin(Itheta) / Itheta * tilde_Ipsi
+                    + (1 - jnp.cos(Itheta)) / Itheta**2 * tilde_Ipsi_square),
+                   I3)
     return y
 
 @jit
@@ -103,7 +159,7 @@ def L2(x2: jnp.ndarray):
 def compute_C0ab(X_diff: jnp.ndarray, X_xdelta: jnp.ndarray,
                  config: configuration.Config) -> jnp.ndarray:
 
-    x = X_diff / X_xdelta
+    x = X_diff / X_xdelta #Nn
     x = x.at[:, 0].set(jnp.array([1, 0, 0])) # WARNING: this says the first node FoR at time 0
     # aligns with the global reference frame.
     # TODO: check this works when x_local = [0,0,1]
