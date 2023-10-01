@@ -1,0 +1,153 @@
+#+TITLE: First deliverable Report 
+#+AUTHOR: Alvaro Cea
+#+PROPERTY: header-args :tangle ./main.py :mkdirp yes
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{mathtools}
+#+OPTIONS: broken-links:tc
+#+begin_comment
+#+OPTIONS: toc:nil
+#+LATEX_HEADER: \let\oldsection\section
+#+LATEX_HEADER: \renewcommand{\section}{\clearpage\oldsection}
+#+LATEX_HEADER: \let\oldsubsection\subsection
+#+LATEX_HEADER: \renewcommand{\subsection}{\clearpage\oldsubsection}
+#+end_comment
+
+* House keeping :noexport:
+#+begin_src elisp :results none :exports none
+  (add-to-list 'org-structure-template-alist
+  '("sp" . "src python :session py1"))
+  (add-to-list 'org-structure-template-alist
+  '("se" . "src elisp"))
+
+  (setq org-confirm-babel-evaluate nil)
+  (pyvenv-workon "fem4inas")
+  (require 'org-tempo)
+  (setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
+  (setq org-latex-pdf-process (list "latexmk -f -synctex=1 -pdf %f"))
+  ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+
+#+end_src
+
+#+begin_src python :session py1 :tangle yes :results none :exports none
+  import pandas as pd
+  import numpy as np
+  import pathlib
+  import datetime
+  import importlib
+  from tabulate import tabulate
+  import plotly.express as px
+  import plotly.graph_objects as go
+  import matplotlib.pyplot as plt
+  img_dir = pathlib.Path("./img/")
+  img_dir.mkdir(parents=True, exist_ok=True)
+  import warnings
+  warnings.filterwarnings("ignore")
+#+end_src
+
+* Introduction
+This work continues the development of an alternative approach [170, 213–215] to study the
+geometrically nonlinear effects of already existing (linear) industrial-scale aeroelastic models.
+The method blends the efficiency and accuracy of geometrically-exact 1D descriptions for prob-
+lems involving slender components, with the precision of condensation techniques in preserving
+the full 3D characteristics. It seamlessly integrates with standard linear aeroelastic analysis
+based on finite element solvers and compressible potential aerodynamics. The novelty is that
+the geometric-nonlinearity is included by considering information about the nodal coordinates,
+which are not tracked in linear modal analysis. The information for the geometric nonlineari-
+ties is introduced from the geometric layout of the structure which results in coupling between
+modes. This is facilitated by Hodges’ intrinsic equations [216]: by construction, the sectional
+velocities and internal forces have local influence regardless of large rigid-body rotations, and
+this does not need updating of the local mass and stiffness properties from the initial config-
+uration. This feature permits the addition of geometrically-nonlinear effects to a predefined
+complex linear model.
+
+This feature permits the addition of geometrically-nonlinear effects to a predefined
+complex linear model. In addition, only quadratic terms of the main variables are needed to capture nonlinear effects. Our concern is a problem of relatively high geometrical complexity
+for which a (linear) finite-element model (FEM) already exists, not necessarily built with beam
+elements, but representing a physical domain with a dominant dimension. The goal is to seek
+a computationally-efficient solution strategy that leverages on the slenderness of the domain
+to characterise geometrically-nonlinear effects, while utilising the information encapsulated in
+the original model –which is built, validated and refined during the design cycle of the specific
+engineering asset under consideration.
+
+The resulting solution procedure can be divided into the five stages shown in Fig.: 1) A
+linear (arbitrarily complex) model with slender components is the input for the analysis. 2)
+Model condensation is employed to derive a skeleton-like substructure, along the main load
+path, containing the main features of the full 3D model. 3) The modes of the reduced structure
+are evaluated in intrinsic variables (velocities and strains) and used as a basis of a Galerkin-
+projection of the geometrically-nonlinear intrinsic beam equations. 4) The projected equations
+are solved in time-domain under given forces: aerodynamic influence coefficient matrices are
+obtained from DLM and a rational function approximation (RFA) is used to transform to the
+time domain. 5) The intrinsic modes, the reduced order transformations, and the nonlinear 1D
+solution are combined to reproduce the full 3D solution. Geometrically-nonlinear behaviour
+is captured along the principal skeleton and the linear response of the cross-sections (in the
+form of ribs and fuselage reinforcements) is also represented –if nonlinear deformations also
+occur in the cross-sections, there is no reliable analysis other than high-fidelity solutions of the
+full model. The overall procedure has been implemented in what we have named as Nonlinear
+Modal Reduced Order Model (NMROM).
+#+NAME: aircraft_process
+#+CAPTION: Solution process chart using the present approach
+ [[./img/aircraft_process.pdf]] 
+* Theoretical background
+
+** Airframe idealisation
+** Time domain unsteady aerodynamics
+
+[[./img/rosetta_lti.pdf]]
+** Aeroelastic system for dynamic loads
+* Computational implementation
+** A new Nonlinear aeroelastic framework for modern hardware architectures
+
+#+NAME: JAXfeatures
+#+CAPTION:  
+#+ATTR_LATEX: :width 0.4\textwidth 
+[[./img/JAXfeatures.png]]
+** Software design
+
+* Preliminary results
+
+** Unittest framework and benchmarks
+** Representative aircraft configurations
+A representative FE model of a full aircraft without engines is used to demonstrate the capa-
+bilities of the current methodology on large finite-element models where only linear dynamic
+analysis would be currently possible. The aircraft’s main wing is composed of wing surfaces,
+rear and front spars, wing box and ribs. Flexible tail and rear stabiliser are rigidly attached to
+the wing. Isotropic and anisotropic materials are utilised, and the inertia is defined by lumped
+masses with interpolation elements connecting it to the structure. Guyan reduction is employed
+to condense the model onto the lumped-mass nodes. Fig. 6.1 shows the model built in MSC
+Nastran as well as the interpolation elements (RBE3s) connecting master nodes (where the
+inertia is given) and slave nodes (in blue).
+
+*** Geometrically nonlinear static response
+The static solution of the aircraft is first studied with a NMROM built with the first 50 modes
+(Nm = 50) and a tolerance of 1.49 × 10−8 for the nonlinear solver. Follower loads normal to
+the wing are applied at each tip of the main wings. The response under loads of 200, 300, 400,
+480 and 530 KN is shown in Fig. 6.3. Nonlinear static simulations on the original full model
+(before condensation) are also carried out in MSC Nastran and are included in the figure. The
+interpolation elements in Nastran are used to output the displacements at the condensation
+nodes for direct comparison with the NMROM results. To quantify the difference between both
+sets of results, tip displacements, in global coordinates, for the 530 KN load and the full model
+calculations are ux = −0.217 m uy = −1.348 m, uz = 7.236 m; while calculations from the
+present methodology yield ux = −0.219 m uy = −1.352 m, uz = 7.249 m. This represents an
+error of 0.19% for a 25.6% tip deformation of the wing semi-span, b = 28.8 m.
+*** Very large nonlinear dynamics
+*** Generalised aerodynamic forces
+Figure 13 shows a subset of the GAFs for this platform up to $\kappa = 2$ obtained with a sampling of $\delata \kappa = 0.01$. Four
+GAFs have been selected, corresponding to the first three wing bending modes and the first torsional mode, and they are
+shown in that order in the figure. The same preconditioning scheme of section III has been used, namely, the best fit
+to the local values of aerodynamic stiffness, mass and inertia at that limit frequency ($\kappa = 2$). The effect of this is to
+reduce the value of the residual transfer function at the highest frequencies in the training dataset, which accelerates
+the convergence of the Loewner matrix approach. Figure 13 shows the results for 12 states obtained both with and
+without the polynomial preconditioning. As it can be clearly seen, introducing the preconditioning vastly improves the
+accuracy of the LTI model of a given size. The Loewner interpolant solution algorithm used in this work does not
+enforce stability and in this case all models are unstable. 
+[[./img/dlm_precond.pdf]]
+
+
+
+#+BEGIN_EXPORT latex
+
+#+END_EXPORT
+*** Preliminary aeroelastic assessment
+
+*** Gusts 
+
