@@ -123,7 +123,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             qs.append(qi)
         self.qs = jnp.array(qs[1:])
 
-    def build_solutionnew(self):
+    def build_solution(self):
 
         # q1 = qs[self.settings.q1_index, :]
         # q2 = qs[self.settings.q2_index, :]
@@ -146,7 +146,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         if self.settings.save:
             self.sol.save_container('StaticSystem', label="_"+self.name)
 
-    def build_solution(self):
+    def build_solutionold(self):
 
         # q1 = qs[self.settings.q1_index, :]
         # q2 = qs[self.settings.q2_index, :]
