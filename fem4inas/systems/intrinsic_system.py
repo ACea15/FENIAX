@@ -146,7 +146,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         if self.settings.save:
             self.sol.save_container('StaticSystem', label="_"+self.name)
 
-    def build_solutionold(self):
+    def build_solution_loop(self):
 
         # q1 = qs[self.settings.q1_index, :]
         # q2 = qs[self.settings.q2_index, :]
@@ -217,8 +217,8 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
                             **self.settings.solver_settings)
         self.qs = self.states_puller(sol)
 
-    def build_solution(self):
-        return
+    def build_solution_loop(self):
+        #return
         # q1 = qs[self.settings.q1_index, :]
         # q2 = qs[self.settings.q2_index, :]
         X2 = []
@@ -242,5 +242,30 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
         self.sol.add_container('DynamicSystem', label="_"+self.name,
                           q=self.qs, X2=jnp.array(X2), X3=jnp.array(X3),
                           Cab=jnp.array(Cab), ra=jnp.array(ra))
+        if self.settings.save:
+            self.sol.save_container('DynamicSystem', label="_"+self.name)
+
+    def build_solution(self):
+
+        # q1 = qs[self.settings.q1_index, :]
+        # q2 = qs[self.settings.q2_index, :]
+        tn = len(self.qs)
+        ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
+        Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
+        X1 = postprocess.compute_velocities(self.sol.data.modes.phi1l,
+                                            self.qs[:, self.settings.states['q1']])
+        X2 = postprocess.compute_internalforces(self.sol.data.modes.phi2l,
+                                                self.qs[:, self.settings.states['q2']])
+        X3 = postprocess.compute_strains(self.sol.data.modes.psi2l,
+                                         self.qs[:, self.settings.states['q2']])
+        Cab, ra = postprocess.integrate_strains_t(ra0,
+                                                  Cab0,
+                                                  X3,
+                                                  self.sol,
+                                                  self.fem
+                                                  )
+        self.sol.add_container('DynamicSystem', label="_" + self.name,
+                               q=self.qs, X1=X1, X2=X2, X3=X3,
+                               Cab=Cab, ra=ra)
         if self.settings.save:
             self.sol.save_container('DynamicSystem', label="_"+self.name)
