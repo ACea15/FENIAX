@@ -2,8 +2,8 @@ import numpy as np
 import pickle
 import scipy.linalg
 
-directory = "/home/ac5015/programs/FEM4INAS/Models/ArgyrisFrame_20/Test/2DProblem/results_2-8-2023_11-12"
-nmodes = 120
+directory = "/home/ac5015/programs/FEM4INAS/Models/wingSP/Test/results_27-9-2023_10-31/"
+nmodes = 53
 
 q = np.load("%s/q_%s.npy"%(directory, nmodes))
 omega = np.load("%s/Results_modes/Omega_%s.npy"%(directory, nmodes))
@@ -26,15 +26,13 @@ with open ("%s/Results_modes/Geometry"%(directory), 'rb') as fp:
 with open ("%s/Sols_%s"%(directory, nmodes), 'rb') as fp:
     ra0,ra,Rab,strain,kappa  = pickle.load(fp)
 
-Ka = np.load("../../Models/ArgyrisFrame_20/FEM/Kaa.npy")
-Ma = np.load("../../Models/ArgyrisFrame_20/FEM/Maa.npy")
+Ka = np.load("../../Models/wingSP/FEM/Ka.npy")
+Ma = np.load("../../Models/wingSP/FEM/Ma.npy")
 w, v = scipy.linalg.eigh(Ka, Ma)
-
-Ka2 = np.load("./FEM/Ka.npy")
-Ma2 = np.load("./FEM/Ma.npy")
-w2, v2 = scipy.linalg.eigh(Ka2, Ma2)
 
 save_eigs = False
 if save_eigs:
-    np.save("../ArgyrisFrame/FEM/eigenvals.npy", w2)
-    np.save("../ArgyrisFrame/FEM/eigenvecs.npy", v2)
+    np.save("../wingSP/FEM/Ka.npy", Ka)
+    np.save("../wingSP/FEM/Ma.npy", Ma)    
+    np.save("../wingSP/FEM/eigenvals.npy", w)
+    np.save("../wingSP/FEM/eigenvecs.npy", v)

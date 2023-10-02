@@ -25,6 +25,7 @@ inp.systems.sett.s1.tn = 15001
 #inp.systems.sett.s1.solver_library = "diffrax"
 inp.systems.sett.s1.solver_library = "runge_kutta"
 inp.systems.sett.s1.solver_function = "ode"
+# inp.systems.sett.s1.solver_settings = dict(solver_name="Tsit5")
 inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
 # inp.systems.sett.s1.solver_library = "scipy"
 # inp.systems.sett.s1.solver_function = "root"
@@ -34,7 +35,7 @@ inp.systems.sett.s1.label = 'dq_101001x'
 inp.systems.sett.s1.xloads.follower_forces = True
 inp.systems.sett.s1.xloads.follower_points = [[23, 0],
                                               [23, 2]]
-inp.systems.sett.s1.xloads.x = [0, 4-1e-5, 4, 20]
+inp.systems.sett.s1.xloads.x = [0, 4, 4+1e-6, 20]
 inp.systems.sett.s1.xloads.follower_interpolation = [[0.05 * -2e5, 1 * -2e5, 0., 0.],
                                                      [0.05 * 6e5, 1 * 6e5,  0., 0.]
                                                      ]

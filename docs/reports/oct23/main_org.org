@@ -87,14 +87,14 @@ Modal Reduced Order Model (NMROM).
 #+NAME: aircraft_process
 #+CAPTION: Solution process chart using the present approach
  [[./img/aircraft_process.pdf]] 
-* Theoretical background
+* COMMENT Theoretical background
 
 ** Airframe idealisation
 ** Time domain unsteady aerodynamics
 
 [[./img/rosetta_lti.pdf]]
 ** Aeroelastic system for dynamic loads
-* Computational implementation
+* COMMENT Computational implementation
 ** A new Nonlinear aeroelastic framework for modern hardware architectures
 
 #+NAME: JAXfeatures
@@ -106,7 +106,10 @@ Modal Reduced Order Model (NMROM).
 * Preliminary results
 
 ** Unittest framework and benchmarks
-** Representative aircraft configurations
+| Argyris Beam             | Argyris Frame | Simo straight cantilever | Simo 45$^o$ curved beam |
+| Straight catilever under tip force.       | 2 type of loadings for the frame structure to  undergo very large deformations in 2D and 3D space respectively. It further checks the management in the curvature integration of non-straight components | Cantilever under a tip moment that twist the structure into a perfect circle. The nonlinearity is only present in the integration of strains and not in the modal solution so it tests the linear solvers | It adds the verification of curved structures deforming and twisting in 3D space |
+
+** COMMENT Representative aircraft configurations
 A representative FE model of a full aircraft without engines is used to demonstrate the capa-
 bilities of the current methodology on large finite-element models where only linear dynamic
 analysis would be currently possible. The aircraft’s main wing is composed of wing surfaces,
