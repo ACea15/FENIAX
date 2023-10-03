@@ -101,11 +101,11 @@ The basis for the mechanics of solids is laid in this chapter and represents the
 The workflow of the different theories presented in this chapter is shown in Fig. \ref{fig2:aircraft2NMROM}, with the starting point as the  airframe of an aircraft that we want to approximate mathematically. The fundamentals of solid mechanics are first introduced, which leads to a  nonlinear 1D approximation after a set of kinematic assumptions on one hand, and to the equations of linear elasticity on the other; discretisation of the linear equations and applying the appropriate boundary conditions produce the FE models used by organizations in the design process. They are enhanced with experimental tests to account for the missing details in mathematical process. The combination of the 1D description with a condensed version of the FE model along the main load paths allows the construction of a \emph{Nonlinear Modal Reduced Order Model} (NMROM) that combines all the theories in the figure and, as presented in the next chapters, it  serves as the core tool to attain efficient aeroelastic computations. In fact, the construction of an aeroelastic system based on this NMROM is one of the main novelties of this work. In the process, the reduction techniques presented in sec. \ref{sec:Linear Reduction Order Models in Structural Dynamics} have been explored to capture, as accurate as possible, the characteristics of the full FE model derived from linear elasticity; the solution of the intrinsic equations in modal space, sec. \ref{sec2:Geometrically nonlinear mechanics of slender structures}, and  the subsequent derivation of the relation between modal shapes and their couplings in the equations, sec. \ref{Bridging full and reduced descriptions through the modal spaces},  is a key result that allows the seamlessly incorporation of geometrically-nonlinear effects to the (condensed) linear FE models;  along the entire chapter, some light is shed into the direct relation between the 1D description and the main principles of solid mechanics, including the recovery of the 3D displacement field from the reduced nonlinear solution, presented for the first  time in sec. \ref{sec2:3d_recovery}. Therefore all subjects in Fig. \ref{fig2:aircraft2NMROM} are introduced in this chapter, except for the experimental part of model updating, which could well be part of a future development and validation with real structures. 
 %
 %\newpage
-\begin{figure}[h!]
-\centering
-\includegraphics[width=0.9\textwidth]{./img/reality2NMROM2}
-\caption{Fields and assumptions leading to the construction of a structural  NMROM of representative airliners.}\label{fig2:aircraft2NMROM}
-\end{figure}
+% \begin{figure}[h!]
+% \centering
+% \includegraphics[width=0.9\textwidth]{./img/reality2NMROM2}
+% \caption{Fields and assumptions leading to the construction of a structural  NMROM of representative airliners.}\label{fig2:aircraft2NMROM}
+% \end{figure}
 
 \subsection{Dynamic condensation of linear FE models}\label{sec:dynamic_condensation}
 Model order reduction techniques aim to increase computational efficiency by reducing the size of the problem while maintaining its fundamental characteristics. In the realm of industrial applications, ROMs are very important, even when the majority of the analysis is linear, due to the need for fast simulations and the very large models that can surpass the hundreds of thousands of DoF.  Also they have been useful in experimental modal analysis, for measurement devices can only be put in a limited number of places and the complete response has to be reconstructed for validation purposes; structural vibrations and buckling, structural optimization, or damage detection are some of the applications of these techniques \cite{Qu2010}. In aircraft loads analysis, trim and stability studies, it is common practice condensing the (linear) full-FE models into the major load paths of the aircraft, to reduce the total number of DoF to a few hundreds. Herein we not only use a condensation approach to reduce the size of the model, but also to represent a structure that can be modelled as a one-dimensional domain --making use of the slenderness of high $AR$ aircraft, where the span of wetted-surfaces and the fuselage length take predominance over the other dimensions. Therefore, consider again the solid domain $\Omega$ in Sec. \ref{sec2:Deformation of bodies and conservation laws}, defining the 3D structure, and a 1D sub-domain in which the deformable curve $\Gamma$ defines an internal load path. The points conforming $\Gamma$ either belong to the 3D structure or are a weighted average of neighboring points.  Fig. \ref{fig2:structural_condensation} illustrates a typical discretisation of both 3D and 1D domains in a simplified aircraft structure. In the aerodynamic surfaces, the interpolation elements in blue relate the active nodes in the load path to the corresponding cross-sectional nodes of the 3D structure. On the other hand, the fuselage is modelled as a rigid beam, and its nodes are part of both the full and reduced models. The nodes of the condensed model, in red, represent the discretization of $\Gamma$, where the geometrically nonlinear dynamics will be described.
@@ -221,7 +221,7 @@ We are now in position to describe the full aeroelastic solution extending Eq.  
 \end{split}
 \end{equation}
 
-
+this together with equations () conform the aeroelastic system  
 
 \begin{equation}
 \label{eq3:intrinsic_full_aeroelastic}
@@ -259,11 +259,27 @@ for $i,j,k \in \{1,...,N_m\}$, $p \in \{1,...,N_p\}$, $l \in \{1,...,N_{n}\}$, $
 \subsection{A new aeroelastic framework for nonlinear computations on modern hardware architectures}
 \label{sec:org8e8e70b}
 
+JAX is a Python library designed for high-performance numerical computing with focus on machine learning research. Moreover, its extensible system of composable function transformations provides 
+
+
+\textbf{Automatic differentiation}: JAX supports both forward and reverse mode automatic differentiation of functions.
+\textbf{Vectorisation}: In ML research we often apply a single function to lots of data, e.g. calculating the loss across a batch or evaluating per-example gradients for differentially private learning. JAX provides automatic vectorisation via the vmap transformation that simplifies this form of programming. For example, researchers don't need to reason about batching when implementing new algorithms. JAX also supports large scale data parallelism via the related pmap transformation, elegantly distributing data that is too large for the memory of a single accelerator.
+\textbf{Just-in-time Compilation}: relies on the XLA (accelerated linear algebra) engine to compile and execute functions on CPUs but also on . 
+
+
+is a compiler-based linear algebra execution engine
+
+
+XLA is used to just-in-time (JIT)-compile and execute JAX programs on GPU and Cloud TPU accelerators. JIT-compilation, together with JAX's NumPy-consistent API, allows researchers with no previous experience in high-performance computing to easily scale to one or many accelerators.
+
+
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.35\textwidth]{./img/JAXfeatures.png}
+\includegraphics[width=0.35\textwidth]{./img/JAX-overview.png}
 \caption{\label{fig:org04b5e20}}
 \end{figure}
+
+
 \subsection{Software design}
 \label{sec:org99304fa}
 
@@ -480,5 +496,6 @@ Linear and nonlinear comparisons, both carried out within FEM$_4$INAS framework,
 %%%## reftex-default-bibliography: ("/home/acea/Documents/Engineering.bib")
 %%% reftex-default-bibliography: ("/home/ac5015/Documents/Engineering.bib")
 %%% TeX-command-extra-options: "--synctex=1"
+%%% TeX-master: t
 %%% TeX-master: t
 %%% End:
