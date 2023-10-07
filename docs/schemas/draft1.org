@@ -646,7 +646,6 @@ derivatives
 
 modalaero -> 0, 1-static, 2-dynamic,rogers, 
 
-
 * Connection with High Fidelity structural model
 ** Initial Model
 - Clamped wing -> good for steady loads and aircraft stability.
@@ -676,7 +675,7 @@ Flutter and divergence points
 *** Potentially derivatives of the above via AD.
 Critical for large design optimisation problems.
 ** Data workflow
- Well in place for Nastran Models  except for the derivatives provided by Nastran using Sol 200.
+Well in place for Nastran Models  except for the derivatives provided by Nastran using Sol 200.
 * Software architecture
 Extensive  work carried out into a software architecture that complies with good design principles.
 #+RESULTS: classes_architecture2
@@ -684,3 +683,157 @@ Extensive  work carried out into a software architecture that complies with good
 * Short term goals
 - Set up a testing framework with well-known problems in nonlinear structural-mechanics/aeroelasticity.
 - Application to the Bristol model provided by Airbus.
+
+
+
+#+Name: classes_architecture3
+#+begin_src plantuml :file classes3.png
+  abstract Driver {
+            +pre_simulation()
+            +run_cases()
+    }
+
+     class IntrinsicDriver {
+             #integration: IntrinsicIntegration
+             #simulation: Simulation
+             #opt: Optimisation
+             #systems: [System]
+             -__init__(config: Config)
+             #_set_case()
+             #_set_integration()
+             #_set_simulation()
+             #_set_systems()
+     }
+
+     class  XLoads {
+             +q: [jnp.ndarray]
+             +Rab: [jnp.ndarray]
+             +GAFs: [jnp.ndarray]
+             -__init__(config.systems.loads,
+            q, Rab, GAFs)
+             +followerF()
+             +deadF()
+             +gravityF()
+             +modalAero()
+             }
+
+     /'
+      ' abstract class Integration {
+      '         +run()
+      ' }
+      '/
+
+     class IntrinsicIntegration {
+                     + <math>phi_1, phi_2, psi_1, psi_2</math>
+                     + <math>Gamma_1, Gamma_2 </math>
+                     -__init__(X, Ka, Ma)		
+                     +run()
+                     #compute_modalshapes()
+                     #compute_modalcouplings()
+     }
+
+     abstract class Simulation {
+                     +systems: [System]
+                     #workflow: dict[str:str]
+                         #opt: Optimisation
+                     -__init__(config.simulation,
+                    systems, opt, config.simulation)
+                     +trigger()
+                     #run_systems()
+                     #post_run()
+             }
+
+     /'
+      ' package Simulations {
+      '         class SerialSimulation {
+      '         }
+      '         class ParallelSimulation {
+      '         }
+      '         class SingleSimulation {
+      '         }
+      '         class CoupledSimulation {
+      '         }
+      ' }
+      '/
+
+     class SerialSimulation {
+     }
+     class ParallelSimulation {
+     }
+     class SingleSimulation {
+     }
+     class CoupledSimulation {
+     }
+
+     abstract class System {
+             +set_ic(q0)
+             +solve() -> sol
+             +pull_solution() -> qs
+     }
+
+     class IntrinsicSystem {
+            -__init__(name[str], settings:config.Dsystem,
+                      fem: config.Dfem,
+                      sol: solution.IntrinsicSolution)						
+            -dq: callable
+            -solver: callable
+            +sol: obj
+            #set_generator() -> dq
+            #set_solver() -> solver
+
+     }
+
+     class ControlSystem {
+     }
+
+     class MultibodySystem {
+     }
+
+        /'
+         ' Simulation <|-- SerialSimulation
+         ' Simulation <|-- ParallelSimulation
+         ' Simulation <|-- SingleSimulation
+         ' Simulation <|-- CoupledSimulation
+         '/
+     abstract class Optimisation {
+           +save_grads()
+           +assemble()
+     }
+
+     abstract class Sollibs {
+           +name()
+           +pull_name()
+     }
+      enum dq {
+  - sol_dict
+  - dq_label
+  }
+
+      enum loads {
+  - eta_dict[]
+  - eta_{label}
+  }
+
+     'Simulation <|-- Simulations
+     Simulation <|-- SingleSimulation
+     SingleSimulation -- SerialSimulation 
+     SerialSimulation -- ParallelSimulation
+     ParallelSimulation -- CoupledSimulation					
+     'Driver "1" -- "1" Integration : composition
+     'Driver "1" -- "1" Simulation : composition'
+     IntrinsicIntegration  -* IntrinsicDriver
+     Driver <|-- IntrinsicDriver
+     IntrinsicDriver  *-- Optimisation						
+     IntrinsicDriver  *-- Simulation
+     IntrinsicDriver  *- System
+     System ..> Simulation
+     'Integration <|-- IntrinsicIntegration
+     System  <|-- IntrinsicSystem
+     System  *- Sollibs
+     IntrinsicSystem -- ControlSystem
+     IntrinsicSystem o- XLoads
+     ControlSystem -- MultibodySystem
+#+end_src
+
+
+

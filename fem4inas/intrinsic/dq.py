@@ -177,8 +177,35 @@ def dq_101001(t, q, *args):
     #sol, system,  *xargs = args[0]
     sol, config,  *xargs = args[0]
     #F = _dq_101001(t, q, sol, system)
+    @jit
+    def _dq_101001y(t, q):
+    #def _dq_101001(t, q, x, force_follower, states, sol):    
+        """Solver for structural dynamics with follower forces."""
+        system = config.systems.sys['s1']
+        gamma1 = sol.data.couplings.gamma1
+        gamma2 = sol.data.couplings.gamma2
+        omega = sol.data.modes.omega
+        phi1 = sol.data.modes.phi1l
+        # q1 = q[states[0]]
+        # q2 = q[states[1]]
+        # eta = xloads.eta_001001(t,
+        #                         phi1,
+        #                         x,
+        #                         force_follower)
+
+        q1 = q[system.states['q1']]
+        q2 = q[system.states['q2']]
+        eta = xloads.eta_001001(t,
+                                phi1,
+                                system.xloads.x,
+                                system.xloads.force_follower)
+        F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
+        F1 += eta
+        F = jnp.hstack([F1, F2])
+        return F
+
     #sol, x, force_follower, states,  *xargs = args[0]
-    F = _dq_101001(t, q, sol, config)
+    F = _dq_101001y(t, q,)
     
     return F
 

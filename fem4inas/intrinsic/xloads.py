@@ -54,6 +54,15 @@ def eta_001001(t, phi1, x, force_follower):
                                        [0, 1]))
     return eta
 
+def eta_001011(t, phi1, x, force_dead, Rab):
+
+    f1 = jax.vmap(lambda R, x: R @ x , in_axes=1, out_axes=2)
+    f =  linear_interpolation(t, x, force_dead)
+    f_fd = f1(Rab, f)
+    eta = jnp.tensordot(phi1, f_fd, axes=([1, 2],
+                                       [0, 1]))
+    return eta
+
 
 def project_phi1(force, phi1):
 

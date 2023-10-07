@@ -32,6 +32,38 @@ def ode(F: callable,
                               )
     return sol
 
+def ode2(F: callable,
+        args,
+        solver_name: str,
+        q0,
+        t0,
+        t1,
+        tn,
+        dt,
+        save_at=None,
+        **kwargs) -> Solution:
+    
+    term = diffrax.ODETerm(F)
+    if save_at is None:
+        saveat = diffrax.SaveAt(steps=True) #
+    else:
+        saveat = save_at
+    _solver = getattr(diffrax, solver_name)
+    solver = _solver()
+    sol = diffrax.diffeqsolve(term,
+                              solver,
+                              t0=t0,
+                              t1=t1,
+                              dt0=dt,
+                              y0=q0,
+                              args=args,
+                              #throw=False,
+                              max_steps=20000,
+                              saveat=saveat
+                              )
+    return sol
+
+
 def newton_raphson(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **kwargs):
 
     solver = diffrax.NewtonNonlinearSolver(rtol=rtol,
