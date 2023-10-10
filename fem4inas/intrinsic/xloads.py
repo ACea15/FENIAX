@@ -60,9 +60,14 @@ def eta_001011(t, phi1, x, force_dead, Rab):
     f =  linear_interpolation(t, x, force_dead)
     f_fd = f1(Rab, f)
     eta = jnp.tensordot(phi1, f_fd, axes=([1, 2],
-                                       [0, 1]))
+                                          [0, 1]))
     return eta
 
+def eta_0011(t, phi1, x, force_dead, Rab):
+
+    q0 = -q2 / omega
+    eta = 0.5 * rho_inf * u_inf **2 * (
+        A0 @ q0 + B0 @ qx)
 
 def project_phi1(force, phi1):
 

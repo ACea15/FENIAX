@@ -39,109 +39,58 @@ def f_12(omega, gamma1, gamma2, q1, q2):
 
     return F1, F2
 
-#@partial(jit, static_argnums=(2, 3))
-#@jit
-#@partial(jit, static_argnames=['sol','system'])
-def _dq_001001(t, q, sol, system):
-
-    #t, sol, system,  *xargs = args[0]
-    gamma2 = sol.data.couplings.gamma2
-    phi1 = sol.data.modes.phi1l
-    omega = sol.data.modes.omega
-    F = (omega * q
-         - contraction_gamma2(gamma2, q)
-         + xloads.eta_001001(t,
-                             phi1,
-                             system.xloads.x,
-                             system.xloads.force_follower))
-    return F
-
 def dq_001001(q, *args):
 
-    t, sol, system,  *xargs = args[0]
-    F = _dq_001001(t, q, sol, system)
+    (gamma2, omega, phi1, x,
+     force_follower, t) = args[0]
+    F = omega * q - contraction_gamma2(gamma2, q)
+    F += xloads.eta_001001(t,
+                           phi1,
+                           x,
+                           force_follower)
     return F
+
 
 def dq_000001(q, *args):
-    
-    t, sol, system,  *xargs = args[0]
-    phi1 = sol.data.modes.phi1l
-    omega = sol.data.modes.omega
-    F = (omega * q
-         + xloads.eta_001001(t, phi1,
-                             system.xloads.x,
-                             system.xloads.force_follower))
 
+    (omega, phi1, x,
+     force_follower, t) = args[0]
+    F = omega * q
+    F += xloads.eta_001001(t,
+                           phi1,
+                           x,
+                           force_follower)
     return F
-
-#@partial(jit, static_argnames=['sol','system'])
-@partial(jit, static_argnames=['sol', 'config'])
-def _dq_101001(t, q, sol, config):
-#def _dq_101001(t, q, x, force_follower, states, sol):    
-    """Solver for structural dynamics with follower forces."""
-    system = config.systems.sys['s1']
-    gamma1 = sol.data.couplings.gamma1
-    gamma2 = sol.data.couplings.gamma2
-    omega = sol.data.modes.omega
-    phi1 = sol.data.modes.phi1l
-    # q1 = q[states[0]]
-    # q2 = q[states[1]]
-    # eta = xloads.eta_001001(t,
-    #                         phi1,
-    #                         x,
-    #                         force_follower)
-    
-    q1 = q[system.states['q1']]
-    q2 = q[system.states['q2']]
-    eta = xloads.eta_001001(t,
-                            phi1,
-                            system.xloads.x,
-                            system.xloads.force_follower)
-    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
-    F1 += eta
-    F = jnp.hstack([F1, F2])
-    return F
-
-@partial(jit, static_argnames=['sol', 'config'])
-def _dq_101000(t, q, sol, config):
-#def _dq_101001(t, q, x, force_follower, states, sol):    
-    """Solver for structural dynamics with follower forces."""
-    system = config.systems.sys['s1']
-    gamma1 = sol.data.couplings.gamma1
-    gamma2 = sol.data.couplings.gamma2
-    omega = sol.data.modes.omega
-    # phi1 = sol.data.modes.phi1l
-    # q1 = q[states[0]]
-    # q2 = q[states[1]]
-    # eta = xloads.eta_001001(t,
-    #                         phi1,
-    #                         x,
-    #                         force_follower)
-    
-    q1 = q[system.states['q1']]
-    q2 = q[system.states['q2']]
-    # eta = xloads.eta_001001(t,
-    #                         phi1,
-    #                         system.xloads.x,
-    #                         system.xloads.force_follower)
-    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
-    #F1 += eta
-    F = jnp.hstack([F1, F2])
-    return F
-
 
 @jit
-def dq_101001x(t, q, gamma1, gamma2, omega, phi1, force_follower, x, states):
-#def _dq_101001(t, q, x, force_follower, states, sol):    
-    """Solver for structural dynamics with follower forces."""
+def dq_0011x(t, q, gamma1, gamma2, omega, phi1, force_follower, x, states):
 
-    # q1 = q[states[0]]
-    # q2 = q[states[1]]
-    # eta = xloads.eta_001001(t,
-    #                         phi1,
-    #                         x,
-    #                         force_follower)
-    
+    qx = q[states['qx']]
+    q2 = q[states['q2']]
+    eta = xloads.eta_0011(t,
+                          phi1,
+                          x,
+                          force_follower)
+    F = (omega * q2
+         - contraction_gamma2(gamma2, q) + eta)
+    return F
+
+@jit
+def dq_101000(t, q, *args):
+
+    gamma1, gamma2, omega, states = args[0]
+    q1 = q[states['q1']]
+    q2 = q[states['q2']]
+    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
+    F = jnp.hstack([F1, F2])
+    return F
+
+@jit
+def dq_101001(t, q, *args):
+
+    (gamma1, gamma2, omega, phi1, x,
+     force_follower, states) = args[0]
+
     q1 = q[states['q1']]
     q2 = q[states['q2']]
     eta = xloads.eta_001001(t,
@@ -152,74 +101,6 @@ def dq_101001x(t, q, gamma1, gamma2, omega, phi1, force_follower, x, states):
     F1 += eta
     F = jnp.hstack([F1, F2])
     return F
-
-@jit
-def dq_101000x(t, q, gamma1, gamma2, omega, phi1, force_follower, x, states):
-#def _dq_101001(t, q, x, force_follower, states, sol):    
-    """Solver for structural dynamics with follower forces."""
-
-    # q1 = q[states[0]]
-    # q2 = q[states[1]]
-    # eta = xloads.eta_001001(t,
-    #                         phi1,
-    #                         x,
-    #                         force_follower)
-    
-    q1 = q[states['q1']]
-    q2 = q[states['q2']]
-    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
-    F = jnp.hstack([F1, F2])
-    return F
-
-
-def dq_101001(t, q, *args):
-
-    #sol, system,  *xargs = args[0]
-    sol, config,  *xargs = args[0]
-    #F = _dq_101001(t, q, sol, system)
-    @jit
-    def _dq_101001y(t, q):
-    #def _dq_101001(t, q, x, force_follower, states, sol):    
-        """Solver for structural dynamics with follower forces."""
-        system = config.systems.sys['s1']
-        gamma1 = sol.data.couplings.gamma1
-        gamma2 = sol.data.couplings.gamma2
-        omega = sol.data.modes.omega
-        phi1 = sol.data.modes.phi1l
-        # q1 = q[states[0]]
-        # q2 = q[states[1]]
-        # eta = xloads.eta_001001(t,
-        #                         phi1,
-        #                         x,
-        #                         force_follower)
-
-        q1 = q[system.states['q1']]
-        q2 = q[system.states['q2']]
-        eta = xloads.eta_001001(t,
-                                phi1,
-                                system.xloads.x,
-                                system.xloads.force_follower)
-        F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
-        F1 += eta
-        F = jnp.hstack([F1, F2])
-        return F
-
-    #sol, x, force_follower, states,  *xargs = args[0]
-    F = _dq_101001y(t, q,)
-    
-    return F
-
-def dq_101000(t, q, *args):
-
-    #sol, system,  *xargs = args[0]
-    sol, config,  *xargs = args[0]
-    #F = _dq_101001(t, q, sol, system)
-    #sol, x, force_follower, states,  *xargs = args[0]
-    F = _dq_101000(t, q, sol, config)
-    
-    return F
-
-
 
 def dq_100001(t, q, *args):
     """Solver for structural dynamics with follower forces."""
@@ -325,3 +206,6 @@ if (__name__ == "__main__"):
                                                                NUM_MODES, NUM_MODES ))
         res4 += q_static_for(q2, omega, gamma2)
     time4 = time.time() - st1
+
+def y(x, *args):
+    print(args)

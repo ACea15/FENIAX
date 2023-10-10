@@ -22,9 +22,9 @@ inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 20.
 inp.systems.sett.s1.tn = 20001
-inp.systems.sett.s1.solver_library = "runge_kutta" #"diffrax"
+inp.systems.sett.s1.solver_library = "diffrax" # "runge_kutta" #
 inp.systems.sett.s1.solver_function = "ode"
-inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
+inp.systems.sett.s1.solver_settings = dict(solver_name="Dopri5")
 inp.systems.sett.s1.init_states = dict(q1=["axial_parabolic",
                                            ([0., 3., 3., 0., 0., 0], 20.)
                                            ])
@@ -32,7 +32,7 @@ inp.systems.sett.s1.init_states = dict(q1=["axial_parabolic",
 # inp.systems.sett.s1.solver_function = "root"
 # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
 #                                            tolerance=1e-9)
-inp.systems.sett.s1.label = 'dq_101000x'
+inp.systems.sett.s1.label = 'dq_101000'
 config =  configuration.Config(inp)
 time1 = time.time()
 sol = fem4inas.fem4inas_main.main(input_obj=config)

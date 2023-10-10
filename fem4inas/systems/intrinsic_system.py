@@ -5,6 +5,7 @@ import fem4inas.intrinsic.postprocess as postprocess
 import fem4inas.preprocessor.containers.intrinsicmodal as intrinsic
 import fem4inas.preprocessor.solution as solution
 import fem4inas.intrinsic.initcond as initcond
+import fem4inas.intrinsic.args as libargs
 import jax.numpy as jnp
 
 class IntrinsicSystem(System, cls_name="intrinsic"):
@@ -111,10 +112,14 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
     def solve(self):
 
-        solver_args = getattr(self, f"_args_{self.settings.solver_library}")
+        label = self.settings.label.split("_")[-1]
+        solver_args = getattr(libargs,
+                              f"arg_{label}")
         qs = [self.q0]
         for i, ti in enumerate(self.settings.t):
-            args1 = solver_args(ti)
+            args1 = solver_args(self.sol,
+                                self.settings,
+                                ti)
             sol = self.eqsolver(self.dFq,
                                 qs[-1],
                                 args1,
@@ -204,8 +209,11 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
     def solve(self):
 
-        solver_args = getattr(self, f"_args_{self.settings.solver_library}")
-        args1 = solver_args()
+        label = self.settings.label.split("_")[-1]
+        solver_args = getattr(libargs,
+                              f"arg_{label}")
+        args1 = solver_args(self.sol,
+                            self.settings)
         sol = self.eqsolver(self.dFq,
                             args1,
                             q0=self.q0,
