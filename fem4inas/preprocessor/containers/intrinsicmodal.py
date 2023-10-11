@@ -31,11 +31,11 @@ class Dconst(DataContainer):
                                                   [0, 0, -1, 0, 0, 0],
                                                   [0, 1, 0, 0, 0, 0]]))
     EMATT: jnp.ndarray = dfield("3x3 Identity matrix", init=False)
-    
+
     def __post_init__(self):
 
         object.__setattr__(self, 'EMATT', self.EMAT.T)
-        
+
 @dataclass(frozen=True)
 class Dfiles(DataContainer):
 
@@ -43,10 +43,23 @@ class Dfiles(DataContainer):
     folder_out: str | pathlib.Path
     config: str | pathlib.Path
 
+class Daero(DataContainer):
+
+    u_inf: float = dfield("")
+    rho_inf: float = dfield("")
+    c_ref: float = dfield("")
+    aero_matrices: dict = dfield("", default=None)
+    qx: jnp.ndarray = dfield("", default=None)
+    def __post_init__(self):
+
+        if self.aero_matrices is not None:
+            for k, v in self.aero_matrices.items():
+                object.__setattr__(self, k, v)
+            del self.aero_matrices
 
 @dataclass(frozen=False)
 class Dxloads(DataContainer):
-    
+
     follower_forces: bool = dfield("Include point follower forces",
                                    default=False)
     dead_forces: bool = dfield("Include point dead forces",
@@ -268,6 +281,8 @@ class Dsystem(DataContainer):
                         default=True)
     xloads: dict | Dxloads = dfield("External loads dataclass",
                                     default=None)
+    aero: dict | Daero = dfield("Aerodynamic dataclass",
+                                default=None)
     t0: float = dfield("Initial time",
                        default=0.)
     t1: float = dfield("Final time",
@@ -309,12 +324,15 @@ class Dsystem(DataContainer):
             self.t = jnp.linspace(self.t0, self.t1, self.tn)
         if self.dt is None:
             self.dt = self.t[1] - self.t[0]
-        object.__setattr__(self, 'xloads', initialise_Dclass(self.xloads, Dxloads))
+        object.__setattr__(self, 'xloads', initialise_Dclass(self.xloads,
+                                                             Dxloads))
+        object.__setattr__(self, 'aero', initialise_Dclass(self.aero,
+                                                           Daero))
         #self.xloads = initialise_Dclass(self.xloads, Dxloads)
         if self.solver_settings is None:
             self.solver_settings = dict()
         
-        if  self.label is None:
+        if self.label is None:
             if isinstance(self.solution, str):
                 sol_label = Solution[self.solution.upper()].value
             else:

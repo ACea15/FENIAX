@@ -18,19 +18,19 @@ def compute_strains(cphi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:
     X3 = jnp.tensordot(cphi2l, q2, axes=(0, 1))  # 6xNnxNt
     return X3.transpose((2,0,1))
 
-def compute_velocitieso(phi1l: jnp.ndarray, q1: jnp.ndarray) -> jnp.ndarray:
+def compute_velocities_t(phi1l: jnp.ndarray, q1: jnp.ndarray) -> jnp.ndarray:
 
     X1 = jnp.tensordot(phi1l, q1, axes=(0, 0))  # 6xNnxNt
     return X1
 
-def compute_internalforceso(phi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:
+def compute_internalforces_t(phi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:
 
     X2 = jnp.tensordot(phi2l, q2, axes=(0, 0))  # 6xNnxNt
     return X2
 
-def compute_strainso(cphi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:
+def compute_strains_t(psi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:
 
-    X3 = jnp.tensordot(cphi2l, q2, axes=(0, 0))  # 6xNnxNt
+    X3 = jnp.tensordot(psi2l, q2, axes=(0, 0))  # 6xNnxNt
     return X3
 
 
@@ -46,6 +46,83 @@ def velocity_ra():
 def strains_ra():
     ...
 
+def integrate_X3Cab(carry, x):
+
+    Cab0_x = x[:, :3]
+    # strain = x[:, 3]
+    kappa = x[:, 3]
+    ds = x[0, 4]
+    Cab_carry = carry[:, :3]
+    Cab0_carry = carry[:, 3:6]
+    #ra0 = carry[:, 6]
+    Ipsi = kappa * ds
+    Itheta = jnp.linalg.norm(Ipsi)
+    Cab = Cab_carry @ Cab0_carry.T @ Cab0_x  @ H0(Itheta, Ipsi)
+    # ra = ra0 + Cab_carry @ Cab0_carry.T @ Cab0_x @ (
+    #     H1(Itheta, Ipsi, ds) @ (strain + jnp.array([1, 0, 0])))
+    # y = jnp.hstack([Cab, ra.reshape((3, 1))])
+    carry = jnp.hstack([Cab, Cab0_x])
+    return carry, Cab
+
+def integrate_strainsCab(Cab_0n, X3t,
+                         X_xdelta, C0ab,
+                         component_names,
+                         num_nodes,
+                         component_nodes,
+                         component_father):
+
+    ds = X_xdelta
+    C0ab = C0ab  # 3x3xNn
+    # TODO: make as fori loop
+    Cab = jnp.zeros((3, 3, num_nodes))
+    #ra = jnp.zeros((3, num_nodes))
+
+    comp_nodes = jnp.array(component_nodes[component_names[0]])[1:]
+    numcomp_nodes = len(comp_nodes)
+    Cab0_init = C0ab[:, :, 0]
+    init = jnp.hstack([Cab_0n,
+                       Cab0_init])
+    ds_i = ds[comp_nodes]
+    ds_i = jnp.broadcast_to(ds_i,
+                            (3, ds_i.shape[0])).T.reshape((
+                                numcomp_nodes, 3, 1))
+    #strains_i = X3t[:3, comp_nodes].T.reshape((numcomp_nodes, 3, 1))
+    kappas_i = X3t[3:, comp_nodes].T.reshape((numcomp_nodes, 3, 1))
+    #import pdb; pdb.set_trace()
+    C0ab_i = C0ab[:, :, comp_nodes].transpose((2, 0, 1))
+    xs = jnp.concatenate([C0ab_i, kappas_i,  ds_i], axis=2)
+    last_carry, Cra = jax.lax.scan(integrate_X3, init, xs)
+    #ra = ra.at[:, 0].set(ra_0n)
+    Cab = Cab.at[:, :, 0].set(Cab_0n)
+    #ra = ra.at[:, comp_nodes].set(Cra[:, :, 3].T)
+    Cab = Cab.at[:, :, comp_nodes].set(Cra.transpose((1, 2, 0)))
+
+    for ci in component_names[1:]:
+
+        comp_father = component_father[ci]
+        comp_nodes = jnp.array(component_nodes[ci])
+        numcomp_nodes = len(comp_nodes)
+        if comp_father is None:
+            node_father = 0
+        else:
+            node_father = component_nodes[comp_father][-1]
+        Cab_init = Cab[:, :, node_father]
+        Cab0_init = C0ab[:, :, node_father]
+        #ra_init = ra[:, node_father]
+        init = jnp.hstack([Cab_init, Cab0_init])
+        ds_i = ds[comp_nodes]
+        ds_i = jnp.broadcast_to(ds_i,
+                                (3, ds_i.shape[0])).T.reshape((numcomp_nodes, 3, 1))
+        #strains_i = X3t[:3, comp_nodes].T.reshape((numcomp_nodes, 3, 1))
+        kappas_i = X3t[3:, comp_nodes].T.reshape((numcomp_nodes, 3, 1))
+        C0ab_i = C0ab[:, :, comp_nodes].transpose((2, 0, 1))
+        xs = jnp.concatenate([C0ab_i, kappas_i,  ds_i], axis=2)
+        last_carry, Cra = jax.lax.scan(integrate_X3Cab, init, xs)
+        # ra = ra.at[:, comp_nodes].set(Cra[:, :, 3].T)
+        Cab = Cab.at[:, :, comp_nodes].set(Cra.transpose((1, 2, 0)))
+        
+    return Cab
+    
 def integrate_X3(carry, x):
 
     Cab0_x = x[:, :3]

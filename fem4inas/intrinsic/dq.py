@@ -4,6 +4,7 @@ from jax import jit
 from functools import partial
 from jax.config import config; config.update("jax_enable_x64", True)
 import fem4inas.intrinsic.xloads as xloads
+import fem4inas.intrinsic.postprocess as postprocess
 
 @jit
 def contraction_gamma1(gamma1: jnp.ndarray,
@@ -39,6 +40,17 @@ def f_12(omega, gamma1, gamma2, q1, q2):
 
     return F1, F2
 
+def dq_000001(q, *args):
+
+    (omega, phi1, x,
+     force_follower, t) = args[0]
+    F = omega * q
+    F += xloads.eta_000001(t,
+                           phi1,
+                           x,
+                           force_follower)
+    return F
+
 def dq_001001(q, *args):
 
     (gamma2, omega, phi1, x,
@@ -50,33 +62,42 @@ def dq_001001(q, *args):
                            force_follower)
     return F
 
+@jit
+def dq_00101(q, *args):
 
-def dq_000001(q, *args):
-
-    (omega, phi1, x,
-     force_follower, t) = args[0]
-    F = omega * q
-    F += xloads.eta_001001(t,
-                           phi1,
-                           x,
-                           force_follower)
+    (gamma2, omega, phi1l, psi2l,
+     x, force_dead,
+     X_xdelta,
+     C0ab,
+     component_names, num_nodes,
+     component_nodes, component_father, t) = args[0]
+    X3t = postprocess.compute_strains_t(psi2l, q)
+    Rab = postprocess.integrate_strainsCab(
+        jnp.eye(3), X3t,
+        X_xdelta, C0ab,
+        component_names,
+        num_nodes,
+        component_nodes,
+        component_father)
+    F = omega * q - contraction_gamma2(gamma2, q)
+    F += xloads.eta_00101(t, phi1l, x, force_dead, Rab)
     return F
 
 @jit
-def dq_0011x(t, q, gamma1, gamma2, omega, phi1, force_follower, x, states):
+def dq_0011(q, *args):
 
-    qx = q[states['qx']]
-    q2 = q[states['q2']]
-    eta = xloads.eta_0011(t,
-                          phi1,
-                          x,
-                          force_follower)
-    F = (omega * q2
-         - contraction_gamma2(gamma2, q) + eta)
+    (gamma2, omega,
+     u_inf, rho_inf,
+     qx, A0, B0) = args[0]
+    q0 = -q / omega
+    F = omega * q - contraction_gamma2(gamma2, q)
+    F += xloads.eta_0011(q0, qx,
+                         u_inf, rho_inf,
+                         A0, B0)
     return F
 
 @jit
-def dq_101000(t, q, *args):
+def dq_101(t, q, *args):
 
     gamma1, gamma2, omega, states = args[0]
     q1 = q[states['q1']]
@@ -93,7 +114,7 @@ def dq_101001(t, q, *args):
 
     q1 = q[states['q1']]
     q2 = q[states['q2']]
-    eta = xloads.eta_001001(t,
+    eta = xloads.eta_101001(t,
                             phi1,
                             x,
                             force_follower)
@@ -102,20 +123,50 @@ def dq_101001(t, q, *args):
     F = jnp.hstack([F1, F2])
     return F
 
+@jit
 def dq_100001(t, q, *args):
-    """Solver for structural dynamics with follower forces."""
 
-    sol, system,  *xargs = args[0]
-    omega = sol.fem.omega
-    phi1 = sol.data.modes.phi1l
-    q1 = q[system.states['q1']]
-    q2 = q[system.states['q2']]
-    eta = xloads.eta_001001(t,
+    (omega, phi1, x,
+     force_follower, states) = args[0]    
+    q1 = q[states['q1']]
+    q2 = q[states['q2']]
+    eta = xloads.eta_100001(t,
                             phi1,
-                            system.xloads.x,
-                            system.xloads.force_follower)
+                            x,
+                            force_follower)
     F1 = omega * q2
     F2 = -omega * q1
+    F1 += eta
+    F = jnp.hstack([F1, F2])
+    return F
+
+@jit
+def dq_10101(t, q, *args):
+
+    (gamma1, gamma2, omega, phi1l, psi2l,
+     x, force_dead,
+     states,
+     X_xdelta,
+     C0ab,
+     component_names, num_nodes,
+     component_nodes, component_father) = args[0]
+    q1 = q[states['q1']]
+    q2 = q[states['q2']]
+    X3t = postprocess.compute_strains_t(
+    psi2l, q2)
+    Rab = postprocess.integrate_strainsCab(
+        jnp.eye(3), X3t,
+        X_xdelta, C0ab,
+        component_names,
+        num_nodes,
+        component_nodes,
+        component_father)
+    eta = xloads.eta_10101(t,
+                           phi1l,
+                           x,
+                           force_dead,
+                           Rab)
+    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
     F1 += eta
     F = jnp.hstack([F1, F2])
     return F
