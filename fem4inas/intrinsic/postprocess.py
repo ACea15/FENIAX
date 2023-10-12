@@ -91,7 +91,7 @@ def integrate_strainsCab(Cab_0n, X3t,
     #import pdb; pdb.set_trace()
     C0ab_i = C0ab[:, :, comp_nodes].transpose((2, 0, 1))
     xs = jnp.concatenate([C0ab_i, kappas_i,  ds_i], axis=2)
-    last_carry, Cra = jax.lax.scan(integrate_X3, init, xs)
+    last_carry, Cra = jax.lax.scan(integrate_X3Cab, init, xs)
     #ra = ra.at[:, 0].set(ra_0n)
     Cab = Cab.at[:, :, 0].set(Cab_0n)
     #ra = ra.at[:, comp_nodes].set(Cra[:, :, 3].T)

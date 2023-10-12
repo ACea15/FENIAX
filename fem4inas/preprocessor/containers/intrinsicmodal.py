@@ -183,9 +183,15 @@ class Dfem(DataContainer):
     num_nodes: int = dfield("Number of nodes", init=False)
     component_names: list = dfield("Name of components defining the structure", init=False)
     component_father: dict[str: str] = dfield(
-        "", init=False)
+        "Map between each component and its father", init=False)
     component_nodes: dict[str: list[int]] = dfield("Node indexes of the component",
-                                                            init=False)    
+                                                            init=False)
+    component_names_int: tuple[int] = dfield("Name of components defining the structure", init=False)
+    component_father_int: tuple[int] = dfield(
+        "Map between each component and its father", init=False)
+    component_nodes_int: tuple[list[int]] = dfield("Node indexes of the component",
+                                                   init=False)    
+    
     component_chain: dict[str:list[str]] = dfield(" ", init=False)
     #
     clamped_nodes: list[int] = dfield("List of clamped or multibody nodes", init=False)
@@ -241,7 +247,11 @@ class Dfem(DataContainer):
                                                        self.component_nodes,
                                                        self.component_chain,
                                                        self.num_nodes)
-
+        (self.component_names_int,
+         self.component_nodes_int,
+         self.component_father_int) = geometry.convert_components(self.component_names,
+                                                             self.component_nodes,
+                                                             self.component_father)
 # @dataclass(frozen=True)
 # class Dpresimulation(DataContainer):
 

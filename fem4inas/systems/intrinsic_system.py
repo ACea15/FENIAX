@@ -50,7 +50,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
                 self.fem.num_nodes, self.sol.data.modes.C06ab)
         if self.settings.xloads.dead_forces:
             self.settings.xloads.build_point_dead(
-                self.fem.num_nodes, self.sol.data.modes.C06ab)
+                self.fem.num_nodes)
             
     def set_states(self):
         self.settings.build_states(self.fem.num_modes)
@@ -119,6 +119,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         for i, ti in enumerate(self.settings.t):
             args1 = solver_args(self.sol,
                                 self.settings,
+                                self.fem,
                                 ti)
             sol = self.eqsolver(self.dFq,
                                 qs[-1],
@@ -213,7 +214,8 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
         solver_args = getattr(libargs,
                               f"arg_{label}")
         args1 = solver_args(self.sol,
-                            self.settings)
+                            self.settings,
+                            self.fem)
         sol = self.eqsolver(self.dFq,
                             args1,
                             q0=self.q0,

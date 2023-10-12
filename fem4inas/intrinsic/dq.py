@@ -62,7 +62,8 @@ def dq_001001(q, *args):
                            force_follower)
     return F
 
-@jit
+#@jit
+#@partial(jit, static_argnames=["args"])
 def dq_00101(q, *args):
 
     (gamma2, omega, phi1l, psi2l,
@@ -71,16 +72,20 @@ def dq_00101(q, *args):
      C0ab,
      component_names, num_nodes,
      component_nodes, component_father, t) = args[0]
-    X3t = postprocess.compute_strains_t(psi2l, q)
-    Rab = postprocess.integrate_strainsCab(
-        jnp.eye(3), X3t,
-        X_xdelta, C0ab,
-        component_names,
-        num_nodes,
-        component_nodes,
-        component_father)
-    F = omega * q - contraction_gamma2(gamma2, q)
-    F += xloads.eta_00101(t, phi1l, x, force_dead, Rab)
+    #@jit
+    def _dq_00101(q2):
+        X3t = postprocess.compute_strains_t(psi2l, q2)
+        Rab = postprocess.integrate_strainsCab(
+            jnp.eye(3), X3t,
+            X_xdelta, C0ab,
+            component_names,
+            num_nodes,
+            component_nodes,
+            component_father)
+        F = omega * q2 - contraction_gamma2(gamma2, q2)
+        F += xloads.eta_00101(t, phi1l, x, force_dead, Rab)
+        return F
+    F = _dq_00101(q)
     return F
 
 @jit
@@ -140,7 +145,6 @@ def dq_100001(t, q, *args):
     F = jnp.hstack([F1, F2])
     return F
 
-@jit
 def dq_10101(t, q, *args):
 
     (gamma1, gamma2, omega, phi1l, psi2l,
@@ -150,25 +154,29 @@ def dq_10101(t, q, *args):
      C0ab,
      component_names, num_nodes,
      component_nodes, component_father) = args[0]
-    q1 = q[states['q1']]
-    q2 = q[states['q2']]
-    X3t = postprocess.compute_strains_t(
-    psi2l, q2)
-    Rab = postprocess.integrate_strainsCab(
-        jnp.eye(3), X3t,
-        X_xdelta, C0ab,
-        component_names,
-        num_nodes,
-        component_nodes,
-        component_father)
-    eta = xloads.eta_10101(t,
-                           phi1l,
-                           x,
-                           force_dead,
-                           Rab)
-    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
-    F1 += eta
-    F = jnp.hstack([F1, F2])
+    q1i = q[states['q1']]
+    q2i = q[states['q2']]
+    #@jit
+    def _dq_10101(t, q1, q2):
+        X3t = postprocess.compute_strains_t(
+            psi2l, q2)
+        Rab = postprocess.integrate_strainsCab(
+            jnp.eye(3), X3t,
+            X_xdelta, C0ab,
+            component_names,
+            num_nodes,
+            component_nodes,
+            component_father)
+        eta = xloads.eta_10101(t,
+                               phi1l,
+                               x,
+                               force_dead,
+                               Rab)
+        F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
+        F1 += eta
+        F = jnp.hstack([F1, F2])
+        return F
+    F = _dq_10101(t, q1i, q2i)
     return F
 
 if (__name__ == "__main__"):

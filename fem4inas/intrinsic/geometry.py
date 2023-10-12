@@ -488,3 +488,21 @@ def compute_Mloadpaths(components_range: list[str],
         M[ci_nodes[j:], i] = 1
         j += 1
     return jnp.array(M)
+
+def convert_components(component_names: list[str],
+                       component_nodes: dict[str:list[int]],
+                       component_father: dict[str:int]):
+    num_components = len(component_names)
+    names_new = tuple(range(num_components))
+    nodes_new = tuple([component_nodes[ci]
+                       for ci in component_names])
+    father_new = [[] for i in range(num_components)]
+    for k, v in component_father.items():
+        ind = component_names.index(k)
+        if v is not None:
+            ind_father = component_names.index(v)
+        else:
+            ind_father = 0
+        father_new[ind] = ind_father
+    father_new = tuple(father_new)
+    return names_new, nodes_new, father_new
