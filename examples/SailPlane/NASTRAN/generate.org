@@ -24,9 +24,11 @@
   density_fact = [1.225]
   mach_fact = machs
   kv_fact = [200., 220.]
-  u_inf=1.
-  c_ref=1.
+  u_inf = 1.
+  rho_inf = 1.
+  c_ref = 1.
   rho_ref=1.
+  q_inf = 0.5 * rho_inf * u_inf ** 2
   flutter_method="PK"
   flutter_sett = dict()
   aero_sett = dict()
@@ -45,6 +47,15 @@
                                     z_bottom) / 2]
       return point_LE, chord
 
+#+end_src
+* Solution folder
+#+begin_src org :tangle "./data_out/README.org" :mkdirp yes :noweb yes
+  ,* DLM output analysis
+  ,** GAFs:
+  - Qhh:
+  - Qhj:
+  ,** DLM points
+  
 #+end_src
 
 * Modal Solution
@@ -417,8 +428,8 @@
 
 #+begin_src org :tangle "./GAFs/run_cao.bdf" :mkdirp yes :noweb yes
   $EXECUTIVE CONTROL DECK
-  assign OUTPUT4='./Qhh<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=11
-  assign OUTPUT4='./Qhj<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=12
+  assign OUTPUT4='../data_out/Qhh<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=11
+  assign OUTPUT4='../data_out/Qhj<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=12
   assign INPUTT4='../SOL103/Phi<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=90
   $assign INPUTT4= 'Phi1.op4',formatted,UNIT=91
   $NASTRAN NLINES=999999
@@ -1331,7 +1342,7 @@
   $ EXECUTIVE CONTROL								  $
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-  assign OUTPUT4='Dihedral.op4',formatted,UNIT=11
+  assign OUTPUT4='../data_out/dihedral.op4',formatted,UNIT=11
   $ TIME 100 $(Max execution time)       
   $NASTRAN NLINES = 999999
   NASTRAN QUARTICDLM = 1
@@ -1384,7 +1395,9 @@
   $PARAM,MAXRATIO,1.0E07 $Default anyway
   $PARAM   AUTOSPC YES
   MDLPRM  MLTSPLIN 1 $Aero grids can be defined in multiple splines (dafault 0)
-  PARAM   WTMASS  1.0  
+  PARAM   WTMASS  1.0
+  PARAM   GUSTAERO -1     
+  PARAM   Q       1. 
   $ TABDMP1 920     CRIT
   $         0.      0.015   8000.   0.015   ENDT    
   FREQ1   930     0.0     1.E-9   1   
@@ -1401,110 +1414,170 @@
   INCLUDE './mkaero_dihedral.bdf'
 #+end_src
 
+#+begin_src bash :tangle "./geometry/run.sh" :mkdirp yes :shebang  #!/usr/bin/zsh -i :results none
+  cd geometry
+  nastran run_cao.bdf
+#+end_src
 
 * Qx GAFs extraction
-#+begin_src python :session py1 :results none
-  dlm_gafs = nasaero.GenFlutter(flutter_id,
-                                density_fact,
-                                mach_fact,
-                                kv_fact,
-                                machs,
-                                reduced_freqs,
-                                u_inf,
-                                c_ref,
-                                rho_ref,
-                                flutter_method,
-                                flutter_sett,
-                                aero_sett)
 
-  dlm_gafs.build_model()
-  dlm_gafs.model.write_bdf("./GAFs/aero_flutter.bdf")
+#+begin_src org :tangle "./GAFs_Qx/setupQx.bdf" :mkdirp yes :noweb yes
+  $
+  $--------------------------------------------------------------------------------
+  $   AERODYNAMIC DOFS
+  $--------------------------------------------------------------------------------
+  $
+  AESTAT  1       ANGLEA  
+  AESTAT  2       SIDES  
+  AESTAT  3       PITCH  
+  AESTAT  4       ROLL  
+  AESTAT  5       YAW  
+  AESTAT  6       URDD1  
+  AESTAT  7       URDD2  
+  AESTAT  8       URDD3  
+  AESTAT  9       URDD4  
+  AESTAT  10      URDD5  
+  AESTAT  11      URDD6  
+
+  $AEROS                   4.163   44.8    146.6  
+  AEROS                   7.271   58.0    361.6 
+  $
+  $--------------------------------------------------------------------------------
+  $   BOUNDARY CONDITIONS
+  $--------------------------------------------------------------------------------
+  $ SPCs
+  $
+  $--------------------------------------------------------------------------------
+  $   h=0 ft - m=0.3
+  $--------------------------------------------------------------------------------
+  $
+  $ TRIM    960     0.81    15762.81  URDD1   0.      URDD2   0.      1.
+  $         URDD3   0.      URDD4   0.      URDD5   0.      URDD6   0.
+  $         ROLL    0.      YAW     0.      SIDES   0.      PITCH   0.
+  $         Flprn_r 0.      WTAil_r 0.      Elev_r  0.      ANGLEA  0.261799
+  TRIM,960,<<python_parameters(output="mach")>>,<<python_parameters(output="q_inf")>>,URDD1,0.,URDD2,0.,1.
+  ,URDD3,   0.,      URDD4,   0.,      URDD5,   0.,      URDD6,   0.,
+  ,ROLL,    0.,      YAW,     0.,      SIDES,   0.,      PITCH,   0.
+  $ANGLEA  0.261799
 
 #+end_src
 
 #+begin_src org :tangle "./GAFs_Qx/run_cao.bdf" :mkdirp yes :noweb yes
-  $EXECUTIVE CONTROL DECK
-  assign OUTPUT4='./Qhh<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=11
-  assign OUTPUT4='./Qhj<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=12
+  assign OUTPUT4='../data_out/Qax<<python_parameters(output="num_modes")>>-<<python_parameters(output="mach")>>.op4',formatted,UNIT=11
+  assign OUTPUT4='../data_out/Qah<<python_parameters(output="num_modes")>>-<<python_parameters(output="mach")>>.op4',formatted,UNIT=12
+  assign OUTPUT4='../data_out/Qhx<<python_parameters(output="num_modes")>>-<<python_parameters(output="mach")>>.op4',formatted,UNIT=13
   assign INPUTT4='../SOL103/Phi<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=90
-  $assign INPUTT4= 'Phi1.op4',formatted,UNIT=91
-  $NASTRAN NLINES=999999
+  $ NASTRAN NLINES=999999
   NASTRAN QUARTICDLM=1
-  SOL 145
-  $TIME 10000
+  SOL 144
+  TIME 10000
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $
+  $       * * *   DMAP code by ANDREA CASTRICHINI  * * *
+  $                andrea.castrichini@gmail.com
   $   K : AERODYNAMIC DOF = 2 * N AERO BOX
   $   A : STRUCTURAL DOF  = 6 * N GRID
-  $   J : N AERO BOX
-  $   H : N MODES012
+  $   J : N AERO BOX 
+  $   H : N MODES 
   $
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   $ Retrieve the Spline Matrices form AERO0 and store them in DBALL
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   COMPILE AERO0
-  ALTER 'CALL.*PLINOUT.*AECASE.*AEBGPDTS.*AEUSETS.*GPGK0.*GDGK0'
-  EQUIVX GPGK0/SPL_F_AK/ALWAYS
-  EQUIVX GDGK0/SPL_D_AK/ALWAYS $
-  CALL DBSTORE SPL_F_AK,,,,//111/112/'DBALL'/0 $
-  CALL DBSTORE SPL_D_AK,,,,//113/114/'DBALL'/0 $
+  ALTER 'CALL.*PLINOUT.*AECASE.*AEBGPDTS.*AEUSETS.*GPGK0.*GDGK0'                                                       
+  EQUIVX GPGK0/SPL_F_AK/ALWAYS 
+  EQUIVX GDGK0/SPL_D_AK/ALWAYS $                              
+  CALL DBSTORE SPL_F_AK,,,,//111/112/'DBALL'/0 $        
+  CALL DBSTORE SPL_D_AK,,,,//113/114/'DBALL'/0 $                 
   $
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-  $ Retrieve the Matrices AJJ D12JK SKJ form PFAERO and store them in DBALL
+  $ Retrieve the Matrices AJJ DJX SKJ form PFAERO and store them in DBALL
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   COMPILE PFAERO
-  ALTER 'AMG.*MKLIST,ACPT/'
-  TYPE PARM,,I,N,EXIST $
-  TYPE PARM,,CS,N,CK $
-  CALL DBFETCH /SPL_F_AK,,,,/111/112/0/0/S,EXIST $
-  CALL DBFETCH /SPL_D_AK,,,,/113/114/0/0/S,EXIST $
-  EQUIVX AJJT/A_JJT/ALWAYS $
-  EQUIVX SKJ/S_KJ/ALWAYS $
-  EQUIVX D1JK/D1_KJ/ALWAYS $
-  EQUIVX D2JK/D2_KJ/ALWAYS $
-  IF ( YESWKK ) THEN $
-      EQUIVX WKK/W_KK/ALWAYS $
-      MPYAD W_KK,S_KJ,/WS_KJ $
-      EQUIVX WS_KJ/S_KJ/ALWAYS $
-  ENDIF $
+  ALTER 'ADG.*CONTROL.*CSTMA.*AERO.*AECOMP.*W2GJ.*ACPT' 
+  EQUIVX WJVBRL/D_JX/ALWAYS $                                 
+  CALL DBSTORE D_JX,,,,//121/122/'DBALL'/0 $    
+  ALTER 'AMG.*ACPT/'                                                                                             
+  EQUIVX SKJ/S_KJ/ALWAYS $                                                       
+  EQUIVX SKJ/S_KJnc/ALWAYS $                                                       
+  IF ( YESWKK ) THEN $   
+      EQUIVX WKK/W_KK/ALWAYS $                                           
+      MPYAD W_KK,S_KJ,/WS_KJ $ 
+      EQUIVX WS_KJ/S_KJ/ALWAYS $                             
+  ENDIF $                     
+  CALL DBSTORE S_KJ,,,,//117/118/'DBALL'/0 $    
+  IF ( NOFA2J < 0 ) THEN
+      MPYAD S_KJnc,FA2J,/FA2J_K $ 
+     IF (NOFA2DMI) THEN
+     ELSE
+         PARAML  S_KJnc//'TRAILER'/2/S,N,ROW
+         MATGEN ,/FA2J_K/7/ROW/1 
+     ENDIF
+  ENDIF
+  CALL DBSTORE FA2J_K,,,,//119/120/'DBALL'/0 $  
+  $   
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ Retrieve the stored Matrices and evaluate:
+  $ Q_AX=SPL_F_AK*S_KJ*INV(A_JJ)*D_JX
+  $ Q_AA=SPL_F_AK*S_KJ*INV(A_JJ)*D_JK*SPL_D_KA
+  $ S_KJ=Area Matrix, D_JK=Derivative Matrix, A_JJ=AIC Matrix     
+  $ WKK=Correction Matrix not defined
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $
+  COMPILE AESTATRS $                                         
+  ALTER 'AEKX.*DGAK.*WSKJ.*LAJJ.*UAJJ.*D1JK.*AEQGDKL.*URLR.*PURLR' 
+  TYPE PARM,,I,N,EXIST $                           
+  CALL DBFETCH /SPL_F_AK,,,,/111/112/0/0/S,EXIST $       
+  CALL DBFETCH /SPL_D_AK,,,,/113/114/0/0/S,EXIST $       
+  CALL DBFETCH /S_KJ,,,,/117/118/0/0/S,EXIST $    
+  CALL DBFETCH /FA2J_K,,,,/119/120/0/0/S,EXIST $    
+  CALL DBFETCH /D_JX,,,,/121/122/0/0/S,EXIST $         
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$    
   $
   $    EVALUATE THE QAA_ MATRIX:
   $
-  $    Q_HH=Phi_HA*SPL_F_AK*S_KJ*INV(A_JJ)*D_JK*SPL_D_KA*Phi_AH
+  $    Q_AX=SPL_F_AK*S_KJ*INV(A_JJ)*D_JX
+  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ 
+  FBS LAJJ,UAJJ,D_JX/Q_JX $    
+  MPYAD S_KJ,Q_JX,/Q_KX $                                         
+  MPYAD SPL_F_AK,Q_KX,/Q_AX $   
+  OUTPUT4 Q_AX,,,,//0/11///8 $ 
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$    
+  $
+  $    EVALUATE THE QAA_ MATRIX:
+  $
+  $    Q_AH=SPL_F_AK*S_KJ*INV(A_JJ)*D_JK*SPL_D_KA*Phi_AH
   $
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   INPUTT4 /Phi_AH,,,,/1/90 $
-  $INPUTT4 /Phi_AH1,,,,/1/91 $
-  TRNSP Phi_AH/Phi_HA $
-  $TRNSP Phi_AH1/Phi_HA $
-  TRNSP A_JJT/A_JJ $
-  TRNSP SPL_D_AK/SPL_D_KA $
-  DECOMP A_JJ/L_AJJ,U_AJJ,, $
-  CK = CMPLX(0.,KBAR) $
-  ADD5 D1_KJ,D2_KJ,,,/D_KJ//CK $
-  TRNSP D_KJ/D_JK $
-  MPYAD D_JK,SPL_D_KA,/D_JA $
-  FBS L_AJJ,U_AJJ,D_JA/Q_JA $
-  MPYAD S_KJ,Q_JA,/Q_KA $
-  MPYAD SPL_F_AK,Q_KA,/Q_AA $
-  MPYAD Phi_HA,Q_AA,/Q_HA $
-  MPYAD Q_HA,Phi_AH,/Q_HH $
-  OUTPUT4 Q_HH,,,,//0/11///9 $
-  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  TRNSP Phi_AH/Phi_HA $  
+  TRNSP D1JK/D_JK $                                                                                     
+  TRNSP SPL_D_AK/SPL_D_KA $                                                                                      
+  MPYAD D_JK,SPL_D_KA,/D_JA $                                                  
+  FBS LAJJ,UAJJ,D_JA/Q_JA $                                              
+  MPYAD S_KJ,Q_JA,/Q_KA $                                         
+  MPYAD SPL_F_AK,Q_KA,/Q_AA $ 
+  MPYAD Q_AA,Phi_AH,/Q_AH $                                                                                 
+  OUTPUT4 Q_AH,,,,//0/12///8 $   
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$    
   $
-  $    EVALUATE THE QHJ_ MATRIX:
+  $    EVALUATE THE QAA_ MATRIX:
   $
-  $    Q_HJ=Phi_HA*SPL_F_AK*S_KJ*INV(A_JJ)*D_JK*SPL_D_KA
+  $    Q_HX=Phi_HA*SPL_F_AK*S_KJ*INV(A_JJ)*D_JX
   $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ 
+  $FBS LAJJ,UAJJ,D_JX/Q_JX $    
+  $MPYAD S_KJ,Q_JX,/Q_KX $                                         
+  $MPYAD SPL_F_AK,Q_KX,/Q_AX $   
+  MPYAD Phi_HA,Q_AX,/Q_HX $                                                                                 
+  OUTPUT4 Q_HX,,,,//0/13///8 $ 
+
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-  PARAML A_JJ//'TRAILER'/1/S,N,COL $
-  MATGEN ,/ID/1/COL $
-  FBS L_AJJ,U_AJJ,ID/INVAJJ $
-  MPYAD S_KJ,INVAJJ,/Q_KJ $
-  MPYAD SPL_F_AK,Q_KJ,/Q_AJ $
-  MPYAD Phi_HA,Q_AJ,/Q_HJ $
-  OUTPUT4 Q_HJ,,,,//0/12///9 $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   CEND
 
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -1515,15 +1588,17 @@
   $SPC=  100001                                                            
   $MPC=  100001
   SPC = 2                  
-  METHOD = 100
-  FMETHOD = <<python_parameters(output="flutter_id")>>
   $
-  DISP(PLOT) = ALL
   $
-  RESVEC = YES
-  MODESELECT (STRUCTURE, LMODES = 20)
-  $ MODESELECT (STRUCTURE,LFREQ=0.001,HFREQ=15.0) 
-  $ MODESELECT (FLUID,LFREQ=0.001,HFREQ=15.0)
+  TRIM = 960
+  $LOAD = 2000
+  $
+  DISP = ALL
+  FORCE = ALL
+  AEROF = ALL
+  MONITOR = ALL
+  TRIMF = ALL
+  OLOAD(CID) = ALL
   ECHO=NONE
 
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -1540,22 +1615,17 @@
   $PARAM   AUTOSPC YES
   MDLPRM  MLTSPLIN 1 $Aero grids can be defined in multiple splines (dafault 0)
   PARAM   WTMASS  1.0  
-  PARAM   OPPHIB  1
-  PARAM   OPPHIPA 1
+  PARAM   AUNITS  .1019716  $ 1/g  
 
-  EIGRL,100,,,<<python_parameters(output="num_modes")>>
-  SPC1           1  123456  999079
+  SPC1           1  12346   999079
   SPCADD         2       1
+  SUPORT,999079,5
   INCLUDE ../base.bdf
   INCLUDE ../dlm_model.bdf
-  INCLUDE ./aero_flutter.bdf
+  INCLUDE './setupQx.bdf'
 
 #+end_src
 
-#+begin_src bash :tangle "./GAFs/run.sh" :mkdirp yes
-  cd GAFs
-  nastran run_cao.bdf
-#+end_src
 
 #+begin_src python :session py1  :results none :noweb yes
   import pyNastran.op4.op4 as op4

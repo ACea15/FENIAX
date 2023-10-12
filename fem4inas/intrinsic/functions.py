@@ -195,3 +195,17 @@ def coordinate_transform(u1: jnp.ndarray,
     f = jax.vmap(lambda u, v: jnp.matmul(u, v, precision=precision), in_axes=(2, 2), out_axes=2)
     fuv = f(u1, v1)
     return fuv
+
+def label_generator(label_table):
+
+    prime_numbers = [2, 3, 5, 7, 11, 13,
+                     17, 19, 23, 29, 31,
+                     37, 41, 43, 47, 53,
+                     59, 61, 67, 71, 73,
+                     79, 83, 89, 97]
+    label = label_table[0]
+    prod = 1
+    for i, li in enumerate(label_table[1:]):
+        prod *= prime_numbers[i] ** int(li)
+    label += str(prod)
+    return label
