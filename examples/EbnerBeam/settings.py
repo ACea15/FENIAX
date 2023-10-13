@@ -13,7 +13,8 @@ inp.fem.connectivity = {'Beam1': ['Beam2'],
 #inp.fem.connectivity = [[1], []]
 
 inp.fem.folder = pathlib.Path('./FEM/')
-inp.fem.num_modes = 108
+inp.fem.num_modes = 60
+inp.fem.eig_type = "inputs"
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
     f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
@@ -26,6 +27,7 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                            max_steps=50,
                                            norm=jnp.linalg.norm,
                                            kappa=0.01)
+
 # inp.systems.sett.s1.solver_library = "scipy"
 # inp.systems.sett.s1.solver_function = "root"
 # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',

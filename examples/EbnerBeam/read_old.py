@@ -28,13 +28,11 @@ with open ("%s/Sols_%s"%(directory, nmodes), 'rb') as fp:
     ra0,ra,Rab,strain,kappa  = pickle.load(fp)
 
 
-# Ka = np.load("../..//Models/ArgyrisBeam_25/FEM/Kaa.npy")
-# Ma = np.load("/home/ac5015/programs/FEM4INAS/Models/ArgyrisBeam_25/FEM/Maa.npy")
-# w, v = scipy.linalg.eigh(Ka, Ma)
-# np.save("./FEM/w.npy", w)
-# np.save("./FEM/v.npy", v)
+Ka = np.load("../../Models/Ebner/FEM/Kaa.npy")
+Ma = np.load("../../Models/Ebner/FEM/Maa.npy")
+w, v = scipy.linalg.eigh(Ka, Ma)
 
-# save_eigs = False
-# if save_eigs:
-#     np.save("../ArgyrisBeam/FEM/eigenvals.npy", w)
-#     np.save("../ArgyrisBeam/FEM/eigenvecs.npy", v)
+save_eigs = True
+if save_eigs:
+    np.save("../EbnerBeam/FEM/eigenvals.npy", w)
+    np.save("../EbnerBeam/FEM/eigenvecs.npy", v)
