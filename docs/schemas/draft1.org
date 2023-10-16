@@ -636,16 +636,34 @@ derivatives
 - default
 - options
 
-* Simulation options 
-|           | Flight mechanics | (geometrically) Nonlinear | ModalAero | dead loads  | Point follower | gust loads | quaternions | residualised |
-|-----------+------------------+---------------------------+-----------+-------------+----------------+------------+-------------+--------------|
-| Dynamic   | Clamped model    | Linear                    |           | gravity     |                |            |             |              |
-| static    | Trimmed flight   |                           |           | point loads |                |            |             |              |
-| Stability | Control devices  |                           |           |             |                |            |             |              |
-| Multibody |                  | 1,0                       | 0,1,2*    | 0,1,2(both) | 0,1            |            | 0, 1        | 0,1          |
+* System based solutions 
+| Type        | First node  | ModalAero   | gust loads  | dead loads      | follower loads | Nonlinearities         | residualised |
+|-------------+-------------+-------------+-------------+-----------------+----------------+------------------------+--------------|
+| 1 static    | Clamped (0) | None (0)    | None        | None (0)        | None           | All (0)                | None         |
+| 2 Dynamic   | Trimmed (1) | Rogers (1)  | GAFs        | gravity         | point          | Linear system (1)      | True         |
+| 3 Stability | Free (2)    | Loewner (2) | GAFs update | point           |                | Linear sys & disp. (2) |              |
+| 4 Multibody | Prescribed  |             |             | gravity & point |                |                        |              |
+| 5 Control   |             |             |             |                 |                |                        |              |
 
-modalaero -> 0, 1-static, 2-dynamic,rogers, 
-
+| Sol name |                                                 |   label |
+|----------+-------------------------------------------------+---------|
+|       13 | Static coupled                                  |     101 |
+|       17 | Structural static with gravity forces           |  100001 |
+|       23 | Dynamic coupled                                 |     201 |
+|       27 | Structural dynamic with gravity forces          |  200001 |
+|       29 | Dynamic coupled (Loewner)                       |     202 |
+|      111 | Structural static with follower point forces    |  100001 |
+|      130 | Trimmed flight                                  |    1111 |
+|      133 | Static coupled with gravity forces              |  101001 |
+|      149 | Structural static with dead point forces        |   10002 |
+|      211 | Structural dynamic with follower point forces   |  200001 |
+|      215 | Clamped Dynamic coupled with gust               |    2011 |
+|      249 | Structural dynamic with dead point forces       |   20002 |
+|      584 | Control free flying with gravity                |   52101 |
+|     1143 | Linear Structural static, follower point forces | 1000011 |
+|     5420 | Control free flying with gravity and gust       |   52111 |
+|    11859 | Linear Structural static, follower point forces | 1000012 |
+|          |                                                 |         |
 * Connection with High Fidelity structural model
 ** Initial Model
 - Clamped wing -> good for steady loads and aircraft stability.
