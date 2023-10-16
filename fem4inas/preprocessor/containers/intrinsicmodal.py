@@ -57,7 +57,7 @@ class Daero(DataContainer):
                 object.__setattr__(self, k, v)
             del self.aero_matrices
 
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class Dxloads(DataContainer):
 
     follower_forces: bool = dfield("Include point follower forces",
@@ -100,15 +100,14 @@ class Dxloads(DataContainer):
                             default=9.807)
     gravity_vect: jnp.ndarray = dfield("gravity vector",
                                        default=jnp.array([0, 0, -1]))
-    label: str = dfield("""Description of the loading type:
-    '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
-                        init=False)
+    # label: str = dfield("""Description of the loading type:
+    # '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
+    #                     init=False)
     def __post_init__(self):
-
         if self.x is not None:
-            self.x = jnp.array(self.x)
-        self.label = f"{int(self.follower_forces)}\
-        {int(self.dead_forces)}{self.gravity_forces}{self.aero_forces}"
+             object.__setattr__(self, "x", jnp.array(self.x))
+        # self.label = f"{int(self.follower_forces)}\
+        # {int(self.dead_forces)}{self.gravity_forces}{self.aero_forces}"
         
     def build_point_follower(self, num_nodes, C06ab):
 
@@ -121,23 +120,25 @@ class Dxloads(DataContainer):
                 dim = self.follower_points[fi][1]
                 forces = forces.at[li, dim, fnode].set(
                     self.follower_interpolation[fi][li]) # Nx_6_Nn
-        self.force_follower = coordinate_transform(forces, C06ab,
-                                                   jax.lax.Precision.HIGHEST)
+        force_follower = coordinate_transform(forces, C06ab,
+                                              jax.lax.Precision.HIGHEST)
+        object.__setattr__(self, "force_follower",
+                           force_follower)
         #return self.force_follower
 
     def build_point_dead(self, num_nodes):
 
         # TODO: add gravity force, also in modes as M@g
         num_interpol_points = len(self.x)
-        self.force_dead = jnp.zeros((num_interpol_points, 6, num_nodes))
+        force_dead = jnp.zeros((num_interpol_points, 6, num_nodes))
         num_forces = len(self.dead_interpolation)
         for li in range(num_interpol_points):
             for fi in range(num_forces):
                 fnode = self.dead_points[fi][0]
                 dim = self.dead_points[fi][1]
-                self.force_dead = self.force_dead.at[li, dim, fnode].set(
+                force_dead = force_dead.at[li, dim, fnode].set(
                     self.dead_interpolation[fi][li])
-
+        object.__setattr__(self, "force_dead", force_dead)
         #return self.force_dead
 
 # @dataclass(frozen=True)
@@ -147,7 +148,7 @@ class Dxloads(DataContainer):
 #     connectivity: dict | list = dfield("Connectivities of components")
 #     X: jnp.ndarray = dfield("Grid coordinates", default=None)
 
-@dataclass
+@dataclass(frozen=True)
 class Dfem(DataContainer):
 
     connectivity: dict | list = dfield("Connectivities of components")
@@ -208,50 +209,71 @@ class Dfem(DataContainer):
     that each node, in vertical arrangement, need to transverse to sum up to a free-end.""",
                                       init=False)
     def __post_init__(self):
-        #super()
-        self.connectivity = geometry.list2dict(self.connectivity)
-        self.Ka_name, self.Ma_name, self.grid = geometry.find_fem(self.folder,
-                                                                  self.Ka_name,
-                                                                  self.Ma_name,
-                                                                  self.grid)
+        #set attributes in frozen instance
+        setobj = lambda k, v: object.__setattr__(self, k, v)
+        connectivity = geometry.list2dict(self.connectivity)
+        setobj("connectivity", connectivity)
+        Ka_name, Ma_name, grid = geometry.find_fem(self.folder,
+                                                   self.Ka_name,
+                                                   self.Ma_name,
+                                                   self.grid)
+        setobj("Ka_name", Ka_name)
+        setobj("Ma_name", Ma_name)
+        setobj("grid", grid)
         if self.Ka is None:
-            self.Ka = load_jnp(self.Ka_name)
+            setobj("Ka", load_jnp(self.Ka_name))
         if self.Ma is None:
-            self.Ma = load_jnp(self.Ma_name)
+            setobj("Ma", load_jnp(self.Ma_name))
+            #setobj("Ma", load_jnp(self.Ma_name))
         if self.num_modes is None:
             # full set of modes in the solution
-            self.num_modes = len(self.Ka)
-        self.df_grid, self.X, self.fe_order, self.component_vect = geometry.build_grid(
+            setobj("num_modes", len(self.Ka))
+
+        df_grid, X, fe_order, component_vect = geometry.build_grid(
             self.grid, self.X, self.fe_order, self.fe_order_start, self.component_vect)
-        self.num_nodes = len(self.X)
-        self.component_names, self.component_father = geometry.compute_component_father(
+        setobj("df_grid", df_grid)
+        setobj("X", X)
+        setobj("fe_order", fe_order)
+        setobj("component_vect", component_vect)
+        num_nodes = len(self.X)
+        setobj("num_nodes", num_nodes)
+        component_names, component_father = geometry.compute_component_father(
             self.connectivity)
-        self.component_nodes = geometry.compute_component_nodes(self.component_vect)
-        self.component_chain = geometry.compute_component_chain(self.component_names,
-                                                                self.connectivity)        
-        self.clamped_nodes, self.freeDoF, self.clampedDoF, self.total_clampedDoF = \
+        setobj("component_names", component_names)
+        setobj("component_father", component_father)
+        setobj("component_nodes", geometry.compute_component_nodes(self.component_vect))
+        setobj("component_chain", geometry.compute_component_chain(self.component_names,
+                                                                   self.connectivity))        
+        clamped_nodes, freeDoF, clampedDoF, total_clampedDoF = \
             geometry.compute_clamped(self.fe_order.tolist())
-        self.prevnodes = geometry.compute_prevnode(self.component_vect,
-                                                   self.component_nodes,
-                                                   self.component_father)
-        self.Mavg = geometry.compute_Maverage(self.prevnodes, self.num_nodes)
-        self.Mdiff = geometry.compute_Mdiff(self.prevnodes, self.num_nodes)
-        self.Mfe_order = geometry.compute_Mfe_order(self.fe_order,
-                                                    self.clamped_nodes,
-                                                    self.freeDoF,
-                                                    self.total_clampedDoF,
-                                                    self.component_nodes,
-                                                    self.component_chain,
-                                                    self.num_nodes)
-        self.Mload_paths = geometry.compute_Mloadpaths(self.component_vect,
+        setobj("clamped_nodes", clamped_nodes)
+        setobj("freeDoF", freeDoF)
+        setobj("clampedDoF", clampedDoF)
+        setobj("total_clampedDoF", total_clampedDoF)
+        setobj("prevnodes", geometry.compute_prevnode(self.component_vect,
+                                                      self.component_nodes,
+                                                      self.component_father))
+        setobj("Mavg",geometry.compute_Maverage(self.prevnodes, self.num_nodes))
+        setobj("Mdiff", geometry.compute_Mdiff(self.prevnodes, self.num_nodes))
+        setobj("Mfe_order", geometry.compute_Mfe_order(self.fe_order,
+                                                       self.clamped_nodes,
+                                                       self.freeDoF,
+                                                       self.total_clampedDoF,
                                                        self.component_nodes,
                                                        self.component_chain,
-                                                       self.num_nodes)
-        (self.component_names_int,
-         self.component_nodes_int,
-         self.component_father_int) = geometry.convert_components(self.component_names,
-                                                             self.component_nodes,
-                                                             self.component_father)
+                                                       self.num_nodes))
+        setobj("Mload_paths", geometry.compute_Mloadpaths(self.component_vect,
+                                                          self.component_nodes,
+                                                          self.component_chain,
+                                                          self.num_nodes))
+        (component_names_int,
+         component_nodes_int,
+         component_father_int) = geometry.convert_components(self.component_names,
+                                                                  self.component_nodes,
+                                                                  self.component_father)
+        setobj("component_names_int", component_names_int)
+        setobj("component_nodes_int", component_nodes_int)
+        setobj("component_father_int", component_father_int)
 # @dataclass(frozen=True)
 # class Dpresimulation(DataContainer):
 
@@ -259,7 +281,7 @@ class Dfem(DataContainer):
 #     load from solution_path""",
 #                                          default=True)
 
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class Ddriver(DataContainer):
 
     typeof: str = dfield("Driver to manage the simulation",
@@ -277,8 +299,7 @@ class Ddriver(DataContainer):
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
 
-#@dataclass(frozen=True, eq=True, unsafe_hash=True)
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class Dsystem(DataContainer):
 
     name: str = dfield("System name")
@@ -331,42 +352,47 @@ class Dsystem(DataContainer):
     def __post_init__(self):
 
         if self.t is None:
-            self.t = jnp.linspace(self.t0, self.t1, self.tn)
+            object.__setattr__(self, "t",
+                               jnp.linspace(self.t0, self.t1, self.tn))
         if self.dt is None:
-            self.dt = self.t[1] - self.t[0]
+            object.__setattr__(self, "dt", self.t[1] - self.t[0])
         object.__setattr__(self, 'xloads', initialise_Dclass(self.xloads,
                                                              Dxloads))
         object.__setattr__(self, 'aero', initialise_Dclass(self.aero,
                                                            Daero))
         #self.xloads = initialise_Dclass(self.xloads, Dxloads)
         if self.solver_settings is None:
-            self.solver_settings = dict()
+            object.__setattr__(self, "solver_settings", dict())
         
-        if self.label is None:
-            if isinstance(self.solution, str):
-                sol_label = Solution[self.solution.upper()].value
-            else:
-                sol_label = self.solution
-            self.label = f"{sol_label}{self.nonlinear}{self.residualise}{self.xloads.label}"
+        # if self.label is None:
+        #     if isinstance(self.solution, str):
+        #         sol_label = Solution[self.solution.upper()].value
+        #     else:
+        #         sol_label = self.solution
+        #     self.label = f"{sol_label}{self.nonlinear}{self.residualise}{self.xloads.label}"
 
-            if self.solver_function is None:  # set default  
-                if self.label[0] == 0:
-                    self.solver_function = 'newton_raphson'
-                elif self.label[0] == 1:
-                    self.solver_function = 'ode'
-                elif self.label[0] == 2:
-                    ...
-                    # TODO: implement
-                if self.label[0] == 3:
-                    ...
-                    # TODO: implement
+        #     if self.solver_function is None:  # set default  
+        #         if self.label[0] == 0:
+        #             self.solver_function = 'newton_raphson'
+        #         elif self.label[0] == 1:
+        #             self.solver_function = 'ode'
+        #         elif self.label[0] == 2:
+        #             ...
+        #             # TODO: implement
+        #         if self.label[0] == 3:
+        #             ...
+        #             # TODO: implement
     def build_states(self, num_modes):
         # TODO: label dependent
-        self.states = dict(q1=jnp.arange(num_modes),
-                           q2=jnp.arange(num_modes, 2 * num_modes))
-        self.num_states = sum([len(i) for i in self.states.values()])
+        object.__setattr__(self, "states", dict(q1=jnp.arange(num_modes),
+                                                q2=jnp.arange(num_modes,
+                                                              2 * num_modes))
+                           )
+        object.__setattr__(self, "num_states",
+                           sum([len(i) for i in self.states.values()])
+                           )
 
-@dataclass(frozen=False)
+@dataclass(frozen=True)
 class Dsystems(DataContainer):
 
     sett: dict[str: dict] = dfield("Settings ", yaml_save=False)
@@ -374,10 +400,11 @@ class Dsystems(DataContainer):
                                        init=False)
 
     def __post_init__(self):
-        self.sys = dict()
+        sys = dict()
         for k, v in self.sett.items():
-            self.sys[k] = initialise_Dclass(
+            sys[k] = initialise_Dclass(
                 v, Dsystem, name=k)
+        object.__setattr__(self, "sys", sys)
 
 @dataclass(frozen=True)
 class Dsimulation(DataContainer):
@@ -385,10 +412,6 @@ class Dsimulation(DataContainer):
     typeof: str = dfield("Type of simulation",
                          default='single',
                          options=['single', 'serial', 'parallel'])
-    systems: dict = dfield(
-        "Dictionary of systems involved in the simulation",
-        default=None
-    )
     workflow: dict = dfield(
         """Dictionary that defines which system is run after which.
         The default None implies systems are run in order of the input""",
@@ -399,12 +422,5 @@ class Dsimulation(DataContainer):
         default=False
     )
 
-    def __post_init__(self):
-
-        if self.systems is not None:
-            for k, v in self.systems:
-                setattr(self, k, initialise_Dclass(v, Dsystem))
-
 if (__name__ == '__main__'):
-
-    d1 = Dxloads()
+    pass
