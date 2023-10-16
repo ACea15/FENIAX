@@ -85,14 +85,14 @@ def eta_00101(t, phi1, x, force_dead, Rab):
     return eta
 
 def eta_0011(q0: jnp.ndarray,
-             qx: jnp.ndarray,
+             qalpha: jnp.ndarray,
              u_inf: float,
              rho_inf: float,
              A0: jnp.ndarray,
              B0: jnp.ndarray):
 
     eta = 0.5 * rho_inf * u_inf ** 2 * (
-        A0 @ q0 + B0 @ qx)
+        A0 @ q0 + B0 @ qalpha)
     return eta
 
 @redirect_to(eta_000001)

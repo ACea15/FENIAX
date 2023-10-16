@@ -1,12 +1,12 @@
 import jax.numpy as jnp
 import numpy as np
-from jax import jit
+import jax
 from functools import partial
 from jax.config import config; config.update("jax_enable_x64", True)
 import fem4inas.intrinsic.xloads as xloads
 import fem4inas.intrinsic.postprocess as postprocess
 
-@jit
+@jax.jit
 def contraction_gamma1(gamma1: jnp.ndarray,
                        q1:jnp.ndarray) -> jnp.ndarray:
 
@@ -14,7 +14,7 @@ def contraction_gamma1(gamma1: jnp.ndarray,
                      jnp.tensordot(q1, q1, axes=0))
     return res
 
-@jit
+@jax.jit
 def contraction_gamma2(gamma2: jnp.ndarray,
                        q2:jnp.ndarray) -> jnp.ndarray:
 
@@ -22,7 +22,7 @@ def contraction_gamma2(gamma2: jnp.ndarray,
                      jnp.tensordot(q2, q2, axes=0))
     return res
 
-@jit
+@jax.jit
 def contraction_gamma3(gamma2: jnp.ndarray,
                        q1: jnp.ndarray,
                        q2: jnp.ndarray) -> jnp.ndarray:
@@ -31,7 +31,7 @@ def contraction_gamma3(gamma2: jnp.ndarray,
                      jnp.tensordot(q1, q2, axes=0))
     return res
 
-@jit
+@jax.jit
 def f_12(omega, gamma1, gamma2, q1, q2):
 
     F1 = (omega * q2 - contraction_gamma1(gamma1, q1)
@@ -62,7 +62,7 @@ def dq_001001(q, *args):
                            force_follower)
     return F
 
-#@jit
+#@jax.jit
 #@partial(jit, static_argnames=["args"])
 def dq_00101(q, *args):
 
@@ -72,7 +72,7 @@ def dq_00101(q, *args):
      C0ab,
      component_names, num_nodes,
      component_nodes, component_father, t) = args[0]
-    #@jit
+    #@jax.jit
     def _dq_00101(q2):
         X3t = postprocess.compute_strains_t(psi2l, q2)
         Rab = postprocess.integrate_strainsCab(
@@ -88,20 +88,20 @@ def dq_00101(q, *args):
     F = _dq_00101(q)
     return F
 
-@jit
+@jax.jit
 def dq_0011(q, *args):
 
     (gamma2, omega,
      u_inf, rho_inf,
-     qx, A0, B0) = args[0]
+     qalpha, A0, B0) = args[0]
     q0 = -q / omega
     F = omega * q - contraction_gamma2(gamma2, q)
-    F += xloads.eta_0011(q0, qx,
+    F += xloads.eta_0011(q0, qalpha,
                          u_inf, rho_inf,
                          A0, B0)
     return F
 
-@jit
+@jax.jit
 def dq_101(t, q, *args):
 
     gamma1, gamma2, omega, states = args[0]
@@ -111,7 +111,7 @@ def dq_101(t, q, *args):
     F = jnp.hstack([F1, F2])
     return F
 
-@jit
+@jax.jit
 def dq_101001(t, q, *args):
 
     (gamma1, gamma2, omega, phi1, x,
@@ -128,7 +128,7 @@ def dq_101001(t, q, *args):
     F = jnp.hstack([F1, F2])
     return F
 
-@jit
+@jax.jit
 def dq_100001(t, q, *args):
 
     (omega, phi1, x,
@@ -156,7 +156,7 @@ def dq_10101(t, q, *args):
      component_nodes, component_father) = args[0]
     q1i = q[states['q1']]
     q2i = q[states['q2']]
-    #@jit
+    #@jax.jit
     def _dq_10101(t, q1, q2):
         X3t = postprocess.compute_strains_t(
             psi2l, q2)
@@ -181,7 +181,7 @@ def dq_10101(t, q, *args):
 
 if (__name__ == "__main__"):
 
-    @jit
+    @jax.jit
     def q_static_ein(q2, omega, gamma2, eta=0.):
 
         res = omega * q2
@@ -190,7 +190,7 @@ if (__name__ == "__main__"):
 
         return res
 
-    @jit
+    @jax.jit
     def q_static_td(q2, omega, gamma2, eta=0.):
 
         res = omega * q2

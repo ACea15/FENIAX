@@ -43,19 +43,26 @@ class Dfiles(DataContainer):
     folder_out: str | pathlib.Path
     config: str | pathlib.Path
 
+@dataclass(frozen=True)
 class Daero(DataContainer):
 
-    u_inf: float = dfield("")
-    rho_inf: float = dfield("")
-    c_ref: float = dfield("")
-    aero_matrices: dict = dfield("", default=None)
-    qx: jnp.ndarray = dfield("", default=None)
-    def __post_init__(self):
+    u_inf: float = dfield("", default=None)
+    rho_inf: float = dfield("", default=None)
+    c_ref: float = dfield("", default=None)
+    qalpha: jnp.ndarray = dfield("", default=None)
+    #
+    approx= dfield("", default="Roger")
+    Mk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    Mk_gust: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    Mk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    M0_rigid: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    poles: jnp.ndarray = dfield("", default=None)
+    # def __post_init__(self):
 
-        if self.aero_matrices is not None:
-            for k, v in self.aero_matrices.items():
-                object.__setattr__(self, k, v)
-            del self.aero_matrices
+    #     if self.aero_matrices is not None:
+    #         for k, v in self.aero_matrices.items():
+    #             object.__setattr__(self, k, v)
+    #         #del self.aero_matrices
 
 @dataclass(frozen=True)
 class Dxloads(DataContainer):
@@ -290,10 +297,14 @@ class Ddriver(DataContainer):
                          )
     sol_path: str | pathlib.Path = dfield("Folder path to save results",
                                                 default='./')
-    compute_presimulation: bool = dfield("""Compute or load presimulation data""",
-                                         default=True)
-    save_presimulation: bool = dfield("""Save presimulation data""",
-                                         default=True)
+    compute_fem: bool = dfield("""Compute or load presimulation data""",
+                               default=True)
+    save_fem: bool = dfield("""Save presimulation data""",
+                            default=True)
+    compute_modalaero: bool = dfield("""Compute or load presimulation data""",
+                                     default=False)
+    save_modalaero: bool = dfield("""Save presimulation data""",
+                                  default=False)
 
     subcases: dict[str:Dxloads] = dfield("", default=None)
     supercases: dict[str:Dfem] = dfield(

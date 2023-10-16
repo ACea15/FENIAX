@@ -48,15 +48,24 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
     def pre_simulation(self):
         # TODO: here the RFA for aerodynamics should be included
         # TODO: condensation methods of K and M should be included
-        if self._config.driver.compute_presimulation:
+        if self._config.driver.compute_fem:
             self._compute_modalshapes()
             self._compute_modalcouplings()
-            if self._config.driver.save_presimulation:
+            if self._config.driver.save_fem:
                 self.sol.save_container("Modes")
                 self.sol.save_container("Couplings")
         else:
             self._load_modalshapes()
             self._load_modalcouplings()
+
+        if self._config.driver.compute_modalaero:
+            self._compute_modalaero()
+            if self._config.driver.save_modalaero:
+                approx = self._config.aero.approx
+                self.sol.save_container(f"ModalAero_{approx}",
+                                        label="init")
+        else:
+            self._load_modalaero()
 
     def run_case(self):
         if self.num_systems == 0:
@@ -139,8 +148,36 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
         self.sol.add_container("Couplings", alpha1, alpha2, gamma1, gamma2)
 
+    def _compute_modalaero(self):
+
+        approx = self._config.aero.approx
+        container = dict()
+        if self._config.aero.Mk_struct is not None:
+            
+            if len(self._config.aero.Mk_struct[0]) == 1: # steady
+                A0 = self._config.aero.Mk_struct[1]
+                container.update(A0=A0)
+        if self._config.aero.Mk_struct is not None:
+
+            if len(self._config.aero.Mk_controls[0]) == 1: # steady
+                B0 = self._config.aero.Mk_controls[1]
+                container.update(B0=B0)
+
+        if self._config.aero.M0_rigid is not None:
+            C0 = self._config.aero.M0_rigid
+            container.update(C0=C0)
+
+        # TODO: set roger, lowner etc.
+        self.sol.add_container(f"ModalAero{approx}",
+                               label="init",
+                               **container)
+
     def _load_modalshapes(self):
         self.sol.load_container("Modes")
 
     def _load_modalcouplings(self):
         self.sol.load_container("Couplings")
+
+    def _load_modalaero(self):
+        approx = self._config.aero.approx
+        self.sol.load_container(f"ModalAero{approx}", label="init")
