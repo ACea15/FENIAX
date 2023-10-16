@@ -46,8 +46,8 @@ inp.systems.sett.s1.t = list(range(1,11))
 #     print(f"{k}:{type(v[0])}")
 
 
-# path2config = pathlib.Path("./config.yaml")
+path2config = pathlib.Path("./config.yaml")
 config =  configuration.Config(inp)
-#configuration.dump_to_yaml(path2config, config, with_comments=True)
+configuration.dump_to_yaml(path2config, config, with_comments=True)
 
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+#sol = fem4inas.fem4inas_main.main(input_obj=config)

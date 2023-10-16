@@ -295,3 +295,69 @@ pc1 = passing_class('inp')
 tc1 = to_thisclass(pc1)
 tc1.set_attr('new', 4)
 # new also pc1
+
+
+########################################################
+
+from dataclasses import dataclass, fields, Field, replace
+from typing import Type
+
+@dataclass
+class MyDataClass:
+    field1: int
+    field2: str
+
+def create_frozen_dataclass(obj: MyDataClass) -> Type:
+    # Extract fields from the original class
+    original_fields = fields(obj)
+
+    # Create a dictionary for the new class
+    new_class_dict = {
+        '__annotations__': {f.name: f.type for f in original_fields},
+        '__hash__': lambda self: hash(tuple(getattr(self, f.name) for f in original_fields)),
+    }
+
+    # Add the original class as a base class
+    bases = (obj.__class__,)
+
+    # Create the new class
+    new_cls = type(obj.__class__.__name__ + 'Frozen', bases, new_class_dict)
+
+    # Set frozen attribute to True for all fields
+    for field in original_fields:
+        if not hasattr(field, 'frozen') or not field.frozen:
+            setattr(new_cls, field.name, replace(field, frozen=True))
+
+    return new_cls
+
+# Create an instance of MyDataClass
+obj = MyDataClass(42, "Hello")
+
+# Use the create_frozen_dataclass function to generate FrozenMyDataClass
+FrozenMyDataClass = create_frozen_dataclass(obj)
+
+# Create an instance of the frozen dataclass
+frozen_obj = FrozenMyDataClass(42, "Hello")
+
+# Attempting to modify a frozen attribute will raise an error
+try:
+    frozen_obj.field1 = 10
+except AttributeError as e:
+    print(f"AttributeError: {e}")
+
+# Verify that the frozen object is hashable
+hash_value = hash(frozen_obj)
+print(f"Hash value of frozen_obj: {hash_value}")
+
+
+
+@dataclass(frozen=True)
+class FrozenDataClass:
+    a: int
+    b: int
+    
+    def __post_init__(self):
+        object.__setattr__(self, 'c', self.a + self.b)
+        #self.c = self.a + self.b
+
+d1 = FrozenDataClass(3,4)
