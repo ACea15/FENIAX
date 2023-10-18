@@ -100,14 +100,14 @@ def build_pyvista(le, te, chordwise_points=10) -> tuple[np.ndarray, np.ndarray]:
     len_j = chordwise_points + 1 
     for i in range(len_i - 1):
         line_ = line_points(chordwise_points, le[i], te[i])
-        if i==0:
+        if i == 0:
             points = line_
         else:
             points = np.vstack([points, line_])
-        for j in range(chordwise_points - 1):
+        for j in range(chordwise_points):
             cells.append([4, i*len_j + j, (i+1)*len_j + j, (i + 1)*len_j + j+1, i*len_j + j +1])
     line_ = line_points(chordwise_points, le[i+1], te[i+1])
-    points = np.vstack([points, line_])        
+    points = np.vstack([points, line_])
     return points, np.array(cells)
 
 def build_gridmesh(components, save_file=None,
