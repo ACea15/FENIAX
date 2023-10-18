@@ -8,7 +8,7 @@
 
 * INPUT PARAMETERS
 #+NAME: python_parameters
-#+begin_src python :session py1 :var output="num_modes" :results none
+#+begin_src python :session py1 :var output="num_modes" :results none :tangle py1.py
   import numpy as np
   import fem4inas.nastran_utils.aero as nasaero
   mach = 0.8
@@ -35,7 +35,7 @@
   eval(output)
 #+end_src
 
-#+begin_src python :session py1  :results none
+#+begin_src python :session py1  :results none :tangle py1.py
   def wb2w(point_le, x_te, z_bottom, pct2le, pct2te):
       """ Wing-box to wing"""
 
@@ -111,7 +111,7 @@
 #+end_src
 
 ** Build modes in OP4
-#+begin_src python :session py1  :results none
+#+begin_src python :session py1  :results none 
   from fem4inas.utils import write_op4modes
   modes = write_op4modes("./SOL103/run_cao",
                          num_modes,
@@ -122,7 +122,7 @@
 
 * DLM model
 ** Inputs
-#+begin_src python :session py1  :results none
+#+begin_src python :session py1  :results none :tangle py1.py
   NumSurfaces = 9
   p1 = []
   x12 = []
@@ -391,7 +391,7 @@
 
 #+end_src
 ** Build
-#+begin_src python :session py1 :results none
+#+begin_src python :session py1 :results none :tangle py1.py
   dlm_panels = nasaero.GenDLMPanels(components,
                                     NumSurfaces,
                                     p1,
@@ -406,6 +406,41 @@
   dlm_panels.model.write_bdf("./dlm_model.bdf")
 
 #+end_src
+
+** Plot
+#+begin_src python :session py1 :results none :tangle py1.py
+  import PostProcessing.panels as panels
+  import pathlib
+  grid = panels.caero2grid(components, dlm_panels.caero1)
+  panels.build_gridmesh(grid, 'dlm_mesh')
+
+#+end_src
+
+#+begin_src python :session py1 :results none :tangle py1.py
+  import pyvista
+  file_path = pathlib.Path('./try')
+  file_path.mkdir(parents=True, exist_ok=True)
+  npanels, npoints = dlm_panels.model.caeros[10080000].get_npanel_points_elements()
+  for i, ci in enumerate(dlm_panels.model.caeros.keys()):
+      _points, _cells = dlm_panels.model.caeros[ci].panel_points_elements()
+      cells = np.hstack([4*np.ones(len(_cells),dtype=int).reshape(len(_cells),1),_cells])
+      mesh = pyvista.PolyData(_points, cells)
+      mesh.save(file_path / f"{components[i]}.ply",
+              binary=False)
+#+end_src
+
+#+begin_src python :session py1 :results none :tangle py1.py
+  import pandas as pd
+  from pyNastran.bdf.bdf import BDF
+  df_grid = pd.read_csv('../FEM/structuralGrid', comment="#", sep=" ",
+                      names=['x1', 'x2', 'x3', 'fe_order', 'component'])
+
+  model = BDF(debug=True)
+  np.array([model.nodes[i].get_position() for i in set1x[0]])
+  model.read_bdf("./SOL103/run_cao.bdf", punch=False)
+
+#+end_src
+
 
 * GAFs extraction
 
