@@ -57,6 +57,10 @@
   ,** DLM points
   
 #+end_src
+** clean folders
+#+begin_src sh :tangle "./clean.sh" :results none
+  rm -r ./GAFs ./SOL103 ./geometry ./GAFs_Qx
+#+end_src
 
 * Modal Solution
 #+begin_src org :tangle "./SOL103/run_cao.bdf" :mkdirp yes :noweb yes
@@ -105,7 +109,6 @@
   cd SOL103
   nastran run_cao.bdf
 #+end_src
-
 
 ** Build modes in OP4
 #+begin_src python :session py1  :results none
@@ -403,7 +406,6 @@
   dlm_panels.model.write_bdf("./dlm_model.bdf")
 
 #+end_src
-
 
 * GAFs extraction
 
@@ -1419,7 +1421,14 @@
   nastran run_cao.bdf
 #+end_src
 
-* Qx GAFs extraction
+#+begin_src python :session py1  :results none :noweb yes
+  import pyNastran.op4.op4 as op4
+
+  dihedral = op4.read_op4(f"./data_out/dihedral.op4")
+
+#+end_src
+
+* Qalpha GAFs extraction
 
 #+begin_src org :tangle "./GAFs_Qx/setupQx.bdf" :mkdirp yes :noweb yes
   $
@@ -1623,6 +1632,18 @@
   INCLUDE ../base.bdf
   INCLUDE ../dlm_model.bdf
   INCLUDE './setupQx.bdf'
+
+#+end_src
+
+#+begin_src bash :tangle "./GAFs_Qx/run.sh" :mkdirp yes :shebang  #!/usr/bin/zsh -i :results none
+  cd ./GAFs_Qx
+  nastran run_cao.bdf
+#+end_src
+
+#+begin_src python :session py1  :results none :noweb yes
+  import pyNastran.op4.op4 as op4
+
+  Qx = op4.read_op4(f"./data_out/Qhx20-0.8.op4")
 
 #+end_src
 
