@@ -24,9 +24,9 @@
   density_fact = [1.225]
   mach_fact = machs
   kv_fact = [200., 220.]
-  u_inf = 1.
+  u_inf = 200.
   rho_inf = 1.
-  c_ref = 1.
+  c_ref = 3.
   rho_ref=1.
   q_inf = 0.5 * rho_inf * u_inf ** 2
   flutter_method="PK"
@@ -1463,6 +1463,103 @@
 
 #+end_src
 
+* SOL 144
+#+begin_src org :tangle "./SOL144/setup.bdf" :mkdirp yes :noweb yes
+  $
+  $--------------------------------------------------------------------------------
+  $   AERODYNAMIC DOFS
+  $--------------------------------------------------------------------------------
+  $
+  AESTAT  1       ANGLEA  
+  AESTAT  2       SIDES  
+  AESTAT  3       PITCH  
+  AESTAT  4       ROLL  
+  AESTAT  5       YAW  
+  AESTAT  6       URDD1  
+  AESTAT  7       URDD2  
+  AESTAT  8       URDD3  
+  AESTAT  9       URDD4  
+  AESTAT  10      URDD5  
+  AESTAT  11      URDD6  
+
+  $AEROS                   4.163   44.8    146.6  
+  AEROS,,,3.5,46.1,320.6
+  $
+  $--------------------------------------------------------------------------------
+  $   BOUNDARY CONDITIONS
+  $--------------------------------------------------------------------------------
+  $ SPCs
+  $
+  $--------------------------------------------------------------------------------
+  $   h=0 ft - m=0.3
+  $--------------------------------------------------------------------------------
+  $
+  $ TRIM    960     0.81    15762.81  URDD1   0.      URDD2   0.      1.
+  $         URDD3   0.      URDD4   0.      URDD5   0.      URDD6   0.
+  $         ROLL    0.      YAW     0.      SIDES   0.      PITCH   0.
+  $         Flprn_r 0.      WTAil_r 0.      Elev_r  0.      ANGLEA  0.261799
+  TRIM,960,<<python_parameters(output="mach")>>,<<python_parameters(output="q_inf")>>,URDD1,0.,URDD2,0.,1.
+  ,URDD3,   0.,      URDD4,   0.,      URDD5,   0.,      URDD6,   0.,
+  ,ROLL,    0.,      YAW,     0.,      SIDES,   0.,      PITCH,   0.,
+  ,ANGLEA  0.261799
+
+#+end_src
+
+#+begin_src org :tangle "./SOL144/run_cao.bdf" :mkdirp yes :noweb yes
+  NASTRAN QUARTICDLM=1
+  SOL 144
+  CEND
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CASE CONTROL									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  TITLE=Sailplane #                                 
+  $SPC=  100001                                                            
+  $MPC=  100001
+  SPC = 2                  
+  $
+  $
+  TRIM = 960
+  $LOAD = 2000
+  $
+  DISP = ALL
+  FORCE = ALL
+  AEROF = ALL
+  MONITOR = ALL
+  TRIMF = ALL
+  OLOAD(CID) = ALL
+  ECHO=NONE
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  BEGIN BULK
+  PARAM,BAILOUT,0
+  PARAM,GRDPNT,0                                                              
+  PARAM,K6ROT,1.0
+  PARAM,SNORM,20.0
+  PARAM,POST,0
+  $PARAM,MAXRATIO,1.0E07 $Default anyway
+  $PARAM   AUTOSPC YES
+  MDLPRM  MLTSPLIN 1 $Aero grids can be defined in multiple splines (dafault 0)
+  PARAM   WTMASS  1.0  
+  PARAM   AUNITS  .1019716  $ 1/g  
+
+  SPC1           1  123456  999079
+  SPCADD         2       1
+  INCLUDE ../base.bdf
+  INCLUDE ../dlm_model.bdf
+  INCLUDE './setup.bdf'
+
+#+end_src
+
+#+begin_src bash :tangle "./SOL144/run.sh" :mkdirp yes :shebang  #!/usr/bin/zsh -i :results none
+  cd ./SOL144
+  nastran run_cao.bdf
+#+end_src
+
 * Qalpha GAFs extraction
 
 #+begin_src org :tangle "./GAFs_Qx/setupQx.bdf" :mkdirp yes :noweb yes
@@ -1484,7 +1581,7 @@
   AESTAT  11      URDD6  
 
   $AEROS                   4.163   44.8    146.6  
-  AEROS                   7.271   58.0    361.6 
+  AEROS,,,3.5,46.1,320.6,,1
   $
   $--------------------------------------------------------------------------------
   $   BOUNDARY CONDITIONS
