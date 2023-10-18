@@ -89,10 +89,10 @@ def eta_0011(q0: jnp.ndarray,
              u_inf: float,
              rho_inf: float,
              A0: jnp.ndarray,
-             B0: jnp.ndarray):
+             C0: jnp.ndarray):
 
     eta = 0.5 * rho_inf * u_inf ** 2 * (
-        A0 @ q0 + B0 @ qalpha)
+        A0 @ q0 + C0 @ qalpha)
     return eta
 
 @redirect_to(eta_000001)

@@ -88,17 +88,17 @@ def dq_00101(q, *args):
     F = _dq_00101(q)
     return F
 
-@jax.jit
+#@jax.jit
 def dq_0011(q, *args):
 
     (gamma2, omega,
      u_inf, rho_inf,
-     qalpha, A0, B0) = args[0]
+     qalpha, A0, C0) = args[0]
     q0 = -q / omega
     F = omega * q - contraction_gamma2(gamma2, q)
     F += xloads.eta_0011(q0, qalpha,
                          u_inf, rho_inf,
-                         A0, B0)
+                         A0, C0)
     return F
 
 @jax.jit

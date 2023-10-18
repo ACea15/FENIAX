@@ -1,3 +1,4 @@
+import re
 import fem4inas.preprocessor.solution as solution
 import fem4inas.preprocessor.containers.intrinsicmodal as intrinsic
 
@@ -52,14 +53,14 @@ def arg_0011(sol: solution.IntrinsicSolution,
 
     gamma2 = sol.data.couplings.gamma2
     omega = sol.data.modes.omega
-    A0 = system.aero.A0
-    B0 = system.aero.B0
+    A0 = sol.data.modalaeroroger.A0
+    C0 = sol.data.modalaeroroger.C0
     qalpha = system.aero.qalpha
     u_inf = system.aero.u_inf
     rho_inf = system.aero.rho_inf
     return (gamma2, omega,
             u_inf, rho_inf,
-            qalpha, A0, B0)
+            qalpha, A0, C0)
 
 @catter2library
 def arg_000001(sol: solution.IntrinsicSolution,

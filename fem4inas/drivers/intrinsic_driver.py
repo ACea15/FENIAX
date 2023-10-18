@@ -62,9 +62,8 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
             self._compute_modalaero()
             if self._config.driver.save_modalaero:
                 approx = self._config.aero.approx
-                self.sol.save_container(f"ModalAero_{approx}",
-                                        label="init")
-        else:
+                self.sol.save_container(f"ModalAero{approx}")
+        elif self._config.driver.load_modalaero:
             self._load_modalaero()
 
     def run_case(self):
@@ -157,7 +156,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
             if len(self._config.aero.Mk_struct[0]) == 1: # steady
                 A0 = self._config.aero.Mk_struct[1]
                 container.update(A0=A0)
-        if self._config.aero.Mk_struct is not None:
+        if self._config.aero.Mk_controls is not None:
 
             if len(self._config.aero.Mk_controls[0]) == 1: # steady
                 B0 = self._config.aero.Mk_controls[1]
@@ -169,7 +168,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
         # TODO: set roger, lowner etc.
         self.sol.add_container(f"ModalAero{approx}",
-                               label="init",
+                               #label="init",
                                **container)
 
     def _load_modalshapes(self):
@@ -180,4 +179,4 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
     def _load_modalaero(self):
         approx = self._config.aero.approx
-        self.sol.load_container(f"ModalAero{approx}", label="init")
+        self.sol.load_container(f"ModalAero{approx}")

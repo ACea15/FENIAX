@@ -51,7 +51,7 @@ class Daero(DataContainer):
     c_ref: float = dfield("", default=None)
     qalpha: jnp.ndarray = dfield("", default=None)
     #
-    approx= dfield("", default="Roger")
+    approx: str = dfield("", default="Roger")
     Mk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
     Mk_gust: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
     Mk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
@@ -296,16 +296,17 @@ class Ddriver(DataContainer):
                          options=['intrinsic']
                          )
     sol_path: str | pathlib.Path = dfield("Folder path to save results",
-                                                default='./')
+                                          default='./')
     compute_fem: bool = dfield("""Compute or load presimulation data""",
                                default=True)
     save_fem: bool = dfield("""Save presimulation data""",
                             default=True)
-    compute_modalaero: bool = dfield("""Compute or load presimulation data""",
+    compute_modalaero: bool = dfield("""Compute presimulation aero data""",
                                      default=False)
-    save_modalaero: bool = dfield("""Save presimulation data""",
+    load_modalaero: bool = dfield("""Load presimulation aero data""",
+                                  default=False)   
+    save_modalaero: bool = dfield("""Save presimulation aero data""",
                                   default=False)
-
     subcases: dict[str:Dxloads] = dfield("", default=None)
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
@@ -363,6 +364,9 @@ class Dsystem(DataContainer):
     def __post_init__(self):
 
         if self.t is None:
+            if self.tn is None:
+                object.__setattr__(self, "tn",
+                                   2)
             object.__setattr__(self, "t",
                                jnp.linspace(self.t0, self.t1, self.tn))
         if self.dt is None:
