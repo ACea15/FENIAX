@@ -421,12 +421,46 @@
   file_path = pathlib.Path('./try')
   file_path.mkdir(parents=True, exist_ok=True)
   npanels, npoints = dlm_panels.model.caeros[10080000].get_npanel_points_elements()
-  for i, ci in enumerate(dlm_panels.model.caeros.keys()):
-      _points, _cells = dlm_panels.model.caeros[ci].panel_points_elements()
-      cells = np.hstack([4*np.ones(len(_cells),dtype=int).reshape(len(_cells),1),_cells])
-      mesh = pyvista.PolyData(_points, cells)
-      mesh.save(file_path / f"{components[i]}.ply",
-              binary=False)
+  from dataclasses import dataclass
+  @dataclass
+  class Grid:
+      caeros: list
+      labels: dict
+      npanels: dict
+      npoints: dict
+      panel_ids: dict
+      points: dict
+      cells: dict
+      def get(self, name, label):
+          caero = self.labels[label]
+          attr = getattr(self, name)
+          return attr[caero]
+      
+  def build_grid(model) -> Grid:
+      npanels = dict()
+      npoints = dict()
+      panel_ids = dict()
+      points = dict()
+      cells = dict()
+      caeros = list()
+      labels = dict()
+      for i, ci in enumerate(model.caeros.keys()):
+          caeros.append(ci)
+          labels[model.caeros[ci].comment.strip()] = ci
+          _npanels, _npoints = model.caeros[ci].get_npanel_points_elements()
+          npanels[ci] = _npanels
+          npoints[ci] = _npoints
+          panel_ids[ci] = model.caeros[ci]._init_ids()
+          _points, _cells = model.caeros[ci].panel_points_elements()
+          points[ci] = _points
+          cells[ci] = _cells
+      return Grid(caeros, labels, npanels, npoints, panel_ids, points, cells)
+
+  # cells = np.hstack([4*np.ones(len(_cells),dtype=int).reshape(len(_cells),1),_cells])
+  # mesh = pyvista.PolyData(_points, cells)
+  # mesh.save(file_path / f"{components[i]}.ply",
+  #         binary=False)
+  grid = build_grid(dlm_panels.model)
 #+end_src
 
 #+begin_src python :session py1 :results none :tangle py1.py
@@ -436,21 +470,52 @@
                       names=['x1', 'x2', 'x3', 'fe_order', 'component'])
 
   model = BDF(debug=True)
-  np.array([model.nodes[i].get_position() for i in set1x[0]])
+  #np.array([model.nodes[i].get_position() for i in set1x[0]])
   model.read_bdf("./SOL103/run_cao.bdf", punch=False)
-  panel_ids = dlm_panels.model.caeros[10000000]._init_ids()
-  def point2aset(points, asets):
+  #panel_ids = dlm_panels.model.caeros[10000000]._init_ids()
 
-      point_map = dict()
+  def point2aset(model, points, asets):
+
+      aset_map = {ai: [] for ai in asets}
       asets_vect = np.array([model.nodes[i].get_position() for i in asets])
+      pa = list()
       for i, pi in enumerate(points):
-          norm_pi = np.linalg.norm(asets_vect - pi)
-          min_pi = np.min(norm_pi)
-          index = np.where(norm_pi == min_pi)[0][0]
-          asets[index]
-          point_map[i] = index
-        
-      return point_map
+          cos_a = list()
+          for j, vj in enumerate(asets_vect):
+              if j < len(asets_vect)-1:
+                  axis = asets_vect[j+1] - vj
+              else:
+                  axis = asets_vect[j-1] - vj
+              pa_i = pi - vj
+              pa_i /= np.linalg.norm(pa_i)
+              axis /= np.linalg.norm(axis) 
+              cos_a.append(abs(pa_i.dot(axis)))
+          index = cos_a.index(min(cos_a))
+          aset_map[asets[index]].append(i)
+          pa.append(pi - asets_vect[index])
+      return aset_map, asets_vect, np.array(pa)
+
+  def aset2id_intrinsic(X, asets, asets_vect, tolerance=1e-6):
+
+      intrinsic_map = dict()
+      for i, vi in enumerate(asets_vect):
+          norm_ = np.linalg.norm(vi.reshape((1,3)) - X, axis=1)
+          min_ = np.min(norm_)
+          if min_ < tolerance:
+              index = np.where(norm_ == min_)[0][0]
+              intrinsic_map[asets[i]] = index
+          else:
+              intrinsic_map[asets[i]] = None
+      return intrinsic_map
+
+  aset_map, asets_vect, pa = point2aset(model,
+                                        grid.get('points', '$InnerWingR'),
+                                        asets=set1x[0])
+  intrinsic_map = aset2id_intrinsic(X=df_grid[['x1','x2','x3']].to_numpy(),
+                                    asets=set1x[0],
+                                    asets_vect=asets_vect,
+                                    tolerance=1e-3)
+  def build_pa_tensor():
 #+end_src
 
 
