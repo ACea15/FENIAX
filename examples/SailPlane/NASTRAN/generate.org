@@ -438,7 +438,19 @@
   model = BDF(debug=True)
   np.array([model.nodes[i].get_position() for i in set1x[0]])
   model.read_bdf("./SOL103/run_cao.bdf", punch=False)
+  panel_ids = dlm_panels.model.caeros[10000000]._init_ids()
+  def point2aset(points, asets):
 
+      point_map = dict()
+      asets_vect = np.array([model.nodes[i].get_position() for i in asets])
+      for i, pi in enumerate(points):
+          norm_pi = np.linalg.norm(asets_vect - pi)
+          min_pi = np.min(norm_pi)
+          index = np.where(norm_pi == min_pi)[0][0]
+          asets[index]
+          point_map[i] = index
+        
+      return point_map
 #+end_src
 
 
