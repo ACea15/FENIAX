@@ -516,6 +516,7 @@
                                     asets_vect=asets_vect,
                                     tolerance=1e-3)
   def build_pa_tensor():
+      ...
 #+end_src
 
 
@@ -1865,6 +1866,12 @@
   savemat(f"./GAFs/matlab_Qhh{Mach}-{num_modes}.mat", dict(Qhh=Qhh['Q_HH'][1],
                                                            reduced_freqs=reduced_freqs))
 
+#+end_src
+
+* VTK
+#+begin_src python :session py1  :results none :noweb yes
+  import meshio
+  mesh = meshio.read("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
 #+end_src
 
 * Flutter analysis
