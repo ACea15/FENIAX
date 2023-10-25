@@ -348,16 +348,16 @@
   x43.append(l2)
   nspan.append(9)
   nchord.append(chord_panels['hstabilizer'])
-  set1x.append([999058,
-                999059,
-                999060,
-                999061,
-                999062,
-                999063,
-                999064,
-                999065,
-                999066,
-                999067])
+  set1x.append([999068,
+                999069,
+                999070,
+                999071,
+                999072,
+                999073,
+                999074,
+                999075,
+                999076,
+                999077])
   #vstabilizer
   # WARNING: y-midplane not implemented
   components.append("vstabilizer")
@@ -378,16 +378,16 @@
   x43.append(l2)
   nspan.append(9)
   nchord.append(chord_panels['vstabilizer'])
-  set1x.append([999068,
-                999069,
-                999070,
-                999071,
-                999072,
-                999073,
-                999074,
-                999075,
-                999076,
-                999077])
+  set1x.append([999058,
+                999059,
+                999060,
+                999061,
+                999062,
+                999063,
+                999064,
+                999065,
+                999066,
+                999067])
 
 #+end_src
 ** Build
@@ -462,6 +462,20 @@
   #         binary=False)
   grid = build_grid(dlm_panels.model)
 #+end_src
+#+begin_src python :session py1 :results none :tangle py1.py
+  import fem4inas.plotools.grid
+  from pyNastran.bdf.bdf import BDF
+  import pandas as pd
+  import importlib
+  importlib.reload(fem4inas.plotools.grid)
+  aerogrid = fem4inas.plotools.grid.AeroGrid.build_grid(dlm_panels.model)
+  df_grid = pd.read_csv('../FEM/structuralGrid', comment="#", sep=" ",
+                      names=['x1', 'x2', 'x3', 'fe_order', 'component'])
+  model = BDF(debug=True)
+  model.read_bdf("./SOL103/run_cao.bdf", punch=False)
+  X = df_grid[['x1','x2','x3']].to_numpy()
+  panelmodel = fem4inas.plotools.grid.ASETModel(grid, set1x, X, model)
+#+end_src
 
 #+begin_src python :session py1 :results none :tangle py1.py
   import pandas as pd
@@ -473,8 +487,28 @@
   #np.array([model.nodes[i].get_position() for i in set1x[0]])
   model.read_bdf("./SOL103/run_cao.bdf", punch=False)
   #panel_ids = dlm_panels.model.caeros[10000000]._init_ids()
-
   def point2aset(model, points, asets):
+
+      aset_map = {ai: [] for ai in asets}
+      asets_vect = np.array([model.nodes[i].get_position() for i in asets])
+      pa = list()
+      for i, pi in enumerate(points):
+          cos_a = list()
+          for j, vj in enumerate(asets_vect):
+              if j < len(asets_vect)-1:
+                  axis = asets_vect[j+1] - vj
+              else:
+                  axis = asets_vect[j-1] - vj
+              #pa_i = pi - vj
+              #cos_a.append(abs(pa_i[1]))
+              normal2arm = np.linalg.norm([0, pi[1]-vj[1], pi[2]-vj[2]])
+              cos_a.append(normal2arm)
+          index = cos_a.index(min(cos_a))
+          aset_map[asets[index]].append(i)
+          pa.append(pi - asets_vect[index])
+      return aset_map, asets_vect, np.array(pa)
+
+  def point2aset2(model, points, asets):
 
       aset_map = {ai: [] for ai in asets}
       asets_vect = np.array([model.nodes[i].get_position() for i in asets])
@@ -509,8 +543,8 @@
       return intrinsic_map
 
   aset_map, asets_vect, pa = point2aset(model,
-                                        grid.get('points', '$InnerWingR'),
-                                        asets=set1x[0])
+                                        grid.get('points', '$vstabilizer'),
+                                        asets=set1x[-1])
   intrinsic_map = aset2id_intrinsic(X=df_grid[['x1','x2','x3']].to_numpy(),
                                     asets=set1x[0],
                                     asets_vect=asets_vect,
