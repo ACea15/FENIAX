@@ -39,7 +39,7 @@ class TestBeamModal:
         inp.driver.typeof = "intrinsic"
         # inp.driver.sol_path = pathlib.Path(
         #             "./ArgyrisBeamModal")
-        inp.driver.save_presimulation = False
+        inp.driver.save_fem = False
         inp.simulation.typeof = "single"
         config = configuration.Config(inp)
         obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
@@ -111,7 +111,7 @@ class TestBeamSolution:
         inp.driver.typeof = "intrinsic"
         # inp.driver.sol_path = pathlib.Path(
         #             "./ArgyrisBeam")
-        inp.driver.save_presimulation = False
+        inp.driver.save_fem = False
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.save = False 
@@ -191,7 +191,7 @@ class TestFrameModal:
         inp.fem.num_modes = 120
         inp.fem.fe_order_start = 1
         inp.driver.typeof = "intrinsic"
-        inp.driver.save_presimulation = False
+        inp.driver.save_fem = False
         #inp.driver.sol_path = sol_path
         inp.simulation.typeof = "single"
         config = configuration.Config(inp)
@@ -263,7 +263,7 @@ class TestFrameSolution:
         inp.fem.fe_order_start = 1
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
-        inp.driver.save_presimulation = False        
+        inp.driver.save_fem = False        
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.save = False 
@@ -344,7 +344,7 @@ class TestFrame3D:
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
         #inp.driver.sol_path= pathlib.Path()
-        inp.driver.save_presimulation = False        
+        inp.driver.save_fem = False        
         inp.simulation.typeof = "single"
         #inp.ex.Cab_xtol = 1e-4
         inp.systems.sett.s1.solution = "static"

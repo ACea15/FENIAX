@@ -20,7 +20,7 @@ class Test2PointDead:
         inp.fem.num_modes = 60
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
-        inp.driver.save_presimulation = False
+        inp.driver.save_fem = False
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.solver_library = "diffrax"
