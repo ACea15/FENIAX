@@ -1,5 +1,6 @@
 from pyNastran.op2.op2 import OP2
 from pyNastran.bdf.bdf import BDF
+import numpy as np
 import copy
 import pathlib
 import fem4inas.plotools.nastranvtk.bdf2vtk as bdf2vtk
@@ -25,5 +26,40 @@ def vtk_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None):
         mbdfi.write_bdf(write_path)
         bdf2vtk.run(write_path, None, write_vtk, False, fileformat="ascii")
 
-vtk_fromop2("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf",
-            "/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.op2")
+class ParseBDF:
+
+    def __init__(self, bdf_file):
+        self.mbdf = BDF()
+        self.bdf_file = bdf_file
+
+    @property
+    def bdf_file(self):
+        return self._bdf_file
+    
+    @bdf_file.setter
+    def bdf_file(self, value):
+        self._bdf_file = value
+        self.read_bdf()
+        
+    def read_bdf(self):
+        self.mbdf.read_bdf(self.bdf_file)
+
+    def get_nodes(self):
+        nodes = [ni.get_position() for ni in self.mbdf.Nodes(self.mbdf.node_ids)]
+        return np.array(nodes)
+
+    def update_bdf(self, nposition, nid):
+        for i, ni in enumerate(nid):
+            self.mbdf.Node(ni).set_position(self.mbdf, nposition[i])
+            
+    def plot_vtk(self, file_path):
+        path = pathlib.Path(file_path)
+        path_folder = path.parent
+        path_folder.mkdir(parents=True, exist_ok=True)
+        path_vtk = path.with_suffix(".vtk")
+        self.mbdf.write_bdf(path)
+        bdf2vtk.run(str(path), None, str(path_vtk), False, fileformat="ascii")
+        
+if (__name__ == "__main__"):
+    vtk_fromop2("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf",
+                "/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.op2")

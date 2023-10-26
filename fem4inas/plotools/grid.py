@@ -5,16 +5,16 @@ import numpy as np
 from pyNastran.bdf.bdf import BDF
 import pathlib
 
-def transform_grid_rigid(ra, Rab, pa):
-    f = jax.vmap(lambda ra_i, Rab_i, pa_i: ra_i.reshape((3, 1)) + Rab_i @ pa_i,
-                 in_axes=(1, 2, 2), out_axes=2)
-    pa_deform = f(ra, Rab, pa)
+def transform_grid_rigid(ra, Rab, R0ab, pa):
+    f = jax.vmap(lambda ra_i, Rab_i, R0ab_i, pa_i: ra_i.reshape((3, 1)) + Rab_i @ (R0ab_i.T @ pa_i),
+                 in_axes=(1, 2, 2, 2), out_axes=2)
+    pa_deform = f(ra, Rab, R0ab, pa)
     return pa_deform
 
-def transform_arm_rigid(Rab, pa):
-    f = jax.vmap(lambda Rab_i, pa_i: Rab_i @ pa_i,
-                 in_axes=(2, 2), out_axes=2)
-    pa_deform = f(Rab, pa)
+def transform_arm_rigid(Rab, R0ab, pa):
+    f = jax.vmap(lambda Rab_i, R0ab_i, pa_i: Rab_i @ (R0ab_i.T @ pa_i),
+                 in_axes=(2, 2, 2), out_axes=2)
+    pa_deform = f(Rab, R0ab, pa)
     return pa_deform
 
 @dataclass
@@ -125,7 +125,7 @@ class ASETModel(Model):
                                            self.tol_identification)
         return link_m0mx
 
-    def set_solution(self, ra, Rab):
+    def set_solution(self, ra, Rab, R0ab):
         """
         """
         self.ra = ra
@@ -134,8 +134,10 @@ class ASETModel(Model):
             beam_ids = self.components[ki].link_mx
             ra_ci = ra[:, beam_ids]
             Rab_ci = Rab[:, :, beam_ids]
+            R0ab_ci = R0ab[:, :, beam_ids]
             self.components[ki].ra = ra_ci
             self.components[ki].Rab = Rab_ci
+            self.components[ki].R0ab = R0ab_ci
             self.map_mxm1(ki)
         self.merge_data("data_mx")
         self.merge_data("pa_mx")
@@ -144,7 +146,8 @@ class ASETModel(Model):
         """
         """
         import pyvista
-        path = pathlib.path(folder_path)
+        path = pathlib.Path(folder_path)
+        path.mkdir(parents=True, exist_ok=True)
         for i, ki in enumerate(self.component_names):
             _cells = self.aerogrid.get('cells', ki)
             cells = np.hstack([4*np.ones(len(_cells),dtype=int).reshape(
@@ -172,16 +175,18 @@ class ASETModel(Model):
         #import pdb; pdb.set_trace()
         for i, arm_i in enumerate(pa_points):
             pa_array[:, arm_i] = pa_tensor[:,:, i]
-        return pa_array
+        return pa_array.T
 
     def map_mxm1(self, ki):
 
         self.components[ki].data_mx_tensor = transform_grid_rigid(self.components[ki].ra,
                                                                   self.components[ki].Rab,
+                                                                  self.components[ki].R0ab,
                                                                   self.components[ki].pa_m1_tensor)
         self.components[ki].data_mx = self.tensor2array(ki,
                                                         self.components[ki].data_mx_tensor)
         self.components[ki].pa_mx_tensor = transform_arm_rigid(self.components[ki].Rab,
+                                                               self.components[ki].R0ab,
                                                                self.components[ki].pa_m1_tensor)
         self.components[ki].pa_mx = self.tensor2array(ki,
                                                       self.components[ki].pa_mx_tensor)
@@ -221,7 +226,6 @@ class ASETModel(Model):
                                                    self.index_merged[ki][0] + index, axis=0)
     def merge_data(self, data_name:str):
 
-        self.index_merged = {}
         for i, ki in enumerate(self.component_names):
             if i == 0:
                 data = getattr(self.components[ki], data_name)
@@ -241,9 +245,9 @@ class ASETModel(Model):
                 # self.index_merged[ki] = [len(self.datam1_merged), index, index_pa_merged]
                 data_ki = getattr(self.components[ki], data_name)
                 #import pdb; pdb.set_trace()
-                data = np.hstack([data_merged,
+                data = np.vstack([data,
                                   data_ki])
-                data_merged = np.hstack([data_merged,
+                data_merged = np.vstack([data_merged,
                                          data_ki])
                 index = self.index_merged[ki][1]
                 if len(index) > 0:

@@ -416,8 +416,9 @@
 
 #+end_src
 
-#+begin_src python :session py1 :results none :tangle py1.py
+#+begin_src python :session py1 :results none
   import pyvista
+  import pathlib
   file_path = pathlib.Path('./try')
   file_path.mkdir(parents=True, exist_ok=True)
   npanels, npoints = dlm_panels.model.caeros[10080000].get_npanel_points_elements()
@@ -435,7 +436,7 @@
           caero = self.labels[label]
           attr = getattr(self, name)
           return attr[caero]
-      
+
   def build_grid(model) -> Grid:
       npanels = dict()
       npoints = dict()
@@ -556,13 +557,33 @@
 #+begin_src python :session py1 :results none :tangle py1.py
   from fem4inas.preprocessor import solution
 
-  sol_path = "/home/ac5015/programs/FEM4INAS/examples/SailPlane/results_2023-10-25_14:30:25"
+  #sol_path = "/home/ac5015/programs/FEM4INAS/examples/SailPlane/results_2023-10-25_14:30:25"
+  sol_path = "/media/acea/work/projects/FEM4INAS/examples/SailPlane/results_2023-10-23_08:48:10/"
   sol = solution.IntrinsicSolution(sol_path)
   sol.load_container("Modes")
   sol.load_container("Couplings")
   sol.load_container("StaticSystem", label="_s1")
   panelmodel.set_solution(sol.data.staticsystem_s1.ra[-1],
-                          sol.data.staticsystem_s1.Cab[-1])
+                          sol.data.staticsystem_s1.Cab[-1],
+                          sol.data.modes.C0ab)
+  panelmodel.mesh_plot(folder_path="./paraview/results/data_m1", data_name= "data_m1")
+  panelmodel.mesh_plot(folder_path="./paraview/results/data_mx", data_name= "data_mx")
+
+#+end_src
+
+#+begin_src python :session py1 :results none :tangle py1.py
+  from fem4inas.preprocessor import solution
+  import fem4inas.plotools.interpolation as interpolation
+  import fem4inas.plotools.nastranvtk.modes as modex
+  importlib.reload(modex)
+  bdf = modex.ParseBDF("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
+  bdf.plot_vtk("./paraview/results/ref.bdf")
+  nodesX = bdf.get_nodes()
+  disp, coord = interpolation.compute(panelmodel.datam1_merged,
+                                      panelmodel.data_mx_merged,
+                                      nodesX)
+  bdf.update_bdf(coord, bdf.mbdf.node_ids)
+  bdf.plot_vtk("./paraview/results/def.bdf")
 #+end_src
 
 * GAFs extraction
