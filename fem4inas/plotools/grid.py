@@ -3,7 +3,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from pyNastran.bdf.bdf import BDF
-
+import pathlib
 
 def transform_grid_rigid(ra, Rab, pa):
     f = jax.vmap(lambda ra_i, Rab_i, pa_i: ra_i.reshape((3, 1)) + Rab_i @ pa_i,
@@ -139,7 +139,21 @@ class ASETModel(Model):
             self.map_mxm1(ki)
         self.merge_data("data_mx")
         self.merge_data("pa_mx")
-        
+
+    def mesh_plot(self, folder_path:str , data_name: str):
+        """
+        """
+        import pyvista
+        path = pathlib.path(folder_path)
+        for i, ki in enumerate(self.component_names):
+            _cells = self.aerogrid.get('cells', ki)
+            cells = np.hstack([4*np.ones(len(_cells),dtype=int).reshape(
+                len(_cells),1), _cells])
+            data_ci = getattr(self.components[ki], data_name)
+            mesh = pyvista.PolyData(data_ci, cells)
+            mesh.save(path / f"{ki}.ply",
+                      binary=False)
+
     def build_m1_tensor(self, pa_m1, link_m0m1):
 
         pa_points = list(link_m0m1.values())
