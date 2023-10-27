@@ -112,3 +112,6 @@ def project_phi1(force, phi1):
     eta = jnp.tensordot(phi1, force, axes=([1, 2],
                                            [0, 1]))
     return eta
+
+def eta_gust():
+    ...
