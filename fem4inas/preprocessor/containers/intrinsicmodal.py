@@ -73,7 +73,7 @@ class Dxloads(DataContainer):
                                default=False)
     gravity_forces: bool = dfield("Include gravity in the analysis",
                                   default=False)    
-    aero_forces: bool = dfield("Include aerodynamic forces",
+    modalaero_forces: bool = dfield("Include aerodynamic forces",
                                default=False)
     x: jnp.array = dfield("x-axis vector for interpolation",
                           default=None)
@@ -398,6 +398,19 @@ class Dsystem(DataContainer):
         #             ...
         #             # TODO: implement
     def build_states(self, num_modes):
+        # TODO: label dependent
+        object.__setattr__(self, "states", dict(q1=jnp.arange(num_modes),
+                                                q2=jnp.arange(num_modes,
+                                                              2 * num_modes))
+                           )
+        object.__setattr__(self, "num_states",
+                           sum([len(i) for i in self.states.values()])
+                           )
+    def build_label(self):
+        self.xloads.modalaero_force
+        self.xloads.gravity_forces
+        self.xloads.dead_forces
+        self.xloads.follower_forces
         # TODO: label dependent
         object.__setattr__(self, "states", dict(q1=jnp.arange(num_modes),
                                                 q2=jnp.arange(num_modes,
