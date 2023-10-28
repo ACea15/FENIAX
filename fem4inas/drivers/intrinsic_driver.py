@@ -88,7 +88,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         print("***** Setting systems *****")
         self.systems = dict()
         if hasattr(self._config, "systems"):
-            for k, v in self._config.systems.sys.items():
+            for k, v in self._config.systems.mapper.items():
                 print(f"***** Initialising system {k} *****")
                 cls_sys = fem4inas.systems.factory(f"{v.solution}_intrinsic")
                 self.systems[k] = cls_sys(k, v, self._config.fem, self.sol, self._config)
@@ -151,19 +151,19 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
         approx = self._config.aero.approx
         container = dict()
-        if self._config.aero.Mk_struct is not None:
+        if self._config.aero.Qk_struct is not None:
             
-            if len(self._config.aero.Mk_struct[0]) == 1: # steady
-                A0 = self._config.aero.Mk_struct[1]
+            if len(self._config.aero.Qk_struct[0]) == 1: # steady
+                A0 = self._config.aero.Qk_struct[1]
                 container.update(A0=A0)
-        if self._config.aero.Mk_controls is not None:
+        if self._config.aero.Qk_controls is not None:
 
-            if len(self._config.aero.Mk_controls[0]) == 1: # steady
-                B0 = self._config.aero.Mk_controls[1]
+            if len(self._config.aero.Qk_controls[0]) == 1: # steady
+                B0 = self._config.aero.Qk_controls[1]
                 container.update(B0=B0)
 
         if self._config.aero.M0_rigid is not None:
-            C0 = self._config.aero.M0_rigid
+            C0 = self._config.aero.Q0_rigid
             container.update(C0=C0)
 
         # TODO: set roger, lowner etc.

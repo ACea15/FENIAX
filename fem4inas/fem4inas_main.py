@@ -31,6 +31,8 @@ def main(input_file: str = None,
     """
 
     config = configuration.initialise_config(input_file, input_dict, input_obj)
+    if config.driver.sol_path is not None:
+        configuration.dump_to_yaml(config.driver.sol_path, config, with_comments=True)    
     Driver = fem4inas.drivers.factory(config.driver.typeof)
     driver = Driver(config)
     driver.pre_simulation()

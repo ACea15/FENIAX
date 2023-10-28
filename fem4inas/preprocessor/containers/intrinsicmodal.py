@@ -11,12 +11,6 @@ from fem4inas.intrinsic.functions import coordinate_transform
 import jax
 from enum import Enum
 
-class Solution(Enum):
-    STATIC = 0
-    DYNAMIC = 1
-    MULTIBODY = 2
-    STABILITY = 3
-    
 @dataclass(frozen=True)
 class Dconst(DataContainer):
 
@@ -43,6 +37,18 @@ class Dfiles(DataContainer):
     folder_out: str | pathlib.Path
     config: str | pathlib.Path
 
+@dataclass(frozen=True, kw_only=True)
+class DGust(DataContainer):
+    intensity: float
+    
+@dataclass(frozen=True, kw_only=True)
+class DGust1MC(DGust):
+    intensity: float
+
+@dataclass(frozen=True, kw_only=True)
+class DController(DataContainer):
+    intensity: float
+
 @dataclass(frozen=True)
 class Daero(DataContainer):
 
@@ -50,19 +56,34 @@ class Daero(DataContainer):
     rho_inf: float = dfield("", default=None)
     c_ref: float = dfield("", default=None)
     qalpha: jnp.ndarray = dfield("", default=None)
+    qx: jnp.ndarray = dfield("", default=None)
     #
     approx: str = dfield("", default="Roger")
-    Mk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
-    Mk_gust: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
-    Mk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
-    M0_rigid: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
-    poles: jnp.ndarray = dfield("", default=None)
-    # def __post_init__(self):
-
-    #     if self.aero_matrices is not None:
-    #         for k, v in self.aero_matrices.items():
-    #             object.__setattr__(self, k, v)
-    #         #del self.aero_matrices
+    Qk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    Qk_gust: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    Qk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    Q0_rigid: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    #poles: jnp.ndarray = dfield("", default=None)
+    gust_profile: dict = dfield("", default=None, options=["1mc"])
+    gust_settings: dict = dfield("", default=None)
+    gust: DGust = dfield("", init=False)
+    controller_name: dict = dfield("", default=None)
+    controller_settings: dict = dfield("", default=None)
+    controller: DController = dfield("", init=False)
+    
+    def __post_init__(self):
+        if self.gust_profile is not None:
+            gust_class = globals()[f"DGust{self.gust_profile.upper()}"]
+            gust_obj = initialise_Dclass(self.gust_settings, gust_class)
+            object.__setattr__(self, "gust", gust_obj)
+        else:
+            object.__setattr__(self, "gust", None)
+        if self.controller_name is not None:
+            controller_class = globals()[f"DController{self.controller_name.upper()}"]
+            controller_obj = initialise_Dclass(self.controller_settings, controller_class)
+            object.__setattr__(self, "controller", controller_obj)
+        else:
+            object.__setattr__(self, "controller", None)
 
 @dataclass(frozen=True)
 class Dxloads(DataContainer):
@@ -311,6 +332,19 @@ class Ddriver(DataContainer):
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
 
+class SystemSolution(Enum):
+    STATIC = 1
+    DYNAMIC = 2
+    STABILITY = 3    
+    MULTIBODY = 4
+    CONTROL = 5
+    
+SimulationTarget = Enum('TARGET', ['LEVEL',
+                                   'TRIM',
+                                   'MANOEUVRE',
+                                   'TURBULENCE'])
+BoundaryCond = Enum('BC1', ['CLAMPED', 'FREE', 'PRESCRIBED'])
+
 @dataclass(frozen=True)
 class Dsystem(DataContainer):
 
@@ -320,6 +354,12 @@ class Dsystem(DataContainer):
                                           'dynamic',
                                           'multibody',
                                           'stability'])
+    target: str = dfield("The simulation goal of this system",
+                         default="Level",
+                         options=SimulationTarget._member_names_)
+    bc1: str = dfield("Boundary condition first node",
+                      default='clamped',
+                      options=BoundaryCond._member_names_)
     save: bool = dfield("Save results of the run system",
                         default=True)
     xloads: dict | Dxloads = dfield("External loads dataclass",
@@ -344,13 +384,14 @@ class Dsystem(DataContainer):
     solver_settings: str = dfield(
         "Name for the solver of the previously defined library", default=None)
     nonlinear: bool = dfield(
-        "whether to include the nonlinear terms in the eqs. (Gammas)", default=True)
+        """whether to include the nonlinear terms in the eqs. (Gammas)
+        and in the integration""", default=1,
+        options=[1, 0, -1,-2])
     residualise: bool = dfield(
         "average the higher frequency eqs and make them algebraic", default=False)
     residual_modes: int = dfield(
         "number of modes to residualise", default=0)
-    label: str = dfield("""Description of the loading type:
-    '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
+    label: str = dfield("""System label that maps to the solution functional""",
                         default=None)
     states: dict = dfield("""Dictionary with the state variables.""",
                         default=None)
@@ -379,24 +420,8 @@ class Dsystem(DataContainer):
         if self.solver_settings is None:
             object.__setattr__(self, "solver_settings", dict())
         
-        # if self.label is None:
-        #     if isinstance(self.solution, str):
-        #         sol_label = Solution[self.solution.upper()].value
-        #     else:
-        #         sol_label = self.solution
-        #     self.label = f"{sol_label}{self.nonlinear}{self.residualise}{self.xloads.label}"
-
-        #     if self.solver_function is None:  # set default  
-        #         if self.label[0] == 0:
-        #             self.solver_function = 'newton_raphson'
-        #         elif self.label[0] == 1:
-        #             self.solver_function = 'ode'
-        #         elif self.label[0] == 2:
-        #             ...
-        #             # TODO: implement
-        #         if self.label[0] == 3:
-        #             ...
-        #             # TODO: implement
+        if self.label is None:
+            self.build_label()
     def build_states(self, num_modes):
         # TODO: label dependent
         object.__setattr__(self, "states", dict(q1=jnp.arange(num_modes),
@@ -406,33 +431,72 @@ class Dsystem(DataContainer):
         object.__setattr__(self, "num_states",
                            sum([len(i) for i in self.states.values()])
                            )
+        
     def build_label(self):
-        self.xloads.modalaero_force
-        self.xloads.gravity_forces
-        self.xloads.dead_forces
-        self.xloads.follower_forces
+        lmap = dict()
+        lmap['soltype'] = SystemSolution[self.solution.upper()].value
+        lmap['target'] = SimulationTarget[self.bc1.upper()].value - 1
+        lmap['bc1'] = BoundaryCond[self.bc1.upper()].value - 1
+        lmap['gravity'] = self.xloads.gravity_forces
+        lmap['aero_sol'] = int(self.xloads.modalaero_force)
+        if lmap['aero_sol'] > 0:
+            if self.aero.sol.lower() == "rogers":
+                lmap['aero_sol'] = 1
+            elif self.aero.sol.lower() == "loewner":
+                lmap['aero_sol'] = 2
+            if self.aero.qalpha is None and self.aero.qx is None:
+                lmap['aero_steady'] = 0
+            elif self.aero.qalpha is not None and self.aero.qx is None:
+                lmap['aero_steady'] = 1
+            elif self.aero.qalpha is None and self.aero.qx is not None:
+                lmap['aero_steady'] = 2
+            else:
+                lmap['aero_steady'] = 3
+            #
+            if self.aero.gust is None and self.aero.controller is None:
+                lmap['aero_unsteady'] = 0
+            elif self.aero.gust is not None and self.aero.controller is None:
+                lmap['aero_unsteady'] = 1
+            elif self.aero.gust is None and self.aero.controller is not None:
+                lmap['aero_unsteady'] = 2
+            else:
+                lmap['aero_unsteady'] = 3
+        if self.xloads.follower_forces and self.xloads.dead_forces:
+            lmap["point_loads"] = 3
+        elif self.xloads.follower_forces:
+            lmap["point_loads"] = 1
+        elif self.xloads.dead_forces:
+            lmap["point_loads"] = 2
+        else:
+            lmap["point_loads"] = 0        
+        if self.nonlinear ==1:
+            lmap["nonlinear"] = ""
+        elif self.nonlinear ==-1:
+            lmap["nonlinear"] = "l"
+        elif self.nonlinear ==-2:
+            lmap["nonlinear"] = "L"
+        if self.residualise:
+            lmap['residualise'] = "r"
+        else:
+            lmap['residualise'] = ""
+            
         # TODO: label dependent
-        object.__setattr__(self, "states", dict(q1=jnp.arange(num_modes),
-                                                q2=jnp.arange(num_modes,
-                                                              2 * num_modes))
-                           )
-        object.__setattr__(self, "num_states",
-                           sum([len(i) for i in self.states.values()])
-                           )
+        object.__setattr__(self, "label_map", lmap)
+        object.__setattr__(self, "label", label)
 
 @dataclass(frozen=True)
 class Dsystems(DataContainer):
 
     sett: dict[str: dict] = dfield("Settings ", yaml_save=False)
-    sys: dict[str: Dsystem]  = dfield("Dictionary with systems in the simulation",
+    mapper: dict[str: Dsystem]  = dfield("Dictionary with systems in the simulation",
                                        init=False)
 
     def __post_init__(self):
-        sys = dict()
+        mapper = dict()
         for k, v in self.sett.items():
-            sys[k] = initialise_Dclass(
+            mapper[k] = initialise_Dclass(
                 v, Dsystem, name=k)
-        object.__setattr__(self, "sys", sys)
+        object.__setattr__(self, "sys", mapper)
 
 @dataclass(frozen=True)
 class Dsimulation(DataContainer):

@@ -196,7 +196,7 @@ def coordinate_transform(u1: jnp.ndarray,
     fuv = f(u1, v1)
     return fuv
 
-def label_generator(label_table):
+def label_generator(label_table: dict):
 
     prime_numbers = [2, 3, 5, 7, 11, 13,
                      17, 19, 23, 29, 31,
