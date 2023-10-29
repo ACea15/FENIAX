@@ -5,6 +5,50 @@ import fem4inas.intrinsic.xloads as xloads
 import fem4inas.intrinsic.postprocess as postprocess
 import fem4inas.intrinsic.dq_common as common
 
+
+def dq_10g11(q, *args):
+
+    (gamma2, omega, phi1, x,
+     force_follower, t) = args[0]
+    #@jax.jit
+    def _dq_10g11(q):
+        F = omega * q - common.contraction_gamma2(gamma2, q)
+        F += xloads.eta_10g11(t,
+                              phi1,
+                              x,
+                              force_follower)
+        return F
+
+    F = _dq_10g11(q)
+    return F
+
+def dq_10g121(q, *args):
+
+    (gamma2, omega, phi1l, psi2l,
+     x, force_dead,
+     X_xdelta,
+     C0ab,
+     component_names, num_nodes,
+     component_nodes, component_father, t) = args[0]
+    #@jax.jit
+    def _dq_10g121(q2):
+        X3t = postprocess.compute_strains_t(psi2l, q2)
+        Rab = postprocess.integrate_strainsCab(
+            jnp.eye(3), X3t,
+            X_xdelta, C0ab,
+            component_names,
+            num_nodes,
+            component_nodes,
+            component_father)
+        F = omega * q2 - common.contraction_gamma2(gamma2, q2)
+        F += xloads.eta_10g121(t, phi1l, x, force_dead, Rab)
+        return F
+    F = _dq_10g121(q)
+    return F
+
+
+
+
 def dq_000001(q, *args):
 
     (omega, phi1, x,
@@ -27,22 +71,6 @@ def dq_001001(q, *args):
                            force_follower)
     return F
 
-def dq_10g11(q, *args):
-
-    (gamma2, omega, phi1, x,
-     force_follower, t) = args[0]
-    #@jax.jit
-    def _dq_10g11(q):
-        F = omega * q - common.contraction_gamma2(gamma2, q)
-        F += xloads.eta_10g11(t,
-                              phi1,
-                              x,
-                              force_follower)
-        return F
-
-    F = _dq_10g11(q)
-    return F
-
 #@jax.jit
 #@partial(jit, static_argnames=["args"])
 def dq_00101(q, *args):
@@ -63,7 +91,7 @@ def dq_00101(q, *args):
             num_nodes,
             component_nodes,
             component_father)
-        F = omega * q2 - contraction_gamma2(gamma2, q2)
+        F = omega * q2 - common.contraction_gamma2(gamma2, q2)
         F += xloads.eta_00101(t, phi1l, x, force_dead, Rab)
         return F
     F = _dq_00101(q)
@@ -76,7 +104,7 @@ def dq_0011(q, *args):
      u_inf, rho_inf,
      qalpha, A0, C0) = args[0]
     q0 = -q / omega
-    F = omega * q - contraction_gamma2(gamma2, q)
+    F = omega * q - common.contraction_gamma2(gamma2, q)
     F += xloads.eta_0011(q0, qalpha,
                          u_inf, rho_inf,
                          A0, C0)
@@ -88,7 +116,7 @@ def dq_101(t, q, *args):
     gamma1, gamma2, omega, states = args[0]
     q1 = q[states['q1']]
     q2 = q[states['q2']]
-    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
+    F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2)
     F = jnp.hstack([F1, F2])
     return F
 
@@ -104,7 +132,7 @@ def dq_101001(t, q, *args):
                             phi1,
                             x,
                             force_follower)
-    F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
+    F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2)
     F1 += eta
     F = jnp.hstack([F1, F2])
     return F
@@ -153,7 +181,7 @@ def dq_10101(t, q, *args):
                                x,
                                force_dead,
                                Rab)
-        F1, F2 = f_12(omega, gamma1, gamma2, q1, q2)
+        F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2)
         F1 += eta
         F = jnp.hstack([F1, F2])
         return F

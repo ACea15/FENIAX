@@ -29,7 +29,6 @@ def catter2library(fun: callable):
         return args_new
     return wrapper 
 
-
 @catter2library
 def arg_10g11(sol: solution.IntrinsicSolution,
               system: intrinsic.Dsystem,
@@ -45,8 +44,49 @@ def arg_10g11(sol: solution.IntrinsicSolution,
     return (gamma2, omega, phi1, x,
             force_follower, t)
 
+@catter2library
+def arg_10g121(sol: solution.IntrinsicSolution,
+               system: intrinsic.Dsystem,
+               fem: intrinsic.Dfem,
+               t: float,
+               *args, **kwargs):
 
+    phi1l = sol.data.modes.phi1l
+    psi2l = sol.data.modes.psi2l 
+    gamma2 = sol.data.couplings.gamma2
+    omega = sol.data.modes.omega
+    x = system.xloads.x
+    force_dead = system.xloads.force_dead
+    X_xdelta = sol.data.modes.X_xdelta
+    C0ab = sol.data.modes.C0ab
+    num_nodes = fem.num_nodes
+    component_nodes = fem.component_nodes_int
+    component_names = fem.component_names_int
+    component_father = fem.component_father_int
+    return (gamma2, omega, phi1l, psi2l,
+            x, force_dead,
+            X_xdelta,
+            C0ab,
+            component_names, num_nodes,
+            component_nodes, component_father, t)
 
+@catter2library
+def arg_10g15(sol: solution.IntrinsicSolution,
+              system: intrinsic.Dsystem,
+              fem: intrinsic.Dfem,
+              t: float,
+              *args, **kwargs):
+
+    gamma2 = sol.data.couplings.gamma2
+    omega = sol.data.modes.omega
+    A0 = sol.data.modalaeroroger.A0
+    C0 = sol.data.modalaeroroger.C0
+    qalpha = system.aero.qalpha
+    u_inf = system.aero.u_inf
+    rho_inf = system.aero.rho_inf
+    return (gamma2, omega,
+            u_inf, rho_inf,
+            qalpha, A0, C0)
 
 
 @catter2library

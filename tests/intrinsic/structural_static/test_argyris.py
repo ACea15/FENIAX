@@ -122,7 +122,7 @@ class TestBeamSolution:
                                                    max_steps=50,
                                                    norm=jnp.linalg.norm,
                                                    kappa=0.01)
-        inp.systems.sett.s1.label = 'dq_001001'
+        #inp.systems.sett.s1.label = 'dq_001001'
         inp.systems.sett.s1.xloads.follower_forces = True
         inp.systems.sett.s1.xloads.follower_points = [[25, 1]]
         inp.systems.sett.s1.xloads.x = [0, 1, 2]
@@ -278,7 +278,7 @@ class TestFrameSolution:
         # inp.systems.sett.s1.solver_function = "root"
         # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
         #                                            tolerance=1e-9)
-        inp.systems.sett.s1.label = 'dq_001001'
+        #inp.systems.sett.s1.label = 'dq_001001'
         inp.systems.sett.s1.xloads.follower_forces = True
         inp.systems.sett.s1.xloads.follower_points = [[20, 1]]
         inp.systems.sett.s1.xloads.x = [0, 1, 2, 3]
@@ -360,7 +360,7 @@ class TestFrame3D:
         # inp.systems.sett.s1.solver_function = "root"
         # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
         #                                            tolerance=1e-9)
-        inp.systems.sett.s1.label = 'dq_001001'
+        #inp.systems.sett.s1.label = 'dq_001001'
         inp.systems.sett.s1.xloads.follower_forces = True
         inp.systems.sett.s1.xloads.follower_points = [[20, 1],
                                                       [20, 4]]

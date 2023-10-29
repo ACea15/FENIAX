@@ -69,7 +69,30 @@ def eta_10g11(t, phi1, x, force_follower):
                                        [0, 1]))
     return eta
 
+@jax.jit
+def eta_10g121(t, phi1, x, force_dead, Rab):
 
+    f1 = jax.vmap(lambda R, x: jnp.vstack(
+            [jnp.hstack([R.T, jnp.zeros((3, 3))]),
+             jnp.hstack([jnp.zeros((3, 3)), R.T])]) @ x,
+                  in_axes=(2, 1), out_axes=1)
+    f = linear_interpolation(t, x, force_dead)
+    f_fd = f1(Rab, f)
+    eta = jnp.tensordot(phi1, f_fd, axes=([1, 2],
+                                          [0, 1]))
+    return eta
+
+@jax.jit
+def eta_10g15(q0: jnp.ndarray,
+              qalpha: jnp.ndarray,
+              u_inf: float,
+              rho_inf: float,
+              A0: jnp.ndarray,
+              C0: jnp.ndarray):
+
+    eta = 0.5 * rho_inf * u_inf ** 2 * (
+        A0 @ q0 + C0 @ qalpha)
+    return eta
 
 
 

@@ -34,7 +34,7 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 # inp.systems.sett.s1.solver_function = "root"
 # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
 #                                            tolerance=1e-9)
-inp.systems.sett.s1.label = 'dq_001001'
+#inp.systems.sett.s1.label = 'dq_001001'
 inp.systems.sett.s1.xloads.follower_forces = True
 inp.systems.sett.s1.xloads.follower_points = [[15, 2]]
 inp.systems.sett.s1.xloads.x = list(range(11))
@@ -50,4 +50,4 @@ path2config = pathlib.Path("./config.yaml")
 config =  configuration.Config(inp)
 configuration.dump_to_yaml(path2config, config, with_comments=True)
 
-#sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = fem4inas.fem4inas_main.main(input_obj=config)

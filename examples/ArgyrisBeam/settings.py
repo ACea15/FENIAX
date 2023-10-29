@@ -31,7 +31,7 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 # inp.systems.sett.s1.solver_function = "root"
 # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
 #                                            tolerance=1e-9)
-inp.systems.sett.s1.label = 'dq_001001'
+# inp.systems.sett.s1.label = 'dq_001001'
 inp.systems.sett.s1.xloads.follower_forces = True
 inp.systems.sett.s1.xloads.follower_points = [[25, 1]]
 inp.systems.sett.s1.xloads.x = [0, 1, 2, 3, 4, 5, 6, 7]

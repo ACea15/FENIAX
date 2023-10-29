@@ -30,7 +30,7 @@ class Test2PointDead:
                                                    max_steps=50,
                                                    norm=jnp.linalg.norm,
                                                    kappa=0.01)
-        inp.systems.sett.s1.label = 'dq_00101'
+        #inp.systems.sett.s1.label = 'dq_00101'
         inp.systems.sett.s1.save = False
         inp.systems.sett.s1.xloads.dead_forces = True
         inp.systems.sett.s1.xloads.dead_points = [[9, 2], [18, 2]]
