@@ -20,7 +20,7 @@ class System(ABC):
     #     pass
 
     @abstractmethod
-    def set_generator(self):
+    def set_system(self):
         pass
 
     @abstractmethod

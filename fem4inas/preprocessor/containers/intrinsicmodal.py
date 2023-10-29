@@ -63,7 +63,7 @@ class Daero(DataContainer):
     Qk_gust: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
     Qk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
     Q0_rigid: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
-    #poles: jnp.ndarray = dfield("", default=None)
+    num_poles: int = dfield("", default=None)
     gust_profile: dict = dfield("", default=None, options=["1mc"])
     gust_settings: dict = dfield("", default=None)
     gust: DGust = dfield("", init=False)
@@ -331,6 +331,10 @@ class Ddriver(DataContainer):
     subcases: dict[str:Dxloads] = dfield("", default=None)
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
+    def __post_init__(self):
+
+        object.__setattr__(self, "sol_path",
+                           pathlib.Path(self.sol_path))
 
 class SystemSolution(Enum):
     STATIC = 1
@@ -349,11 +353,11 @@ BoundaryCond = Enum('BC1', ['CLAMPED', 'FREE', 'PRESCRIBED'])
 class Dsystem(DataContainer):
 
     name: str = dfield("System name")
-    solution: str | int = dfield("Type of solution to be solved",
-                                 options=['static',
-                                          'dynamic',
-                                          'multibody',
-                                          'stability'])
+    solution: str  = dfield("Type of solution to be solved",
+                            options=['static',
+                                     'dynamic',
+                                     'multibody',
+                                     'stability'])
     target: str = dfield("The simulation goal of this system",
                          default="Level",
                          options=SimulationTarget._member_names_)
@@ -393,6 +397,9 @@ class Dsystem(DataContainer):
         "number of modes to residualise", default=0)
     label: str = dfield("""System label that maps to the solution functional""",
                         default=None)
+    label_map: dict = dfield("""label dictionary assigning """,
+                        default=None)
+    
     states: dict = dfield("""Dictionary with the state variables.""",
                         default=None)
     num_states: int = dfield("""Total number of states""",
@@ -423,7 +430,10 @@ class Dsystem(DataContainer):
         if self.label is None:
             self.build_label()
     def build_states(self, num_modes):
-        # TODO: label dependent
+
+        state_dict = dict()
+        # if self.solution == "static":
+        #     state_dict.update(m, kwargs)
         object.__setattr__(self, "states", dict(q1=jnp.arange(num_modes),
                                                 q2=jnp.arange(num_modes,
                                                               2 * num_modes))
@@ -435,35 +445,35 @@ class Dsystem(DataContainer):
     def build_label(self):
         lmap = dict()
         lmap['soltype'] = SystemSolution[self.solution.upper()].value
-        lmap['target'] = SimulationTarget[self.bc1.upper()].value - 1
+        lmap['target'] = SimulationTarget[self.target.upper()].value - 1
         if self.xloads.gravity_forces:
             lmap['gravity'] = "G"
         else:
             lmap['gravity'] = "g"
         lmap['bc1'] = BoundaryCond[self.bc1.upper()].value - 1
-        lmap['aero_sol'] = int(self.xloads.modalaero_force)
+        lmap['aero_sol'] = int(self.xloads.modalaero_forces)
         if lmap['aero_sol'] > 0:
             if self.aero.sol.lower() == "rogers":
                 lmap['aero_sol'] = 1
             elif self.aero.sol.lower() == "loewner":
                 lmap['aero_sol'] = 2
-            if self.aero.qalpha is None and self.aero.qx is None:
-                lmap['aero_steady'] = 0
-            elif self.aero.qalpha is not None and self.aero.qx is None:
-                lmap['aero_steady'] = 1
-            elif self.aero.qalpha is None and self.aero.qx is not None:
-                lmap['aero_steady'] = 2
-            else:
-                lmap['aero_steady'] = 3
-            #
-            if self.aero.gust is None and self.aero.controller is None:
-                lmap['aero_unsteady'] = 0
-            elif self.aero.gust is not None and self.aero.controller is None:
-                lmap['aero_unsteady'] = 1
-            elif self.aero.gust is None and self.aero.controller is not None:
-                lmap['aero_unsteady'] = 2
-            else:
-                lmap['aero_unsteady'] = 3
+        if self.aero.qalpha is None and self.aero.qx is None:
+            lmap['aero_steady'] = 0
+        elif self.aero.qalpha is not None and self.aero.qx is None:
+            lmap['aero_steady'] = 1
+        elif self.aero.qalpha is None and self.aero.qx is not None:
+            lmap['aero_steady'] = 2
+        else:
+            lmap['aero_steady'] = 3
+        #
+        if self.aero.gust is None and self.aero.controller is None:
+            lmap['aero_unsteady'] = 0
+        elif self.aero.gust is not None and self.aero.controller is None:
+            lmap['aero_unsteady'] = 1
+        elif self.aero.gust is None and self.aero.controller is not None:
+            lmap['aero_unsteady'] = 2
+        else:
+            lmap['aero_unsteady'] = 3
         if self.xloads.follower_forces and self.xloads.dead_forces:
             lmap["point_loads"] = 3
         elif self.xloads.follower_forces:
@@ -487,7 +497,7 @@ class Dsystem(DataContainer):
                      
         # TODO: label dependent
         object.__setattr__(self, "label_map", lmap)
-        object.__setattr__(self, "label", label)
+        object.__setattr__(self, "label", f"dq_{label}")
 
 @dataclass(frozen=True)
 class Dsystems(DataContainer):
@@ -501,7 +511,7 @@ class Dsystems(DataContainer):
         for k, v in self.sett.items():
             mapper[k] = initialise_Dclass(
                 v, Dsystem, name=k)
-        object.__setattr__(self, "sys", mapper)
+        object.__setattr__(self, "mapper", mapper)
 
 @dataclass(frozen=True)
 class Dsimulation(DataContainer):

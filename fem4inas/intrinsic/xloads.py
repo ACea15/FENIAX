@@ -34,6 +34,7 @@ def redirect_to(another_function):
 #     f_interpol = weight_upper * f_upper + weight_lower  * f_lower
 #     return f_interpol
 
+@jax.jit
 def linear_interpolation(t, x, force_tensor):
 
     len_x = x.shape[0]
@@ -59,6 +60,20 @@ def linear_interpolation(t, x, force_tensor):
     f_lower = force_tensor[xindex_lower]
     f_interpol = weight_upper * f_upper + weight_lower  * f_lower
     return f_interpol
+
+@jax.jit
+def eta_10g11(t, phi1, x, force_follower):
+
+    f =  linear_interpolation(t, x, force_follower)
+    eta = jnp.tensordot(phi1, f, axes=([1, 2],
+                                       [0, 1]))
+    return eta
+
+
+
+
+
+
 
 def eta_000001(t, phi1, x, force_follower):
 

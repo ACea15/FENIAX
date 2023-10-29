@@ -44,7 +44,7 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 # inp.systems.sett.s1.solver_function = "root"
 # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
 #                                           tolerance=1e-9)
-inp.systems.sett.s1.label = 'dq_001001'
+#inp.systems.sett.s1.label = 'dq_001001'
 inp.systems.sett.s1.xloads.follower_forces = True
 inp.systems.sett.s1.xloads.follower_points = [[25, 2], [48, 2]]
 
@@ -72,4 +72,4 @@ inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]
 config =  configuration.Config(inp)
 #configuration.dump_to_yaml(path2config, config, with_comments=True)
 
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+#sol = fem4inas.fem4inas_main.main(input_obj=config)

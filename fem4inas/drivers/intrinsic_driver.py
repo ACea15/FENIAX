@@ -41,7 +41,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         self.sol = None
         self.systems = None
         self.num_systems = 0
-        self._set_sol()        
+        self._set_sol()
         self._set_systems()
         self._set_simulation()
 

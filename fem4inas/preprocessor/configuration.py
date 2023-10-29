@@ -118,10 +118,11 @@ def serialize(obj: Config | DataContainer):
                     dictionary[k] = [v, " "]
     return dictionary
 
-def dump_to_yaml(file_out, config: Config, with_comments=True):
+def dump_to_yaml(file_out: str | pathlib.Path, config: Config, with_comments=True):
 
     yaml = YAML()
-    
+    file_out = pathlib.Path(file_out)
+    file_out.parent.mkdir(parents=True, exist_ok=True)
     data = utils.dump_inputs(config._data_dict, with_comments=with_comments)
     with open(file_out, "w") as f:
         yaml.dump(data, f)

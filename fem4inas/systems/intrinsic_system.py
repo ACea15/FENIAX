@@ -1,6 +1,7 @@
 from  fem4inas.systems.system import System
 import fem4inas.systems.sollibs as sollibs
-import fem4inas.intrinsic.dq as dq
+import fem4inas.intrinsic.dq_static as dq_static
+import fem4inas.intrinsic.dq_dynamic as dq_dynamic
 import fem4inas.intrinsic.postprocess as postprocess
 import fem4inas.preprocessor.containers.intrinsicmodal as intrinsic
 import fem4inas.preprocessor.solution as solution
@@ -55,10 +56,6 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
     def set_states(self):
         self.settings.build_states(self.fem.num_modes)
         
-    def set_generator(self):
-
-        self.dFq = getattr(dq, self.settings.label)
-
     def set_solver(self):
 
         self.states_puller, self.eqsolver = sollibs.factory(
@@ -103,6 +100,10 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
     def _args_scipy(self, t):
 
         return ((t, self.sol, self.settings),)
+
+    def set_system(self):
+
+        self.dFq = getattr(dq_static, self.settings.label)
 
     def set_ic(self, q0):
         if q0 is None:
@@ -207,6 +208,10 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
                 self.settings.xloads.force_follower,
                 self.settings.xloads.x,
                 self.settings.states)
+    
+    def set_system(self):
+
+        self.dFq = getattr(dq_dynamic, self.settings.label)
 
     def solve(self):
 

@@ -10,7 +10,7 @@ class SingleSimulation(Simulation, cls_name="single"):
         # Implement _run for SerialSimulation
 
         for k, sys in self.systems.items(): # only one item in the loop
-            sys.set_generator()
+            sys.set_system()
             sys.set_solver()
             sys.set_xloading()
             sys.set_states()

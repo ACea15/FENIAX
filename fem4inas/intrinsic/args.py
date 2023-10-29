@@ -29,6 +29,26 @@ def catter2library(fun: callable):
         return args_new
     return wrapper 
 
+
+@catter2library
+def arg_10g11(sol: solution.IntrinsicSolution,
+              system: intrinsic.Dsystem,
+              fem: intrinsic.Dfem,
+              t: float,
+              *args, **kwargs):
+
+    gamma2 = sol.data.couplings.gamma2
+    phi1 = sol.data.modes.phi1l
+    omega = sol.data.modes.omega
+    x = system.xloads.x
+    force_follower = system.xloads.force_follower
+    return (gamma2, omega, phi1, x,
+            force_follower, t)
+
+
+
+
+
 @catter2library
 def arg_001001(sol: solution.IntrinsicSolution,
                system: intrinsic.Dsystem,
@@ -43,6 +63,7 @@ def arg_001001(sol: solution.IntrinsicSolution,
     force_follower = system.xloads.force_follower
     return (gamma2, omega, phi1, x,
             force_follower, t)
+
 
 @catter2library
 def arg_0011(sol: solution.IntrinsicSolution,
