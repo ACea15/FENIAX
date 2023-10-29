@@ -7,7 +7,7 @@ import pandas as pd
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass, load_jnp
 from fem4inas.preprocessor.containers.data_container import DataContainer
 import fem4inas.intrinsic.geometry as geometry
-from fem4inas.intrinsic.functions import coordinate_transform
+from fem4inas.intrinsic.functions import coordinate_transform, label_generator
 import jax
 from enum import Enum
 
@@ -436,8 +436,11 @@ class Dsystem(DataContainer):
         lmap = dict()
         lmap['soltype'] = SystemSolution[self.solution.upper()].value
         lmap['target'] = SimulationTarget[self.bc1.upper()].value - 1
+        if self.xloads.gravity_forces:
+            lmap['gravity'] = "G"
+        else:
+            lmap['gravity'] = "g"
         lmap['bc1'] = BoundaryCond[self.bc1.upper()].value - 1
-        lmap['gravity'] = self.xloads.gravity_forces
         lmap['aero_sol'] = int(self.xloads.modalaero_force)
         if lmap['aero_sol'] > 0:
             if self.aero.sol.lower() == "rogers":
@@ -479,7 +482,9 @@ class Dsystem(DataContainer):
             lmap['residualise'] = "r"
         else:
             lmap['residualise'] = ""
-            
+        labelx = list(lmap.values())
+        label = label_generator(labelx)        
+                     
         # TODO: label dependent
         object.__setattr__(self, "label_map", lmap)
         object.__setattr__(self, "label", label)

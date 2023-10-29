@@ -196,16 +196,22 @@ def coordinate_transform(u1: jnp.ndarray,
     fuv = f(u1, v1)
     return fuv
 
-def label_generator(label_table: dict):
+def label_generator(label_table: list):
 
     prime_numbers = [2, 3, 5, 7, 11, 13,
                      17, 19, 23, 29, 31,
                      37, 41, 43, 47, 53,
                      59, 61, 67, 71, 73,
                      79, 83, 89, 97]
-    label = label_table[0]
+    label = ''.join([str(i) for i in label_table[0:3]])
     prod = 1
-    for i, li in enumerate(label_table[1:]):
-        prod *= prime_numbers[i] ** int(li)
+    letters = ""
+    for i, li in enumerate(label_table[3:]):
+        if isinstance(li, int):
+            prod *= prime_numbers[i] ** int(li)
+        elif isinstance(li, str):
+            letters += li
+            
     label += str(prod)
+    label += letters
     return label
