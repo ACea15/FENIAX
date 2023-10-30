@@ -35,7 +35,7 @@ def redirect_to(another_function):
 #     return f_interpol
 
 @jax.jit
-def linear_interpolation(t, x, force_tensor):
+def linear_interpolation(t, x, data_tensor):
 
     len_x = x.shape[0]
     xindex_upper = jnp.argwhere(jax.lax.select(x >= t,
@@ -56,13 +56,40 @@ def linear_interpolation(t, x, force_tensor):
                                   0.5,
                                   (x_upper - t) / (x_upper - x_lower))
 
-    f_upper = force_tensor[xindex_upper]
-    f_lower = force_tensor[xindex_lower]
+    f_upper = data_tensor[xindex_upper]
+    f_lower = data_tensor[xindex_lower]
     f_interpol = weight_upper * f_upper + weight_lower  * f_lower
     return f_interpol
 
 @jax.jit
-def eta_10g11(t, phi1, x, force_follower):
+def linear_interpolation2(t, x, data_tensor):
+
+    len_x = x.shape[0]
+    xindex_upper = jnp.argwhere(jax.lax.select(x >= t,
+                                               jnp.ones(len_x),
+                                               jnp.zeros(len_x)),
+                                size=1)[0][0] #jnp.where(x >= t)[0][0]
+    index_equal = jnp.sum(jax.lax.select(x == t,
+                                         jnp.ones(len_x),
+                                         jnp.zeros(len_x)),
+                          dtype=int)
+    xindex_lower = xindex_upper - 1 + index_equal #jnp.where(x <= t)[0][-1]
+    x_upper = x[xindex_upper]
+    x_lower = x[xindex_lower]
+    weight_upper = jax.lax.select(xindex_upper == xindex_lower,
+                                  0.5,
+                                  (t - x_lower) / (x_upper - x_lower))
+    weight_lower = jax.lax.select(xindex_upper == xindex_lower,
+                                  0.5,
+                                  (x_upper - t) / (x_upper - x_lower))
+
+    f_upper = data_tensor[:, xindex_upper]
+    f_lower = data_tensor[:, xindex_lower]
+    f_interpol = weight_upper * f_upper + weight_lower  * f_lower
+    return f_interpol
+
+@jax.jit
+def eta_pointfollower(t, phi1, x, force_follower):
 
     f =  linear_interpolation(t, x, force_follower)
     eta = jnp.tensordot(phi1, f, axes=([1, 2],
@@ -70,7 +97,7 @@ def eta_10g11(t, phi1, x, force_follower):
     return eta
 
 @jax.jit
-def eta_10g121(t, phi1, x, force_dead, Rab):
+def eta_pointdead(t, phi1, x, force_dead, Rab):
 
     f1 = jax.vmap(lambda R, x: jnp.vstack(
             [jnp.hstack([R.T, jnp.zeros((3, 3))]),
@@ -82,22 +109,37 @@ def eta_10g121(t, phi1, x, force_dead, Rab):
                                           [0, 1]))
     return eta
 
+def eta_rogerstruct(q0, q1, ql_tensor,
+                    A0hat, A1hat, A2hat):
+
+    eta0 = A0hat @ q0 + A1hat @ q1
+    #lags = jnp.tensordot(A2hat, ql_tensor, axis=(1,0))
+    lags_sum = jnp.sum(ql_tensor, axis=1)
+    eta = eta0 + lags_sum
+    return eta
+
 @jax.jit
-def eta_10g15(q0: jnp.ndarray,
-              qalpha: jnp.ndarray,
-              u_inf: float,
-              rho_inf: float,
-              A0: jnp.ndarray,
-              C0: jnp.ndarray):
+def eta_manoeuvre(q0: jnp.ndarray,
+                  qalpha: jnp.ndarray,
+                  u_inf: float,
+                  rho_inf: float,
+                  A0: jnp.ndarray,
+                  C0: jnp.ndarray):
 
     eta = 0.5 * rho_inf * u_inf ** 2 * (
         A0 @ q0 + C0 @ qalpha)
     return eta
 
+# def eta_rogergust(t, xgust, _wgust, _wgust_dot, _wgust_ddot,
+#                   D0hat, D1hat, D2hat):
 
+#     wgust = linear_interpolation(t, xgust, _wgust)
+#     wgust_dot = linear_interpolation(t, xgust, _wgust_dot)
+#     wgust_ddot = linear_interpolation(t, xgust, _wgust_ddot)
+#     eta = D0hat @ wgust + D1hat @ wgust_dot + D2hat @ wgust_ddot
+#     return eta
 
-
-
+########################
 def eta_000001(t, phi1, x, force_follower):
 
     f =  linear_interpolation(t, x, force_follower)

@@ -52,7 +52,8 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         if self.settings.xloads.dead_forces:
             self.settings.xloads.build_point_dead(
                 self.fem.num_nodes)
-            
+        if self.settings.xloads.aero.gust is not None:
+            ...
     def set_states(self):
         self.settings.build_states(self.fem.num_modes)
         

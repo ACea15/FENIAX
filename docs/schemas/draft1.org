@@ -655,6 +655,7 @@ derivatives
 | 10G_15   | Manoeuvre under qalpha and Gravity              | [1,0,'G',0,1,1]     |
 | 10g_75   | Manoeuvre under qalpha and controls             | [1,0,'g',0,1,2]     |
 | 10G_75   | Manoeuvre under qalpha+controls+Gravity         | [1,0,'G',0,1,2]     |
+| 20g_1    | Clamped Structural dynamics, free vibrations    | [2,0,'g']           |
 | 20G_2    | Free Structural dynamic with gravity forces     | [2,0,'G',1]         |
 | 20g_11   | Structural dynamic follower point forces        | [2,0,'g',0,0,0,0,1] |
 | 20g_121  | Structural dynamic dead point forces            | [2,0,'g',0,0,0,0,2] |
