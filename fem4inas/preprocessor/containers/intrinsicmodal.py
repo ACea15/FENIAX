@@ -64,7 +64,7 @@ class Daero(DataContainer):
     Qk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
     Q0_rigid: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
     num_poles: int = dfield("", default=None)
-    gust_profile: dict = dfield("", default=None, options=["1mc"])
+    gust_profile: dict = dfield("", default=None, options=["mc"])
     gust_settings: dict = dfield("", default=None)
     gust: DGust = dfield("", init=False)
     controller_name: dict = dfield("", default=None)
@@ -72,6 +72,7 @@ class Daero(DataContainer):
     controller: DController = dfield("", init=False)
     
     def __post_init__(self):
+        object.__setattr__(self, "approx", self.approx.capitalize())
         if self.gust_profile is not None:
             gust_class = globals()[f"DGust{self.gust_profile.upper()}"]
             gust_obj = initialise_Dclass(self.gust_settings, gust_class)

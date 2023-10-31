@@ -60,12 +60,36 @@ class ModalAeroRoger:
     C0: jnp.ndarray = None
 
 @dataclass(slots=True)
+class ScaledAeroRoger:
+
+    poles: jnp.ndarray = None
+    A0hat: jnp.ndarray = None
+    A1hat: jnp.ndarray = None
+    A2hat: jnp.ndarray = None
+    Aphat: jnp.ndarray = None
+    B0hat: jnp.ndarray = None
+    B1hat: jnp.ndarray = None
+    B2hat: jnp.ndarray = None
+    Bphat: jnp.ndarray = None
+    D0hat: jnp.ndarray = None
+    D1hat: jnp.ndarray = None
+    D2hat: jnp.ndarray = None
+    Dphat: jnp.ndarray = None
+    C0hat: jnp.ndarray = None
+
+    
+@dataclass(slots=True)
 class GustRoger:
 
     w: jnp.ndarray = None
     wdot: jnp.ndarray = None
     wddot: jnp.ndarray = None
     x: jnp.ndarray = None
+    Qhj_w:jnp.ndarray = None
+    Qhj_wdot:jnp.ndarray = None
+    Qhj_wddot:jnp.ndarray = None
+    Qhj_wsum:jnp.ndarray = None
+    Qhjl_wdot:jnp.ndarray = None
 
 # import dataclasses    
 # field_types = {field.name: field.type for field in dataclasses.fields(Modes)}

@@ -7,6 +7,8 @@ import fem4inas.preprocessor.containers.intrinsicmodal as intrinsic
 import fem4inas.preprocessor.solution as solution
 import fem4inas.intrinsic.initcond as initcond
 import fem4inas.intrinsic.args as libargs
+import fem4inas.intrinsic.gust as gust
+
 import jax.numpy as jnp
 
 class IntrinsicSystem(System, cls_name="intrinsic"):
@@ -52,8 +54,16 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         if self.settings.xloads.dead_forces:
             self.settings.xloads.build_point_dead(
                 self.fem.num_nodes)
-        if self.settings.xloads.aero.gust is not None:
-            ...
+        if self.settings.aero is not None:
+
+            if self.settings.aero.gust is not None:
+                approx = self.settings.aero.approx.capitalize()
+                profile = self.settings.aero.gust_profile.capitalize()
+                gust = gust.Registry.create_instance(f"{approx}{profile}",)
+                gust.calculate_normals()
+                gust.calculate_downwash()
+                gust.set_solution(self.sol, self.settings.name)                             
+                
     def set_states(self):
         self.settings.build_states(self.fem.num_modes)
         
