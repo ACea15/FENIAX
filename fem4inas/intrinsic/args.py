@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 import fem4inas.preprocessor.solution as solution
-import fem4inas.preprocessor.containers.intrinsicmodal as intrinsic
+import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
 
 def _args_diffrax(input1):
 
@@ -31,8 +31,8 @@ def catter2library(fun: callable):
 
 @catter2library
 def arg_10g11(sol: solution.IntrinsicSolution,
-              system: intrinsic.Dsystem,
-              fem: intrinsic.Dfem,
+              system: intrinsicmodal.Dsystem,
+              fem: intrinsicmodal.Dfem,
               t: float,
               *args, **kwargs):
 
@@ -46,8 +46,8 @@ def arg_10g11(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_10g121(sol: solution.IntrinsicSolution,
-               system: intrinsic.Dsystem,
-               fem: intrinsic.Dfem,
+               system: intrinsicmodal.Dsystem,
+               fem: intrinsicmodal.Dfem,
                t: float,
                *args, **kwargs):
 
@@ -72,8 +72,8 @@ def arg_10g121(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_10g15(sol: solution.IntrinsicSolution,
-              system: intrinsic.Dsystem,
-              fem: intrinsic.Dfem,
+              system: intrinsicmodal.Dsystem,
+              fem: intrinsicmodal.Dfem,
               t: float,
               *args, **kwargs):
 
@@ -90,7 +90,7 @@ def arg_10g15(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_20g11(sol: solution.IntrinsicSolution,
-               system: intrinsic.Dsystem,
+               system: intrinsicmodal.Dsystem,
                *args, **kwargs):
 
     phi1 = sol.data.modes.phi1l    
@@ -105,7 +105,7 @@ def arg_20g11(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_20g1(sol: solution.IntrinsicSolution,
-             system: intrinsic.Dsystem,
+             system: intrinsicmodal.Dsystem,
              *args, **kwargs):
 
     gamma1 = sol.data.couplings.gamma1
@@ -116,8 +116,8 @@ def arg_20g1(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_20g121(sol: solution.IntrinsicSolution,
-               system: intrinsic.Dsystem,
-               fem: intrinsic.Dfem,
+               system: intrinsicmodal.Dsystem,
+               fem: intrinsicmodal.Dfem,
                t: float,
                *args, **kwargs):
 
@@ -142,8 +142,8 @@ def arg_20g121(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_20g21(sol: solution.IntrinsicSolution,
-              system: intrinsic.Dsystem,
-              fem: intrinsic.Dfem,
+              system: intrinsicmodal.Dsystem,
+              fem: intrinsicmodal.Dfem,
               *args, **kwargs):
 
     gamma1 = sol.data.couplings.gamma1
@@ -189,8 +189,8 @@ def arg_20g21(sol: solution.IntrinsicSolution,
 ############################################
 @catter2library
 def arg_001001(sol: solution.IntrinsicSolution,
-               system: intrinsic.Dsystem,
-               fem: intrinsic.Dfem,
+               system: intrinsicmodal.Dsystem,
+               fem: intrinsicmodal.Dfem,
                t: float,
                *args, **kwargs):
 
@@ -205,8 +205,8 @@ def arg_001001(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_0011(sol: solution.IntrinsicSolution,
-             system: intrinsic.Dsystem,
-             fem: intrinsic.Dfem,
+             system: intrinsicmodal.Dsystem,
+             fem: intrinsicmodal.Dfem,
              t: float,
              *args, **kwargs):
 
@@ -223,8 +223,8 @@ def arg_0011(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_000001(sol: solution.IntrinsicSolution,
-               system: intrinsic.Dsystem,
-               fem: intrinsic.Dfem,
+               system: intrinsicmodal.Dsystem,
+               fem: intrinsicmodal.Dfem,
                t: float,
                *args, **kwargs):
 
@@ -237,8 +237,8 @@ def arg_000001(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_00101(sol: solution.IntrinsicSolution,
-              system: intrinsic.Dsystem,
-              fem: intrinsic.Dfem,
+              system: intrinsicmodal.Dsystem,
+              fem: intrinsicmodal.Dfem,
               t: float,
               *args, **kwargs):
 
@@ -263,7 +263,7 @@ def arg_00101(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_101000(sol: solution.IntrinsicSolution,
-               system: intrinsic.Dsystem,
+               system: intrinsicmodal.Dsystem,
                *args, **kwargs):
 
     gamma1 = sol.data.couplings.gamma1
@@ -274,7 +274,7 @@ def arg_101000(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_101001(sol: solution.IntrinsicSolution,
-               system: intrinsic.Dsystem,
+               system: intrinsicmodal.Dsystem,
                *args, **kwargs):
 
     phi1 = sol.data.modes.phi1l    
@@ -289,7 +289,7 @@ def arg_101001(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_100001(sol: solution.IntrinsicSolution,
-               system: intrinsic.Dsystem,
+               system: intrinsicmodal.Dsystem,
                *args, **kwargs):
 
     phi1 = sol.data.modes.phi1l    
@@ -302,8 +302,8 @@ def arg_100001(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_10101(sol: solution.IntrinsicSolution,
-              system: intrinsic.Dsystem,
-              fem: intrinsic.Dfem,
+              system: intrinsicmodal.Dsystem,
+              fem: intrinsicmodal.Dfem,
               *args, **kwargs):
 
     phi1 = sol.data.modes.phi1l

@@ -48,35 +48,29 @@ class ModalAeroRoger:
     A0: jnp.ndarray = None
     A1: jnp.ndarray = None
     A2: jnp.ndarray = None
-    Ap: jnp.ndarray = None
+    A3: jnp.ndarray = None
     B0: jnp.ndarray = None
     B1: jnp.ndarray = None
     B2: jnp.ndarray = None
-    Bp: jnp.ndarray = None
+    B3: jnp.ndarray = None
     D0: jnp.ndarray = None
     D1: jnp.ndarray = None
     D2: jnp.ndarray = None
-    Dp: jnp.ndarray = None
+    D3: jnp.ndarray = None
     C0: jnp.ndarray = None
-
-@dataclass(slots=True)
-class ScaledAeroRoger:
-
-    poles: jnp.ndarray = None
     A0hat: jnp.ndarray = None
     A1hat: jnp.ndarray = None
     A2hat: jnp.ndarray = None
-    Aphat: jnp.ndarray = None
+    A3hat: jnp.ndarray = None
     B0hat: jnp.ndarray = None
     B1hat: jnp.ndarray = None
     B2hat: jnp.ndarray = None
-    Bphat: jnp.ndarray = None
+    B3hat: jnp.ndarray = None
     D0hat: jnp.ndarray = None
     D1hat: jnp.ndarray = None
     D2hat: jnp.ndarray = None
-    Dphat: jnp.ndarray = None
+    D3hat: jnp.ndarray = None
     C0hat: jnp.ndarray = None
-
     
 @dataclass(slots=True)
 class GustRoger:

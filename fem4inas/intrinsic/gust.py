@@ -1,23 +1,6 @@
 from abc import ABC, abstractmethod
 import jax.numpy as jnp
-
-class Registry:
-    _registry = {}
-
-    @classmethod
-    def register(cls, key):
-        def decorator(factory_class):
-            cls._registry[key] = factory_class
-            return factory_class
-        return decorator
-
-    @classmethod
-    def create_instance(cls, key, *args, **kwargs):
-        if key in cls._registry:
-            factory_class = cls._registry[key]
-            return factory_class(*args, **kwargs)
-        else:
-            raise KeyError(f"Class 'Gust{key}' not found in the registry")
+from fem4inas.intrinsic.utils import Registry
 
 class Shapes:
 
@@ -26,6 +9,9 @@ class Shapes:
         return 1.
 
 class Gust(ABC):
+    @abstractmethod
+    def calculate_normals(self):
+        ...
 
     @abstractmethod
     def calculate_downwash(self):
@@ -33,27 +19,25 @@ class Gust(ABC):
         NpxNt
         """
         ...
-    @abstractmethod
-    def calculate_normals(self):
-        ...
+        
     @abstractmethod
     def set_solution(self, sol):
         ...
 
-@Registry.register("Roger1Mc")
+@Registry.register("GustRogerMc")
 class GustRogerMc(Gust):
 
     def __init__(self,
-                 
+                 settings,
+                 sol):
 
-                 u_inf, xgust, gust_shift, simulation_time,
-                 collocation_points, shape="const", dihedral_vector=None):
-
-        self.u_inf = u_inf
-        self.xgust = xgust
-        self.gust_shift = gust_shift
-        self.simulation_time = simulation_time
-        self.collocation_points = collocation_points
+        self.u_inf = settings.aero.u_inf
+        self.rho_inf = self.settings.aero.rho_inf
+        self.xgust = settings.aero.gust.x_discretization
+        self.gust_shift = settings.aero.gust.shift
+        self.simulation_time = settings.t
+        self.collocation_points = settings.aero.gust.collocation_points
+        self.D0hat = 4
         self._define_time()
         self._define_spanshape()
         self.calculate_downwash()

@@ -2,7 +2,8 @@ import itertools
 from scipy.optimize import least_squares
 import numpy as np
 import Utils.common as common
-import rfa
+#import rfa
+import Aerodynamics.rfa as rfa
 import pdb
 
 def combine_loops(init0,n,final):

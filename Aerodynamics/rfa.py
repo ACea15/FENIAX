@@ -47,38 +47,40 @@ def frequency_matrix(poles,reduced_freq,RFA_Method):
     ###########################################################################################################################################
     if RFA_Method == 'R' or RFA_Method == 'r':
         for row in range (0,num_reduced_freq*2,2):
+            row_half = int(row/2)
             for column in range (npoles+3):
                 if column==0:
                     k_matrix[row,column]=1.
                     k_matrix[row+1,column]=0.
                 if column==1:
                     k_matrix[row,column]=0.
-                    k_matrix[row+1,column]=reduced_freq[row/2]
+                    k_matrix[row+1,column]=reduced_freq[row_half]
                 if column==2:
-                    k_matrix[row,column]=-reduced_freq[row/2]**2
+                    k_matrix[row,column]=-reduced_freq[row_half]**2
                     k_matrix[row+1,column]=0.
                 if column>=3:
-                    k_matrix[row,column]=(reduced_freq[row/2]**2)/(reduced_freq[row/2]**2+poles[column-3]**2)
-                    k_matrix[row+1,column]=(reduced_freq[row/2]*poles[column-3])/(reduced_freq[row/2]**2+poles[column-3]**2)
+                    k_matrix[row,column]=(reduced_freq[row_half]**2)/(reduced_freq[row_half]**2+poles[column-3]**2)
+                    k_matrix[row+1,column]=(reduced_freq[row_half]*poles[column-3])/(reduced_freq[row_half]**2+poles[column-3]**2)
 
     ###########################################################################################################################################
     #Eversman's Method
     ###########################################################################################################################################
     if RFA_Method == 'E' or RFA_Method == 'e':
         for row in range (0,num_reduced_freq*2,2):
+            row_half = int(row/2)
             for column in range (npoles+3):
                 if column==0:
                     k_matrix[row,column]=1.
                     k_matrix[row+1,column]=0.
                 if column==1:
                     k_matrix[row,column]=0.
-                    k_matrix[row+1,column]=reduced_freq[row/2]
+                    k_matrix[row+1,column]=reduced_freq[row_half]
                 if column==2:
-                    k_matrix[row,column]=-reduced_freq[row/2]**2
+                    k_matrix[row,column]=-reduced_freq[row_half]**2
                     k_matrix[row+1,column]=0.
                 if column>=3:
-                    k_matrix[row,column]=(poles[column-3])/(reduced_freq[row/2]**2+poles[column-3]**2)
-                    k_matrix[row+1,column]=(-reduced_freq[row/2])/(reduced_freq[row/2]**2+poles[column-3]**2)
+                    k_matrix[row,column]=(poles[column-3])/(reduced_freq[row_half]**2+poles[column-3]**2)
+                    k_matrix[row+1,column]=(-reduced_freq[row_half])/(reduced_freq[row_half]**2+poles[column-3]**2)
 
     return k_matrix
 

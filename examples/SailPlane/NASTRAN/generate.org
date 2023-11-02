@@ -5,7 +5,6 @@
   (pyvenv-workon "fem4inas")
 #+end_src
 
-
 * INPUT PARAMETERS
 #+NAME: python_parameters
 #+begin_src python :session py1 :var output="num_modes" :results none :tangle py1.py
@@ -14,7 +13,7 @@
   mach = 0.8
   Mach = str(mach).replace('.','_')
   machs = [mach]
-  reduced_freqs = np.hstack([np.linspace(1e-5,1, 50), [10-0.001, 10., 10+0.001]])
+  reduced_freqs = np.hstack([1e-6, np.linspace(1e-3,1, 50)])#np.hstack([np.linspace(1e-5,1, 50), [10-0.001, 10., 10+0.001]])
   num_modes = 20
   chord_panels = dict(wing=15, hstabilizer=10, vstabilizer=10)
   #aero['s_ref'] = 361.6
@@ -115,7 +114,7 @@
   from fem4inas.utils import write_op4modes
   modes = write_op4modes("./SOL103/run_cao",
                          num_modes,
-                         op4_name=f"./SOL103/Phi{num_modes}",
+                         op4_name=f"./data_out/Phi{num_modes}",
                          return_modes=True)
 
 #+end_src
@@ -611,7 +610,7 @@
   $EXECUTIVE CONTROL DECK
   assign OUTPUT4='../data_out/Qhh<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=11
   assign OUTPUT4='../data_out/Qhj<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=12
-  assign INPUTT4='../SOL103/Phi<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=90
+  assign INPUTT4='../data_out/Phi<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=90
   $assign INPUTT4= 'Phi1.op4',formatted,UNIT=91
   $NASTRAN NLINES=999999
   NASTRAN QUARTICDLM=1

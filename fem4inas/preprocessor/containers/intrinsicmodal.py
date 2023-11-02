@@ -42,13 +42,19 @@ class DGust(DataContainer):
     intensity: float
     
 @dataclass(frozen=True, kw_only=True)
-class DGust1MC(DGust):
-    intensity: float
-
+class DGustMc(DGust):
+    intensity: float = dfield("", default=None)
+    length: float = dfield("", default=None)
+    x_discretization: jnp.array = dfield("", default=None)
+    shift: float = dfield("", default=None)
+    panels_dihedral: jnp.array = dfield("", default=None)
+    collocation_points: jnp.array = dfield("", default=None)
+    shape: float = dfield("", default="const")
+    
 @dataclass(frozen=True, kw_only=True)
 class DController(DataContainer):
     intensity: float
-
+    
 @dataclass(frozen=True)
 class Daero(DataContainer):
 
@@ -59,10 +65,16 @@ class Daero(DataContainer):
     qx: jnp.ndarray = dfield("", default=None)
     #
     approx: str = dfield("", default="Roger")
-    Qk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    Qk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("Sample frquencies and corresponding AICs for the structure", default=None)
     Qk_gust: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
     Qk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
-    Q0_rigid: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    Q0_rigid: jnp.ndarray = dfield("", default=None)    
+    A: str| jnp.array = dfield("", default=None)
+    B: str| jnp.array = dfield("", default=None)
+    C: str| jnp.array = dfield("", default=None)
+    D: str| jnp.array = dfield("", default=None)
+    _controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    poles: str | jnp.array = dfield("", default=None)
     num_poles: int = dfield("", default=None)
     gust_profile: dict = dfield("", default=None, options=["mc"])
     gust_settings: dict = dfield("", default=None)
@@ -74,7 +86,7 @@ class Daero(DataContainer):
     def __post_init__(self):
         object.__setattr__(self, "approx", self.approx.capitalize())
         if self.gust_profile is not None:
-            gust_class = globals()[f"DGust{self.gust_profile.upper()}"]
+            gust_class = globals()[f"DGust{self.gust_profile.capitalize()}"]
             gust_obj = initialise_Dclass(self.gust_settings, gust_class)
             object.__setattr__(self, "gust", gust_obj)
         else:
@@ -85,7 +97,10 @@ class Daero(DataContainer):
             object.__setattr__(self, "controller", controller_obj)
         else:
             object.__setattr__(self, "controller", None)
-
+        if isinstance(self.poles, str):
+            object.__setattr__(self, "poles", jnp.load(self.poles))
+        object.__setattr__(self, "num_poles", len(self.poles))
+        
 @dataclass(frozen=True)
 class Dxloads(DataContainer):
 

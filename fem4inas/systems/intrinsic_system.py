@@ -3,11 +3,12 @@ import fem4inas.systems.sollibs as sollibs
 import fem4inas.intrinsic.dq_static as dq_static
 import fem4inas.intrinsic.dq_dynamic as dq_dynamic
 import fem4inas.intrinsic.postprocess as postprocess
-import fem4inas.preprocessor.containers.intrinsicmodal as intrinsic
+import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
 import fem4inas.preprocessor.solution as solution
 import fem4inas.intrinsic.initcond as initcond
 import fem4inas.intrinsic.args as libargs
 import fem4inas.intrinsic.gust as gust
+import fem4inas.intrinsic.aero as aero
 
 import jax.numpy as jnp
 
@@ -15,8 +16,8 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
     def __init__(self,
                  name: str,
-                 settings: intrinsic.Dsystem,
-                 fem: intrinsic.Dfem,
+                 settings: intrinsicmodal.Dsystem,
+                 fem: intrinsicmodal.Dfem,
                  sol: solution.IntrinsicSolution,
                  config):
 
@@ -55,15 +56,22 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             self.settings.xloads.build_point_dead(
                 self.fem.num_nodes)
         if self.settings.aero is not None:
-
+            approx = self.settings.aero.approx.capitalize()
+            aeroobj = aero.Registry.create_instance(f"Aero{approx}",
+                                                    self.settings,
+                                                    self.sol)
+            aeroobj.get_matrices()
+            aeroobj.save_sol()
             if self.settings.aero.gust is not None:
-                approx = self.settings.aero.approx.capitalize()
-                profile = self.settings.aero.gust_profile.capitalize()
-                gust = gust.Registry.create_instance(f"{approx}{profile}",)
-                gust.calculate_normals()
-                gust.calculate_downwash()
-                gust.set_solution(self.sol, self.settings.name)                             
                 
+                profile = self.settings.aero.gust_profile.capitalize()
+                gustobj = gust.Registry.create_instance(f"Gust{approx}{profile}",
+                                                        self.settings,
+                                                        self.sol)
+                gustobj.calculate_normals()
+                gustobj.calculate_downwash()
+                gustobj.set_solution(self.sol, self.settings.name)
+
     def set_states(self):
         self.settings.build_states(self.fem.num_modes)
         
