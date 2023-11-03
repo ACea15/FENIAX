@@ -44,12 +44,11 @@ class DGust(DataContainer):
 @dataclass(frozen=True, kw_only=True)
 class DGustMc(DGust):
     intensity: float = dfield("", default=None)
-    length: float = dfield("", default=None)
     x_discretization: jnp.array = dfield("", default=None)
     shift: float = dfield("", default=None)
     panels_dihedral: jnp.array = dfield("", default=None)
     collocation_points: jnp.array = dfield("", default=None)
-    shape: float = dfield("", default="const")
+    shape: str = dfield("", default="const")
     
 @dataclass(frozen=True, kw_only=True)
 class DController(DataContainer):
@@ -65,16 +64,17 @@ class Daero(DataContainer):
     qx: jnp.ndarray = dfield("", default=None)
     #
     approx: str = dfield("", default="Roger")
-    Qk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("Sample frquencies and corresponding AICs for the structure", default=None)
+    Qk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("""Sample frquencies and
+    corresponding AICs for the structure""", default=None)
     Qk_gust: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
     Qk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
     Q0_rigid: jnp.ndarray = dfield("", default=None)    
-    A: str| jnp.array = dfield("", default=None)
-    B: str| jnp.array = dfield("", default=None)
-    C: str| jnp.array = dfield("", default=None)
-    D: str| jnp.array = dfield("", default=None)
+    A: str | jnp.ndarray = dfield("", default=None)
+    B: str | jnp.ndarray = dfield("", default=None)
+    C: str | jnp.ndarray = dfield("", default=None)
+    D: str | jnp.ndarray = dfield("", default=None)
     _controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
-    poles: str | jnp.array = dfield("", default=None)
+    poles: str | jnp.ndarray = dfield("", default=None)
     num_poles: int = dfield("", default=None)
     gust_profile: dict = dfield("", default=None, options=["mc"])
     gust_settings: dict = dfield("", default=None)
@@ -365,6 +365,17 @@ SimulationTarget = Enum('TARGET', ['LEVEL',
                                    'TURBULENCE'])
 BoundaryCond = Enum('BC1', ['CLAMPED', 'FREE', 'PRESCRIBED'])
 
+class StateTrack:
+    def __init__(self):
+        self.states = dict()
+        self.num_states = 0
+        
+    def update(self, **kwargs):
+        for k, v in kwargs.items():
+            self.states.update(k=jnp.arange(self.num_states,
+                                           self.num_states + v))
+            self.num_states += v
+
 @dataclass(frozen=True)
 class Dsystem(DataContainer):
 
@@ -437,28 +448,36 @@ class Dsystem(DataContainer):
             object.__setattr__(self, "dt", self.t[1] - self.t[0])
         object.__setattr__(self, 'xloads', initialise_Dclass(self.xloads,
                                                              Dxloads))
-        object.__setattr__(self, 'aero', initialise_Dclass(self.aero,
-                                                           Daero))
+        if self.aero is not None:
+            object.__setattr__(self, 'aero', initialise_Dclass(self.aero,
+                                                               Daero))
         #self.xloads = initialise_Dclass(self.xloads, Dxloads)
         if self.solver_settings is None:
             object.__setattr__(self, "solver_settings", dict())
         
         if self.label is None:
             self.build_label()
+            
     def build_states(self, num_modes):
 
-        state_dict = dict()
+        tracker = StateTrack()
+        # TODO: keep upgrading/ add residualise
+        if self.solution == "static":
+            tracker.update(q2=num_modes)
+        elif self.solution == "dynamic":
+            tracker.update(q1=num_modes,
+                           q2=num_modes)
+            if self.aero.sol.lower() == "rogers":
+                tracker.update(ql=self.aero.num_poles * num_modes)
         # if self.solution == "static":
         #     state_dict.update(m, kwargs)
-        object.__setattr__(self, "states", dict(q1=jnp.arange(num_modes),
-                                                q2=jnp.arange(num_modes,
-                                                              2 * num_modes))
+        object.__setattr__(self, "states", tracker.states
                            )
-        object.__setattr__(self, "num_states",
-                           sum([len(i) for i in self.states.values()])
+        object.__setattr__(self, "num_states", tracker.num_states
                            )
         
     def build_label(self):
+        # WARNING: order dependent for the label
         lmap = dict()
         lmap['soltype'] = SystemSolution[self.solution.upper()].value
         lmap['target'] = SimulationTarget[self.target.upper()].value - 1
@@ -473,23 +492,26 @@ class Dsystem(DataContainer):
                 lmap['aero_sol'] = 1
             elif self.aero.sol.lower() == "loewner":
                 lmap['aero_sol'] = 2
-        if self.aero.qalpha is None and self.aero.qx is None:
+            if self.aero.qalpha is None and self.aero.qx is None:
+                lmap['aero_steady'] = 0
+            elif self.aero.qalpha is not None and self.aero.qx is None:
+                lmap['aero_steady'] = 1
+            elif self.aero.qalpha is None and self.aero.qx is not None:
+                lmap['aero_steady'] = 2
+            else:
+                lmap['aero_steady'] = 3
+            #
+            if self.aero.gust is None and self.aero.controller is None:
+                lmap['aero_unsteady'] = 0
+            elif self.aero.gust is not None and self.aero.controller is None:
+                lmap['aero_unsteady'] = 1
+            elif self.aero.gust is None and self.aero.controller is not None:
+                lmap['aero_unsteady'] = 2
+            else:
+                lmap['aero_unsteady'] = 3
+        else:
             lmap['aero_steady'] = 0
-        elif self.aero.qalpha is not None and self.aero.qx is None:
-            lmap['aero_steady'] = 1
-        elif self.aero.qalpha is None and self.aero.qx is not None:
-            lmap['aero_steady'] = 2
-        else:
-            lmap['aero_steady'] = 3
-        #
-        if self.aero.gust is None and self.aero.controller is None:
             lmap['aero_unsteady'] = 0
-        elif self.aero.gust is not None and self.aero.controller is None:
-            lmap['aero_unsteady'] = 1
-        elif self.aero.gust is None and self.aero.controller is not None:
-            lmap['aero_unsteady'] = 2
-        else:
-            lmap['aero_unsteady'] = 3
         if self.xloads.follower_forces and self.xloads.dead_forces:
             lmap["point_loads"] = 3
         elif self.xloads.follower_forces:

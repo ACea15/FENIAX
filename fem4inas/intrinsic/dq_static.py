@@ -50,11 +50,8 @@ def dq_10g121(q, *args):
 def dq_10g15(q, *args):
 
     (gamma2, omega,
-     u_inf, rho_inf,
      qalpha, A0, C0) = args[0]
     q0 = -q / omega
     F = omega * q - common.contraction_gamma2(gamma2, q)
-    F += xloads.eta_manoeuvre(q0, qalpha,
-                              u_inf, rho_inf,
-                              A0, C0)
+    F += xloads.eta_manoeuvre(q0, qalpha, A0, C0)
     return F

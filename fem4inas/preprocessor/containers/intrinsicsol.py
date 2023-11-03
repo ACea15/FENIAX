@@ -61,7 +61,8 @@ class ModalAeroRoger:
     A0hat: jnp.ndarray = None
     A1hat: jnp.ndarray = None
     A2hat: jnp.ndarray = None
-    A3hat: jnp.ndarray = None
+    A2hatinv: jnp.ndarray = None
+    A3hat: jnp.ndarray = None  # NlxNmxNm
     B0hat: jnp.ndarray = None
     B1hat: jnp.ndarray = None
     B2hat: jnp.ndarray = None
@@ -69,7 +70,7 @@ class ModalAeroRoger:
     D0hat: jnp.ndarray = None
     D1hat: jnp.ndarray = None
     D2hat: jnp.ndarray = None
-    D3hat: jnp.ndarray = None
+    D3hat: jnp.ndarray = None  # NlxNbxNm
     C0hat: jnp.ndarray = None
     
 @dataclass(slots=True)

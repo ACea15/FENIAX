@@ -7,8 +7,8 @@ import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
 import fem4inas.preprocessor.solution as solution
 import fem4inas.intrinsic.initcond as initcond
 import fem4inas.intrinsic.args as libargs
-import fem4inas.intrinsic.gust as gust
 import fem4inas.intrinsic.aero as aero
+import fem4inas.intrinsic.gust as gust
 
 import jax.numpy as jnp
 
@@ -63,18 +63,18 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             aeroobj.get_matrices()
             aeroobj.save_sol()
             if self.settings.aero.gust is not None:
-                
                 profile = self.settings.aero.gust_profile.capitalize()
                 gustobj = gust.Registry.create_instance(f"Gust{approx}{profile}",
                                                         self.settings,
                                                         self.sol)
                 gustobj.calculate_normals()
                 gustobj.calculate_downwash()
+                gustobj.define_eta()
                 gustobj.set_solution(self.sol, self.settings.name)
 
     def set_states(self):
         self.settings.build_states(self.fem.num_modes)
-        
+
     def set_solver(self):
 
         self.states_puller, self.eqsolver = sollibs.factory(
@@ -105,30 +105,15 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
 class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
-    # def _args_diffrax(self, t):
-
-    #     return (t, self.sol, self.settings)
-
-    # def _args_scipy(self, t):
-
-    #     return ((t, self.sol, self.settings),)
-    def _args_diffrax(self, t):
-
-        return (t, self.sol, self.settings)
-
-    def _args_scipy(self, t):
-
-        return ((t, self.sol, self.settings),)
-
-    def set_system(self):
-
-        self.dFq = getattr(dq_static, self.settings.label)
-
     def set_ic(self, q0):
         if q0 is None:
             self.q0 = jnp.zeros(self.fem.num_modes)
         else:
             self.q0 = q0
+            
+    def set_system(self):
+
+        self.dFq = getattr(dq_static, self.settings.label)
 
     def solve(self):
 
@@ -202,32 +187,6 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
 class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
-    def _args_diffrax(self):
-
-        #return (self.sol, self.settings)
-        return (self.sol, self.config)
-
-    def _args_scipy(self):
-
-        # return ((self.sol, self.settings),)
-        return ((self.sol, self.config),)
-    
-    def _args_jax(self):
-
-        #return (self.sol, self.settings)
-        return (self.sol, self.config)
-
-    def _args_runge_kutta(self):
-
-        #return (self.sol, self.settings)
-        return (self.sol.data.couplings.gamma1,
-                self.sol.data.couplings.gamma2,
-                self.sol.data.modes.omega,
-                self.sol.data.modes.phi1l,
-                self.settings.xloads.force_follower,
-                self.settings.xloads.x,
-                self.settings.states)
-    
     def set_system(self):
 
         self.dFq = getattr(dq_dynamic, self.settings.label)
@@ -298,8 +257,7 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
                                                   self.sol,
                                                   self.fem
                                                   )
-        self.sol.add_container('DynamicSystem', label="_" + self.name,
-                               q=self.qs, X1=X1, X2=X2, X3=X3,
-                               Cab=Cab, ra=ra)
         if self.settings.save:
-            self.sol.save_container('DynamicSystem', label="_"+self.name)
+            self.sol.add_container('DynamicSystem', label="_" + self.name,
+                                   q=self.qs, X1=X1, X2=X2, X3=X3,
+                                   Cab=Cab, ra=ra)

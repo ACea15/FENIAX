@@ -72,21 +72,17 @@ def arg_10g121(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_10g15(sol: solution.IntrinsicSolution,
-              system: intrinsicmodal.Dsystem,
+              sys: intrinsicmodal.Dsystem,
               fem: intrinsicmodal.Dfem,
               t: float,
               *args, **kwargs):
 
     gamma2 = sol.data.couplings.gamma2
     omega = sol.data.modes.omega
-    A0 = sol.data.modalaeroroger.A0
-    C0 = sol.data.modalaeroroger.C0
-    qalpha = system.aero.qalpha
-    u_inf = system.aero.u_inf
-    rho_inf = system.aero.rho_inf
+    qalpha = sys.aero.qalpha
+    aero = getattr(sol.data, f"modalaeroroger_{sys.name}")
     return (gamma2, omega,
-            u_inf, rho_inf,
-            qalpha, A0, C0)
+            qalpha, aero.A0hat, aero.C0hat)
 
 @catter2library
 def arg_20g11(sol: solution.IntrinsicSolution,
@@ -142,50 +138,27 @@ def arg_20g121(sol: solution.IntrinsicSolution,
 
 @catter2library
 def arg_20g21(sol: solution.IntrinsicSolution,
-              system: intrinsicmodal.Dsystem,
+              sys: intrinsicmodal.Dsystem,
               fem: intrinsicmodal.Dfem,
               *args, **kwargs):
 
     gamma1 = sol.data.couplings.gamma1
     gamma2 = sol.data.couplings.gamma2
     omega = sol.data.modes.omega
-    states = system.states
-    u_inf = system.aero.u_inf
-    rho_inf = system.aero.rho_inf
-    c_ref = system.aero.c_ref
-    q_inf = system.aero.q_inf
+    states = sys.states
+    u_inf = sys.aero.u_inf
+    c_ref = sys.aero.c_ref
     num_modes = fem.num_modes
-    num_poles = system.aero.num_poles
-    poles = sol.data.modalaeroroger.poles
-    A2hat = jnp.linalg.inv(jnp.eye(num_modes)
-                           - rho_inf * c_ref**2 / 8 *
-                           sol.data.modalaeroroger.A2)
-    A0hat = q_inf * sol.data.modalaeroroger.A0
-    D0hat = q_inf * sol.data.modalaeroroger.D0
-    A1hat = (c_ref * rho_inf * u_inf / 4  *
-             sol.data.modalaeroroger.A1)
-    D1hat = (c_ref * rho_inf * u_inf / 4  *
-              sol.data.modalaeroroger.D1)
-    D2hat = (c_ref**2 * rho_inf / 8  *
-              sol.data.modalaeroroger.D2)
-    
-    Aphat = q_inf * sol.data.modalaeroroger.Ap
-    Dphat = q_inf * sol.data.modalaeroroger.Dp
-    xgust = sol.data.gustroger.x
-    wgust = sol.data.gustroger.w
-    wgust_dot = sol.data.gustroger.wdot
-    wgust_ddot = sol.data.gustroger.wddot
-    xgust = sol.data.gustroger.xgust
-    _F1g = D0hat @ wgust
-    _F1g_dot = D1hat @ wgust_dot
-    _F1g_ddot = D2hat @ wgust_ddot
-    F1g = _F1g + _F1g_dot + _F1g_ddot  # NmxNt
-    Flg = jnp.tensordot(Dphat, wgust_dot, axis=(1,0))  # NmxNtxNp
+    aero = getattr(sol.data, f"modalaeroroger_{sys.name}")
+    gust = getattr(sol.data, f"gustroger_{sys.name}")
+    num_poles = sys.aero.num_poles
+    F1g = gust.Qhj_wsum  # NmxNt
+    Flg = gust.Qhjl_wdot  # NbxNmxNt (NumBoxes_NumModes_NumTime)
     return (gamma1, gamma2, omega, states,
             num_modes, num_poles,
-            A0hat, A1hat, A2hat, Aphat,
-            u_inf, c_ref, poles,
-            xgust, F1g, Flg)
+            aero.A0hat, aero.A1hat, aero.A2hatinv, aero.A3hat,
+            u_inf, c_ref, aero.poles,
+            gust.xgust, F1g, Flg)
 ############################################
 @catter2library
 def arg_001001(sol: solution.IntrinsicSolution,

@@ -38,7 +38,7 @@ class AeroRoger(ModalAero):
         
     def save_sol(self):
         self.sol.add_container("ModalAeroRoger",
-                               label=self.sys.name,
+                               label="_"+self.sys.name,
                                **self.container)
     
     def _set_flow(self):
@@ -49,6 +49,7 @@ class AeroRoger(ModalAero):
 
     def _build_rfa(self):
         ...
+        
     def _get_matrix(self, matrix: jnp.array, name: str):
         
         self.container[f"{name}0"] = matrix[0]
@@ -111,3 +112,7 @@ class AeroRoger(ModalAero):
                     self.container[f"{k}hat"] = self.q_inf * v
             except ValueError:
                 continue
+        if "A2hat" in self.container.keys():
+            A2hat = (jnp.eye(len(self.container["A2hat"])) -
+                     self.container["A2hat"])
+            self.container["A2hatinv"] = jnp.linalg.inv(A2hat)

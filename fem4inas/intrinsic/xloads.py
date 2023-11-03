@@ -121,14 +121,27 @@ def eta_rogerstruct(q0, q1, ql_tensor,
 @jax.jit
 def eta_manoeuvre(q0: jnp.ndarray,
                   qalpha: jnp.ndarray,
-                  u_inf: float,
-                  rho_inf: float,
-                  A0: jnp.ndarray,
-                  C0: jnp.ndarray):
+                  A0hat: jnp.ndarray,
+                  C0hat: jnp.ndarray):
 
-    eta = 0.5 * rho_inf * u_inf ** 2 * (
-        A0 @ q0 + C0 @ qalpha)
+    eta = A0hat @ q0 + C0hat @ qalpha
     return eta
+
+def eta_rogergust(t, xgust, F1gust):
+
+    eta = linear_interpolation2(t, xgust, F1gust)
+    return eta
+
+def lags_rogerstructure(A3hat, q1, u_inf, c_ref, poles, ql_tensor):
+
+    structural_term = jnp.tensordot(A3hat, q1, axis=(2,0)).T  # NmxNp
+    lags_term = 2 * u_inf /c_ref * (poles * ql_tensor)
+    return structural_term - lags_term
+
+def lags_rogergust(t, xgust, Flgust):
+
+    Flgust_interpolated = linear_interpolation2(t, xgust, Flgust)
+    return Flgust_interpolated
 
 # def eta_rogergust(t, xgust, _wgust, _wgust_dot, _wgust_ddot,
 #                   D0hat, D1hat, D2hat):
