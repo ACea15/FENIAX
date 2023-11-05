@@ -23,7 +23,8 @@ class TestCurveFollower:
         inp.fem.eig_type = "inputs"
         #inp.fem.fe_order_start = 1
         inp.driver.typeof = "intrinsic"
-        inp.driver.save_fem = False                
+        inp.driver.save_fem = False
+        inp.driver.sol_path = None
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.solver_library = "diffrax"
@@ -96,6 +97,7 @@ class TestCurveDead:
         #inp.fem.fe_order_start = 1
         inp.driver.typeof = "intrinsic"
         inp.driver.save_fem = False
+        inp.driver.sol_path = None
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.solver_library = "diffrax"

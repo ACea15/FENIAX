@@ -349,8 +349,9 @@ class Ddriver(DataContainer):
         "", default=None)
     def __post_init__(self):
 
-        object.__setattr__(self, "sol_path",
-                           pathlib.Path(self.sol_path))
+        if self.sol_path is not None:
+            object.__setattr__(self, "sol_path",
+                               pathlib.Path(self.sol_path))
 
 class SystemSolution(Enum):
     STATIC = 1
@@ -372,8 +373,8 @@ class StateTrack:
         
     def update(self, **kwargs):
         for k, v in kwargs.items():
-            self.states.update(k=jnp.arange(self.num_states,
-                                           self.num_states + v))
+            self.states[k] = jnp.arange(self.num_states,
+                                        self.num_states + v)
             self.num_states += v
 
 @dataclass(frozen=True)
@@ -467,7 +468,7 @@ class Dsystem(DataContainer):
         elif self.solution == "dynamic":
             tracker.update(q1=num_modes,
                            q2=num_modes)
-            if self.aero.sol.lower() == "rogers":
+            if self.aero is not None and self.aero.sol.lower() == "rogers":
                 tracker.update(ql=self.aero.num_poles * num_modes)
         # if self.solution == "static":
         #     state_dict.update(m, kwargs)
