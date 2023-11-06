@@ -113,7 +113,9 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             
     def set_system(self):
 
-        self.dFq = getattr(dq_static, self.settings.label)
+        label = self.settings.label
+        print(f"***** Setting intrinsinc static system with label {label}")
+        self.dFq = getattr(dq_static, label)
 
     def solve(self):
 
@@ -188,8 +190,10 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
     def set_system(self):
-
-        self.dFq = getattr(dq_dynamic, self.settings.label)
+        
+        label = self.settings.label
+        print(f"***** Setting intrinsinc Dynamic system with label {label}")
+        self.dFq = getattr(dq_dynamic, label)
 
     def solve(self):
 

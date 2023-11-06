@@ -154,3 +154,113 @@ class GenFlutter:
         self.model.add_mkaero1(self.machs,
                                self.reduced_freqs,
                                comment="sampled Mach numbers and reduced freqs.")
+
+def dlm_control_nodes(aero_mesh,file_save=''):
+
+    tipo=''
+    i=0
+    ngrid=0
+    nelem=0
+
+    aero_mesh_file = open(aero_mesh, 'r')
+
+    for line in aero_mesh_file :
+            i=i+1
+    linee1=i
+    aero_mesh_file.seek(0)
+    for k in range(linee1):
+        tipo=aero_mesh_file.readline(4)
+        aero_mesh_file.readline()
+        if tipo=='GRID' :
+            ngrid=ngrid+1
+        if tipo=='CQUA' :
+            nelem=nelem+1
+
+    Matrice_grid=zeros((ngrid,4))
+    Matrice_elem=zeros((nelem,5))
+    Control_node=zeros((nelem,3))
+    aero_mesh_file.seek(0)
+
+    counter_grid=0
+    counter_elem=0
+
+    for k in range(linee1):
+        tipo=aero_mesh_file.readline(8)
+        tipo=tipo.strip()
+        if tipo=='GRID*' :
+            Matrice_grid[counter_grid,0]=int(aero_mesh_file.readline(16))
+            aero_mesh_file.readline(16)
+            Matrice_grid[counter_grid,1]=float(aero_mesh_file.readline(16))
+            Matrice_grid[counter_grid,2]=float(aero_mesh_file.readline())
+            aero_mesh_file.readline(8)
+            Matrice_grid[counter_grid,3]=float(aero_mesh_file.readline())        
+            counter_grid=counter_grid+1
+        if tipo=='GRID' :
+            Matrice_grid[counter_grid,0]=int(aero_mesh_file.readline(8))
+            aero_mesh_file.readline(8)
+            Matrice_grid[counter_grid,1]=float(aero_mesh_file.readline(8))
+            Matrice_grid[counter_grid,2]=float(aero_mesh_file.readline(8))
+            Matrice_grid[counter_grid,3]=float(aero_mesh_file.readline())        
+            counter_grid=counter_grid+1
+        if tipo=='CQUAD4*' :
+            Matrice_elem[counter_elem,0]=int(aero_mesh_file.readline(16))
+            aero_mesh_file.readline(16)
+            Matrice_elem[counter_elem,1]=int(aero_mesh_file.readline(16))
+            Matrice_elem[counter_elem,2]=int(aero_mesh_file.readline())
+            aero_mesh_file.readline(8)
+            Matrice_elem[counter_elem,3]=int(aero_mesh_file.readline(16))    
+            Matrice_elem[counter_elem,4]=int(aero_mesh_file.readline())
+            counter_elem=counter_elem+1
+        if tipo=='CQUAD4' :
+            Matrice_elem[counter_elem,0]=int(aero_mesh_file.readline(8))
+            aero_mesh_file.readline(8)
+            Matrice_elem[counter_elem,1]=int(aero_mesh_file.readline(8))
+            Matrice_elem[counter_elem,2]=int(aero_mesh_file.readline(8))
+            Matrice_elem[counter_elem,3]=int(aero_mesh_file.readline(8))    
+            Matrice_elem[counter_elem,4]=int(aero_mesh_file.readline())
+            counter_elem=counter_elem+1
+        if tipo!='CQUAD4*' and tipo!='GRID*' and tipo!='CQUAD4' and tipo!='GRID' :
+            aero_mesh_file.readline()
+
+    point_1=zeros((3))
+    point_2=zeros((3))
+    point_3=zeros((3))
+    point_4=zeros((3))
+
+    for k in range(nelem):
+        for i in range(ngrid):
+            if int(Matrice_elem[k,1]) == int(Matrice_grid[i,0]):
+               point_1[0]=Matrice_grid[i,1]
+               point_1[1]=Matrice_grid[i,2]
+               point_1[2]=Matrice_grid[i,3]
+            if int(Matrice_elem[k,2]) == int(Matrice_grid[i,0]):
+               point_2[0]=Matrice_grid[i,1]
+               point_2[1]=Matrice_grid[i,2]
+               point_2[2]=Matrice_grid[i,3]
+            if int(Matrice_elem[k,3]) == int(Matrice_grid[i,0]):
+               point_3[0]=Matrice_grid[i,1]
+               point_3[1]=Matrice_grid[i,2]
+               point_3[2]=Matrice_grid[i,3]
+            if int(Matrice_elem[k,4]) == int(Matrice_grid[i,0]):
+               point_4[0]=Matrice_grid[i,1]
+               point_4[1]=Matrice_grid[i,2]
+               point_4[2]=Matrice_grid[i,3]
+
+        Control_node[k,0]=(((point_2[0]-point_1[0])*3/4+point_1[0])+((point_3[0]-point_4[0])*3/4+point_4[0]))/2        
+        Control_node[k,1]=(((point_4[1]-point_1[1])*1/2+point_1[1])+((point_3[1]-point_2[1])*1/2+point_2[1]))/2
+        Control_node[k,2]=(((point_4[2]-point_1[2])*1/2+point_1[2])+((point_3[2]-point_2[2])*1/2+point_2[2]))/2  
+
+    aero_mesh_file.close()              
+
+    if file_save:
+        Control_node_file= open(file_save, 'w')
+
+        for k in range(nelem):
+            Control_node_file.write(str(Control_node[k,0]).ljust(16))
+            Control_node_file.write(str(Control_node[k,1]).ljust(16))
+            Control_node_file.write(str(Control_node[k,2]).ljust(16))
+            Control_node_file.write(str('\n'))
+
+        Control_node_file.close()
+
+    return Control_node
