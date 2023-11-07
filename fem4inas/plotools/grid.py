@@ -68,9 +68,12 @@ class AeroGrid:
         cells = dict()
         caeros = list()
         labels = dict()
+        normals = dict()
         for i, ci in enumerate(model.caeros.keys()):
             caeros.append(ci)
             labels[model.caeros[ci].comment.strip()] = ci
+            p1234 = model.caeros[ci].get_points()
+            normals[ci] = np.cross(p1234[3] - p1234[0], p1234[1] - p1234[0])
             box_ids = model.caeros[ci]._init_ids()
             nchord = model.caeros[ci].nchord
             nspan = model.caeros[ci].nspan

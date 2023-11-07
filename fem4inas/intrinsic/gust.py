@@ -59,17 +59,19 @@ class GustRogerMc(Gust):
     def _set_gust(self):
         
         xgust = self.settings.aero.gust.x_discretization
-        gust_shift = self.settings.aero.gust.shift
+        self.gust_shift = self.settings.aero.gust.shift
         simulation_time = self.settings.t
         self.collocation_points = self.settings.aero.gust.collocation_points
         self.gust_length = xgust[-1] - xgust[0]
         self.gust_intensity = self.settings.aero.gust.intensity
         self.gust_totaltime = self.gust_length / self.u_inf
-        time_discretization = (gust_shift + xgust) / self.u_inf
+        time_discretization = (self.gust_shift + xgust) / self.u_inf
         if time_discretization[-1] < simulation_time[-1]:
-            self.time = jnp.hstack([0., time_discretization, simulation_time[-1]])
+            self.time = jnp.hstack([time_discretization, simulation_time[-1]])
         else:
-            self.time = jnp.hstack([0., time_discretization])
+            self.time = time_discretization
+        if self.time[0] != 0.:
+            self.time = jnp.hstack([0., self.time])
         self.ntime = len(self.time)
         self.npanels = len(self.collocation_points)
         self._define_spanshape(self.settings.aero.gust.shape)
@@ -89,7 +91,7 @@ class GustRogerMc(Gust):
         coeff = 2. * jnp.pi * self.u_inf / self.gust_length
         for panel in range(self.num_panels):
             delay=(self.collocation_points[panel,0]
-                   - self.gust_position) / self.u_inf
+                   + self.gust_shift) / self.u_inf
             shape_span = self.shape_span(self.collocation_points[panel,1])
             filter_time = jnp.where((self.time >= delay) &
                                     (self.time <= delay +
