@@ -474,15 +474,21 @@
   import importlib
   importlib.reload(fem4inas.plotools.grid)
   aerogrid = fem4inas.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
-  aerogrid_collocation = fem4inas.plotools.grid.AeroGrid.build_DLMcollocation(dlm_panels.model)
   df_grid = pd.read_csv('../FEM/structuralGrid', comment="#", sep=" ",
                       names=['x1', 'x2', 'x3', 'fe_order', 'component'])
   model = BDF(debug=True)
   model.read_bdf("./SOL103/run_cao.bdf", punch=False)
   X = df_grid[['x1','x2','x3']].to_numpy()
   panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, set1x, X, model)
-  collocationmodel = fem4inas.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
+  #collocationmodel = fem4inas.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
 #+end_src
+#+begin_src python :session py1 :results none :tangle py1.py
+  aerogrid_collocation = fem4inas.plotools.grid.AeroGrid.build_DLMcollocation(dlm_panels.model)
+  #collocationmodel = fem4inas.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
+  collocation_points = np.vstack([aerogrid_collocation.points[i] for i in aerogrid_collocation.points.keys()])
+  np.save("./data_out/collocation_points.npy", collocation_points)
+#+end_src
+
 
 #+begin_src python :session py1 :results none
   import pandas as pd
@@ -1897,7 +1903,7 @@
   import pyNastran.op4.op4 as op4
 
   dihedral = op4.read_op4("./data_out/dihedral.op4")
-  np.save("./data_out/dihedral.op4", dihedral['WJ'][1].real)
+  np.save("./data_out/dihedral.npy", dihedral['WJ'][1].real)
 #+end_src
 
 * SOL 144
