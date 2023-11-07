@@ -19,6 +19,11 @@ def transform_arm_rigid(Rab, R0ab, pa):
 
 @dataclass
 class AeroGrid:
+    """
+    Data container for a Component-based definition of aerodynamic panels
+    in a NASTRAN style fashion
+    """
+    
     caeros: list
     labels: dict
     npanels: dict
@@ -32,7 +37,7 @@ class AeroGrid:
         return attr[caero]
     
     @classmethod
-    def build_grid(cls, model: BDF):
+    def build_DLMgrid(cls, model: BDF):
         npanels = dict()
         npoints = dict()
         panel_ids = dict()
@@ -43,13 +48,54 @@ class AeroGrid:
         for i, ci in enumerate(model.caeros.keys()):
             caeros.append(ci)
             labels[model.caeros[ci].comment.strip()] = ci
-            _npanels, _npoints = model.caeros[ci].get_npanel_points_elements()
+            _npoints, _npanels = model.caeros[ci].get_npanel_points_elements()
             npanels[ci] = _npanels
             npoints[ci] = _npoints
             panel_ids[ci] = model.caeros[ci]._init_ids()
             _points, _cells = model.caeros[ci].panel_points_elements()
             points[ci] = _points
             cells[ci] = _cells
+        return cls(caeros, labels, npanels, npoints, panel_ids, points, cells)
+
+    @classmethod
+    def build_DLMcollocation(cls, model: BDF,
+                             collocation_chordwise=0.5):
+        
+        npanels = dict()
+        npoints = dict()
+        panel_ids = dict()
+        points = dict()
+        cells = dict()
+        caeros = list()
+        labels = dict()
+        for i, ci in enumerate(model.caeros.keys()):
+            caeros.append(ci)
+            labels[model.caeros[ci].comment.strip()] = ci
+            box_ids = model.caeros[ci]._init_ids()
+            nchord = model.caeros[ci].nchord
+            nspan = model.caeros[ci].nspan
+            panel_ids[ci] = np.zeros((nchord-1, nspan-1))
+            _points = []
+            _cells = []
+            _npanels = 0
+            _npoints = 0
+            for jx in range(nspan):
+                for ix in range(nchord):
+                    box_id = box_ids[ix, jx]
+                    point = model.caeros[ci]._get_box_x_chord_center(box_id,
+                                                                     collocation_chordwise)
+                    _points.append(point)
+                    _npoints += 1
+                    if (ix < nchord -1) and (jx < nspan -1):
+                        cell = [ix + jx * nchord, ix + (jx + 1) * nchord,
+                                (ix + 1) + (jx + 1) * nchord, (ix + 1) + jx * nchord] #clockwise
+                        _cells.append(cell)
+                        panel_ids[ci][ix, jx] = ix + jx * nchord
+                        _npanels += 1
+            npanels[ci] = _npanels
+            npoints[ci] = _npoints
+            points[ci] = np.array(_points)
+            cells[ci] = np.array(_cells)
         return cls(caeros, labels, npanels, npoints, panel_ids, points, cells)
 
 @dataclass
@@ -89,7 +135,12 @@ class Model:
         ...
         
 class ASETModel(Model):
-
+    """
+    This class maps data between a set of ASET or beam nodes, model0,
+    onto a surface, model1; model1 can be used to interpolate to any data
+    set, modelx.
+    """
+    
     def __init__(self, aerogrid: AeroGrid,
                  model0_ids,
                  modelx_data,
@@ -107,7 +158,7 @@ class ASETModel(Model):
         self.merge_components()
 
     def link_models(self):
-
+        
         for i, ki in enumerate(self.component_names):
             print(f"setting component {ki}")
             m0_ids = self.model0_ids[i]
@@ -164,9 +215,12 @@ class ASETModel(Model):
         nasets = len(pa_points)
         pa_tensor = jnp.zeros((3, narms, nasets))
         for i, arm_i in enumerate(pa_points):
-            print(arm_i)
-            assert len(arm_i) == narms, f"unequal arms length for arm {i}"
-            pa_tensor = pa_tensor.at[:,:, i].set(pa_m1[arm_i].T)
+            # print(arm_i)
+            if len(arm_i) == 0:
+                pa_tensor = pa_tensor.at[:,:, i].set(pa_m1[pa_points[i-1]].T)
+            else:
+                assert len(arm_i) == narms, f"unequal arms length for arm {i}"
+                pa_tensor = pa_tensor.at[:,:, i].set(pa_m1[arm_i].T)
         return pa_tensor
 
     def tensor2array(self, ki, pa_tensor):

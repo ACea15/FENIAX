@@ -59,21 +59,28 @@ class Daero(DataContainer):
 
     u_inf: float = dfield("", default=None)
     rho_inf: float = dfield("", default=None)
+    q_inf: float = dfield("", init=False)
     c_ref: float = dfield("", default=None)
     qalpha: jnp.ndarray = dfield("", default=None)
     qx: jnp.ndarray = dfield("", default=None)
     #
     approx: str = dfield("", default="Roger")
     Qk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("""Sample frquencies and
-    corresponding AICs for the structure""", default=None)
-    Qk_gust: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
-    Qk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
-    Q0_rigid: jnp.ndarray = dfield("", default=None)    
-    A: str | jnp.ndarray = dfield("", default=None)
-    B: str | jnp.ndarray = dfield("", default=None)
-    C: str | jnp.ndarray = dfield("", default=None)
-    D: str | jnp.ndarray = dfield("", default=None)
-    _controls: list[jnp.ndarray,jnp.ndarray] = dfield("", default=None)
+    corresponding AICs for the structure""", default=None,
+                                                      yaml_save=False)
+    Qk_gust: list[jnp.ndarray,jnp.ndarray] = dfield("",
+                                                    default=None,
+                                                    yaml_save=False)
+    Qk_controls: list[jnp.ndarray,jnp.ndarray] = dfield("",
+                                                        default=None,
+                                                        yaml_save=False)
+    Q0_rigid: jnp.ndarray = dfield("", default=None, yaml_save=False)    
+    A: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
+    B: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
+    C: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
+    D: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
+    _controls: list[jnp.ndarray,
+                    jnp.ndarray] = dfield("", default=None)
     poles: str | jnp.ndarray = dfield("", default=None)
     num_poles: int = dfield("", default=None)
     gust_profile: dict = dfield("", default=None, options=["mc"])
@@ -99,8 +106,20 @@ class Daero(DataContainer):
             object.__setattr__(self, "controller", None)
         if isinstance(self.poles, str):
             object.__setattr__(self, "poles", jnp.load(self.poles))
-        object.__setattr__(self, "num_poles", len(self.poles))
-        
+        if self.poles is not None:
+            object.__setattr__(self, "num_poles", len(self.poles))
+        if self.u_inf is not None and self.rho_inf is not None:
+            q_inf = 0.5 * self.rho_inf * self.u_inf ** 2
+            object.__setattr__(self, "q_inf", q_inf)
+        if isinstance(self.A, str):
+            object.__setattr__(self, "A", jnp.load(self.A))
+        if isinstance(self.B, str):
+            object.__setattr__(self, "B", jnp.load(self.B))
+        if isinstance(self.A, str):
+            object.__setattr__(self, "C", jnp.load(self.C))
+        if isinstance(self.A, str):
+            object.__setattr__(self, "D", jnp.load(self.D))
+            
 @dataclass(frozen=True)
 class Dxloads(DataContainer):
 
@@ -338,12 +357,6 @@ class Ddriver(DataContainer):
                                default=True)
     save_fem: bool = dfield("""Save presimulation data""",
                             default=True)
-    compute_modalaero: bool = dfield("""Compute presimulation aero data""",
-                                     default=False)
-    load_modalaero: bool = dfield("""Load presimulation aero data""",
-                                  default=False)   
-    save_modalaero: bool = dfield("""Save presimulation aero data""",
-                                  default=False)
     subcases: dict[str:Dxloads] = dfield("", default=None)
     supercases: dict[str:Dfem] = dfield(
         "", default=None)
@@ -489,9 +502,9 @@ class Dsystem(DataContainer):
         lmap['bc1'] = BoundaryCond[self.bc1.upper()].value - 1
         lmap['aero_sol'] = int(self.xloads.modalaero_forces)
         if lmap['aero_sol'] > 0:
-            if self.aero.sol.lower() == "rogers":
+            if self.aero.approx.lower() == "rogers":
                 lmap['aero_sol'] = 1
-            elif self.aero.sol.lower() == "loewner":
+            elif self.aero.approx.lower() == "loewner":
                 lmap['aero_sol'] = 2
             if self.aero.qalpha is None and self.aero.qx is None:
                 lmap['aero_steady'] = 0

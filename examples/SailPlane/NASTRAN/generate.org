@@ -473,13 +473,15 @@
   import pandas as pd
   import importlib
   importlib.reload(fem4inas.plotools.grid)
-  aerogrid = fem4inas.plotools.grid.AeroGrid.build_grid(dlm_panels.model)
+  aerogrid = fem4inas.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
+  aerogrid_collocation = fem4inas.plotools.grid.AeroGrid.build_DLMcollocation(dlm_panels.model)
   df_grid = pd.read_csv('../FEM/structuralGrid', comment="#", sep=" ",
                       names=['x1', 'x2', 'x3', 'fe_order', 'component'])
   model = BDF(debug=True)
   model.read_bdf("./SOL103/run_cao.bdf", punch=False)
   X = df_grid[['x1','x2','x3']].to_numpy()
   panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, set1x, X, model)
+  collocationmodel = fem4inas.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
 #+end_src
 
 #+begin_src python :session py1 :results none
@@ -824,7 +826,6 @@
     np.save(save_AICsj,np.array(RFA_matj))
 
 #+end_src
-
 
 * Qalpha GAFs extraction
 
