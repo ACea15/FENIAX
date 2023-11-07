@@ -30,13 +30,10 @@ inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.num_modes = 20
 Qhh = op4.read_op4("./NASTRAN/data_out/Qhh0_8-20.op4")
 Qhalpha = op4.read_op4("./NASTRAN/data_out/Qhx20-0.8.op4")
-inp.aero.Mk_struct = [[0.], Qhh['Q_HH'][1][0].real]
 Qhx = Qhalpha['Q_HX'][1][:,1:]
-inp.aero.M0_rigid = 
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path = pathlib.Path(
     f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
-inp.driver.compute_modalaero = True
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "static"
 inp.systems.sett.s1.solver_library = "diffrax"
@@ -46,6 +43,8 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                            max_steps=50,
                                            norm=jnp.linalg.norm,
                                            kappa=0.01)
+inp.systems.sett.s1.aero.Qk_struct = [[0.], Qhh['Q_HH'][1][0].real]
+inp.systems.sett.s1.aero.Q0_rigid = Qhx
 
 # inp.systems.sett.s1.solver_library = "scipy"
 # inp.systems.sett.s1.solver_function = "root"
@@ -54,9 +53,7 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 inp.systems.sett.s1.aero.qalpha = jnp.array([1,0,0,0,0]) * jnp.pi / 180
 inp.systems.sett.s1.aero.u_inf = 100.
 inp.systems.sett.s1.aero.rho_inf = 1.
-
-inp.systems.sett.s1.label = 'dq_0011'
-inp.systems.sett.s1.xloads.aero_forces = True
+inp.systems.sett.s1.xloads.modalaero_forces = True
 
 # path2config = pathlib.Path("./config.yaml")
 config =  configuration.Config(inp)

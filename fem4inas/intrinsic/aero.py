@@ -55,7 +55,7 @@ class AeroRoger(ModalAero):
         self.container[f"{name}0"] = matrix[0]
         self.container[f"{name}1"] = matrix[1]
         self.container[f"{name}2"] = matrix[2]
-        self.container[f"{name}p"] = matrix[3:]
+        self.container[f"{name}3"] = matrix[3:]
 
     def get_matrices(self, scale=True):
         if self.container is None:
@@ -98,7 +98,9 @@ class AeroRoger(ModalAero):
     def _scale(self):
 
         self._set_flow()
-        for k, v in self.container:
+        container_entries = list(self.container.keys())
+        for k in container_entries:
+            v = self.container[k]
             try:
                 if int(k[-1]) == 0:
                     self.container[f"{k}hat"] = self.q_inf * v

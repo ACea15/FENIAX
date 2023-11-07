@@ -58,14 +58,6 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
             self._load_modalshapes()
             self._load_modalcouplings()
 
-        if self._config.driver.compute_modalaero:
-            self._compute_modalaero()
-            if self._config.driver.save_modalaero:
-                approx = self._config.aero.approx
-                self.sol.save_container(f"ModalAero{approx}")
-        elif self._config.driver.load_modalaero:
-            self._load_modalaero()
-
     def run_case(self):
         if self.num_systems == 0:
             print("no systems in the simulation")
@@ -147,18 +139,8 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
         self.sol.add_container("Couplings", alpha1, alpha2, gamma1, gamma2)
 
-    def _compute_modalaero(self):
-
-        approx = self._config.aero.approx
-        aeroobj = 0
-        aeroobj.build_aero()
-
     def _load_modalshapes(self):
         self.sol.load_container("Modes")
 
     def _load_modalcouplings(self):
         self.sol.load_container("Couplings")
-
-    def _load_modalaero(self):
-        approx = self._config.aero.approx
-        self.sol.load_container(f"ModalAero{approx}")
