@@ -80,19 +80,18 @@ def dq_20g21(t, q, *args):
     q2 = q[states['q2']]
     q0 = -q2 / omega
     ql = q[states['ql']]
-    q3 = jnp.hstack([q1,q2])
-    ql_tensor = ql.reshape((num_modes, num_poles))
-    eta_s = xloads.eta_rogerstruct(q0, q1, ql_tensor,
-                                   A0hat, A1hat, A2hatinv)
+    #ql_tensor = ql.reshape((num_modes, num_poles))
+    eta_s = xloads.eta_rogerstruct(q0, q1, ql,
+                                   A0hat, A1hat, A2hatinv,
+                                   num_modes, num_poles)
     eta_gust = xloads.eta_rogergust(t, xgust, F1gust)
-    F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2, A2hatinv)
+    F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2)
     F1 += eta_s + eta_gust
     F1 = A2hatinv @ F1 #Nm
-    Fl_tensor = xloads.lags_rogerstructure(A3hat, q1, u_inf,
-                                           c_ref, poles, ql_tensor)  # NlxNm 
-    Flgust_tensor = xloads.lags_rogergust(t, xgust, Flgust)  # NlxNm
-    Fl_tensor += Flgust_tensor
-    Fl = Fl_tensor.reshape(num_modes * num_poles)
-    F = jnp.hstack([F1, F2, Fl])
-
-    return F
+    Fl = xloads.lags_rogerstructure(A3hat, q1, ql, u_inf,
+                                    c_ref, poles,
+                                    num_modes, num_poles)  # NlxNm 
+    Flgust = xloads.lags_rogergust(t, xgust, Flgust)  # NlxNm
+    Fl += Flgust
+    #Fl = Fl_tensor.reshape(num_modes * num_poles
+    return jnp.hstack([F1, F2, Fl])

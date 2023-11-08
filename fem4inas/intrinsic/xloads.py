@@ -89,6 +89,33 @@ def linear_interpolation2(t, x, data_tensor):
     return f_interpol
 
 @jax.jit
+def linear_interpolation3(t, x, data_tensor):
+
+    len_x = x.shape[0]
+    xindex_upper = jnp.argwhere(jax.lax.select(x >= t,
+                                               jnp.ones(len_x),
+                                               jnp.zeros(len_x)),
+                                size=1)[0][0] #jnp.where(x >= t)[0][0]
+    index_equal = jnp.sum(jax.lax.select(x == t,
+                                         jnp.ones(len_x),
+                                         jnp.zeros(len_x)),
+                          dtype=int)
+    xindex_lower = xindex_upper - 1 + index_equal #jnp.where(x <= t)[0][-1]
+    x_upper = x[xindex_upper]
+    x_lower = x[xindex_lower]
+    weight_upper = jax.lax.select(xindex_upper == xindex_lower,
+                                  0.5,
+                                  (t - x_lower) / (x_upper - x_lower))
+    weight_lower = jax.lax.select(xindex_upper == xindex_lower,
+                                  0.5,
+                                  (x_upper - t) / (x_upper - x_lower))
+
+    f_upper = data_tensor[:, xindex_upper]
+    f_lower = data_tensor[:, xindex_lower]
+    f_interpol = weight_upper * f_upper + weight_lower  * f_lower
+    return f_interpol
+
+@jax.jit
 def eta_pointfollower(t, phi1, x, force_follower):
 
     f = linear_interpolation(t, x, force_follower)
@@ -109,12 +136,18 @@ def eta_pointdead(t, phi1, x, force_dead, Rab):
                                           [0, 1]))
     return eta
 
-def eta_rogerstruct(q0, q1, ql_tensor,
-                    A0hat, A1hat, A2hat):
+@partial(jax.jit, static_argnames=["num_modes", "num_poles"])
+def eta_rogerstruct(q0, q1, ql,
+                    A0hat, A1hat, A2hat,
+                    num_modes, num_poles):
 
     eta0 = A0hat @ q0 + A1hat @ q1
+    num_modes = len(q0)
+    num_poles = int(len(ql) / num_modes)
     #lags = jnp.tensordot(A2hat, ql_tensor, axis=(1,0))
-    lags_sum = jnp.sum(ql_tensor, axis=1)
+    lags_sum = ql[:num_modes]
+    for pi in range(1, num_poles):
+        lags_sum += ql[pi*num_modes: (pi+1)*num_modes]
     eta = eta0 + lags_sum
     return eta
 
@@ -127,21 +160,29 @@ def eta_manoeuvre(q0: jnp.ndarray,
     eta = A0hat @ q0 + C0hat @ qalpha
     return eta
 
+@jax.jit
 def eta_rogergust(t, xgust, F1gust):
 
-    eta = linear_interpolation2(t, xgust, F1gust)
+    eta = linear_interpolation3(t, xgust, F1gust)
     return eta
 
-def lags_rogerstructure(A3hat, q1, u_inf, c_ref, poles, ql_tensor):
-
-    structural_term = jnp.tensordot(A3hat, q1, axis=(2,0)).T  # NmxNp
-    lags_term = 2 * u_inf /c_ref * (poles * ql_tensor)
-    return structural_term - lags_term
+@partial(jax.jit, static_argnames=["num_modes", "num_poles"])
+def lags_rogerstructure(A3hat, q1, ql, u_inf, c_ref, poles,
+                        num_modes, num_poles):
+    num_modes = len(q1)
+    num_poles = int(len(ql) / num_modes)
+    ql_dot = jnp.zeros(num_modes * num_poles)
+    for pi in range(num_poles):
+        ql_dot.at[pi * num_modes: (pi+1) * num_modes].set(A3hat[pi] @ q1 -
+                                                          2 * u_inf /c_ref * poles[pi] *
+                                                          ql[pi * num_modes: (pi+1) * num_modes])
+    return ql_dot
 
 def lags_rogergust(t, xgust, Flgust):
 
-    Flgust_interpolated = linear_interpolation2(t, xgust, Flgust)
-    return Flgust_interpolated
+    Flgust_tensor = linear_interpolation2(t, xgust, Flgust)  # NpxNm
+    Flgust = jnp.hstack(Flgust_tensor)
+    return Flgust
 
 # def eta_rogergust(t, xgust, _wgust, _wgust_dot, _wgust_ddot,
 #                   D0hat, D1hat, D2hat):

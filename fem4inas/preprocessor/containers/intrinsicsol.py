@@ -70,7 +70,7 @@ class ModalAeroRoger:
     D0hat: jnp.ndarray = None
     D1hat: jnp.ndarray = None
     D2hat: jnp.ndarray = None
-    D3hat: jnp.ndarray = None  # NlxNbxNm
+    D3hat: jnp.ndarray = None  # NlxNmxNb
     C0hat: jnp.ndarray = None
     
 @dataclass(slots=True)

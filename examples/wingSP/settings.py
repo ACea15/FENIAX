@@ -17,7 +17,7 @@ inp.fem.eig_type = "inputs"
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
     f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
-inp.driver.sol_path=None
+#inp.driver.sol_path=None
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 15.

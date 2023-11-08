@@ -59,13 +59,25 @@ config =  configuration.Config(inp)
 sol = fem4inas.fem4inas_main.main(input_obj=config)
 
 
-import jax
-from functools import partial
-@partial(jax.jit, static_argnames=['npoles', 'nmodes'])
-def foo(x, npoles, nmodes):
-    y = jnp.zeros(npoles * nmodes)
-    for i in range(npoles):
-        y = y.at[i*nmodes:(i+1)*nmodes].set(i)
-    return y
+# import jax
+# from functools import partial
+# @partial(jax.jit, static_argnames=['npoles'])
+# def foo(x, npoles, modes):
+#     nmodes =len(modes)
+#     y = jnp.zeros(npoles * nmodes)
+#     z  = jnp.ones(modes.shape)
+#     for i in range(npoles):
+#         y = y.at[i*nmodes:(i+1)*nmodes].set(i)
+#     return y, z
 
-b = foo(1,5,10)
+# b, b2 = foo(1,5,jnp.zeros((10,3)))
+
+
+# #@partial(jax.jit, static_argnames=['npoles'])
+# @jax.jit
+# def foo2(x):
+#     #y = jnp.zeros(npol)
+#     z  = jnp.hstack(x)
+#     return z
+
+# b3 = foo2(jnp.zeros((10,3)))
