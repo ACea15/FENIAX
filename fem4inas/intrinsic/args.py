@@ -153,12 +153,12 @@ def arg_20g21(sol: solution.IntrinsicSolution,
     gust = getattr(sol.data, f"gustroger_{sys.name}")
     num_poles = sys.aero.num_poles
     F1g = gust.Qhj_wsum  # NmxNt
-    Flg = gust.Qhjl_wdot  # NbxNmxNt (NumBoxes_NumModes_NumTime)
+    Flg = gust.Qhjl_wdot  # NpxNmxNt (NumPoles_NumModes_NumTime)
     return (gamma1, gamma2, omega, states,
             num_modes, num_poles,
             aero.A0hat, aero.A1hat, aero.A2hatinv, aero.A3hat,
             u_inf, c_ref, aero.poles,
-            gust.xgust, F1g, Flg)
+            gust.x, F1g, Flg)
 ############################################
 @catter2library
 def arg_001001(sol: solution.IntrinsicSolution,

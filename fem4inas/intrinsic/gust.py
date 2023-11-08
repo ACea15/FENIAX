@@ -50,7 +50,6 @@ class GustRogerMc(Gust):
         self.rho_inf = None
         self._set_flow()
         self._set_gust()
-        self._define_spanshape()
         
     def _set_flow(self):
         self.u_inf = self.settings.aero.u_inf
@@ -62,6 +61,7 @@ class GustRogerMc(Gust):
         self.gust_shift = self.settings.aero.gust.shift
         simulation_time = self.settings.t
         self.collocation_points = self.settings.aero.gust.collocation_points
+        self.dihedral = self.settings.aero.gust.panels_dihedral
         self.gust_length = xgust[-1] - xgust[0]
         self.gust_intensity = self.settings.aero.gust.intensity
         self.gust_totaltime = self.gust_length / self.u_inf
@@ -89,7 +89,7 @@ class GustRogerMc(Gust):
         self.gust_dot = jnp.zeros((self.npanels, self.ntime))
         self.gust_ddot = jnp.zeros((self.npanels, self.ntime))
         coeff = 2. * jnp.pi * self.u_inf / self.gust_length
-        for panel in range(self.num_panels):
+        for panel in range(self.npanels):
             delay=(self.collocation_points[panel,0]
                    + self.gust_shift) / self.u_inf
             shape_span = self.shape_span(self.collocation_points[panel,1])
@@ -130,14 +130,14 @@ class GustRogerMc(Gust):
                           Qhj_wdot=self.Q_wdot,
                           Qhj_wddot=self.Q_wddot,
                           Qhj_wsum=self.Q_wsum,
-                          Qhjl_wdot=self.Ql
+                          Qhjl_wdot=self.Ql_wdot
                           )
 
-    def define_eta(self):
+    def _define_eta(self):
         """
         NtxNm
         """
-        D0hat = self.solaero.D0hat
+        D0hat = self.solaero.D0hat  # NbxNm
         D1hat = self.solaero.D1hat
         D2hat = self.solaero.D2hat
         D3hat = self.solaero.D3hat
@@ -145,6 +145,6 @@ class GustRogerMc(Gust):
         self.Q_wdot = D1hat @ self.gust_dot
         self.Q_wddot = D2hat @ self.gust_ddot
         self.Q_wsum = self.Q_w + self.Q_wdot + self.Q_wddot  # NmxNt
-        self.Ql_wdot = jnp.tensordot(D3hat,  # NpxNbxNm
+        self.Ql_wdot = jnp.tensordot(D3hat,  # NpxNmxNb
                                      self.gust_dot,  # NbxNt
-                                     axis=(1,0))  # NpxNmxNt
+                                     axes=(2,0))  # NpxNmxNt

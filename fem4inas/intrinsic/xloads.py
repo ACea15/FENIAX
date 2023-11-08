@@ -83,15 +83,15 @@ def linear_interpolation2(t, x, data_tensor):
                                   0.5,
                                   (x_upper - t) / (x_upper - x_lower))
 
-    f_upper = data_tensor[:, xindex_upper]
-    f_lower = data_tensor[:, xindex_lower]
+    f_upper = data_tensor[:, :, xindex_upper]
+    f_lower = data_tensor[:, :, xindex_lower]
     f_interpol = weight_upper * f_upper + weight_lower  * f_lower
     return f_interpol
 
 @jax.jit
 def eta_pointfollower(t, phi1, x, force_follower):
 
-    f =  linear_interpolation(t, x, force_follower)
+    f = linear_interpolation(t, x, force_follower)
     eta = jnp.tensordot(phi1, f, axes=([1, 2],
                                        [0, 1]))
     return eta
@@ -118,7 +118,7 @@ def eta_rogerstruct(q0, q1, ql_tensor,
     eta = eta0 + lags_sum
     return eta
 
-@jax.jit
+#@jax.jit
 def eta_manoeuvre(q0: jnp.ndarray,
                   qalpha: jnp.ndarray,
                   A0hat: jnp.ndarray,

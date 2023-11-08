@@ -46,9 +46,18 @@ class DGustMc(DGust):
     intensity: float = dfield("", default=None)
     x_discretization: jnp.array = dfield("", default=None)
     shift: float = dfield("", default=None)
-    panels_dihedral: jnp.array = dfield("", default=None)
-    collocation_points: jnp.array = dfield("", default=None)
+    panels_dihedral: str | jnp.ndarray = dfield("", default=None)
+    collocation_points: str | jnp.ndarray = dfield("", default=None)
     shape: str = dfield("", default="const")
+    
+    def __post_init__(self):
+
+        if isinstance(self.panels_dihedral, str):
+            object.__setattr__(self, "panels_dihedral",
+                               jnp.load(self.panels_dihedral))
+        if isinstance(self.collocation_points, str):
+            object.__setattr__(self, "collocation_points",
+                               jnp.load(self.collocation_points))
     
 @dataclass(frozen=True, kw_only=True)
 class DController(DataContainer):
@@ -115,11 +124,11 @@ class Daero(DataContainer):
             object.__setattr__(self, "A", jnp.load(self.A))
         if isinstance(self.B, str):
             object.__setattr__(self, "B", jnp.load(self.B))
-        if isinstance(self.A, str):
+        if isinstance(self.C, str):
             object.__setattr__(self, "C", jnp.load(self.C))
-        if isinstance(self.A, str):
+        if isinstance(self.D, str):
             object.__setattr__(self, "D", jnp.load(self.D))
-            
+
 @dataclass(frozen=True)
 class Dxloads(DataContainer):
 
@@ -481,7 +490,7 @@ class Dsystem(DataContainer):
         elif self.solution == "dynamic":
             tracker.update(q1=num_modes,
                            q2=num_modes)
-            if self.aero is not None and self.aero.sol.lower() == "rogers":
+            if self.aero is not None and self.aero.approx.lower() == "roger":
                 tracker.update(ql=self.aero.num_poles * num_modes)
         # if self.solution == "static":
         #     state_dict.update(m, kwargs)
@@ -502,7 +511,7 @@ class Dsystem(DataContainer):
         lmap['bc1'] = BoundaryCond[self.bc1.upper()].value - 1
         lmap['aero_sol'] = int(self.xloads.modalaero_forces)
         if lmap['aero_sol'] > 0:
-            if self.aero.approx.lower() == "rogers":
+            if self.aero.approx.lower() == "roger":
                 lmap['aero_sol'] = 1
             elif self.aero.approx.lower() == "loewner":
                 lmap['aero_sol'] = 2

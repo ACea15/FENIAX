@@ -69,7 +69,6 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
                                                         self.sol)
                 gustobj.calculate_normals()
                 gustobj.calculate_downwash()
-                gustobj.define_eta()
                 gustobj.set_solution(self.sol, self.settings.name)
 
     def set_states(self):

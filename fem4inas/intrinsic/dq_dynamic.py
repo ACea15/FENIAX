@@ -4,7 +4,7 @@ import jax
 import fem4inas.intrinsic.xloads as xloads
 import fem4inas.intrinsic.postprocess as postprocess
 import fem4inas.intrinsic.dq_common as common
-
+from functools import partial
 #@jax.jit
 def dq_20g1(t, q, *args):
 
@@ -67,6 +67,7 @@ def dq_20g121(t, q, *args):
     return F
 
 #@jax.jit
+@partial(jax.jit, static_argnames=['q'])
 def dq_20g21(t, q, *args):
 
     (gamma1, gamma2, omega, states,
@@ -79,6 +80,7 @@ def dq_20g21(t, q, *args):
     q2 = q[states['q2']]
     q0 = -q2 / omega
     ql = q[states['ql']]
+    q3 = jnp.hstack([q1,q2])
     ql_tensor = ql.reshape((num_modes, num_poles))
     eta_s = xloads.eta_rogerstruct(q0, q1, ql_tensor,
                                    A0hat, A1hat, A2hatinv)
@@ -88,7 +90,7 @@ def dq_20g21(t, q, *args):
     F1 = A2hatinv @ F1 #Nm
     Fl_tensor = xloads.lags_rogerstructure(A3hat, q1, u_inf,
                                            c_ref, poles, ql_tensor)  # NlxNm 
-    Flgust_tensor = xloads.lags_rogergust(t, xgust, Flgust)
+    Flgust_tensor = xloads.lags_rogergust(t, xgust, Flgust)  # NlxNm
     Fl_tensor += Flgust_tensor
     Fl = Fl_tensor.reshape(num_modes * num_poles)
     F = jnp.hstack([F1, F2, Fl])

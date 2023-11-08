@@ -79,8 +79,10 @@ class AeroRoger(ModalAero):
             self._get_matrix(self.settings.A, "A")
         # GAFs gust
         if self.settings.Qk_gust is not None:
-            if self.settings.A is not None:
-                self._get_matrix(self.settings.D, "D")
+            # build rfa
+            ...
+        elif self.settings.D is not None:
+            self._get_matrix(self.settings.D, "D")
         # GAFs controls
         if self.settings.Qk_controls is not None:
             if len(self.settings.Qk_controls[0]) == 1: # steady
