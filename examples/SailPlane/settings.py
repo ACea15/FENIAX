@@ -72,4 +72,4 @@ inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]
 config =  configuration.Config(inp)
 #configuration.dump_to_yaml(path2config, config, with_comments=True)
 
-#sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = fem4inas.fem4inas_main.main(input_obj=config)
