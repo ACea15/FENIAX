@@ -56,14 +56,15 @@ def initialise_Dclass(data, Dclass, **kwargs):
     else:
         raise TypeError("Wrong input type")
 
-def dump_inputs(data: dict[str:list[Any, str]], ind=0,
+def dump_inputs(data: dict[str:list[Any, str]],
+                indent:int=0,
                 with_comments:bool=True):
 
     #if ind == 0:
     data = CommentedMap(data)
     for k, v in data.items():
         if isinstance(v, dict):
-            data[k] = dump_inputs(v, ind=ind+1,
+            data[k] = dump_inputs(v, indent=indent+1,
                                   with_comments=with_comments)
         else:
             data[k] = v[0]
@@ -71,8 +72,20 @@ def dump_inputs(data: dict[str:list[Any, str]], ind=0,
             if with_comments:
                 data.yaml_set_comment_before_after_key(k,
                                                        before=v[1],
-                                                       indent=2*ind)
+                                                       indent=2*indent)
     return data
+
+def dump_yaml(file_out: str | pathlib.Path,
+              data_in: dict[str:list[Any, str]],
+              with_comments=True):
+
+    yaml = YAML()
+    file_out = pathlib.Path(file_out)
+    file_out.parent.mkdir(parents=True, exist_ok=True)
+    data = dump_inputs(data_in, with_comments=with_comments)
+    with open(file_out, "w") as f:
+        yaml.dump(data, f)
+
 
 def load_jnp(path):
 
