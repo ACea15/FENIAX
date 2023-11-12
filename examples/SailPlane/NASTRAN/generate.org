@@ -9,7 +9,7 @@
 #+NAME: python_parameters
 #+begin_src python :session py1 :var output="num_modes" :results none :tangle py1.py
   import numpy as np
-  import fem4inas.nastran_utils.aero as nasaero
+  import fem4inas.unastran.aero as nasaero
   mach = 0.8
   Mach = str(mach).replace('.','_')
   machs = [mach]
@@ -35,6 +35,7 @@
   flutter_sett = dict()
   aero_sett = dict()
   num_poles = 5
+  gust_lengths = [18.0,42.,67.,91.,116.,140.,165.0,189.,214.]
   eval(output)
 #+end_src
 
@@ -407,7 +408,9 @@
                                     spline_type=6)
   dlm_panels.build_model()
   dlm_panels.model.write_bdf("./dlm_model.bdf")
-
+  dlm_panels.save_yaml("./dlm_model.yaml")
+  dlm_panels2= nasaero.GenDLMPanels.from_file("./dlm_model.yaml")
+  dlm_panels2 == dlm_panels
 #+end_src
 
 ** Plot
@@ -482,13 +485,13 @@
   panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, set1x, X, model)
   #collocationmodel = fem4inas.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
 #+end_src
+
 #+begin_src python :session py1 :results none :tangle py1.py
   aerogrid_collocation = fem4inas.plotools.grid.AeroGrid.build_DLMcollocation(dlm_panels.model)
   #collocationmodel = fem4inas.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
   collocation_points = np.vstack([aerogrid_collocation.points[i] for i in aerogrid_collocation.points.keys()])
   np.save("./data_out/collocation_points.npy", collocation_points)
 #+end_src
-
 
 #+begin_src python :session py1 :results none
   import pandas as pd
@@ -586,9 +589,9 @@
 #+begin_src python :session py1 :results none :tangle py1.py
   from fem4inas.preprocessor import solution
   import fem4inas.plotools.interpolation as interpolation
-  import fem4inas.plotools.nastranvtk.modes as modex
-  importlib.reload(modex)
-  bdf = modex.ParseBDF("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
+  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  importlib.reload(bdfdef)
+  bdf = bdfdef.DefBdf("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
   bdf.plot_vtk("./paraview/results/ref.bdf")
   nodesX = bdf.get_nodes()
   disp, coord = interpolation.compute(panelmodel.datam1_merged,
@@ -1899,7 +1902,7 @@
   nastran run_cao.bdf
 #+end_src
 
-#+begin_src python :session py1  :results none :noweb yes
+#+begin_src python :session py1  :results none
   import pyNastran.op4.op4 as op4
 
   dihedral = op4.read_op4("./data_out/dihedral.op4")
@@ -1907,6 +1910,7 @@
 #+end_src
 
 * SOL 144
+
 #+begin_src org :tangle "./SOL144/setup.bdf" :mkdirp yes :noweb yes
   $
   $--------------------------------------------------------------------------------
@@ -2003,6 +2007,108 @@
   nastran run_cao.bdf
 #+end_src
 * SOL 146
+#+begin_src python :session py1  :results none
+  import fem4inas.unastran.gustgen as gustgen
+  gust4nastran = gustgen.Gust4Nastran(h=0.,
+                                      M=mach,
+                                      U_inf_TAS=u_inf,
+                                      Type='tas',
+                                      chord=c_ref,
+                                      N_step_freq=1000,
+                                      F_max=10.,
+                                      H=[li/2 for li in gust_lengths],
+                                      Fg=1.,
+                                      grid_DAREA=999079
+                                      )
+  gust4nastran.gust_family("./SOL146/gust_family.bdf", "./SOL146/gust_subcase.bdf")
+  gust4nastran.gust_setup("./SOL146/gust_setup.bdf")
+#+end_src
+
+#+begin_src org :tangle "./SOL146/run_cao.bdf" :mkdirp yes :noweb yes
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ EXECUTIVE CONTROL								      $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  $ TIME 100 $(Max execution time)       
+  $NASTRAN NLINES = 999999
+  NASTRAN QUARTICDLM = 1
+  SOL 146
+  CEND
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CASE CONTROL							              $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  SET 1 =999079,999000,999001,999002,999003,999004,999005,999006,
+  999007,999008,999009,999010,999011,999012,999013,999014,
+  999015,999016,999017,999018,999019,999020,999021,999022,
+  999023,999024,999025,999026,999027,999028,999029,999030,
+  999031,999032,999033,999034,999035,999036,999037,999038,
+  999039,999040,999041,999042,999043,999044,999045,999046,
+  999047,999048,999049,999050,999051,999052,999053,999054,
+  999055,999056,999057,999058,999059,999060,999061,999062,
+  999063,999064,999065,999066,999067,999068,999069,999070,
+  999071,999072,999073,999074,999075,999076,999077
+  TITLE=Sailplane #                                 
+  SPC = 2                  
+  $ DISP = ALL
+  FORCE = ALL
+  AEROF = ALL
+  MONITOR = ALL
+  ECHO=NONE
+  METHOD = 910
+  $SDAMP  = 920
+  FREQ = 930
+  TSTEP = 940  
+  RESVEC = NO
+  ECHO=NONE
+
+  INCLUDE 'gust_subcase.bdf'
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   									      $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  BEGIN BULK
+  PARAM,BAILOUT,0
+  PARAM,GRDPNT,0                                                              
+  PARAM,K6ROT,1.0
+  PARAM,SNORM,20.0
+  PARAM,POST,-1
+  $PARAM,MAXRATIO,1.0E07 $Default anyway
+  $PARAM   AUTOSPC YES
+  MDLPRM,MLTSPLIN,1 $Aero grids can be defined in multiple splines (dafault 0)
+  PARAM,WTMASS,1.0  
+  $PARAM   AUNITS  .1019716  $ 1/g
+  PARAM,GUSTAERO,-1
+  PARAM,OPPHIPA,1
+  EIGR    910     LAN     0.      10.       
+          MASS  
+  SPC1           1  123456  999079
+  SPCADD         2       1
+  INCLUDE ../base.bdf
+  INCLUDE ../dlm_model.bdf
+
+  INCLUDE 'gust_setup.bdf'
+  INCLUDE 'gust_family.bdf'
+
+  ENDDATA
+
+
+#+end_src
+
+#+begin_src bash :tangle "./SOL146/run.sh" :mkdirp yes :shebang  #!/usr/bin/zsh -i :results none
+  cd ./SOL146
+  nastran run_cao.bdf
+#+end_src
+
+#+begin_src python :session py1  :results none
+  import fem4inas.unastran.op2reader as op2reader
+  op2model = op2reader.NastranReader("./SOL146/run_cao")
+  op2model.readModel()
+#+end_src
+
+
 * VTK
 #+begin_src python :session py1  :results none :noweb yes
   import meshio
