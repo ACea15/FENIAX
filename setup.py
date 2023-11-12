@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages, Extension, Command
-
+# conda install -c conda-forge libstdcxx-ng
 setup(
     name="FEM4INAS",
     #Version=__version__,
@@ -39,7 +39,8 @@ setup(
         "plot": [
             "matplotlib",
             "plotly",
-            "pyvista"
+            "pyvista",
+            "stpyvista"
             ],
         "docs": [
             "sphinx",
