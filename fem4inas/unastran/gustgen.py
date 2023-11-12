@@ -1,9 +1,9 @@
 import      os
 import      numpy      as        np
-from        scipy      import    *
+import scipy
 
 
-class gust4nastran:
+class Gust4Nastran:
 
     def __init__(self,h,M,U_inf_TAS,Type,chord,F_max,N_step_freq,H,Fg,grid_DAREA,VD=False):
 
@@ -34,7 +34,7 @@ class gust4nastran:
         gamma=1.4
 
         self.T,self.rho,self.P,self.a = self.standard_atmosphere(self.h,k,R,g,gamma,T_0,rho_0)
-        self.TAS2EAS=sqrt(self.rho/rho_0)
+        self.TAS2EAS=scipy.sqrt(self.rho/rho_0)
         U_inf_EAS=self.TAS2EAS*self.U_inf_TAS
 
         # Frequency and Time step Definition
@@ -86,18 +86,18 @@ class gust4nastran:
             T=T_0-k*h
             rho=rho_0*(T/T_0)**(1/(n-1))
             P=rho*R*T
-            a=sqrt(gamma*R*T)
+            a=scipy.sqrt(gamma*R*T)
         elif 11000.<=h<=25000.:
             h_11k=11000.
             T_11k=T_0-k*h_11k
             rho_11k=rho_0*(T_11k/T_0)**(1/(n-1))
             P_11k=rho_11k*R*T_11k
 
-            psi=exp(-(h-h_11k)*g/(R*T_11k))
+            psi=scipy.exp(-(h-h_11k)*g/(R*T_11k))
             T=T_11k
             rho=rho_11k*psi
             P=P_11k*psi
-            a=sqrt(gamma*R*T_11k)
+            a=scipy.sqrt(gamma*R*T_11k)
         return T,rho,P,a
 
     def gust_family(self,write_gust,write_subcase):

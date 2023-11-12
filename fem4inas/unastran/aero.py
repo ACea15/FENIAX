@@ -1,18 +1,21 @@
 from pyNastran.bdf.bdf import BDF
+from fem4inas.preprocessor.utils import dump_yaml
+import pathlib
+from ruamel.yaml import YAML
 
 class GenDLMPanels:
 
     def __init__(self,
-                 components,
-                 num_surfaces,
-                 p1,
-                 x12,
-                 p4,
-                 x43,
-                 nspan,
-                 nchord,
-                 set1x,
-                 spline_type=6):
+                 components: list,
+                 num_surfaces: int,
+                 p1: list,
+                 x12: list ,
+                 p4: list,
+                 x43: list,
+                 nspan: list,
+                 nchord: list,
+                 set1x: list,
+                 spline_type: int =6):
 
         self.components = components
         self.num_surfaces = num_surfaces
@@ -25,7 +28,32 @@ class GenDLMPanels:
         self.set1x = set1x
         self.spline_type = spline_type
         self.build_dlm()
-        
+
+    def __eq__(self, o):
+        equal_dict = dict(
+            components=self.components==o.components,
+            num_surfaces=self.num_surfaces==o.num_surfaces,
+            p1=self.p1==o.p1,
+            x12=self.x12==o.x12,
+            p4=self.p4==o.p4,          
+            x43=self.x43==o.x43, 
+            nspan=self.nspan==o.nspan,
+            nchord=self.nchord==o.nchord,
+            se1x=self.set1x==o.set1x,
+            spline_type=self.spline_type==o.spline_type
+            )
+        equal = False if False in equal_dict.values() else True
+        if not equal:
+            print("The following items are not equal:")
+            [print(k) for k, v in equal_dict.items() if v == False]
+        return equal
+    
+    @classmethod
+    def from_file(cls, file_dir: str|pathlib.Path, **kwargs):
+        yaml = YAML()
+        yaml_dict = yaml.load(pathlib.Path(file_dir))
+        return cls(**yaml_dict)
+    
     @staticmethod
     def dlm1(num_surfaces,paero1,caero1,aelist,set1,spline67,p1,x12,p4,x43,nspan,nchord,set1x, spline_type):
         npanels = 0
@@ -90,7 +118,24 @@ class GenDLMPanels:
             self.model.add_card(self.spline67[i],
                                 f'SPLINE{self.spline_type}',
                                 comment=self.components[i])
-
+    def save_yaml(self, file_name):
+        """
+        Saves to YAML file the inputs necessary to construct the object
+        """
+        dictout = dict(
+            components = [self.components, "DLM component names"],
+            num_surfaces = [self.num_surfaces, "DLM number of components"],
+            p1 = [self.p1, "Leading-edge inwards point"],
+            x12 = [self.x12, "Chord length at p1"],
+            p4 = [self.p4, "Leading-edge outwards point"],
+            x43 = [self.x43, "Chord length at point p4"],
+            nspan = [self.nspan, "Number of panels spanwise"],
+            nchord = [self.nchord, "Number of panels chordwise"],
+            set1x = [self.set1x, "Structural ids associated with each component"],
+            spline_type = [self.spline_type, "Nastran spline 6 or 7"]
+        )
+        dump_yaml(file_name, dictout)
+        
 class GenFlutter:
 
     # https://pynastran-git.readthedocs.io/en/latest/reference/bdf/cards/aero/pyNastran.bdf.cards.aero.dynamic_loads.html
