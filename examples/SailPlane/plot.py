@@ -13,6 +13,10 @@ import plotly.express as px
 # Apply the default theme
 #sns.set_theme()
 
+BDF_FILE = "/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf"
+OP2_FILE = "/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.op2"
+SCALE_MODES = 100.
+
 sol_path =  "./results_2023-11-09_07:47:53"
 sol = solution.IntrinsicSolution(sol_path)
 sol.load_container("Modes")
@@ -108,3 +112,45 @@ elif options == 'Couplings':
 elif options == 'Solution':
     ...
     #solution()
+
+
+
+import fem4inas.unastran.aero as nasaero
+from pyNastran.bdf.bdf import BDF
+import pandas as pd
+import importlib
+importlib.reload(fem4inas.plotools.grid)
+import fem4inas.plotools.grid.AeroGrid
+
+
+fem4inas_file = '../FEM/structuralGrid'
+dlm_file = "./NASTRAN/dlm_model.yaml"
+nastran_file = "./NASTRAN/SOL103/run_cao.bdf"
+
+dlm_panels= nasaero.GenDLMPanels.from_file(dlm_file)
+bdf_model = BDF(debug=True)
+bdf_model.read_bdf(nastran_file, punch=False)
+
+df_grid = pd.read_csv(fem4inas_file, comment="#", sep=" ",
+                    names=['x1', 'x2', 'x3', 'fe_order', 'component'])
+X = df_grid[['x1','x2','x3']].to_numpy()
+
+aerogrid = fem4inas.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
+panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, dlm_panels.set1x, X, bdf_model)
+
+
+
+
+import pyvista
+pl = pyvista.Plotter()
+
+reader1 = pyvista.get_reader("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/paraview/results/ref.vtk/CQUAD4.vtu")
+mesh1 = reader1.read()
+pl.add_mesh(mesh1)
+reader2 = pyvista.get_reader("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/paraview/results/ref.vtk/CBAR.vtu")
+mesh2 = reader2.read()
+pl.add_mesh(mesh2)
+pl.show()
+
+#sliced_mesh = mesh.slice('x')
+#mesh.plot()

@@ -145,15 +145,15 @@ class ASETModel(Model):
     """
     
     def __init__(self, aerogrid: AeroGrid,
-                 model0_ids,
-                 modelx_data,
-                 model,
+                 model0_ids: list,
+                 modelx_data: list | jnp.ndarray,
+                 bdf_model: BDF,
                  tol_identification=1e-6,
                  **kwargs):
         self.aerogrid = aerogrid
         self.model0_ids = model0_ids
         self.modelx_data = modelx_data
-        self.model = model
+        self.bdf_model = bdf_model
         self.tol_identification = tol_identification
         self.components = {ki: None for ki in self.aerogrid.labels.keys()}
         self.component_names = list(self.components.keys())
@@ -161,12 +161,14 @@ class ASETModel(Model):
         self.merge_components()
 
     def link_models(self):
-        
+        """
+        links m0 to m1 models (aset nodes to panel grid)
+        """
         for i, ki in enumerate(self.component_names):
             print(f"setting component {ki}")
             m0_ids = self.model0_ids[i]
             data_m1 = self.aerogrid.get('points', ki)
-            link_m0m1, data_m0, pa_m1 = self.point2aset(self.model,
+            link_m0m1, data_m0, pa_m1 = self.point2aset(self.bdf_model,
                                                         data_m1,
                                                         m0_ids)
             link_m0mx = self.link_solution(m0_ids, data_m0)
@@ -339,7 +341,7 @@ class ASETModel(Model):
         return aset_map, asets_vect, np.array(pa)
 
     @staticmethod
-    def point2aset(model, points, asets):
+    def point2aset(model: BDF, points, asets):
   
         aset_map = {ai: [] for ai in asets}
         asets_vect = np.array([model.nodes[i].get_position() for i in asets])
