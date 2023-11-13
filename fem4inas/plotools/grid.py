@@ -4,6 +4,10 @@ import jax.numpy as jnp
 import numpy as np
 from pyNastran.bdf.bdf import BDF
 import pathlib
+import fem4inas.plotools.interpolation as interpolation
+import fem4inas.preprocessor.solution as solution
+import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+import fem4inas.plotools.grid as grid
 
 def transform_grid_rigid(ra, Rab, R0ab, pa):
     f = jax.vmap(lambda ra_i, Rab_i, R0ab_i, pa_i: ra_i.reshape((3, 1)) + Rab_i @ (R0ab_i.T @ pa_i),
@@ -198,20 +202,51 @@ class ASETModel(Model):
         self.merge_data("data_mx")
         self.merge_data("pa_mx")
 
+    # def mesh_plot(self, folder_path:str , data_name: str):
+    #     """
+    #     """
+    #     import pyvista
+    #     path = pathlib.Path(folder_path)
+    #     path.mkdir(parents=True, exist_ok=True)
+    #     for i, ki in enumerate(self.component_names):
+    #         _cells = self.aerogrid.get('cells', ki)
+    #         cells = np.hstack([4*np.ones(len(_cells),dtype=int).reshape(
+    #             len(_cells),1), _cells])
+    #         data_ci = getattr(self.components[ki], data_name)
+    #         mesh = pyvista.PolyData(data_ci, cells)
+    #         mesh.save(path / f"{ki}.ply",
+    #                   binary=False)
+
     def mesh_plot(self, folder_path:str , data_name: str):
         """
         """
         import pyvista
         path = pathlib.Path(folder_path)
         path.mkdir(parents=True, exist_ok=True)
+        data, cells = self.get_meshdata(data_name)
+        for i, ki in enumerate(self.component_names):
+            # _cells = self.aerogrid.get('cells', ki)
+            # cells = np.hstack([4*np.ones(len(_cells),dtype=int).reshape(
+            #     len(_cells),1), _cells])
+            # data_ci = getattr(self.components[ki], data_name)
+            mesh = pyvista.PolyData(data[i], cells[i])
+            mesh.save(path / f"{ki}.ply",
+                      binary=False)
+
+    def get_meshdata(self, data_name: str):
+        """
+        """
+        
+        Cells = list()
+        Data_ci = list()
         for i, ki in enumerate(self.component_names):
             _cells = self.aerogrid.get('cells', ki)
             cells = np.hstack([4*np.ones(len(_cells),dtype=int).reshape(
                 len(_cells),1), _cells])
             data_ci = getattr(self.components[ki], data_name)
-            mesh = pyvista.PolyData(data_ci, cells)
-            mesh.save(path / f"{ki}.ply",
-                      binary=False)
+            Cells.append(cells)
+            Data_ci.append(data_ci)
+        return Cells, Data_ci
 
     def build_m1_tensor(self, pa_m1, link_m0m1):
 
@@ -371,4 +406,88 @@ class ASETModel(Model):
             else:
                 intrinsic_map[asets[i]] = None
         return intrinsic_map
+
+class Interpol:
+    ...
+
+import fem4inas.unastran.aero as nasaero
+import fem4inas.plotools.grid
+
+dlm_panels= nasaero.GenDLMPanels.from_file("./dlm_model.yaml")
+aerogrid = fem4inas.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
+panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, dlm_panels.set1x, X, bdf_model)
+
+class InterpolBDF(Interpol):
+    
+    def __init__(self,
+                 file_dlm,
+                 file_bdf,
+                 Xref,
+                 folder_sol=None
+                 ):
+
+        if folder_sol is not None:
+            self.solfolder = folder_sol
+        self._read_bdf(file_bdf)
+        self._read_dlm(file_dlm)
+        self.m0ref = None
+        self.m1ref = None
+        self.m0curr = None
+        self.m1curr = None
+        self.m0disp = None
+        self.m1disp = None
+
+    @property
+    def solfolder(self):
+        return self._solfolder
+    
+    @solfolder.setter
+    def solfolder(self, value):
+        self._solfolder = value
+        self.sol = solution.IntrinsicSolution(self._solfolder)
+
+    def read_sol(self, sys_name, sys_label):
+        """
+        Input and read an intrinsic solution
+        """
+        self.sol.load_container(sys_name, label=sys_label)
+        
+    def _read_bdf(self, file_bdf):
+        
+        self.bdf = bdfdef.DefBdf(file_bdf)
+
+    def _read_dlm(self, file_dlm):
+        
+        self.dlm_panels= nasaero.GenDLMPanels.from_file(file_dlm)
+        self.aerogrid = grid.AeroGrid.build_DLMgrid(self.dlm_panels.model)
+        
+    def set_m0ref(self):
+
+        self.asetmodel = grid.ASETModel(self.aerogrid,
+                                        self.dlm_panels.set1x,
+                                        X,
+                                        self.dlm_panels)
+        self.m0ref = self.asetmodel.datam1_merged
+
+    def set_m0curr(self, ti):
+
+        sys = getattr(self.sol.data, f"{self.sys_name}_{self.sys_label}")
+        ra = sys.ra[ti]
+        Rab = sys.Cab[ti]
+        self.asetmodel.set_solution(ra,
+                                    Rab,
+                                    self.sol.data.modes.C0ab)
+        self.m0curr = self.asetmodel.data_mx_merged
+
+    def set_m1ref():
+
+        self.m1ref = self.bdf.get_nodes()
+
+    def set_m1def():
+        disp, coord = interpolation.compute(self.m0ref,
+                                            self.m0curr,
+                                            self.m1ref)
+        self.m1curr = coord
+        self.m1disp = disp
+        self.bdf.update_bdf(coord, self.bdf.mbdf.node_ids)
 

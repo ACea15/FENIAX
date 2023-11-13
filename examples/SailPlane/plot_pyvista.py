@@ -31,6 +31,7 @@ inp.fem.connectivity = dict(FuselageFront=['RWingInner',
 inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.num_modes = 50
 config = configuration.Config(inp)
+#####
 points = np.array(config.fem.X)
 num_points = len(points)
 lines = np.vstack([2*np.ones(num_points, dtype=int),

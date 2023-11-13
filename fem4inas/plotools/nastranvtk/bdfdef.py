@@ -5,7 +5,7 @@ import copy
 import pathlib
 import fem4inas.plotools.nastranvtk.bdf2vtk as bdf2vtk
 
-def vtk_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None):
+def vtkModes_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None):
 
     bdfile = pathlib.Path(bdf_file)
     mbdf = BDF()
@@ -25,6 +25,9 @@ def vtk_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None):
         write_vtk = f"{bdfile.parent / bdfile.name.split('.')[0]}M{mode_i}.vtk"
         mbdfi.write_bdf(write_path)
         bdf2vtk.run(write_path, None, write_vtk, False, fileformat="ascii")
+
+def vtkSol_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None):
+    ...
 
 class DefBdf:
 

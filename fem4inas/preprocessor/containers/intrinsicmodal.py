@@ -247,6 +247,7 @@ class Dfem(DataContainer):
         and associated component""", default='structuralGrid')
     df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)    
     X: jnp.ndarray = dfield("Grid coordinates", default=None, yaml_save=False)
+    Xm: jnp.ndarray = dfield("Grid coordinates mid-points", default=None, yaml_save=False)
     Cab_xtol: float = dfield("Tolerance for building the local frame", default=1e-4)    
     num_nodes: int = dfield("Number of nodes", init=False)    
     fe_order: list[int] | jnp.ndarray = dfield("node ID in the FEM", default=None)
@@ -326,6 +327,7 @@ class Dfem(DataContainer):
                                                       self.component_nodes,
                                                       self.component_father))
         setobj("Mavg",geometry.compute_Maverage(self.prevnodes, self.num_nodes))
+        setobj("Xm", jnp.matmul(self.X.T, self.Mavg))
         setobj("Mdiff", geometry.compute_Mdiff(self.prevnodes, self.num_nodes))
         setobj("Mfe_order", geometry.compute_Mfe_order(self.fe_order,
                                                        self.clamped_nodes,

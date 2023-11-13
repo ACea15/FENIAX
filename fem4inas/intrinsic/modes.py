@@ -217,7 +217,7 @@ def shapes(X: jnp.ndarray,
     _phi2 = reshape_modes(nodal_force, num_modes, num_nodes)  #(Nmx6xNn)
     #  Note: _phi2 are forces at the Nodes due to deformed shape, phi2 are internal forces
     #  as the sum of _phi2 along load-paths
-    X3 = coordinates_difftensor(X, config.fem.Mavg, precision)  # (3xNnxNn)
+    X3 = coordinates_difftensor(X, config.fem.Xm, precision)  # (3xNnxNn)
     X3tilde = -axis_tilde(X3)  # (6x6xNnxNn)
     _moments_force = moment_force(_phi2, X3tilde, precision)  # (Nmx6xNnxNn)
     moments_force = contraction(_moments_force,
@@ -413,7 +413,7 @@ def moment_force(force: jnp.ndarray, X3t: jnp.ndarray, precision) -> jnp.ndarray
     return fuv
 
 @partial(jit, static_argnames=["precision"])
-def coordinates_difftensor(X: jnp.ndarray, Mavg: jnp.ndarray, precision) -> jnp.ndarray:
+def coordinates_difftensor(X: jnp.ndarray, Xm: jnp.ndarray, precision) -> jnp.ndarray:
     """Computes coordinates
 
     The tensor represents the following: Coordinates, middle point of each element,
@@ -436,7 +436,7 @@ def coordinates_difftensor(X: jnp.ndarray, Mavg: jnp.ndarray, precision) -> jnp.
 
     """
 
-    Xm = jnp.matmul(X, Mavg, precision=precision)
+    #Xm = jnp.matmul(X, Mavg, precision=precision)
     num_nodes = X.shape[1]
     ones = jnp.ones(num_nodes)
     Xm3 = jnp.tensordot(Xm, ones, axes=0, precision=precision)  # copy Xm along a 3rd dimension

@@ -7,6 +7,7 @@ import pathlib
 from ruamel.yaml import YAML
 import jax.numpy as jnp
 import numpy as np
+import argparse
 
 class Config:
 
@@ -78,7 +79,7 @@ class Config:
     @classmethod
     def from_file(cls, file_dir: str|pathlib. Path, **kwargs):
         yaml = YAML()
-        yaml_dict = yaml.load(file_dir)
+        yaml_dict = yaml.load(pathlib.Path(file_dir))
         return cls(yaml_dict)
 
 class ValidateConfig:
@@ -140,10 +141,11 @@ def initialise_config(input_file: str = None,
         parser.add_argument('input_file', help='path to the *.yaml input file',
                             type=str, default='')
         if input_file is not None: #running from within python file
-            args = parser.parse_args(input_file)
+            config = Config.from_file(input_file)
+            #parser.parse_args(input_file)
         else: # running from command line
             args = parser.parse_args()
-        config = Config.from_file(args.input_file)
+            config = Config.from_file(args.input_file)
     elif input_dict is not None and (input_file is None and
                                      input_obj is None):  # inputs given as dict
         config = Config(input_dict)

@@ -138,6 +138,36 @@ X = df_grid[['x1','x2','x3']].to_numpy()
 aerogrid = fem4inas.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
 panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, dlm_panels.set1x, X, bdf_model)
 
+sol_path = "/media/acea/work/projects/FEM4INAS/examples/SailPlane/results_2023-10-23_08:48:10/"
+sol = solution.IntrinsicSolution(sol_path)
+sol.load_container("Modes")
+sol.load_container("Couplings")
+sol.load_container("StaticSystem", label="_s1")
+panelmodel.set_solution(sol.data.staticsystem_s1.ra[-1],
+                        sol.data.staticsystem_s1.Cab[-1],
+                        sol.data.modes.C0ab)
+panelmodel.mesh_plot(folder_path="./paraview/results/data_m1",
+                     data_name= "data_m1")
+panelmodel.mesh_plot(folder_path="./paraview/results/data_mx",
+                     data_name= "data_mx")
+
+bdfdef.vtk_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None)
+import fem4inas.plotools.interpolation as interpolation
+import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+
+bdf = bdfdef.DefBdf("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
+bdf.plot_vtk("./paraview/results/ref.bdf")
+nodesX = bdf.get_nodes()
+disp, coord = interpolation.compute(panelmodel.datam1_merged,
+                                    panelmodel.data_mx_merged,
+                                    nodesX)
+bdf.update_bdf(coord, bdf.mbdf.node_ids)
+bdf.plot_vtk("./paraview/results/def.bdf")
+
+
+
+
+
 
 
 
