@@ -11,12 +11,12 @@ BeamSeg, NumNode, NumNodes, DupNodes, inverseconn  = intrinsic.geometryrb.geomet
 
 Fname='Ftest'
 fabs=-5e5
-a1=BeamSeg[0].GlobalAxes.T.dot([-2e5,0.,6e5])
+a1=BeamSeg[4].GlobalAxes.T.dot([-2e5,0.,6e5])
 #a2=BeamSeg[11].GlobalAxes.T.dot([0,0,5.3e5])
 NumFLoads = 1
 #Follower_points_app = [[6,-1,[0,1,2]],[11,-1,[0,1,2]]]
 #Follower_interpol = [ [[[0.,5.3],[0.,a1[0]]],[[0.,5.3],[0.,a1[1]]],[[0.,5.3],[0.,a1[2]]]] , [[[0.,5.3],[0.,a2[0]]],[[0.,5.3],[0.,a2[1]]],[[0.,5.3],[0.,a2[2]]]]]
-Follower_points_app = [[0,-1,[0,1,2]]]
+Follower_points_app = [[4,-1,[0,1,2]]]
 #Follower_interpol = [ [[[0.,5.3],[0.,a1[0]]],[[0.,5.3],[0.,a1[1]]],[[0.,5.3],[0.,a1[2]]]]]
 Follower_interpol = [ [[[0.,4.,4.,20.],[0.05*a1[0],1.*a1[0],0.,0.]],[[0.,4.,4.,20.],[0.05*a1[1],1.*a1[1],0.,0.]],[[0.,4.,4.,20.],[0.05*a1[2],1.*a1[2],0.,0.]]]]
 # Fname='F3d'

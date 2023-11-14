@@ -1,11 +1,11 @@
 from config0 import *
 V = 'V'
-Fname = 'F'
+Fname = 'Ftest'
 AeroToRun = ''
-InitC = 'initFunc_test'
+InitC = ''
 test_on = 1
 multi=1
-NumProcess='multiprocessing.cpu_count()-1'
+NumProcess = 'multiprocessing.cpu_count()-1'
 save_modes = 1
 load_modes = 0
 save_gammas = 1
@@ -20,4 +20,5 @@ run_coefficients = 1
 run_modal_solution = 1
 run_displacements = 1
 run_cg = 1
-save_folder='V30y/results_14-5-2023_19-20'
+ODESolver = 'RK4'
+save_folder='results_5-11-2023_12-59'

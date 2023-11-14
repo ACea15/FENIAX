@@ -28,7 +28,7 @@ for i in range(len(os.getcwd().split('/'))):
 #w,v=scipy.linalg.eigh(Ka,Ma)
 #ww=np.sqrt(w)
 NumModes = 53
-NumBeams = 1
+NumBeams = 5
 Nastran_modes = 0
 ReplaceRBmodes = 0
 Path4Phi2 = 1
@@ -44,9 +44,9 @@ else:
 # Reading Grid file
 #============================================
 node_start = 1              # NumNode=max([max(BeamSeg[j].NodeOrder) for j in range(NumBeams)])+node_start # Number Nodes
-start_reading = 3     # range(start_reading,len(lin)):
-beam_start = 1           # j=int(s[4])-beam_start BeamSeg[j]
-nodeorder_start = 1    # aset start BeamSeg[j].NodeOrder.append(int(s[3])-nodeorder_start)
+start_reading = 1     # range(start_reading,len(lin)):
+beam_start = 0           # j=int(s[4])-beam_start BeamSeg[j]
+nodeorder_start = 0    # aset start BeamSeg[j].NodeOrder.append(int(s[3])-nodeorder_start)
 
 RigidBody_Modes = 0
 Clamped = 1
@@ -57,7 +57,7 @@ if Clamped:
   ClampX='np.array([6.214,0.,-0.2075])'
 
 
-BeamConn = [[[],[]],[[],[]]]
+BeamConn = [[[1],[2],[3],[4],[]],[[],[0],[1],[2],[3]]]
 #MBbeams = [0,1]
 initialbeams = [0]
 #MBdof = {0:[0,1,2], 1:[0,1,2]}
