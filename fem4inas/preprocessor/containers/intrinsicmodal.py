@@ -44,7 +44,8 @@ class DGust(DataContainer):
 @dataclass(frozen=True, kw_only=True)
 class DGustMc(DGust):
     intensity: float = dfield("", default=None)
-    x_discretization: jnp.array = dfield("", default=None)
+    step: float = dfield("", default=None)
+    length: float = dfield("", default=None)
     shift: float = dfield("", default=None)
     panels_dihedral: str | jnp.ndarray = dfield("", default=None)
     collocation_points: str | jnp.ndarray = dfield("", default=None)

@@ -57,15 +57,19 @@ class GustRogerMc(Gust):
         
     def _set_gust(self):
         
-        xgust = self.settings.aero.gust.x_discretization
+        self.gust_step = self.settings.aero.gust.step
         self.gust_shift = self.settings.aero.gust.shift
         simulation_time = self.settings.t
         self.collocation_points = self.settings.aero.gust.collocation_points
         self.dihedral = self.settings.aero.gust.panels_dihedral
-        self.gust_length = xgust[-1] - xgust[0]
+        self.gust_length = self.settings.aero.gust.length
         self.gust_intensity = self.settings.aero.gust.intensity
         self.gust_totaltime = self.gust_length / self.u_inf
-        time_discretization = (self.gust_shift + xgust) / self.u_inf
+        self.xgust = jnp.arange(jnp.min(self.collocation_points[:,0]),
+                                jnp.max(self.collocation_points[:,0]) +
+                                self.gust_length + self.gust_step,
+                                self.gust_step)
+        time_discretization = (self.gust_shift + self.xgust) / self.u_inf
         if time_discretization[-1] < simulation_time[-1]:
             self.time = jnp.hstack([time_discretization, simulation_time[-1]])
         else:
@@ -90,27 +94,27 @@ class GustRogerMc(Gust):
         self.gust_ddot = jnp.zeros((self.npanels, self.ntime))
         coeff = 2. * jnp.pi * self.u_inf / self.gust_length
         for panel in range(self.npanels):
-            delay=(self.collocation_points[panel,0]
-                   + self.gust_shift) / self.u_inf
+            delay = (self.collocation_points[panel, 0]
+                     + self.gust_shift) / self.u_inf
             shape_span = self.shape_span(self.collocation_points[panel,1])
             filter_time = jnp.where((self.time >= delay) &
                                     (self.time <= delay +
                                      self.gust_totaltime), 1, 0)
-            self.gust = self.gust.at[panel].set(shape_span * self.normals[panel] *
-                                                    self.gust_intensity / (self.u_inf*2) *
-                                                    (1 - jnp.cos(coeff * self.time))
-                                                    )
-            self.gust = self.gust * filter_time
-            self.gust_dot = self.gust_dot.at[panel].set(shape_span * self.normals[panel] *
-                                                            self.gust_intensity / (self.u_inf*2) *
-                                                            (jnp.sin(coeff * self.time)) * coeff
-                                                            )
-            self.gust_dot = self.gust_dot * filter_time 
-            self.gust_ddot = self.gust_ddot.at[panel].set(shape_span * self.normals[panel] *
-                                                            self.gust_intensity / (self.u_inf*2) *
-                                                            (jnp.sin(coeff * self.time)) * coeff**2
-                                                            )
-            self.gust_ddot = self.gust_ddot * filter_time
+            self.gust = self.gust.at[panel].set(
+                filter_time * (shape_span * self.normals[panel] *
+                               self.gust_intensity / (self.u_inf*2) *
+                               (1 - jnp.cos(coeff * (self.time - delay)))
+                               ))
+            self.gust_dot = self.gust_dot.at[panel].set(
+                filter_time * (shape_span * self.normals[panel] *
+                               self.gust_intensity / (self.u_inf*2) *
+                               (jnp.sin(coeff * (self.time - delay))) * coeff
+                               ))
+            self.gust_ddot = self.gust_ddot.at[panel].set(
+                filter_time * (shape_span * self.normals[panel] *
+                               self.gust_intensity / (self.u_inf*2) *
+                               (jnp.sin(coeff * (self.time - delay))) * coeff**2
+                               ))
         self._define_eta()
 
     def calculate_normals(self):
