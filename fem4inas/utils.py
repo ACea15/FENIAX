@@ -39,7 +39,9 @@ def write_op4modes(file_name: pathlib.Path | str,
     op2 = OP2()
     op2.read_op2(file_name.with_suffix('.op2'))
     eig1 = op2.eigenvectors[1]
-    modes = eig1.data[:num_modes]
+    modesdata = eig1.data
+    eigsdata = eig1.eigns
+    modes = modesdata[:num_modes]
     op2_nummodes, op2.numnodes, op2.numdim = modes.shape
     modes_reshape = modes.reshape((op2_nummodes, op2.numnodes * op2.numdim)).T
     op4_data = op4.OP4()
@@ -51,4 +53,4 @@ def write_op4modes(file_name: pathlib.Path | str,
                        {matrix_name:(2, modes_reshape)},
                        is_binary=False)
     if return_modes:
-        return modes
+        return eigsdata, modesdata

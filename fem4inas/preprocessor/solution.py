@@ -4,7 +4,6 @@ import jax.numpy as jnp
 import numpy as np
 import pickle
 
-
 class Solution(ABC):
     @abstractmethod
     def set_solcontainer():
@@ -70,10 +69,11 @@ class Solution(ABC):
         dattr = getattr(self.data, name)
         dattr[label] = obj
 
+
 class IntrinsicSolution(Solution):
     def set_solcontainer(self):
-        
         import fem4inas.preprocessor.containers
+
         self.sol_container = fem4inas.preprocessor.containers.intrinsicsol
 
 
@@ -94,8 +94,9 @@ def save_container(path, container):
             type: {type(attr)}"
             )
 
+
 def load_container(path: pathlib.Path, Container):
-    container_path = path #/ Container.__name__.lower()
+    container_path = path  # / Container.__name__.lower()
     kwargs = dict()
     for attr_name in Container.__slots__:
         attr_path = container_path / attr_name
@@ -114,3 +115,39 @@ def load_container(path: pathlib.Path, Container):
             raise ValueError(f"Not recognised type annotation {attr_name}")
 
     return Container(**kwargs)
+
+
+class IntrinsicReader:
+    def __init__(self, folder_sol=None, load_all=True):
+        self.loadall = load_all
+        if folder_sol is not None:
+            self.solfolder = pathlib.Path(folder_sol)
+
+    @property
+    def solfolder(self):
+        return self._solfolder
+
+    @solfolder.setter
+    def solfolder(self, value):
+        self._solfolder = value
+        self._sol = IntrinsicSolution(self._solfolder)
+        self.data = self._sol.data
+        if self.loadall:
+            self._read_all()
+
+    def _read_all(self):
+        names = [fi.name for fi in self.solfolder.iterdir() if fi.is_dir()]
+        for ni in names:
+            print(f"***** Loading {ni}")
+            ni_split = ni.split("_")
+            if len(ni_split) == 1:
+                name = ni_split[0]
+                self.load(name)
+            else:
+                name = "_".join(ni_split[:-1])
+                label = "_" + ni_split[-1]
+                self.load(name, label)
+
+    def load(self, name, label=""):
+        """Input and read an intrinsic solution."""
+        self._sol.load_container(name, label=label)

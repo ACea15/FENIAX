@@ -29,8 +29,10 @@ inp.fem.connectivity = dict(FuselageFront=['RWingInner',
 inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.num_modes = 20
 inp.driver.typeof = "intrinsic"
+# inp.driver.sol_path = pathlib.Path(
+#     f"./resultsGust_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
+    f"./resultsGust")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 5.
@@ -40,14 +42,15 @@ inp.systems.sett.s1.solver_function = "ode"
 inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
 inp.systems.sett.s1.xloads.modalaero_forces = True
 inp.systems.sett.s1.aero.c_ref = 2.
-inp.systems.sett.s1.aero.u_inf = 100.
+inp.systems.sett.s1.aero.u_inf = 70.
 inp.systems.sett.s1.aero.rho_inf = 1.
 inp.systems.sett.s1.aero.A = "./NASTRAN/data_out/Qhh0_8-20r5.npy"
 inp.systems.sett.s1.aero.D = "./NASTRAN/data_out/Qhj0_8-20r5.npy"
 inp.systems.sett.s1.aero.poles = "./NASTRAN/data_out/Poles0_8-20r5.npy"
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust_settings.intensity = 1.
-inp.systems.sett.s1.aero.gust_settings.x_discretization = jnp.linspace(0, 20, 21)
+inp.systems.sett.s1.aero.gust_settings.length = 20.
+inp.systems.sett.s1.aero.gust_settings.step = 0.5
 inp.systems.sett.s1.aero.gust_settings.shift = 0.
 inp.systems.sett.s1.aero.gust_settings.panels_dihedral = jnp.load("./NASTRAN/data_out/dihedral.npy")[:,0]
 inp.systems.sett.s1.aero.gust_settings.collocation_points = "./NASTRAN/data_out/collocation_points.npy"

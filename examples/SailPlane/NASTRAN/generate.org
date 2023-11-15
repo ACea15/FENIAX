@@ -14,23 +14,23 @@
   Mach = str(mach).replace('.','_')
   machs = [mach]
   reduced_freqs = np.hstack([1e-6, np.linspace(1e-3,1, 50)])#np.hstack([np.linspace(1e-5,1, 50), [10-0.001, 10., 10+0.001]])
-  num_modes = 20
+  num_modes = 100
   chord_panels = dict(wing=15, hstabilizer=10, vstabilizer=10)
   #aero['s_ref'] = 361.6
   #aero['b_ref'] = 58.0
   #aero['X_ref'] = 36.3495
   flutter_id = 9010
-  density_fact = [1.225]
   mach_fact = machs
   kv_fact = [200., 220.]
   u_inf = 200.
   rho_inf = 1.5
-  c_ref = 2.
+  density_fact = [rho_inf]
+  c_ref = 1.
   b_ref = 28.8*2
   S_ref = b_ref * c_ref
-  rho_ref=0.7
+  rho_ref=rho_inf
   q_inf = 0.5 * rho_inf * u_inf ** 2
-  alpha_sol144 = 5 * np.pi / 180
+  alpha_sol144 = 1 * np.pi / 180
   flutter_method="PK"
   flutter_sett = dict()
   aero_sett = dict()
@@ -116,12 +116,20 @@
 
 ** Build modes in OP4
 #+begin_src python :session py1  :results none 
-  from fem4inas.utils import write_op4modes
-  modes = write_op4modes("./SOL103/run_cao",
-                         num_modes,
-                         op4_name=f"./data_out/Phi{num_modes}",
-                         return_modes=True)
+  #from fem4inas.utils import write_op4modes
+  import fem4inas.utils as femutils
+  eigs, modes = femutils.write_op4modes("./SOL103/run_cao",
+                               num_modes,
+                               op4_name=f"./data_out/Phi{num_modes}",
+                               return_modes=True)
 
+  num_nodes = 79
+  eigs = np.array(eigs)
+  modes4sims = np.zeros((6*(num_nodes - 1), num_modes))
+  for i in range(num_modes):
+      modes4sims[:, i] = np.hstack(modes[i,:(num_nodes - 1)])
+  np.save("../FEM/eigenvecs.npy", modes4sims)
+  np.save("../FEM/eigenvals.npy", eigs)
 #+end_src
 
 * DLM model
@@ -761,9 +769,9 @@
   import pyNastran.op4.op4 as op4
   from scipy.io import savemat
 
-  Qhh = op4.read_op4(f"./GAFs/Qhh{Mach}-{num_modes}.op4")
-  savemat(f"./GAFs/matlab_Qhh{Mach}-{num_modes}.mat", dict(Qhh=Qhh['Q_HH'][1],
-                                                           reduced_freqs=reduced_freqs))
+  Qhh = op4.read_op4(f"./data_out/Qhh{Mach}-{num_modes}.op4")
+  # savemat(f"./GAFs/matlab_Qhh{Mach}-{num_modes}.mat", dict(Qhh=Qhh['Q_HH'][1],
+  #                                                          reduced_freqs=reduced_freqs))
 
 #+end_src
 ** Roger RFA
@@ -1034,9 +1042,9 @@
   PARAM   WTMASS  1.0  
   PARAM   AUNITS  .1019716  $ 1/g  
 
-  SPC1           1  12346   999079
+  SPC1           1  123456  999079
   SPCADD         2       1
-  SUPORT,999079,5
+  $SUPORT,999079,5
   INCLUDE ../base.bdf
   INCLUDE ../dlm_model.bdf
   INCLUDE './setupQx.bdf'

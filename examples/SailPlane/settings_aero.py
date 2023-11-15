@@ -27,13 +27,14 @@ inp.fem.connectivity = dict(FuselageFront=['RWingInner',
                             )
 
 inp.fem.folder = pathlib.Path('./FEM/')
-inp.fem.num_modes = 20
-Qhh = op4.read_op4("./NASTRAN/data_out/Qhh0_8-20.op4")
-Qhalpha = op4.read_op4("./NASTRAN/data_out/Qhx20-0.8.op4")
+inp.fem.num_modes = 50
+#inp.jax_np.allclose = 1e-5
+Qhh = op4.read_op4(f"./NASTRAN/data_out/Qhh0_8-{inp.fem.num_modes}.op4")
+Qhalpha = op4.read_op4(f"./NASTRAN/data_out/Qhx{inp.fem.num_modes}-0.8.op4")
 Qhx = Qhalpha['Q_HX'][1][:,1:]
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path = pathlib.Path(
-    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
+    f"./resultsAeroStatic_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "static"
 inp.systems.sett.s1.solver_library = "diffrax"
@@ -51,8 +52,9 @@ inp.systems.sett.s1.aero.Q0_rigid = Qhx
 # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
 #                                           tolerance=1e-9)
 inp.systems.sett.s1.aero.qalpha = jnp.array([1,0,0,0,0]) * jnp.pi / 180
-inp.systems.sett.s1.aero.u_inf = 100.
-inp.systems.sett.s1.aero.rho_inf = 1.
+inp.systems.sett.s1.aero.u_inf = 200.
+inp.systems.sett.s1.aero.rho_inf = 1.5
+inp.systems.sett.s1.aero.c_ref = 2.
 inp.systems.sett.s1.xloads.modalaero_forces = True
 
 # path2config = pathlib.Path("./config.yaml")
