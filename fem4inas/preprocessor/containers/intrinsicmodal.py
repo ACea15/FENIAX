@@ -440,6 +440,13 @@ class Dsystem(DataContainer):
         default=None)
     solver_settings: str = dfield(
         "Name for the solver of the previously defined library", default=None)
+    q0treatment: int = dfield(
+        """Modal velocities, q1, and modal forces, q2, are the main variables
+        in the intrinsic structural description,
+        but the steady aerodynamics part needs a displacement component, q0;
+        proportional gain to q2 or  integration of velocities q1
+        can be used to obtain this.""", default=2,
+        options=[2, 1])
     nonlinear: bool = dfield(
         """whether to include the nonlinear terms in the eqs. (Gammas)
         and in the integration""", default=1,
@@ -493,8 +500,11 @@ class Dsystem(DataContainer):
         elif self.solution == "dynamic":
             tracker.update(q1=num_modes,
                            q2=num_modes)
-            if self.aero is not None and self.aero.approx.lower() == "roger":
+            if (self.label_map['aero_sol'] and
+                self.aero.approx.lower() == "roger"):
                 tracker.update(ql=self.aero.num_poles * num_modes)
+            if self.q0treatment == 1:
+                tracker.update(q0=num_modes)
         # if self.solution == "static":
         #     state_dict.update(m, kwargs)
         object.__setattr__(self, "states", tracker.states
@@ -545,12 +555,18 @@ class Dsystem(DataContainer):
         elif self.xloads.dead_forces:
             lmap["point_loads"] = 2
         else:
-            lmap["point_loads"] = 0        
-        if self.nonlinear ==1:
-            lmap["nonlinear"] = ""
-        elif self.nonlinear ==-1:
+            lmap["point_loads"] = 0
+        if self.q0treatment == 2:
+            lmap["q0treatment"] = 0
+        elif self.q0treatment == 1:
+            lmap["q0treatment"] = 1
+        elif self.nonlinear == -1:
             lmap["nonlinear"] = "l"
-        elif self.nonlinear ==-2:
+        if self.nonlinear == 1:
+            lmap["nonlinear"] = ""
+        elif self.nonlinear == -1:
+            lmap["nonlinear"] = "l"
+        elif self.nonlinear == -2:
             lmap["nonlinear"] = "L"
         if self.residualise:
             lmap['residualise'] = "r"

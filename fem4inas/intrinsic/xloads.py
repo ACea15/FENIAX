@@ -136,7 +136,7 @@ def eta_pointdead(t, phi1, x, force_dead, Rab):
                                           [0, 1]))
     return eta
 
-@partial(jax.jit, static_argnames=["num_modes", "num_poles"])
+#@partial(jax.jit, static_argnames=["num_modes", "num_poles"])
 def eta_rogerstruct(q0, q1, ql,
                     A0hat, A1hat, A2hat,
                     num_modes, num_poles):
@@ -166,7 +166,8 @@ def eta_rogergust(t, xgust, F1gust):
     eta = linear_interpolation3(t, xgust, F1gust)
     return eta
 
-@partial(jax.jit, static_argnames=["num_modes", "num_poles"])
+#@partial(jax.jit, static_argnames=["num_modes", "num_poles"])
+@jax.jit
 def lags_rogerstructure(A3hat, q1, ql, u_inf, c_ref, poles,
                         num_modes, num_poles):
     num_modes = len(q1)

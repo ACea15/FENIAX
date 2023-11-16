@@ -11,6 +11,7 @@ def rk4(ys, dt, N, f, args):
         t = dt * i
         ys0 = ys[i - 1]
         k1 = f(t, ys0, args)
+        jax.debug.print("k1: {}", k1)        
         k2 = f(t + 0.5 * h, ys0 + 0.5 * k1 * h, args)
         k3 = f(t + 0.5 * h, ys0 + 0.5 * k2 * h, args)
         k4 = f(t + h, ys0 + k3 * h, args)
