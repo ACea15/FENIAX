@@ -14,7 +14,7 @@
   Mach = str(mach).replace('.','_')
   machs = [mach]
   reduced_freqs = np.hstack([1e-6, np.linspace(1e-3,1, 50)])#np.hstack([np.linspace(1e-5,1, 50), [10-0.001, 10., 10+0.001]])
-  num_modes = 100
+  num_modes = 50
   chord_panels = dict(wing=15, hstabilizer=10, vstabilizer=10)
   #aero['s_ref'] = 361.6
   #aero['b_ref'] = 58.0
@@ -128,8 +128,42 @@
   modes4sims = np.zeros((6*(num_nodes - 1), num_modes))
   for i in range(num_modes):
       modes4sims[:, i] = np.hstack(modes[i,:(num_nodes - 1)])
-  np.save("../FEM/eigenvecs.npy", modes4sims)
-  np.save("../FEM/eigenvals.npy", eigs)
+  SAVE = True
+  #np.load("../FEM/Ka.npy")
+  #scipy.linalg.eigh(Ka, Ma)
+  if SAVE:
+      np.save("../FEM/eigenvecs.npy", modes4sims)
+      np.save("../FEM/eigenvals.npy", eigs)
+
+#+end_src
+
+
+
+** VTK modes
+#+begin_src python :session py1 :results none :tangle py1.py
+  import fem4inas.plotools.nastranvtk.modes as modes
+  import  importlib
+  importlib.reload(modes)
+  modes.vtk_fromop2("./SOL103/run_cao.bdf", "./SOL103/run_cao.op2", scale = 100.)
+#+end_src
+* SOL400 (structure-only)
+#+begin_src python :session py1 :results none :tangle py1.py
+  import fem4inas.unastran.op2reader as op2reader
+  import fem4inas.plotools.nastranvtk.modes as modes
+  import  importlib
+  import copy
+  importlib.reload(modes)
+  sol400s  = op2reader.NastranReader("./static400/run", "./static400/run", static=True)
+  sol400s.readModel()
+  u400s = sol400s.displacements()
+  # from pyNastran.bdf.bdf import BDF
+  # bdf = BDF()
+  # bdf.read_bdf("./static400/run.bdf")
+  s400 = modes.ParseBDF("./static400/run.bdf")
+  noderef = copy.copy(s400.get_nodes())
+  for i, ui in enumerate(u400s):
+      s400.update_bdf(noderef + ui)
+      
 #+end_src
 
 * DLM model
@@ -775,6 +809,7 @@
 
 #+end_src
 ** Roger RFA
+perform RFA 
 #+begin_src python :session py1  :results none
   import sys
   #sys.path.append("/media/acea/work/projects/FEM4INAS/")
@@ -842,6 +877,16 @@
   if save_AICsj:
     np.save(save_AICsj,np.array(RFA_matj))
 
+#+end_src
+
+plot GAFs
+
+#+begin_src python :session py1  :results none
+  plot_points = np.asarray([[0,0],[0,1],[0,2],
+                            [1,0],[1,1],[1,2],
+                            [19,0],[19,1],[19,2]])
+  rfa_plot.plot1(reduced_freq,plot_points,poles,RFA_mat,RFA_Method,aero_matrices_real,aero_matrices_imag)
+  rfa_plot.plot1(reduced_freq,plot_points,poles,RFA_matj,RFA_Method,aero_matrices_realj,aero_matrices_imagj)
 #+end_src
 
 * Qalpha GAFs extraction

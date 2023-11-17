@@ -27,7 +27,7 @@ inp.fem.connectivity = dict(FuselageFront=['RWingInner',
                             )
 
 inp.fem.folder = pathlib.Path('./FEM/')
-inp.fem.num_modes = 20
+inp.fem.num_modes = 50
 inp.driver.typeof = "intrinsic"
 # inp.driver.sol_path = pathlib.Path(
 #     f"./resultsGust_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
@@ -41,15 +41,15 @@ inp.systems.sett.s1.solver_library = "runge_kutta"
 inp.systems.sett.s1.solver_function = "ode"
 inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
 inp.systems.sett.s1.xloads.modalaero_forces = True
-inp.systems.sett.s1.q0treatment = 1
+inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 2.
-inp.systems.sett.s1.aero.u_inf = 100.
+inp.systems.sett.s1.aero.u_inf = 150.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = "./NASTRAN/data_out/Qhh0_8-20r5.npy"
-inp.systems.sett.s1.aero.D = "./NASTRAN/data_out/Qhj0_8-20r5.npy"
-inp.systems.sett.s1.aero.poles = "./NASTRAN/data_out/Poles0_8-20r5.npy"
+inp.systems.sett.s1.aero.A = f"./NASTRAN/data_out/Qhh0_8-{inp.fem.num_modes}r5.npy"
+inp.systems.sett.s1.aero.D = f"./NASTRAN/data_out/Qhj0_8-{inp.fem.num_modes}r5.npy"
+inp.systems.sett.s1.aero.poles = f"./NASTRAN/data_out/Poles0_8-{inp.fem.num_modes}r5.npy"
 inp.systems.sett.s1.aero.gust_profile = "mc"
-inp.systems.sett.s1.aero.gust_settings.intensity = 11.304727674272842/10000
+inp.systems.sett.s1.aero.gust_settings.intensity = 1.#11.304727674272842/10000
 inp.systems.sett.s1.aero.gust_settings.length = 18.
 inp.systems.sett.s1.aero.gust_settings.step = 0.5
 inp.systems.sett.s1.aero.gust_settings.shift = 0.
