@@ -229,6 +229,7 @@ class ASETModel(Model):
             # cells = np.hstack([4*np.ones(len(_cells),dtype=int).reshape(
             #     len(_cells),1), _cells])
             # data_ci = getattr(self.components[ki], data_name)
+            # import pdb; pdb.set_trace();
             mesh = pyvista.PolyData(data[i], cells[i])
             mesh.save(path / f"{ki}.ply",
                       binary=False)
@@ -246,7 +247,7 @@ class ASETModel(Model):
             data_ci = getattr(self.components[ki], data_name)
             Cells.append(cells)
             Data_ci.append(data_ci)
-        return Cells, Data_ci
+        return Data_ci, Cells
 
     def build_m1_tensor(self, pa_m1, link_m0m1):
 
@@ -411,13 +412,13 @@ class Interpol:
     ...
 
 import fem4inas.unastran.aero as nasaero
-import fem4inas.plotools.grid
+# import fem4inas.plotools.grid
 
-dlm_panels= nasaero.GenDLMPanels.from_file("./dlm_model.yaml")
-aerogrid = fem4inas.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
-panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, dlm_panels.set1x, X, bdf_model)
+# dlm_panels= nasaero.GenDLMPanels.from_file("./dlm_model.yaml")
+# aerogrid = fem4inas.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
+# panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, dlm_panels.set1x, X, bdf_model)
 
-class InterpolBDF(Interpol):
+class PanelsBDFInterpol(Interpol):
     
     def __init__(self,
                  file_dlm,
@@ -426,17 +427,21 @@ class InterpolBDF(Interpol):
                  folder_sol=None
                  ):
 
+        self.sol = None
+        self.sys_name = None
+        self.Xref = Xref
+        self.inputmodel_ref = None
+        self.targetmodel_ref = None
+        self.inputmodel_current = None
+        self.targetmodel_current = None
+        self.inputmodel_disp = None
+        self.targetmodel_disp = None
         if folder_sol is not None:
             self.solfolder = folder_sol
         self._read_bdf(file_bdf)
         self._read_dlm(file_dlm)
-        self.m0ref = None
-        self.m1ref = None
-        self.m0curr = None
-        self.m1curr = None
-        self.m0disp = None
-        self.m1disp = None
-
+        self._set_inputmodel_ref()
+ 
     @property
     def solfolder(self):
         return self._solfolder
@@ -444,50 +449,77 @@ class InterpolBDF(Interpol):
     @solfolder.setter
     def solfolder(self, value):
         self._solfolder = value
-        self.sol = solution.IntrinsicSolution(self._solfolder)
-
-    def read_sol(self, sys_name, sys_label):
+        self.sol = self._read_sol(self._solfolder)
+        self.set_sysname()
+        
+    def _read_sol(self, folder):
         """
         Input and read an intrinsic solution
         """
-        self.sol.load_container(sys_name, label=sys_label)
+        sol = solution.IntrinsicReader(folder)
+        return sol.data
         
     def _read_bdf(self, file_bdf):
         
         self.bdf = bdfdef.DefBdf(file_bdf)
-
+        self._set_targetmodel_ref()
+        
     def _read_dlm(self, file_dlm):
         
-        self.dlm_panels= nasaero.GenDLMPanels.from_file(file_dlm)
+        self.dlm_panels = nasaero.GenDLMPanels.from_file(file_dlm)
+        self.dlm_panels.build_model()
+        #import pdb;pdb.set_trace()
         self.aerogrid = grid.AeroGrid.build_DLMgrid(self.dlm_panels.model)
-        
-    def set_m0ref(self):
+
+    def _set_inputmodel_ref(self):
 
         self.asetmodel = grid.ASETModel(self.aerogrid,
                                         self.dlm_panels.set1x,
-                                        X,
-                                        self.dlm_panels)
-        self.m0ref = self.asetmodel.datam1_merged
+                                        self.Xref,
+                                        self.bdf.mbdf)
+        self.inputmodel_ref = self.asetmodel.datam1_merged
 
-    def set_m0curr(self, ti):
+    def set_sysname(self,
+                    sys_name=None):
+        
+        if sys_name is None:
+            if self.sys_name is None:
+               systems = [si for si in dir(self.sol)
+                          if si[0] != "_" and "system" in si]
+               self.sys_name = systems[0]
+            else:
+                self.sys_name = sys_name
 
-        sys = getattr(self.sol.data, f"{self.sys_name}_{self.sys_label}")
+    def set_inputmodel_current(self,
+                               ti=0):
+        
+        sys = getattr(self.sol, f"{self.sys_name}")
         ra = sys.ra[ti]
         Rab = sys.Cab[ti]
         self.asetmodel.set_solution(ra,
                                     Rab,
-                                    self.sol.data.modes.C0ab)
-        self.m0curr = self.asetmodel.data_mx_merged
+                                    self.sol.modes.C0ab)
+        self.inputmodel_current = self.asetmodel.data_mx_merged
+        self._set_targetmodel_current()
+        
+    def _set_targetmodel_ref(self):
 
-    def set_m1ref():
+        self.targetmodel_ref = self.bdf.get_nodes(sort=True)
 
-        self.m1ref = self.bdf.get_nodes()
+    def _set_targetmodel_current(self):
+        disp, coord = interpolation.compute(self.inputmodel_ref,
+                                            self.inputmodel_current,
+                                            self.targetmodel_ref)
+        self.targetmodel_current = coord
+        self.targetmodel_disp = disp
+        self.bdf.update_bdf(coord, self.bdf.sorted_nodeids)
 
-    def set_m1def():
-        disp, coord = interpolation.compute(self.m0ref,
-                                            self.m0curr,
-                                            self.m1ref)
-        self.m1curr = coord
-        self.m1disp = disp
-        self.bdf.update_bdf(coord, self.bdf.mbdf.node_ids)
-
+    def vtk(self, folder_path,
+            file_name,
+            plot_timesteps=[0]):
+        """Plot vtk of the target model at the given time steps."""
+        folder_path = pathlib.Path(folder_path)
+        for ti in plot_timesteps:
+            self.set_inputmodel_current(ti)
+            file_path = folder_path / f"{file_name}_{ti}"
+            self.bdf.plot_vtk(file_path)

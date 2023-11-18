@@ -162,8 +162,8 @@
   s400 = modes.ParseBDF("./static400/run.bdf")
   noderef = copy.copy(s400.get_nodes())
   for i, ui in enumerate(u400s):
-      s400.update_bdf(noderef + ui)
-      
+      s400.update_bdf(noderef + ui[:,:3], s400.sorted_nodeids)
+      s400.plot_vtk(f"./static400/vtk/load{i}")
 #+end_src
 
 * DLM model
@@ -613,34 +613,46 @@
 
 #+begin_src python :session py1 :results none :tangle py1.py
   from fem4inas.preprocessor import solution
+  ireader = solution.IntrinsicReader("../results_2023-11-13_11:25:09/")
 
   #sol_path = "/home/ac5015/programs/FEM4INAS/examples/SailPlane/results_2023-10-25_14:30:25"
-  sol_path = "/media/acea/work/projects/FEM4INAS/examples/SailPlane/results_2023-10-23_08:48:10/"
-  sol = solution.IntrinsicSolution(sol_path)
-  sol.load_container("Modes")
-  sol.load_container("Couplings")
-  sol.load_container("StaticSystem", label="_s1")
-  panelmodel.set_solution(sol.data.staticsystem_s1.ra[-1],
-                          sol.data.staticsystem_s1.Cab[-1],
-                          sol.data.modes.C0ab)
-  panelmodel.mesh_plot(folder_path="./paraview/results/data_m1", data_name= "data_m1")
-  panelmodel.mesh_plot(folder_path="./paraview/results/data_mx", data_name= "data_mx")
+  # sol = solution.IntrinsicSolution(sol_path)
+  # sol.load_container("Modes")
+  # sol.load_container("Couplings")
+  # sol.load_container("StaticSystem", label="_s1")
+  panelmodel.set_solution(ireader.data.staticsystem_s1.ra[0],
+                          ireader.data.staticsystem_s1.Cab[0],
+                          ireader.data.modes.C0ab)
+  panelmodel.mesh_plot(folder_path="./static400/data_m1", data_name= "data_m1")
+  panelmodel.mesh_plot(folder_path="./static400/data_mx", data_name= "data_mx")
 
 #+end_src
 
 #+begin_src python :session py1 :results none :tangle py1.py
-  from fem4inas.preprocessor import solution
   import fem4inas.plotools.interpolation as interpolation
   import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
   importlib.reload(bdfdef)
-  bdf = bdfdef.DefBdf("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
+  bdf = bdfdef.DefBdf("./SOL103/run_cao.bdf")
   bdf.plot_vtk("./paraview/results/ref.bdf")
   nodesX = bdf.get_nodes()
   disp, coord = interpolation.compute(panelmodel.datam1_merged,
                                       panelmodel.data_mx_merged,
                                       nodesX)
   bdf.update_bdf(coord, bdf.mbdf.node_ids)
-  bdf.plot_vtk("./paraview/results/def.bdf")
+  bdf.plot_vtk("./static400/defL0.bdf")
+#+end_src
+
+#+begin_src python :session py1 :results none :tangle py1.py
+  importlib.reload(fem4inas.plotools.grid)
+  bdf_interpol = fem4inas.plotools.grid.PanelsBDFInterpol("./dlm_model.yaml",
+                                                          "./SOL103/run_cao.bdf",
+                                                          X,
+                                                          "../results_2023-11-13_11:25:09/"
+                                                          )
+  bdf_interpol.vtk("./static400/vtknew/",
+                   "model",
+                   range(6)
+                   )
 #+end_src
 
 * GAFs extraction

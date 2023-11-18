@@ -16,7 +16,7 @@ class NastranReader:
         self.bdfname = bdfname
         self.static = static
 
-    def readModel(self,Rop2=1,Rbdf=1):
+    def readModel(self, asets_only=False):
 
         if self.op2name:
             self.op2 = OP2()
@@ -28,13 +28,12 @@ class NastranReader:
             self.fem.cross_reference()
             self.fem.read_bdf(self.bdfname+'.bdf',xref=True)
             print(self.fem.get_bdf_stats())
-            try:
+            if asets_only:
                 self.nodes = sorted(self.fem.asets[0].node_ids)
                 self.asets = 1
-            except:
+            else:
                 self.nodes = sorted(self.fem.node_ids)
                 self.asets=0
-
 
     def eigenvectors(self):
 

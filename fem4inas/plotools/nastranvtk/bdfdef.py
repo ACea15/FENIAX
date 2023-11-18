@@ -16,6 +16,11 @@ def vtkModes_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None):
     if modes2plot is None:
         modes2plot = range(len(eigv))
     nodes_sorted = sorted(list(mbdf.node_ids))
+    # run the reference
+    write_path = bdfile #f"{bdfile.parent / bdfile.name.split('.')[0]}REF.bdf"
+    write_vtk = f"{bdfile.parent / bdfile.name.split('.')[0]}Ref.vtk"
+    bdf2vtk.run(write_path, None, write_vtk, False, fileformat="ascii")
+    # run the modes    
     for mode_i in modes2plot:
         mbdfi = copy.deepcopy(mbdf)
         for i, ni in enumerate(nodes_sorted):
@@ -42,13 +47,20 @@ class DefBdf:
     @bdf_file.setter
     def bdf_file(self, value):
         self._bdf_file = value
-        self.read_bdf()
+        self._read_bdf()
         
-    def read_bdf(self):
+    def _read_bdf(self):
         self.mbdf.read_bdf(self.bdf_file)
+        self.sorted_nodeids = sorted(self.mbdf.node_ids)
 
-    def get_nodes(self):
-        nodes = [ni.get_position() for ni in self.mbdf.Nodes(self.mbdf.node_ids)]
+    def get_nodes(self, sort=True):
+
+        if sort:
+            nodes = [ni.get_position() for ni in
+                     self.mbdf.Nodes(self.sorted_nodeids)]
+        else:
+            nodes = [ni.get_position() for ni in
+                     self.mbdf.Nodes(self.mbdf.node_ids)]
         return np.array(nodes)
 
     def update_bdf(self, nposition, nid):
