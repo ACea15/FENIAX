@@ -94,15 +94,18 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
     def _compute_eigs(self):
         eig_funcs = dict(scipy=modes.compute_eigs_scipy,
                          jax_custom=modes.compute_eigs,
-                         inputs=modes.compute_eigs_load)
+                         inputs=modes.compute_eigs_load,
+                         input_memory=modes.compute_eigs_pass)
 
         eig_type = self._config.fem.eig_type
-        eig_solver = eig_funcs[self._config.fem.eig_type]
+        eig_solver = eig_funcs[eig_type]
         eigenvals, eigenvecs = eig_solver(Ka=self._config.fem.Ka,
                                           Ma=self._config.fem.Ma,
                                           num_modes=self._config.fem.num_modes,
                                           path=self._config.fem.folder,
-                                          eig_names=self._config.fem.eig_names)
+                                          eig_names=self._config.fem.eig_names,
+                                          eigenvals=self._config.fem.eigenvals,
+                                          eigenvecs=self._config.fem.eigenvecs)
         print(f"***** Computing eigen problem from {eig_type} *****")
         return eigenvals, eigenvecs
 

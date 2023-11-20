@@ -238,7 +238,12 @@ class Dfem(DataContainer):
     num_modes: int = dfield("Number of modes in the solution", default=None)
     eig_type: str = dfield("Calculation of eigenvalues/vectors",
                            default="scipy",
-                           options=["scipy", "jax_custom", "inputs"])
+                           options=["scipy", "jax_custom", "inputs, input_memory"])
+    eigenvals: jnp.ndarray  = dfield("EigenValues",
+                              default=None, yaml_save=False)
+    eigenvecs: jnp.ndarray  = dfield("EigenVectors",
+                              default=None, yaml_save=False)
+    
     eig_names: list[str | pathlib.Path] = dfield("""name to load
     eigenvalues/vectors in folder""",
                                                  default=["eigenvals.npy",
@@ -246,7 +251,7 @@ class Dfem(DataContainer):
     grid: str | pathlib.Path | jnp.ndarray | pd.DataFrame = dfield(
         """Grid file or array with Nodes Coordinates, node ID in the FEM,
         and associated component""", default='structuralGrid')
-    df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)    
+    df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)
     X: jnp.ndarray = dfield("Grid coordinates", default=None, yaml_save=False)
     Xm: jnp.ndarray = dfield("Grid coordinates mid-points", default=None, yaml_save=False)
     Cab_xtol: float = dfield("Tolerance for building the local frame", default=1e-4)    

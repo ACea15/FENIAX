@@ -138,7 +138,7 @@ def eta_pointdead(t, phi1, x, force_dead, Rab):
 
 #@partial(jax.jit, static_argnames=["num_modes", "num_poles"])
 def eta_rogerstruct(q0, q1, ql,
-                    A0hat, A1hat, A2hat,
+                    A0hat, A1hat,
                     num_modes, num_poles):
 
     eta0 = A0hat @ q0 + A1hat @ q1
@@ -147,8 +147,9 @@ def eta_rogerstruct(q0, q1, ql,
     #lags = jnp.tensordot(A2hat, ql_tensor, axis=(1,0))
     lags_sum = ql[:num_modes]
     for pi in range(1, num_poles):
-        lags_sum += ql[pi*num_modes: (pi+1)*num_modes]
+        lags_sum += ql[pi*num_modes: (pi + 1)*num_modes]
     eta = eta0 + lags_sum
+    jax.debug.breakpoint()
     return eta
 
 #@jax.jit

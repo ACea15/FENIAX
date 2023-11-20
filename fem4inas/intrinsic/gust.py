@@ -71,11 +71,15 @@ class GustRogerMc(Gust):
                                 self.gust_step)
         time_discretization = (self.gust_shift + self.xgust) / self.u_inf
         if time_discretization[-1] < simulation_time[-1]:
-            self.time = jnp.hstack([time_discretization, simulation_time[-1]])
+            self.time = jnp.hstack([time_discretization,
+                                    time_discretization[-1] + 1e-6,
+                                    simulation_time[-1]])
         else:
             self.time = time_discretization
         if self.time[0] != 0.:
-            self.time = jnp.hstack([0., self.time])
+            self.time = jnp.hstack([0.,
+                                    self.time[0] - 1e-6,
+                                    self.time])
         self.ntime = len(self.time)
         self.npanels = len(self.collocation_points)
         self._define_spanshape(self.settings.aero.gust.shape)
@@ -113,7 +117,7 @@ class GustRogerMc(Gust):
             self.gust_ddot = self.gust_ddot.at[panel].set(
                 filter_time * (shape_span * self.normals[panel] *
                                self.gust_intensity / (self.u_inf*2) *
-                               (jnp.sin(coeff * (self.time - delay))) * coeff**2
+                               (jnp.cos(coeff * (self.time - delay))) * coeff**2
                                ))
         self._define_eta()
 

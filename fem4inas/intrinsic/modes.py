@@ -178,6 +178,12 @@ def compute_eigs_load(num_modes: int,
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs
 
+def compute_eigs_pass(num_modes, eigenvals, eigenvecs,
+        *args, **kwargs):
+    reduced_eigenvals = eigenvals[:num_modes]
+    reduced_eigenvecs = eigenvecs[:, :num_modes]
+    return reduced_eigenvals, reduced_eigenvecs
+    
 @partial(jit, static_argnames=['config'])
 def shapes(X: jnp.ndarray,
            Ka: jnp.ndarray,

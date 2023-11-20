@@ -67,7 +67,7 @@ def dq_20g121(t, q, *args):
     return F
 
 #@jax.jit
-@partial(jax.jit, static_argnames=['q'])
+#@partial(jax.jit, static_argnames=['q'])
 def dq_20g21(t, q, *args):
 
     (gamma1, gamma2, omega, states,
@@ -82,11 +82,15 @@ def dq_20g21(t, q, *args):
     ql = q[states['ql']]
     #ql_tensor = ql.reshape((num_modes, num_poles))
     eta_s = xloads.eta_rogerstruct(q0, q1, ql,
-                                   A0hat, A1hat, A2hatinv,
+                                   A0hat, A1hat,
                                    num_modes, num_poles)
     eta_gust = xloads.eta_rogergust(t, xgust, F1gust)
     F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2)
+    jax.debug.breakpoint()
     F1 += eta_s + eta_gust
+    #jax.debug.print("time: {t}", t=t)
+    #jax.debug.print("eta_aero: {eta_aero}", eta_aero=(eta_gust))
+    
     F1 = A2hatinv @ F1 #Nm
     Fl = xloads.lags_rogerstructure(A3hat, q1, ql, u_inf,
                                     c_ref, poles,
