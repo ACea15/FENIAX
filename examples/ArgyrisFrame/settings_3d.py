@@ -6,6 +6,7 @@ import datetime
 import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
 from fem4inas.preprocessor.inputs import Inputs
 import fem4inas.fem4inas_main
+import fem4inas.plotools.upyvista as upyvista
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -33,7 +34,7 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 # inp.systems.sett.s1.solver_function = "root"
 # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
 #                                            tolerance=1e-9)
-inp.systems.sett.s1.label = 'dq_001001'
+#inp.systems.sett.s1.label = 'dq_001001'
 inp.systems.sett.s1.xloads.follower_forces = True
 inp.systems.sett.s1.xloads.follower_points = [[20, 1],
                                               [20, 4]]
@@ -47,3 +48,13 @@ inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 config =  configuration.Config(inp)
 
 sol = fem4inas.fem4inas_main.main(input_obj=config)
+
+import importlib
+importlib.reload(upyvista)
+istruct = upyvista.IntrinsicStruct(config.fem)
+istruct.add_solution(sol.staticsystem_s1.ra)
+pl = upyvista.render_wireframe(points=istruct.mappoints[1], lines=istruct.lines)
+for k, v in istruct.mappoints.items():
+    if k != 1:
+        pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
+        

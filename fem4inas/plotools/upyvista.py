@@ -12,7 +12,9 @@ import fem4inas.fem4inas_main
 
 
 def render_wireframe(points, lines, pl: pv.Plotter=None):
-    
+
+    if isinstance(points, jnp.ndarray):
+        points = np.array(points)
     if pl is None:
         pl = pv.Plotter()
     mesh = pv.PolyData(points,
@@ -34,7 +36,18 @@ def render_wireframe(points, lines, pl: pv.Plotter=None):
 
     return pl
 
-class intrinsic_struct:
+def render_mesh(points, lines):
+    if isinstance(points, jnp.ndarray):
+        points = np.array(points)
+
+    mesh = pv.PolyData(points,
+                       lines
+                       )
+
+    return mesh
+
+
+class IntrinsicStruct:
 
     def __init__(self, fem):
         self.fem = fem
@@ -68,12 +81,15 @@ class intrinsic_struct:
         ra_shape = ra.shape
         assert ra_shape[-1] == self.npoints, "ra not the same number of nodes"
         if len(ra_shape) == 3:  # bunch of solutions
+            print("loading solutions")
             for i, ra_i in enumerate(ra):
                 self.nsol += 1
                 if label is None:
-                    label = self.nsol
-                self.mapmpoints[label] = self._calculate_midpoints(ra_i)
-                self.mappoints[label] = ra_i.T
+                    labeli = self.nsol
+                else:
+                    labeli = f"{label}{self.nsol}"
+                self.mapmpoints[labeli] = self._calculate_midpoints(ra_i)
+                self.mappoints[labeli] = ra_i.T
         else:
             self.nsol += 1
             if label is None:

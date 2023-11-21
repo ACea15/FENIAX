@@ -7,6 +7,7 @@ import datetime
 import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
 from fem4inas.preprocessor.inputs import Inputs
 import fem4inas.fem4inas_main
+import fem4inas.plotools.upyvista as upyvista
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -38,3 +39,26 @@ inp.systems.sett.s1.xloads.dead_interpolation = [jnp.arange(0,3300,300)]
 inp.systems.sett.s1.t = list(range(1,11))
 config =  configuration.Config(inp)
 sol = fem4inas.fem4inas_main.main(input_obj=config)
+
+
+import importlib
+importlib.reload(upyvista)
+istruct = upyvista.IntrinsicStruct(config.fem)
+istruct.add_solution(sol.staticsystem_s1.ra)
+pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
+pl.show_grid()
+pl.view_xy()
+for k, v in istruct.mappoints.items():
+    pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
+#pl.save_graphic("try1.pdf")
+#pl.save("try1.vtk")
+pl.show()
+
+
+
+
+mesh = upyvista.render_mesh(points=config.fem.X, lines=istruct.lines)
+mesh.save("try.vtk")
+for k, v in istruct.mappoints.items():
+    mesh = upyvista.render_mesh(points=v, lines=istruct.lines)
+    mesh.save(f"try{k}.vtk")

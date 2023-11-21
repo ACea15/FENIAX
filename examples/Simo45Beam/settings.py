@@ -7,6 +7,7 @@ import datetime
 import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
 from fem4inas.preprocessor.inputs import Inputs
 import fem4inas.fem4inas_main
+import fem4inas.plotools.upyvista as upyvista
 
 
 
@@ -51,3 +52,17 @@ config =  configuration.Config(inp)
 configuration.dump_to_yaml(path2config, config, with_comments=True)
 
 sol = fem4inas.fem4inas_main.main(input_obj=config)
+
+
+
+
+import importlib
+importlib.reload(upyvista)
+istruct = upyvista.IntrinsicStruct(config.fem)
+istruct.add_solution(sol.staticsystem_s1.ra)
+pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
+pl.show_grid()
+#pl.view_xy()
+for k, v in istruct.mappoints.items():
+    pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
+pl.show()
