@@ -80,22 +80,31 @@ def dq_20g21(t, q, *args):
     q2 = q[states['q2']]
     q0 = -q2 / omega
     ql = q[states['ql']]
+    #jax.debug.breakpoint()
     #ql_tensor = ql.reshape((num_modes, num_poles))
     eta_s = xloads.eta_rogerstruct(q0, q1, ql,
                                    A0hat, A1hat,
                                    num_modes, num_poles)
     eta_gust = xloads.eta_rogergust(t, xgust, F1gust)
+    #jax.debug.breakpoint()
     F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2)
-    jax.debug.breakpoint()
     F1 += eta_s + eta_gust
     #jax.debug.print("time: {t}", t=t)
     #jax.debug.print("eta_aero: {eta_aero}", eta_aero=(eta_gust))
-    
+    #jax.debug.breakpoint()
     F1 = A2hatinv @ F1 #Nm
     Fl = xloads.lags_rogerstructure(A3hat, q1, ql, u_inf,
                                     c_ref, poles,
-                                    num_modes, num_poles)  # NlxNm 
+                                    num_modes, num_poles)  # NlxNm
+    # Fl1 = xloads.lags_rogerstructure1(A3hat, q1, ql, u_inf,
+    #                                 c_ref, poles,
+    #                                 num_modes, num_poles)  # NlxNm
+    # Fl2 = xloads.lags_rogerstructure2(A3hat, q1, ql, u_inf,
+    #                                 c_ref, poles,
+    #                                 num_modes, num_poles)  # NlxNm
+    # Fl = Fl1 + Fl2
     Flgust = xloads.lags_rogergust(t, xgust, Flgust)  # NlxNm
+    #jax.debug.breakpoint()
     Fl += Flgust
     #Fl = Fl_tensor.reshape(num_modes * num_poles
     return jnp.hstack([F1, F2, Fl])
@@ -123,7 +132,7 @@ def dq_20g273(t, q, *args):
     F1 = A2hatinv @ F1 #Nm
     Fl = xloads.lags_rogerstructure(A3hat, q1, ql, u_inf,
                                     c_ref, poles,
-                                    num_modes, num_poles)  # NlxNm 
+                                    num_modes, num_poles)  # NlxNm
     Flgust = xloads.lags_rogergust(t, xgust, Flgust)  # NlxNm
     Fl += Flgust
     F0 = q1

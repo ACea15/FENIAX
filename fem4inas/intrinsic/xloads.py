@@ -149,7 +149,7 @@ def eta_rogerstruct(q0, q1, ql,
     for pi in range(1, num_poles):
         lags_sum += ql[pi*num_modes: (pi + 1)*num_modes]
     eta = eta0 + lags_sum
-    jax.debug.breakpoint()
+    #jax.debug.breakpoint()
     return eta
 
 #@jax.jit
@@ -175,10 +175,31 @@ def lags_rogerstructure(A3hat, q1, ql, u_inf, c_ref, poles,
     num_poles = int(len(ql) / num_modes)
     ql_dot = jnp.zeros(num_modes * num_poles)
     for pi in range(num_poles):
-        ql_dot.at[pi * num_modes: (pi+1) * num_modes].set(A3hat[pi] @ q1 -
-                                                          2 * u_inf /c_ref * poles[pi] *
-                                                          ql[pi * num_modes: (pi+1) * num_modes])
+        ql_dot = ql_dot.at[pi * num_modes: (pi+1) * num_modes].set(A3hat[pi] @ q1 -
+                                                                   2 * u_inf /c_ref * poles[pi] *
+                                                                   ql[pi * num_modes: (pi+1) * num_modes])
     return ql_dot
+
+# @jax.jit
+# def lags_rogerstructure1(A3hat, q1, ql, u_inf, c_ref, poles,
+#                         num_modes, num_poles):
+#     num_modes = len(q1)
+#     num_poles = int(len(ql) / num_modes)
+#     ql_dot = jnp.zeros(num_modes * num_poles)
+#     for pi in range(num_poles):
+#         ql_dot = ql_dot.at[pi * num_modes: (pi+1) * num_modes].set(A3hat[pi] @ q1)
+#     return ql_dot
+
+# @jax.jit
+# def lags_rogerstructure2(A3hat, q1, ql, u_inf, c_ref, poles,
+#                         num_modes, num_poles):
+#     num_modes = len(q1)
+#     num_poles = int(len(ql) / num_modes)
+#     ql_dot = jnp.zeros(num_modes * num_poles)
+#     for pi in range(num_poles):
+#         ql_dot = ql_dot.at[pi * num_modes: (pi+1) * num_modes].set(-2 * u_inf /c_ref * poles[pi] *
+#                                                                    ql[pi * num_modes: (pi+1) * num_modes])
+#     return ql_dot
 
 def lags_rogergust(t, xgust, Flgust):
 
