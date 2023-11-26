@@ -1,10 +1,9 @@
 from dataclasses import dataclass, field
 import plotly.express as px
 import plotly.graph_objects as go
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import numpy as np 
 from enum import Enum
-import fem4inas.plotools.utils as utils
 # see https://plotly.com/python/line-charts/
 
 @dataclass
@@ -12,15 +11,15 @@ class ScatterSettings:
 
     mode: str = 'lines'  # 'lines+markers'
     name: str = None
-    line: dict = dict()  #dict(color=colors[i], width=line_size[i])
-    marker: dict = dict()  #dict(color=colors[i], size=mode_size[i])
+    line: dict = field(default_factory=lambda:{})  #dict(color=colors[i], width=line_size[i])
+    marker: dict = field(default_factory=lambda:{})  #dict(color=colors[i], size=mode_size[i])
     connectgaps: bool = False 
-    line_shape: ='spline'  # linear, spline, hv, vh
+    line_shape:str ='spline'  # linear, spline, hv, vh
     
 @dataclass
 class UpdateLayout:
 
-    xaxis: dict = dict()
+    xaxis: dict = field(default_factory=lambda:{})
     # xaxis=dict(
     #     showline=True,
     #     showgrid=False,
@@ -33,9 +32,9 @@ class UpdateLayout:
     #         family='Arial',
     #         size=12,
     #         color='rgb(82, 82, 82)'))
-    yaxis: dict = dict()
+    yaxis: dict = field(default_factory=lambda:{})
     autosize: bool = True,
-    margin: dict = dict()
+    margin: dict = field(default_factory=lambda:{})
     # margin=dict(
     #     autoexpand=False,
     #     l=100,
@@ -43,10 +42,10 @@ class UpdateLayout:
     #     t=110,
     # )
     showlegend: bool = True,
-    legend: dict = dict()
+    legend: dict = field(default_factory=lambda:{})
     # legend=dict(y=0.5, traceorder='reversed', font_size=16)
     plot_bgcolor: str ='white'
-    annotations: list = []
+    annotations: list = field(default_factory=lambda:[])
     # # Adding labels
     # for y_trace, label, color in zip(y_data, labels, colors):
     #     # labeling the left_side of the plot
@@ -80,11 +79,7 @@ def lines2d(x, y,
     if update_layout is not None:
         fig.update_layout(**update_layout)
     if update_traces is not None:
-        scatters = ScatterSettings()
-        fig.add_trace(go.Scatter(x=x, y=y, **scatters.__dict__))        
-    else:
-        fig.add_trace(go.Scatter(x=x, y=y, **update_traces))
-
+        fig.update_traces(**update_traces)
     return fig
 
 def lines3d(x, y, z,

@@ -4,6 +4,7 @@ import pdb
 import sys
 import datetime
 import fem4inas.plotools.upyvista as upyvista
+import fem4inas.plotools.utils as putils
 import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
 from fem4inas.preprocessor.inputs import Inputs
 import fem4inas.fem4inas_main
@@ -66,11 +67,13 @@ sol = fem4inas.fem4inas_main.main(input_obj=config)
 
 import importlib
 importlib.reload(upyvista)
-istruct = upyvista.IntrinsicStruct(config.fem)
+istruct = putils.IntrinsicStruct(config.fem)
+cstruct = putils.IntrinsicStructComponent(config.fem)
 istruct.add_solution(sol.staticsystem_s1.ra)
+cstruct.add_solution(sol.staticsystem_s1.ra)
 pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
 pl.show_grid()
 pl.view_xy()
-for k, v in istruct.mappoints.items():
+for k, v in istruct.map_ra.items():
     pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
 pl.show()

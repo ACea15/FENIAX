@@ -47,7 +47,8 @@ class NastranReader:
     def displacements(self):
         subcases = sorted(self.op2.displacements.keys())
         NumLoads = len(subcases)
-        u=[]
+        u = []
+        t = []
         for j in subcases:
 
           disp=self.op2.displacements[j]
@@ -56,11 +57,12 @@ class NastranReader:
               u.append(disp.data[-1])
           else:
               u.append(disp.data)
-
+              t.append(disp.dts)
         u = np.array(u)
+        t = np.array(t) 
         #NumAsets=op2.displacements[subcases[0]]._nnodes
         #asets = op2.displacements[1].node_gridtype[:,0]
-        return u
+        return t, u
 
     def position(self):
 
