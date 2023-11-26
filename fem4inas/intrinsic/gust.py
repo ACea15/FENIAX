@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import jax.numpy as jnp
+import jax
 from fem4inas.intrinsic.utils import Registry
 import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
 import fem4inas.preprocessor.solution as solution
@@ -88,7 +89,7 @@ class GustRogerMc(Gust):
 
         self.shape_span = getattr(Shapes, shape)
 
-    def calculate_downwash(self):
+    def calculate_downwash_unoptimised(self):
         """
         NpxNt panel downwash in time
         """
@@ -119,6 +120,42 @@ class GustRogerMc(Gust):
                                self.gust_intensity / (self.u_inf*2) *
                                (jnp.cos(coeff * (self.time - delay))) * coeff**2
                                ))
+        self._define_eta()
+
+    def calculate_downwash(self):
+        """
+        NpxNt panel downwash in time
+        """
+        #TODO: Optimize
+        #self.gust = jnp.zeros((self.npanels, self.ntime))
+        #self.gust_dot = jnp.zeros((self.npanels, self.ntime))
+        #self.gust_ddot = jnp.zeros((self.npanels, self.ntime))
+        coeff = 2. * jnp.pi * self.u_inf / self.gust_length
+        @jax.jit
+        def kernel(collocation_point, normal):
+            delay = (collocation_point[0]
+                     + self.gust_shift) / self.u_inf
+            shape_span = self.shape_span(collocation_point[1])
+            filter_time = jnp.where((self.time >= delay) &
+                                    (self.time <= delay +
+                                     self.gust_totaltime), 1, 0)
+    
+            gust = filter_time * (shape_span * normal *
+                                  self.gust_intensity / (self.u_inf*2) *
+                                  (1 - jnp.cos(coeff * (self.time - delay)))
+                                  )
+            gust_dot = filter_time * (shape_span * normal *
+                               self.gust_intensity / (self.u_inf*2) *
+                               (jnp.sin(coeff * (self.time - delay))) * coeff
+                               )
+            gust_ddot = filter_time * (shape_span * normal *
+                               self.gust_intensity / (self.u_inf*2) *
+                               (jnp.cos(coeff * (self.time - delay))) * coeff**2
+                               )
+            return gust, gust_dot, gust_ddot
+
+        f1  = jax.vmap(kernel, in_axes=(0,0), out_axes=(0,0,0)) 
+        self.gust, self.gust_dot, self.gust_ddot = f1(self.collocation_points, self.normals)
         self._define_eta()
 
     def calculate_normals(self):

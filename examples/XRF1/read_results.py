@@ -2,8 +2,30 @@ from pyNastran.op2.op2 import OP2
 import pandas as pd
 import plotly.express as px
 import fem4inas.preprocessor.solution as solution
+import fem4inas.plotools.uplotly as uplotly
+import fem4inas.unastran.op2reader as op2reader
+import fem4inas.plotools.utils as putils
 
+nas111 = op2reader.NastranReader(op2name="./NASTRAN/runs/146-111/XRF1-146run")
+nas111.readModel()
+t111, u111 = nas111.displacements()
 
+x, y = putils.pickIntrinsic2D(sol.dynamicsystem_s1.t,
+                              sol.dynamicsystem_s1.ra,
+                              fixaxis2=dict(node=150, dim=0))
+
+fig = uplotly.lines2d(x, y-y[0], None,
+                      dict(name="NMROM",
+                           line=dict(color="blue")
+                           ),
+                      dict(title="1-Cos simulation"))
+fig = uplotly.lines2d(t111[1], u111[1,:,-1, 0]*0.01, fig,
+                      dict(name="NASTRAN",
+                           line=dict(color="red",
+                                     dash="dash")
+                           ))
+
+fig.show()
 
 # op2 = OP2()
 # op2.set_additional_matrices_to_read({b'OPHP':False})

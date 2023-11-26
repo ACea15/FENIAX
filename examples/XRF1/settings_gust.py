@@ -26,7 +26,7 @@ inp.driver.typeof = "intrinsic"
 # inp.driver.sol_path = pathlib.Path(
 #     f"./resultsGust_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    "./resultsGust")
+    "./resultsGust_g1i0")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 15.
@@ -39,16 +39,16 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"./AERO/AICs000_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"./AERO/AICsQhj000_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"./AERO/Poles000_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"./NASTRAN/AERO/AICs000_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"./NASTRAN/AERO/AICsQhj000_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"./NASTRAN/AERO/Poles000_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.aero.gust_profile = "mc"
-inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*3 #11.304727674272842/10000
+inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*0.01 #11.304727674272842/10000
 inp.systems.sett.s1.aero.gust_settings.length = 67.
-inp.systems.sett.s1.aero.gust_settings.step = 0.5
+inp.systems.sett.s1.aero.gust_settings.step = 1.
 inp.systems.sett.s1.aero.gust_settings.shift = 0.
-inp.systems.sett.s1.aero.gust_settings.panels_dihedral = jnp.load("./AERO/Dihedral.npy")
-inp.systems.sett.s1.aero.gust_settings.collocation_points = "./AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust_settings.panels_dihedral = jnp.load("./NASTRAN/AERO/Dihedral.npy")
+inp.systems.sett.s1.aero.gust_settings.collocation_points = "./NASTRAN/AERO/Control_nodes.npy"
 
 # path2config = pathlib.Path("./config.yaml")
 config =  configuration.Config(inp)

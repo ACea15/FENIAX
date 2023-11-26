@@ -262,6 +262,6 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
                                                   )
         self.sol.add_container('DynamicSystem', label="_" + self.name,
                                q=self.qs, X1=X1, X2=X2, X3=X3,
-                               Cab=Cab, ra=ra)
+                               Cab=Cab, ra=ra, t=self.settings.t)
         if self.settings.save:
             self.sol.save_container('DynamicSystem', label="_"+self.name)

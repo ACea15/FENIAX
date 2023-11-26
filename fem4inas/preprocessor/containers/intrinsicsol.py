@@ -32,6 +32,7 @@ class DynamicSystem:
     X3: jnp.ndarray
     Cab: jnp.ndarray
     ra: jnp.ndarray
+    t: jnp.ndarray = None
     
 @dataclass(slots=True)
 class StaticSystem:

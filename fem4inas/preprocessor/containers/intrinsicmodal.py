@@ -53,10 +53,10 @@ class DGustMc(DGust):
     
     def __post_init__(self):
 
-        if isinstance(self.panels_dihedral, str):
+        if isinstance(self.panels_dihedral, (str, pathlib.Path)):
             object.__setattr__(self, "panels_dihedral",
                                jnp.load(self.panels_dihedral))
-        if isinstance(self.collocation_points, str):
+        if isinstance(self.collocation_points, (str, pathlib.Path)):
             object.__setattr__(self, "collocation_points",
                                jnp.load(self.collocation_points))
     
@@ -114,20 +114,20 @@ class Daero(DataContainer):
             object.__setattr__(self, "controller", controller_obj)
         else:
             object.__setattr__(self, "controller", None)
-        if isinstance(self.poles, str):
+        if isinstance(self.poles, (str, pathlib.Path)):
             object.__setattr__(self, "poles", jnp.load(self.poles))
         if self.poles is not None:
             object.__setattr__(self, "num_poles", len(self.poles))
         if self.u_inf is not None and self.rho_inf is not None:
             q_inf = 0.5 * self.rho_inf * self.u_inf ** 2
             object.__setattr__(self, "q_inf", q_inf)
-        if isinstance(self.A, str):
+        if isinstance(self.A, (str, pathlib.Path)):
             object.__setattr__(self, "A", jnp.load(self.A))
-        if isinstance(self.B, str):
+        if isinstance(self.B, (str, pathlib.Path)):
             object.__setattr__(self, "B", jnp.load(self.B))
-        if isinstance(self.C, str):
+        if isinstance(self.C, (str, pathlib.Path)):
             object.__setattr__(self, "C", jnp.load(self.C))
-        if isinstance(self.D, str):
+        if isinstance(self.D, (str, pathlib.Path)):
             object.__setattr__(self, "D", jnp.load(self.D))
 
 @dataclass(frozen=True)
