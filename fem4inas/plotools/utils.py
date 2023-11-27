@@ -131,6 +131,7 @@ class IntrinsicStructComponent(IntrinsicStruct):
             self.map_components[labeli] = list()
             for k, v in self.lines.items():
                 self.map_components[labeli].append(self.map_ra[labeli][jnp.array(v)])
+            #self.map_components[labeli] = np.array(self.map_components[labeli])
             
     def add_solution(self, ra: jnp.array, label=None):
 

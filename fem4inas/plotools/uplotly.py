@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import plotly.express as px
 import plotly.graph_objects as go
-from dataclasses import dataclass, field
+import fem4inas.plotools.utils as putils
 import numpy as np 
 from enum import Enum
 # see https://plotly.com/python/line-charts/
@@ -143,3 +143,56 @@ def iterate_lines3d(x, y, z,
                           update_traces=update_traces)
     return fig
 
+def render2d_struct(structcomp: putils.IntrinsicStructComponent,
+                    scatter_settings=None,
+                    update_layout=None,
+                    update_traces=None):
+
+    components = list(structcomp.map_components.keys())
+    num_components = len(components)
+    fig = None
+    if scatter_settings is None:
+        scatter_settings = {}
+    for i, v in enumerate(structcomp.map_components.values()):
+        if isinstance(scatter_settings, list):
+            scsettings = scatter_settings[i]
+        elif isinstance(scatter_settings, dict):
+            scsettings = scatter_settings
+        if i < num_components - 1:
+            fig = lines2d(v[:,0], v[:,1],
+                          fig=fig,
+                          scatter_settings=scsettings)
+        else:
+            fig = lines2d(v[:,0], v[:,1],
+                          fig=None,
+                          scatter_settings=scsettings,
+                          update_layout=update_layout,
+                          update_traces=update_traces)
+    return fig
+
+def render3d_struct(structcomp: putils.IntrinsicStructComponent,
+                    scatter_settings=None,
+                    update_layout=None,
+                    update_traces=None):
+
+    components = list(structcomp.map_components.keys())
+    num_components = len(components)
+    fig = None
+    if scatter_settings is None:
+        scatter_settings = {}
+    for i, v in enumerate(structcomp.map_components.values()):
+        if isinstance(scatter_settings, list):
+            scsettings = scatter_settings[i]
+        elif isinstance(scatter_settings, dict):
+            scsettings = scatter_settings
+        if i < num_components - 1:
+            fig = lines2d(v[:, 0], v[:, 1], v[:, 2],
+                          fig=fig,
+                          scatter_settings=scsettings)
+        else:
+            fig = lines2d(v[:, 0], v[:, 1], v[:, 2],
+                          fig=None,
+                          scatter_settings=scsettings,
+                          update_layout=update_layout,
+                          update_traces=update_traces)
+    return fig
