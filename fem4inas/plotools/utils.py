@@ -103,8 +103,8 @@ class IntrinsicStruct:
             self.nsol += 1
             if label is None:
                 labeli = self.nsol
-            self.map_mra[labeli] = self._calculate_midpoints(ra_i)
-            self.map_ra[labeli] = ra_i.T
+            self.map_mra[labeli] = self._calculate_midpoints(ra)
+            self.map_ra[labeli] = ra.T
             self.labels_new.append(labeli)
             
 class IntrinsicStructComponent(IntrinsicStruct):
