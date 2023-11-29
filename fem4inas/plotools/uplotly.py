@@ -98,10 +98,7 @@ def lines3d(x, y, z,
     if update_layout is not None:
         fig.update_layout(**update_layout)
     if update_traces is not None:
-        scatters = ScatterSettings(**update_traces)
-        fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **scatters.__dict__))        
-    else:
-        fig.add_trace(go.Scatter3d(x=x, y=y, z=z))
+        fig.update_traces(**update_traces)
 
     return fig
 
@@ -144,25 +141,22 @@ def iterate_lines3d(x, y, z,
     return fig
 
 def render2d_struct(structcomp: putils.IntrinsicStructComponent,
-                    labels=None,
+                    label=None,
                     scatter_settings=None,
                     update_layout=None,
                     update_traces=None,
                     fig=None):
 
-    if labels is None:
-        structures = list(structcomp.map_components.values())
+    if label is None:
+        structure = list(structcomp.map_components.values())[0]
     else:
-        if isinstance(labels, list):
-            structures = [structcomp.map_components[li] for li in labels]
-        else:
-            structures = [structcomp.map_components[labels]]
+        structure = structcomp.map_components[label]
     # components = list(structcomp.map_components.keys())
-    num_components = len(structures[0])
+    num_components = len(structure)
     if scatter_settings is None:
         scatter_settings = {}
-    import pdb; pdb.set_trace()
-    for i, v in enumerate(structures[0]):
+    # import pdb; pdb.set_trace()
+    for i, v in enumerate(structure):
         if isinstance(scatter_settings, list):
             scsettings = scatter_settings[i]
         elif isinstance(scatter_settings, dict):
@@ -194,7 +188,7 @@ def render3d_struct(structcomp: putils.IntrinsicStructComponent,
     num_components = len(structure)
     if scatter_settings is None:
         scatter_settings = {}
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     for i, v in enumerate(structure):
         if isinstance(scatter_settings, list):
             scsettings = scatter_settings[i]
