@@ -21,12 +21,12 @@ class NastranReader:
         if self.op2name:
             self.op2 = OP2()
             self.op2.set_additional_matrices_to_read({b'OPHP':False})
-            self.op2.read_op2(self.op2name+'.op2')
+            self.op2.read_op2(self.op2name)
             print(self.op2.get_op2_stats())
         if self.bdfname:
             self.fem = BDF(debug=True,log=None)
             self.fem.cross_reference()
-            self.fem.read_bdf(self.bdfname+'.bdf',xref=True)
+            self.fem.read_bdf(self.bdfname,xref=True)
             print(self.fem.get_bdf_stats())
             if asets_only:
                 self.nodes = sorted(self.fem.asets[0].node_ids)

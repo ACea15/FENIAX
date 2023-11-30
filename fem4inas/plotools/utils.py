@@ -70,6 +70,7 @@ class IntrinsicStruct:
         self.X = self.fem.X
         self.Xm = self.fem.Xm.T[1:]
         self.npoints = len(self.X)
+        self.add_solution(self.X, label="ref")
         
     def _set_linetopology(self):
         
