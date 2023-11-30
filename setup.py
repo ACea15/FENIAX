@@ -31,6 +31,7 @@ setup(
         "jaxlib",
         "diffrax",
         "jaxopt",
+        "tabulate",
         "multipledispatch"
     ],
     extras_require={
