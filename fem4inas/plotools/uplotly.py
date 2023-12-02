@@ -105,9 +105,12 @@ def lines3d(x, y, z,
 def iterate_lines2d(x, y,
                     scatter_settings=None,
                     update_layout=None,
-                    update_traces=None):
-
-    fig= None
+                    update_traces=None,
+                    fig=None):
+    if scatter_settings is None:
+        scatter_settings = [{} for i in x]
+    elif isinstance(scatter_settings, dict):
+        scatter_settings = [scatter_settings for i in x]
     for i, xi in enumerate(x):
         if i < len(x) - 1:
             fig = lines2d(xi, y[i],
@@ -115,7 +118,7 @@ def iterate_lines2d(x, y,
                           scatter_settings=scatter_settings[i])
         else:
             fig = lines2d(xi, y[i],
-                          fig=None,
+                          fig=fig,
                           scatter_settings=scatter_settings[i],
                           update_layout=update_layout,
                           update_traces=update_traces)
@@ -145,7 +148,9 @@ def render2d_struct(structcomp: putils.IntrinsicStructComponent,
                     scatter_settings=None,
                     update_layout=None,
                     update_traces=None,
-                    fig=None):
+                    fig=None,
+                    xaxis=0,
+                    yaxis=1):
 
     if label is None:
         structure = list(structcomp.map_components.values())[0]
@@ -155,18 +160,18 @@ def render2d_struct(structcomp: putils.IntrinsicStructComponent,
     num_components = len(structure)
     if scatter_settings is None:
         scatter_settings = {}
-    # import pdb; pdb.set_trace()
+    #import pdb; pdb.set_trace()
     for i, v in enumerate(structure):
         if isinstance(scatter_settings, list):
             scsettings = scatter_settings[i]
         elif isinstance(scatter_settings, dict):
             scsettings = scatter_settings
         if i < num_components - 1:
-            fig = lines2d(v[:, 0], v[:, 1],
+            fig = lines2d(v[:, xaxis], v[:, yaxis],
                           fig=fig,
                           scatter_settings=scsettings)
         else:
-            fig = lines2d(v[:, 0], v[:, 1],
+            fig = lines2d(v[:, xaxis], v[:, yaxis],
                           fig=fig,
                           scatter_settings=scsettings,
                           update_layout=update_layout,
@@ -226,4 +231,30 @@ def render3d_multi(structcomp: putils.IntrinsicStructComponent,
                               update_layout,
                               update_traces,
                               fig)
+    return fig
+
+def render2d_multi(structcomp: putils.IntrinsicStructComponent,
+                   labels=None,
+                   scatter_settings=None,
+                   update_layout=None,
+                   update_traces=None,
+                   fig=None,
+                   xaxis=0,
+                   yaxis=1):
+
+    if labels is None:
+        labels = list(structcomp.map_components.keys())
+    for i, li in enumerate(labels):
+        if isinstance(scatter_settings, list):
+            scsettings = scatter_settings[i]
+        else:
+            scsettings = scatter_settings
+        fig = render2d_struct(structcomp,
+                              li,
+                              scsettings,
+                              update_layout,
+                              update_traces,
+                              fig,
+                              xaxis,
+                              yaxis)
     return fig

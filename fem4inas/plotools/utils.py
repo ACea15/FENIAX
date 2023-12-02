@@ -70,7 +70,6 @@ class IntrinsicStruct:
         self.X = self.fem.X
         self.Xm = self.fem.Xm.T[1:]
         self.npoints = len(self.X)
-        self.add_solution(self.X, label="ref")
         
     def _set_linetopology(self):
         
@@ -104,6 +103,9 @@ class IntrinsicStruct:
             self.nsol += 1
             if label is None:
                 labeli = self.nsol
+            else:
+                labeli = f"{label}{self.nsol}"
+            #breakpoint()
             self.map_mra[labeli] = self._calculate_midpoints(ra)
             self.map_ra[labeli] = ra.T
             self.labels_new.append(labeli)
@@ -114,6 +116,7 @@ class IntrinsicStructComponent(IntrinsicStruct):
 
         super().__init__(fem)
         self.map_components = dict()
+        self.add_solution(self.X.T, label="ref")
         
     def _set_linetopology(self):
         
