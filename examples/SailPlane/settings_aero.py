@@ -42,7 +42,7 @@ inp.systems.sett.s1.solver_function = "newton_raphson"
 inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                            atol=1e-6,
                                            max_steps=50,
-                                           norm=jnp.linalg.norm,
+                                           norm="linalg_norm",
                                            kappa=0.01)
 inp.systems.sett.s1.aero.Qk_struct = [[0.], Qhh['Q_HH'][1][0].real]
 inp.systems.sett.s1.aero.Q0_rigid = Qhx

@@ -122,7 +122,7 @@ class TestBeamSolution:
         inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                    atol=1e-6,
                                                    max_steps=50,
-                                                   norm=jnp.linalg.norm,
+                                                   norm="linalg_norm",
                                                    kappa=0.01)
         #inp.systems.sett.s1.label = 'dq_001001'
         inp.systems.sett.s1.xloads.follower_forces = True
@@ -276,7 +276,7 @@ class TestFrameSolution:
         inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                    atol=1e-6,
                                                    max_steps=50,
-                                                   norm=jnp.linalg.norm,
+                                                   norm="linalg_norm",
                                                    kappa=0.01)
         # inp.systems.sett.s1.solver_library = "scipy"
         # inp.systems.sett.s1.solver_function = "root"
@@ -359,7 +359,7 @@ class TestFrame3D:
         inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                    atol=1e-6,
                                                    max_steps=50,
-                                                   norm=jnp.linalg.norm,
+                                                   norm="linalg_norm",
                                                    kappa=0.01)
         # inp.systems.sett.s1.solver_library = "scipy"
         # inp.systems.sett.s1.solver_function = "root"

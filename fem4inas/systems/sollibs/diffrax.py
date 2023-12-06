@@ -2,6 +2,8 @@ import diffrax
 from diffrax.solution import Solution
 import jax.numpy as jnp
 
+dict_norm = dict(linalg_norm=jnp.linalg.norm)
+
 def ode(F: callable,
         args,
         solver_name: str,
@@ -70,7 +72,7 @@ def newton_raphson(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **
                                            atol=atol,
                                            max_steps=max_steps,
                                            kappa=kappa,
-                                           norm=norm,
+                                           norm=dict_norm[norm],
                                            tolerate_nonconvergence=False)
     sol = solver(F, q0, args, jac)
     return sol

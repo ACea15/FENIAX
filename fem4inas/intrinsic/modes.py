@@ -171,9 +171,13 @@ def compute_eigs_load(num_modes: int,
     #eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/w.npy")
     #eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/v.npy")
     # eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/w.npy")
-    # eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/v.npy")    
-    eigenvals = jnp.load(path / eig_names[0])
-    eigenvecs = jnp.load(path / eig_names[1])
+    # eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/v.npy")
+    if path is not None:
+        eigenvals = jnp.load(path / eig_names[0])
+        eigenvecs = jnp.load(path / eig_names[1])
+    else:
+        eigenvals = jnp.load(eig_names[0])
+        eigenvecs = jnp.load(eig_names[1])        
     reduced_eigenvals = eigenvals[:num_modes]
     reduced_eigenvecs = eigenvecs[:, :num_modes]
     return reduced_eigenvals, reduced_eigenvecs

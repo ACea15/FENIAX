@@ -226,7 +226,7 @@ class Dfem(DataContainer):
 
     connectivity: dict | list = dfield("Connectivities of components")
     folder: str | pathlib.Path = dfield("""Folder in which to find Ka, Ma,
-    and grid data (with those names)""", default=None)
+    and grid data (with those names)""", default=None) #yaml_save=False)
     Ka_name: str | pathlib.Path  = dfield("Condensed stiffness matrix",
                                           default='Ka.npy')
     Ma_name: str | pathlib.Path  = dfield("Condensed mass matrix",
@@ -299,17 +299,29 @@ class Dfem(DataContainer):
         setobj("Ka_name", Ka_name)
         setobj("Ma_name", Ma_name)
         setobj("grid", grid)
+        if self.folder is not None:
+            setobj("folder", pathlib.Path(self.folder))
         if self.Ka is None:
-            setobj("Ka", load_jnp(self.Ka_name))
+            if self.folder is None:
+                setobj("Ka", load_jnp(self.Ka_name))
+            else:
+                setobj("Ka", load_jnp(self.folder / self.Ka_name))
         if self.Ma is None:
-            setobj("Ma", load_jnp(self.Ma_name))
-            #setobj("Ma", load_jnp(self.Ma_name))
+            if self.folder is None:
+                setobj("Ma", load_jnp(self.Ma_name))
+            else:
+                setobj("Ma", load_jnp(self.folder / self.Ma_name))
+                #setobj("Ma", load_jnp(self.Ma_name))
         if self.num_modes is None:
             # full set of modes in the solution
             setobj("num_modes", len(self.Ka))
-
-        df_grid, X, fe_order, component_vect = geometry.build_grid(
-            self.grid, self.X, self.fe_order, self.fe_order_start, self.component_vect)
+        if self.folder is None:
+            df_grid, X, fe_order, component_vect = geometry.build_grid(
+                self.grid, self.X, self.fe_order, self.fe_order_start, self.component_vect)
+        else:
+            df_grid, X, fe_order, component_vect = geometry.build_grid(
+                self.folder / self.grid, self.X, self.fe_order,
+                self.fe_order_start, self.component_vect)
         setobj("df_grid", df_grid)
         setobj("X", X)
         setobj("fe_order", fe_order)
@@ -444,7 +456,7 @@ class Dsystem(DataContainer):
         "Name for the solver of the previously defined library",
         default=None)
     solver_settings: str = dfield(
-        "Name for the solver of the previously defined library", default=None)
+        "Settings for the solver", default=None)
     q0treatment: int = dfield(
         """Modal velocities, q1, and modal forces, q2, are the main variables
         in the intrinsic structural description,
@@ -587,7 +599,7 @@ class Dsystem(DataContainer):
 @dataclass(frozen=True)
 class Dsystems(DataContainer):
 
-    sett: dict[str: dict] = dfield("Settings ", yaml_save=False)
+    sett: dict[str: dict] = dfield("Settings ", yaml_save=True)
     mapper: dict[str: Dsystem]  = dfield("Dictionary with systems in the simulation",
                                        init=False)
 

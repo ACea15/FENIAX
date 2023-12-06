@@ -8,12 +8,13 @@ from ruamel.yaml import YAML
 import jax.numpy as jnp
 import numpy as np
 import argparse
+import copy
 
 class Config:
 
     def __init__(self, sett: dict):
 
-        self.__sett = sett
+        self.__sett = copy.copy(sett)
         self.__serial_data = None
         self.__extract_attr()        
         self.__load_container()        
@@ -104,7 +105,12 @@ def serialize(obj: Config | DataContainer):
         if isinstance(v, jnp.ndarray) or isinstance(v, np.ndarray):
             v = v.tolist()
         if isinstance(v, pathlib.Path):
-            v = str(v) 
+            v = str(v)
+        if k == "systems":
+            dictionary[k] = dict(sett={})
+            for k2, v2 in obj.systems.mapper.items():
+                dictionary[k]["sett"][k2] = serialize(v2)
+            continue
         # ensure the field is public
         if k[0] != "_":
             if isinstance(v, DataContainer):
