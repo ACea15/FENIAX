@@ -73,3 +73,16 @@ config =  configuration.Config(inp)
 #configuration.dump_to_yaml(path2config, config, with_comments=True)
 
 sol = fem4inas.fem4inas_main.main(input_obj=config)
+
+
+# import scipy.linalg
+# import numpy as np
+# Ka = np.load("./FEM/Ka.npy")
+# Ma = np.load("./FEM/Ma.npy")
+# w, v = scipy.linalg.eigh(Ka, Ma)
+
+# save_eigs = True
+# if save_eigs:
+#     np.save("./FEM/eigenvals.npy", w)
+#     np.save("./FEM/eigenvecs.npy", v)
+
