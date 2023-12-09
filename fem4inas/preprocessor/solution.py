@@ -99,21 +99,24 @@ def load_container(path: pathlib.Path, Container):
     container_path = path  # / Container.__name__.lower()
     kwargs = dict()
     for attr_name in Container.__slots__:
-        attr_path = container_path / attr_name
-        if Container.__annotations__[attr_name].__name__ == "Array":
-            kwargs[attr_name] = jnp.load(attr_path.with_suffix(".npy"))
-        elif Container.__annotations__[attr_name].__name__ == "ndarray":
-            kwargs[attr_name] = np.load(attr_path.with_suffix(".npy"))
-        elif (
-            (Container.__annotations__[attr_name].__name__ == "dict")
-            or (Container.__annotations__[attr_name].__name__ == "list")
-            or (Container.__annotations__[attr_name].__name__ == "tuple")
-        ):
-            with open(attr_path, "rb") as fp:  # Unpickling
-                kwargs[attr_name] = pickle.load(fp)
-        else:
-            raise ValueError(f"Not recognised type annotation {attr_name}")
-
+        try:
+            attr_path = container_path / attr_name
+            if Container.__annotations__[attr_name].__name__ == "Array":
+                kwargs[attr_name] = jnp.load(attr_path.with_suffix(".npy"))
+            elif Container.__annotations__[attr_name].__name__ == "ndarray":
+                kwargs[attr_name] = np.load(attr_path.with_suffix(".npy"))
+            elif (
+                (Container.__annotations__[attr_name].__name__ == "dict")
+                or (Container.__annotations__[attr_name].__name__ == "list")
+                or (Container.__annotations__[attr_name].__name__ == "tuple")
+            ):
+                with open(attr_path, "rb") as fp:  # Unpickling
+                    kwargs[attr_name] = pickle.load(fp)
+            else:
+                raise ValueError(f"Not recognised type annotation {attr_name}")
+        except FileNotFoundError as efile:
+            if Container.__dataclass_fields__[attr_name].default is not None:
+                raise efile
     return Container(**kwargs)
 
 
