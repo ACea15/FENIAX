@@ -94,7 +94,7 @@ class Daero(DataContainer):
     poles: str | jnp.ndarray = dfield("", default=None)
     num_poles: int = dfield("", default=None)
     gust_profile: dict = dfield("", default=None, options=["mc"])
-    gust_settings: dict = dfield("", default=None)
+    gust_settings: dict = dfield("", default=None, yaml_save=False)
     gust: DGust = dfield("", init=False)
     controller_name: dict = dfield("", default=None)
     controller_settings: dict = dfield("", default=None)
