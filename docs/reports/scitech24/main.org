@@ -63,7 +63,8 @@ An extensive verification has been carried out and is presented herein, starting
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
   (pyvenv-workon "fem4inas")
   (require 'org-tempo)
-  
+  (setq Veval_blocks "no-export") ;; yes, no, no-export
+  (setq Veval_blocks_run "no-export") 
 #+end_src
 
 ** Load modules                                                   :noexport:
@@ -78,6 +79,8 @@ An extensive verification has been carried out and is presented herein, starting
   import fem4inas.preprocessor.solution as solution
   import fem4inas.unastran.op2reader as op2reader
   import pickle
+  import os
+  os.chdir("./results")
 #+end_src
 
 #+NAME: PYTHONMODULES
@@ -94,1002 +97,14 @@ An extensive verification has been carried out and is presented herein, starting
 
 * Run models :noexport:
 :PROPERTIES:
-:header-args: :var name=(org-element-property :name (org-element-context)) :mkdirp yes :eval no-export
+:header-args: :var name=(org-element-property :name (org-element-context)) :mkdirp yes :eval (print Veval_blocks)
+:END:
+** ArgyrisBeam
+*** Run
+:PROPERTIES:
+:header-args: :eval (print Veval_blocks_run) :tangle ./results/run_ArgyrisBeam.py
 :END:
 
-** XRF1
-#+NAME: GustTable  
-#+begin_src org :tangle ./results/GustTable.org :mkdirp yes
-   L_g                          18.0,67.0,116.0,165.0,214
-   V0_g                         11.3047276743,14.0732311562,15.4214195361,16.3541764073,17.0785232867
-
-  | Index | Label         | Gust length | Gust intensity      | Intensity constant | u_inf    | rho_inf    | Mach      |
-  |-------+---------------+-------------+---------------------+--------------------+----------+------------+-----------|
-  |     0 | Gl0i0c0u0r0m0 | 18 (l0)     | 11.30472767427 (i0) | 0.01 (c0)          | 200 (u0) | 1.225 (r0) | 0.0 (m0)  |
-  |     1 | Gl1i1c0u0r0m0 | 67 (l1)     | 14.0732311562 (i1)  | 0.01 (c0)          | 200 (u0) | 1.225 (r0) | 0.0 (m0)  |
-  |     2 | Gl1i1c1u0r0m0 | 67 (l1)     | 14.0732311562 (i1)  | 2                  | 200 (u0) | 1.225 (r0) | 0.0 (m0)  |
-  |     3 | Gl1i1c0u0r0m1 | 67 (l1)     | 14.0732311562 (i1)  | 0.01 (c0)          | 200 (u0) | 1.225 (r0) | 0.81 (m0) |
-  |     4 | Gl1i1c1u0r0m1 | 67 (l1)     | 14.0732311562 (i1)  | 2 (c0)             | 200 (u0) | 1.225 (r0) | 0.81 (m0) |
-  |     5 |               |             |                     |                    |          |            |           |
-
-#+end_src
-
-#+NAME: GustInput
-#+begin_src python :session py1 :results none
-  xrf1_folder = fem4inas.PATH / "../examples/XRF1/"
-  inp = Inputs()
-  inp.engine = "intrinsicmodal"
-  inp.fem.eig_type = "input_memory"
-  inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-  inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
-  inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
-                          [8], [9], [10, 11], [29], [12], [],
-                          [14], [15], [16, 21], [17, 23, 25],
-                          [18], [19], [20], [], [22], [], [24], [],
-                          [26], [], [28], [], [30], [], []]
-  inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
-  inp.fem.grid = "structuralGridc.txt"
-  inp.fem.num_modes = 70
-  inp.driver.typeof = "intrinsic"
-  inp.simulation.typeof = "single"
-  inp.systems.sett.s1.solution = "dynamic"
-  inp.systems.sett.s1.t1 = 15.
-  inp.systems.sett.s1.tn = 3001
-  inp.systems.sett.s1.solver_library = "runge_kutta"
-  inp.systems.sett.s1.solver_function = "ode"
-  inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
-  inp.systems.sett.s1.xloads.modalaero_forces = True
-  inp.systems.sett.s1.q0treatment = 2
-  inp.systems.sett.s1.aero.c_ref = 7.271
-  inp.systems.sett.s1.aero.gust_profile = "mc"
-  inp.systems.sett.s1.aero.gust_settings.shift = 0.
-  inp.systems.sett.s1.aero.gust_settings.panels_dihedral = jnp.load(f"{xrf1_folder}/AERO/Dihedral.npy")
-  inp.systems.sett.s1.aero.gust_settings.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
-#+end_src
-*** 0
-(first gust in the table, not implemented)
-*** 1
-#+NAME: Gl1i1c0u0r0m0
-#+begin_src python :session py1 :tangle ./results/run_Gl1i1c0u0r0m0.py :mkdirp yes :noweb yes : results none
-  <<PYTHONMODULES>>
-  <<GustInput>>
-  inp.driver.sol_path = pathlib.Path(
-      f"./{name}")
-  mach = "000"
-  inp.systems.sett.s1.aero.u_inf = 200.
-  inp.systems.sett.s1.aero.rho_inf = 1.225  
-  inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*0.01 #11.304727674272842/10000
-  inp.systems.sett.s1.aero.gust_settings.length = 67.
-  inp.systems.sett.s1.aero.gust_settings.step = 0.5
-  inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
-  config_gust =  configuration.Config(inp)
-  sol_gust1 = fem4inas.fem4inas_main.main(input_obj=config_gust)
-
-#+end_src
-
-#+NAME: SHELL_Gl1i1c0u0r0m0
-#+begin_src bash :session zsh1 :shebang #!/usr/bin/zsh :tangle ./results/run_Gl1i1c0u0r0m0.sh :dir ./results/  :results output :async yes
-  #source ~/.zshrc
-  conda activate fem4inas
-  python run_Gl2i1c0u0r0m0.py
-#+end_src
-
-*** 2
-#+NAME: Gl1i1c1u0r0m0
-#+begin_src python :session py1 :tangle ./results/run_Gl2i1c0u0r0m0.py :noweb yes :results none
-  <<PYTHONMODULES>>
-  <<GustInput>>
-  inp.driver.sol_path = pathlib.Path(
-      f"./{name}")
-  mach = "000"
-  inp.systems.sett.s1.aero.u_inf = 200.
-  inp.systems.sett.s1.aero.rho_inf = 1.225  
-  inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*2. #11.304727674272842/10000
-  inp.systems.sett.s1.aero.gust_settings.length = 67.
-  inp.systems.sett.s1.aero.gust_settings.step = 0.5
-  inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
-  config_gust2 =  configuration.Config(inp)
-  sol_gust2 = fem4inas.fem4inas_main.main(input_obj=config_gust2)
-#+end_src
-
-*** 3
-#+NAME: Gl1i1c0u0r0m1
-#+begin_src python :session py1 :tangle ./results/run_Gl2i1c0u0r0m0.py :noweb yes :results none
-  <<PYTHONMODULES>>
-  <<GustInput>>
-  inp.driver.sol_path = pathlib.Path(
-      f"./{name}")
-  mach = "081"
-  inp.systems.sett.s1.aero.u_inf = 200.
-  inp.systems.sett.s1.aero.rho_inf = 1.225  
-  inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*0.01 #11.304727674272842/10000
-  inp.systems.sett.s1.aero.gust_settings.length = 67.
-  inp.systems.sett.s1.aero.gust_settings.step = 0.5
-  inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
-  config_gust3 =  configuration.Config(inp)
-  sol_gust3 = fem4inas.fem4inas_main.main(input_obj=config_gust3)
-
-#+end_src
-
-*** 4
-#+NAME: Gl1i1c1u0r0m1
-#+begin_src python :session py1 :tangle ./results/run_Gl1i1c0u0r0m1.py :noweb yes :results none
-  <<PYTHONMODULES>>
-  <<GustInput>>
-  inp.driver.sol_path = pathlib.Path(
-      f"./{name}")
-  mach = "081"
-  inp.systems.sett.s1.aero.u_inf = 200.
-  inp.systems.sett.s1.aero.rho_inf = 1.225  
-  inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*2 #11.304727674272842/10000
-  inp.systems.sett.s1.aero.gust_settings.length = 67.
-  inp.systems.sett.s1.aero.gust_settings.step = 0.5
-  inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
-  config_gust4 =  configuration.Config(inp)
-  sol_gust4 = fem4inas.fem4inas_main.main(input_obj=config_gust4)
-
-#+end_src
-*** 5
-#+NAME: Gust5
-#+begin_src python :session py1 :tangle ./results/run_Gl1i1c0u0r0m1.py :noweb yes :results none
-  <<PYTHONMODULES>>
-  <<GustInput>>
-  inp.driver.sol_path = pathlib.Path(
-      f"./{name}")
-  mach = "081"
-  inp.systems.sett.s1.aero.u_inf = 200.
-  inp.systems.sett.s1.aero.rho_inf = 1.225  
-  inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*0.01 #11.304727674272842/10000
-  inp.fem.num_modes = 50
-  inp.systems.sett.s1.aero.gust_settings.length = 67.
-  inp.systems.sett.s1.aero.gust_settings.step = 0.5
-  inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-  inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
-  config_gust4 =  configuration.Config(inp)
-  sol_gust4 = fem4inas.fem4inas_main.main(input_obj=config_gust4)
-
-#+end_src
-*** data analysis
-**** NASTRAN data
-#+begin_src python :session py1 :results none
-  nastran_path = fem4inas.PATH / "../examples/XRF1/NASTRAN/146-111/"
-  nas111 = op2reader.NastranReader(op2name=(nastran_path / "XRF1-146run.op2"))
-  nas111.readModel()
-  t111, u111 = nas111.displacements()
-
-  nastran_pathm = fem4inas.PATH / "../examples/XRF1/NASTRAN/146-111_081"
-  nas111m = op2reader.NastranReader(op2name=(nastran_pathm / "XRF1-146run.op2"))
-  nas111m.readModel()
-  t111m, u111m = nas111m.displacements()
-  
-#+end_src
-
-**** Plot gusts
-
-#+NAME: Gust1Plot
-#+begin_src python :session py1 :results value file :exports results
-  gscale = 100./33.977
-  figname = "figs/XRF1Gust1.png"
-  sol_g1 = solution.IntrinsicReader("./Gl2i1c0u0r0m0")
-  x, y = putils.pickIntrinsic2D(sol_g1.data.dynamicsystem_s1.t,
-                                sol_g1.data.dynamicsystem_s1.ra,
-                                fixaxis2=dict(node=150, dim=2))
-
-  fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
-                        dict(name="NMROM",
-                             line=dict(color="navy")
-                             ),
-                        dict(title="1-Cos simulation"))
-  fig = uplotly.lines2d(t111[1], u111[1,:,-1, 2]*0.01*gscale, fig,
-                        dict(name="NASTRAN",
-                             line=dict(color="grey",
-                                       dash="dash")
-                             ))
-  #fig.update_xaxes(range=[0, 5])
-  fig.show()
-
-  fig.write_image(figname)
-  figname
-#+end_src
-
-#+RESULTS: Gust1Plot
-[[file:figs/XRF1Gust1.png]]
-
-#+NAME: Gust3Plot_x
-#+begin_src python :session py1 :results value file :exports results
-
-  figname = f"figs/{name}.png"
-  sol_g3 = solution.IntrinsicReader("./Gl1i1c0u0r0m1")
-  x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
-                                sol_g3.data.dynamicsystem_s1.ra,
-                                fixaxis2=dict(node=150, dim=0))
-
-  fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
-                        dict(name="NMROM",
-                             line=dict(color="navy")
-                             ))
-
-  fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 0]*0.01*gscale, fig,
-                        dict(name="NASTRAN",
-                             line=dict(color="grey",
-                                       dash="dash")
-                             ))
-  fig.update_xaxes(range=[0, 4], title='time [s]',
-                   titlefont=dict(size=16),
-                   tickfont = dict(size=16),
-                   mirror=True,
-                   ticks='outside',
-                   showline=True,
-                   linecolor='black',
-                   gridcolor='lightgrey')
-  fig.update_yaxes(title='$\hat{u}_x$', tickfont = dict(size=16),
-                   titlefont=dict(size=16),
-                   mirror=True,
-                   ticks='outside',
-                   showline=True,
-                   linecolor='black',
-                   gridcolor='lightgrey')
-  fig.update_layout(plot_bgcolor='white',
-                    showlegend=False,
-                    margin=dict(
-        autoexpand=True,
-        l=0,
-        r=0,
-        t=0,
-        b=0
-    ))
-
-  fig.show()
-
-  fig.write_image(figname)
-  figname
-#+end_src
-
-#+RESULTS: Gust3Plot_x
-[[file:figs/Gust3Plot_x.png]]
-
-
-#+NAME: Gust3Plot_y
-#+begin_src python :session py1 :results value file :exports results
-
-        figname = f"figs/{name}.png"
-        sol_g3 = solution.IntrinsicReader("./Gl1i1c0u0r0m1")
-        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
-                                      sol_g3.data.dynamicsystem_s1.ra,
-                                      fixaxis2=dict(node=150, dim=1))
-
-        fig = uplotly.lines2d(x[1:], y[:-1]-y[0], None,
-                              dict(name="NMROM",
-                                   line=dict(color="navy")
-                                   ))
-
-        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 1]*0.01, fig,
-                              dict(name="NASTRAN3",
-                                   line=dict(color="grey",
-                                             dash="dash")
-                                   ))
-        #fig.update_xaxes(range=[0, 4])
-        fig.update_xaxes(range=[0, 4], title='time [s]',tickfont = dict(size=16), titlefont=dict(size=16),
-                                            mirror=True,
-                     ticks='outside',
-                     showline=True,
-                     linecolor='black',
-                     gridcolor='lightgrey')
-        fig.update_yaxes(title='$\hat{u}_y$', tickfont = dict(size=16),titlefont=dict(size=16),
-                                            mirror=True,
-                   ticks='outside',
-                   showline=True,
-                   linecolor='black',
-                   gridcolor='lightgrey')
-        fig.update_layout(showlegend=False, plot_bgcolor='white',
-            margin=dict(
-              autoexpand=True,
-              l=0,
-              r=0,
-              t=0,
-              b=0
-          ))
-
-        fig.show()
-
-        fig.write_image(figname)
-        figname
-#+end_src
-
-#+RESULTS: Gust3Plot_y
-[[file:figs/Gust3Plot_y.png]]
-
-#+NAME: Gust3Plot_z
-#+begin_src python :session py1 :results value file :exports results
-
-  figname = f"figs/{name}.png"
-  sol_g3 = solution.IntrinsicReader("./Gl1i1c0u0r0m1")
-  x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
-                                sol_g3.data.dynamicsystem_s1.ra,
-                                fixaxis2=dict(node=150, dim=2))
-
-  fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
-                        dict(name="NMROM",
-                             line=dict(color="navy")
-                             ))
-
-  fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 2]*0.01*gscale, fig,
-                        dict(name="NASTRAN",
-                             line=dict(color="grey",
-                                       dash="dash")
-                             ))
-  fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
-                                      mirror=True,
-                   ticks='outside',
-                   showline=True,
-                   linecolor='black',
-                   gridcolor='lightgrey')
-  fig.update_yaxes(title='$\hat{u}_z$', titlefont=dict(size=16), tickfont = dict(size=16),
-                   mirror=True,
-                   ticks='outside',
-                   showline=True,
-                   linecolor='black',
-                   gridcolor='lightgrey')
-  fig.update_layout(plot_bgcolor='white',margin=dict(
-        autoexpand=True, 
-        l=0,
-        r=0,
-        t=0,
-        b=0
-    ))
-
-  fig.show()
-
-  fig.write_image(figname)
-  figname
-#+end_src
-
-#+RESULTS: Gust3Plot_z
-[[file:figs/Gust3Plot_z.png]]
-
-
-#+NAME: Gust4Plot_x
-#+begin_src python :session py1 :results value file :exports results
-
-        figname = f"figs/{name}.png"
-        sol_g3 = solution.IntrinsicReader("./Gl1i1c1u0r0m1")
-        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
-                                      sol_g3.data.dynamicsystem_s1.ra,
-                                      fixaxis2=dict(node=150, dim=0))
-
-        fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
-                              dict(name="NMROM",
-                                   line=dict(color="navy")
-                                   ))
-
-        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 0]*2*gscale, fig,
-                              dict(name="NASTRAN",
-                                   line=dict(color="grey",
-                                             dash="dash")
-                                   ))
-        fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
-                                            mirror=True,
-                     ticks='outside',
-                     showline=True,
-                     linecolor='black',
-                     gridcolor='lightgrey')
-        fig.update_yaxes(title='$\hat{u}_x$', titlefont=dict(size=16), tickfont = dict(size=16),
-                                            mirror=True,
-                   ticks='outside',
-                   showline=True,
-                   linecolor='black',
-                   gridcolor='lightgrey')
-        fig.update_layout(plot_bgcolor='white',showlegend=False,
-                          margin=dict(
-              autoexpand=True,
-              l=0,
-              r=0,
-              t=0,
-              b=0
-          ))
-
-        fig.show()
-
-        fig.write_image(figname)
-        figname
-#+end_src
-
-#+RESULTS: Gust4Plot_x
-[[file:figs/Gust4Plot_x.png]]
-
-
-#+NAME: Gust4Plot_y
-#+begin_src python :session py1 :results value file :exports results
-
-      figname = f"figs/{name}.png"
-      sol_g3 = solution.IntrinsicReader("./Gl1i1c1u0r0m1")
-      x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
-                                    sol_g3.data.dynamicsystem_s1.ra,
-                                    fixaxis2=dict(node=150, dim=1))
-
-      fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
-                            dict(name="NMROM",
-                                 line=dict(color="navy")
-                                 ))
-
-      fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 1]*2*gscale, fig,
-                            dict(name="NASTRAN",
-                                 line=dict(color="grey",
-                                           dash="dash")
-                                 ))
-      fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
-                                          mirror=True,
-                     ticks='outside',
-                     showline=True,
-                     linecolor='black',
-                     gridcolor='lightgrey')
-      fig.update_yaxes(title='$\hat{u}_y$', titlefont=dict(size=16), tickfont = dict(size=16),
-                                          mirror=True,
-                   ticks='outside',
-                   showline=True,
-                   linecolor='black',
-                   gridcolor='lightgrey')
-      fig.update_layout(plot_bgcolor='white',showlegend=False,
-                        margin=dict(
-                            autoexpand=True,
-                            l=0,
-                            r=0,
-                            t=0,
-                            b=0
-                        ))
-
-      fig.show()
-
-      fig.write_image(figname)
-      figname
-#+end_src
-
-#+RESULTS: Gust4Plot_y
-[[file:figs/Gust4Plot_y.png]]
-
-
-#+NAME: Gust4Plot_z
-#+begin_src python :session py1 :results value file :exports results
-
-        figname = f"figs/{name}.png"
-        sol_g3 = solution.IntrinsicReader("./Gl1i1c1u0r0m1")
-        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
-                                      sol_g3.data.dynamicsystem_s1.ra,
-                                      fixaxis2=dict(node=150, dim=2))
-
-        fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
-                              dict(name="NMROM",
-                                   line=dict(color="navy")
-                                   ))
-
-        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 2]*2*gscale, fig,
-                              dict(name="NASTRAN",
-                                   line=dict(color="grey",
-                                             dash="dash")
-                                   ))
-        fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
-                                            mirror=True,
-                     ticks='outside',
-                     showline=True,
-                     linecolor='black',
-                     gridcolor='lightgrey')
-        fig.update_yaxes(title='$\hat{u}_z$', titlefont=dict(size=16), tickfont = dict(size=16),
-                                            mirror=True,
-                   ticks='outside',
-                   showline=True,
-                   linecolor='black',
-                   gridcolor='lightgrey')
-        fig.update_layout(plot_bgcolor='white',
-            margin=dict(
-              autoexpand=True,
-              l=0,
-              r=0,
-              t=0,
-              b=0
-          ))
-
-        fig.show()
-
-        fig.write_image(figname)
-        figname
-#+end_src
-
-#+RESULTS: Gust4Plot_z
-[[file:figs/Gust4Plot_z.png]]
-
-**** Plot alphas
-#+begin_src python :session py1 :results none
-  import numpy as np
-  directory = fem4inas.PATH / "../Models/XRF1-2/Results_modes/"
-  nmodes = 70
-  #q = np.load("%s/q_%s.npy"%(directory, nmodes))
-  omega = np.load("%s/../Results_modes/Omega_%s.npy"%(directory, nmodes))
-  alpha1 = np.load("%s/../Results_modes/alpha1_%s.npy"%(directory, nmodes))
-  alpha2 = np.load("%s/../Results_modes/alpha2_%s.npy"%(directory, nmodes))
-  gamma1 = np.load("%s/../Results_modes/gamma1_%s.npy"%(directory, nmodes))
-  gamma2 = np.load("%s/../Results_modes/gamma2_%s.npy"%(directory, nmodes))
-#+end_src
-
-#+NAME: XRF1Plot_alpha1old
-#+begin_src python :session py1 :results value file :exports results
-  figname = f"figs/{name}.png"
-  fig = px.imshow(np.abs(alpha1-np.eye(70)),
-                  labels=dict(color="Absolute values"),
-                  color_continuous_scale="Blues"
-                  )
-  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
-        autoexpand=True,
-        l=0,
-        r=0,
-        t=0,
-        b=0
-    ))
-  fig.update_xaxes(title='Mode',
-                   titlefont=dict(size=16),
-                   tickfont = dict(size=16)
-                   # mirror=True,
-                   # ticks='outside',
-                   # showline=True,
-                   # linecolor='black',
-                   # gridcolor='lightgrey'
-                   )
-  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
-                   titlefont=dict(size=16)
-                   # mirror=True,
-                   # ticks='outside',
-                   # showline=True,
-                   # linecolor='black',
-                   # gridcolor='lightgrey'
-                   )
-  #fig.update_traces(colorbar_tickfont=dict(size=26))
-  fig.write_image(figname)
-  fig.show()
-  figname
-#+end_src
-
-#+RESULTS: XRF1Plot_alpha1old
-[[file:figs/XRF1Plot_alpha1old.png]]
-
-#+NAME: XRF1Plot_alpha1
-#+begin_src python :session py1 :results value file :exports results
-
-  figname = f"figs/{name}.png"
-  sol_x1 = solution.IntrinsicReader("./Gl1i1c0u0r0m1")
-  fig = px.imshow(np.abs(sol_x1.data.couplings.alpha1-np.eye(70)),
-                  labels=dict(color="Absolute values"),
-                  color_continuous_scale="Blues"
-                  )
-  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
-        autoexpand=True,
-        l=0,
-        r=0,
-        t=0,
-        b=0
-    ))
-  fig.update_xaxes(title='Mode',
-                   titlefont=dict(size=16),
-                   tickfont = dict(size=16)
-                   # mirror=True,
-                   # ticks='outside',
-                   # showline=True,
-                   # linecolor='black',
-                   # gridcolor='lightgrey'
-                   )
-  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
-                   titlefont=dict(size=16)
-                   # mirror=True,
-                   # ticks='outside',
-                   # showline=True,
-                   # linecolor='black',
-                   # gridcolor='lightgrey'
-                   )
-
-  fig.write_image(figname)
-  fig.show()
-  figname
-#+end_src
-
-#+RESULTS: XRF1Plot_alpha1
-[[file:figs/XRF1Plot_alpha1.png]]
-
-#+NAME: XRF1Plot_alpha2old
-#+begin_src python :session py1 :results value file :exports results
-  figname = f"figs/{name}.png"
-  fig = px.imshow(np.abs(alpha2-np.eye(70)),
-                  labels=dict(color="Absolute values"),
-                  color_continuous_scale="Blues"
-                  )
-  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
-        autoexpand=True,
-        l=0,
-        r=0,
-        t=0,
-        b=0
-    ))
-  fig.update_xaxes(title='Mode',
-                   titlefont=dict(size=16),
-                   tickfont = dict(size=16)
-                   # mirror=True,
-                   # ticks='outside',
-                   # showline=True,
-                   # linecolor='black',
-                   # gridcolor='lightgrey'
-                   )
-  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
-                   titlefont=dict(size=16)
-                   # mirror=True,
-                   # ticks='outside',
-                   # showline=True,
-                   # linecolor='black',
-                   # gridcolor='lightgrey'
-                   )
-
-
-  fig.write_image(figname)
-  fig.show()
-  figname
-#+end_src
-
-#+RESULTS: XRF1Plot_alpha2old
-[[file:figs/XRF1Plot_alpha2old.png]]
-
-#+NAME: XRF1Plot_alpha2
-#+begin_src python :session py1 :results value file :exports results
-  #px.colors.named_colorscales()
-  figname = f"figs/{name}.png"
-  sol_x1 = solution.IntrinsicReader("./Gl1i1c0u0r0m1")
-  fig = px.imshow(np.abs(sol_x1.data.couplings.alpha2-np.eye(70)),
-                  labels=dict(color="Absolute values"),
-                  color_continuous_scale="Blues"
-                  )
-  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
-        autoexpand=True,
-        l=0,
-        r=0,
-        t=0,
-        b=0
-    ))
-  fig.update_xaxes(title='Mode',
-                   titlefont=dict(size=16),
-                   tickfont = dict(size=16)
-                   # mirror=True,
-                   # ticks='outside',
-                   # showline=True,
-                   # linecolor='black',
-                   # gridcolor='lightgrey'
-                   )
-  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
-                   titlefont=dict(size=16)
-                   # mirror=True,
-                   # ticks='outside',
-                   # showline=True,
-                   # linecolor='black',
-                   # gridcolor='lightgrey'
-                   )
-
-  fig.write_image(figname)
-  fig.show()
-  figname
-#+end_src
-
-#+RESULTS: XRF1Plot_alpha2
-[[file:figs/XRF1Plot_alpha2.png]]
-
-** Simo45Beam
-
-#+NAME: Simo45Beam
-#+begin_src python :session py1 
-  simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
-  inp = Inputs()
-  inp.engine = "intrinsicmodal"
-  inp.fem.connectivity = {'Beam1':None}
-  inp.fem.folder = pathlib.Path(f'{simo45beam_folder}/FEM/')
-  inp.fem.num_modes = 90
-  inp.fem.eig_type = "inputs"
-  #inp.fem.fe_order_start = 1
-  inp.driver.typeof = "intrinsic"
-  inp.simulation.typeof = "single"
-  inp.systems.sett.s1.solution = "static"
-  inp.systems.sett.s1.solver_library = "diffrax"
-  inp.systems.sett.s1.solver_function = "newton_raphson"
-  inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
-                                             atol=1e-6,
-                                             max_steps=50,
-                                             norm="linalg_norm",
-                                             kappa=0.01)
-  u1=pd.read_csv(simo45beam_folder / "validationdata/u1.csv", names=["f","disp"])
-  u2=pd.read_csv(simo45beam_folder / "validationdata/u2.csv", names=["f","disp"])
-  u3=pd.read_csv(simo45beam_folder / "validationdata/u3.csv", names=["f","disp"])
-#+end_src
-
-#+RESULTS: Simo45Beam
-
-*** Follower forces
-#+NAME: Simo45Follower
-#+begin_src python :session py1 :tangle ./results/run_Simo45Follower.py :mkdirp yes :noweb yes :var name=(org-element-property :name (org-element-context)) :results none :exports results
-  <<PYTHONMODULES>>
-  <<Simo45Beam>>
-  inp.driver.sol_path = pathlib.Path(
-      f"./{name}")
-  inp.systems.sett.s1.xloads.follower_forces = True
-  inp.systems.sett.s1.xloads.follower_points = [[15, 2]]
-  inp.systems.sett.s1.xloads.x = list(range(11))
-  inp.systems.sett.s1.xloads.follower_interpolation = [jnp.arange(0,3300,300)]
-  inp.systems.sett.s1.t = list(range(1,11))
-  config_simo45f = configuration.Config(inp)
-  sol_simofoll = fem4inas.fem4inas_main.main(input_obj=config_simo45f)
-#+end_src
-
-#+NAME: Simo45FollowerPlot
-#+begin_src python :session py1 :tangle ./results/plot_Simo45Follower.py :results value file :exports results
-  import importlib
-  importlib.reload(putils)
-  importlib.reload(uplotly)
-  figname = "figs/s45follower.png"
-  sol_s45f = solution.IntrinsicReader("./results/Simo45Follower")
-  icomp = putils.IntrinsicStructComponent(config_simo45f.fem)
-  #icomp.add_solution(config_simo45f.fem.X.T)
-  icomp.add_solution(sol_s45f.data.staticsystem_s1.ra)
-  settline = list()
-  annotations = list()
-  colors = px.colors.qualitative.Dark24
-  annotations.append(dict(#xref='paper',
-      x=icomp.map_mra['ref1'][-1,0]-13,
-      y=icomp.map_mra['ref1'][-1,1],
-      xanchor='right', yanchor='middle',
-      text="Load: 0 N",
-      font=dict(family='Arial',
-                size=12),
-      showarrow=False))
-  loads = [f"Load: {li} N" for li in inp.systems.sett.s1.xloads.follower_interpolation[0][1:]]
-  for i in range(11):
-      line_settings=dict(mode="lines+markers",
-                         #marker_symbol="218",
-                         line=dict(color='navy',#colors[i],
-                                   width=3.5)
-                          )
-      settline.append(line_settings)
-      if i < 10:
-          annotations.append(dict(#xref='x',
-              x=icomp.map_mra[i+2][-1,0]-5.3,
-              y=icomp.map_mra[i+2][-1,1],
-              z=icomp.map_mra[i+2][-1,2],
-              #xanchor='right', yanchor='middle',
-              text=loads[i],
-              font=dict(family='Arial',
-                        size=12),
-              showarrow=False))
-
-  #fig = uplotly.render3d_struct(icomp)
-  fig = uplotly.render3d_multi(icomp,
-                               scatter_settings=settline)
-  fig.update_traces(marker=dict(size=1.5))
-  camera = dict(
-      eye=dict(x=-0.3, y=2.5, z=1.)
-  )
-  fig.update_layout(autosize=True,
-                    width=1200,
-                    height=1200,
-                    scene_camera=camera,
-                    margin=dict(
-                        autoexpand=True,
-                        l=0,
-                        r=0,
-                        t=0,
-                        b=0,
-                        pad=0
-                    ),
-                    showlegend=False,
-                    scene=dict(
-                    annotations=annotations))
-
-  fig.show()
-  fig.write_image(figname)
-  figname
-#+end_src
-
-#+RESULTS: Simo45FollowerPlot
-[[file:figs/s45follower.png]]
-
-#+NAME: SHELL_Simo45Follower
-#+begin_src bash :tangle ./results/run_Simo45Follower.sh :dir ./results/  :results output :shebang #!/usr/bin/zsh :exports results
-  source ~/.zshrc
-  conda activate fem4inas
-  python run_Simo45Follower.py
-#+end_src
-
-#+NAME: Simoverificationfollower
-#+begin_src python :session py1 :results value file :exports results
-    figname = f"figs/{name}.png"
-    f = inp.systems.sett.s1.xloads.follower_interpolation[0][1:]
-    u1i = (sol_s45f.data.staticsystem_s1.ra[:,0,-1] -
-        config_simo45f.fem.X[-1,0])
-    u2i = (sol_s45f.data.staticsystem_s1.ra[:,1,-1] -
-        config_simo45f.fem.X[-1,1])
-    u3i = (sol_s45f.data.staticsystem_s1.ra[:,2,-1] -
-        config_simo45f.fem.X[-1,2])
-    settline = [dict(mode="lines",
-                     line=dict(color="navy",
-                               width=2.5),
-                   name="u1"
-                            ),
-                dict(mode="lines",
-                     line=dict(color="navy",
-                               width=2.5,
-                               dash='dot'),
-                   name="u2"
-                            ),
-                dict(mode="lines",
-                     line=dict(color="navy",
-                               width=2.5,
-                               dash='dash'),
-                   name="u3"
-                            )
-              ]
-
-    settmark = [dict(mode="markers",
-                     marker_symbol="circle-open",
-                     marker=dict(color="navy",
-                                 size=10),
-                   name="u1-ref"
-                            ),
-              dict(mode="markers",
-                     marker_symbol="square-open",
-                     marker=dict(color="navy",
-                                 size=10),
-                 name="u2-ref"
-                            ),
-              dict(mode="markers",
-                     marker_symbol="star-open",
-                     marker=dict(color="navy",
-                                 size=10),
-                 name="u3-ref"
-                            )
-              ]
-
-    fig = uplotly.iterate_lines2d([jnp.hstack([0,f]), jnp.hstack([0,f]), jnp.hstack([0,f])],
-                                  [jnp.hstack([0,u1i]), jnp.hstack([0,u2i]), jnp.hstack([0,u3i])],
-                                  scatter_settings=settline,
-                                  fig=None)
-
-    fig = uplotly.iterate_lines2d([u1.f, u2.f[0::2], u3.f],
-                                  [u1.disp, u2.disp[0::2], u3.disp],
-                                  scatter_settings=settmark,
-                                  fig=fig)
-    fig.update_xaxes(title='Load [N]',
-                     titlefont=dict(size=16),
-                     tickfont = dict(size=16))
-    fig.update_yaxes(title='Disp [m]', tickfont = dict(size=16),
-                     titlefont=dict(size=16))
-    fig.update_layout(legend=dict(font=dict(size=15)),
-        margin=dict(
-          autoexpand=True,
-          l=0,
-          r=0,
-          t=0,
-          b=0
-      ))
-
-    #fig.update_xaxes(range=[-25, 105])
-    #fig.update_yaxes(range=[-85, 65])
-    #fig.update_layout(showlegend=False,
-    #                  annotations=annotations)
-    fig.show()
-    fig.write_image(figname)
-    figname
-#+end_src
-
-#+RESULTS: Simoverificationfollower
-[[file:figs/Simoverificationfollower.png]]
-
-*** Dead forces
-#+NAME: Simo45Dead
-#+begin_src python :session py1 :tangle ./results/run_Simo45Dead.py :mkdirp yes :noweb yes :var name=(org-element-property :name (org-element-context))
-  <<PYTHONMODULES>>
-  <<Simo45Beam>>
-  inp.driver.sol_path = pathlib.Path(
-      f"./{name}")
-  inp.systems.sett.s1.xloads.dead_forces = True
-  inp.systems.sett.s1.xloads.dead_points = [[15, 2]]
-  inp.systems.sett.s1.xloads.x = list(range(11))
-  inp.systems.sett.s1.xloads.dead_interpolation = [jnp.arange(0,3300,300)]
-  inp.systems.sett.s1.t = list(range(1,11))
-  config_simo45d =  configuration.Config(inp)
-  sol_simodead = fem4inas.fem4inas_main.main(input_obj=config_simo45d)
-#+end_src
-
-#+RESULTS: Simo45Dead
-
-#+NAME: SHELL_Simo45Dead
-#+begin_src bash :tangle ./results/run_Simo45Dead.sh :dir ./results/  :results output :shebang #!/usr/bin/zsh
-  source ~/.zshrc
-  conda activate fem4inas
-  python run_Simo45Dead.py
-#+end_src
-
-#+NAME: Simo45DeadPlot
-#+begin_src python :session py1 :tangle ./results/plot_Simo45Follower.py :exports results :eval yes :results value file 
-  import importlib
-  importlib.reload(putils)
-  importlib.reload(uplotly)
-  figname = "figs/s45dead.png"
-  sol_s45d = solution.IntrinsicReader("./Simo45Dead")
-  icomp = putils.IntrinsicStructComponent(config_simo45f.fem)
-  #icomp.add_solution(config_simo45f.fem.X.T)
-  icomp.add_solution(sol_s45d.data.staticsystem_s1.ra)
-  settline = list()
-  annotations = list()
-  colors = px.colors.qualitative.Dark24
-  annotations.append(dict(#xref='paper',
-      x=icomp.map_mra['ref1'][-1,0]-13,
-      y=icomp.map_mra['ref1'][-1,1],
-      xanchor='right', yanchor='middle',
-      text="Load: 0 N",
-      font=dict(family='Arial',
-                size=12),
-      showarrow=False))
-  loads = [f"Load: {li} N" for li in inp.systems.sett.s1.xloads.follower_interpolation[0][1:]]
-  for i in range(11):
-      line_settings=dict(mode="lines+markers",
-                         #marker_symbol="218",
-                         line=dict(color=colors[i],
-                                   width=3.5),
-                         marker=dict(size=5)
-                          )
-      settline.append(line_settings)
-      if i < 10:
-          annotations.append(dict(#xref='x',
-              x=icomp.map_mra[i+2][-1,0]-8,
-              y=icomp.map_mra[i+2][-1,1],
-              z=icomp.map_mra[i+2][-1,2]+3,
-              #xanchor='right', yanchor='middle',
-              text=loads[i],
-              font=dict(family='Arial',
-                        size=12),
-              showarrow=False))
-
-  #fig = uplotly.render3d_struct(icomp)
-  fig = uplotly.render3d_multi(icomp,
-                               scatter_settings=settline)
-  fig.update_traces(marker=dict(size=1.5))
-  camera = dict(
-      up=dict(x=0, y=0, z=1),
-      center=dict(x=0, y=0, z=0),
-      eye=dict(x=1.5*2, y=0.75, z=0.5)
-  )
-  fig.update_layout(autosize=True,
-                    width=1200,
-                    height=1200,
-                    scene_camera=camera,
-                    margin=dict(
-                        autoexpand=True,
-                        l=0,
-                        r=0,
-                        t=0,
-                        b=0,
-                        pad=0
-                    ),
-                    showlegend=False,
-                    # scene=dict(
-                    # annotations=annotations)
-                    )
-  fig.update_xaxes(range=[-10, 35])
-  fig.show()
-  fig.write_image(figname)
-  figname
-#+end_src
-
-** ArgyrisBeam
-*** Run 
 #+begin_src python :session py1
   with open (fem4inas.PATH / "../examples/ArgyrisBeam" / "argyris_new.pickle", 'rb') as fp:
       argypickle  = pickle.load(fp)
@@ -1098,7 +113,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+end_src
 
 #+NAME: ArgyrisBeam
-#+begin_src python :session py1 :tangle ./results/run_ArgyrisBeam.py :mkdirp yes :noweb yes :var name=(org-element-property :name (org-element-context)) :results none
+#+begin_src python :session py1 :mkdirp yes :noweb yes  :results none
   argyrisbeam_folder = fem4inas.PATH / "../examples/ArgyrisBeam"
   inp = Inputs()
   inp.engine = "intrinsicmodal"
@@ -1137,13 +152,11 @@ An extensive verification has been carried out and is presented herein, starting
 
 #+end_src
 
-#+NAME: SHELL_ArgyrisBeam
-#+begin_src bash :tangle ./results/run_ArgyrisBeam.sh :dir ./results/  :results output :shebang #!/usr/bin/zsh
-  source ~/.zshrc
-  conda activate fem4inas
-  python run_ArgyrisBeam.py
-#+end_src
 *** Plot
+:PROPERTIES:
+:header-args: :tangle ./results/plot_ArgyrisBeam.py
+:END:
+
 #+NAME: ArgyrisBeamPlot
 #+begin_src python :session py1 :results value file :exports results
   import importlib
@@ -1234,30 +247,314 @@ An extensive verification has been carried out and is presented herein, starting
   fig.update_layout(showlegend=False,plot_bgcolor='white',
                     annotations=annotations)
   fig.show()
-  fig.write_image(figname)
+  fig.write_image(f"../{figname}")
+  figname
+#+end_src
+** Simo45Beam
+
+#+NAME: Simo45Beam
+#+begin_src python :session py1 
+  simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
+  inp = Inputs()
+  inp.engine = "intrinsicmodal"
+  inp.fem.connectivity = {'Beam1':None}
+  inp.fem.folder = pathlib.Path(f'{simo45beam_folder}/FEM/')
+  inp.fem.num_modes = 90
+  inp.fem.eig_type = "inputs"
+  #inp.fem.fe_order_start = 1
+  inp.driver.typeof = "intrinsic"
+  inp.simulation.typeof = "single"
+  inp.systems.sett.s1.solution = "static"
+  inp.systems.sett.s1.solver_library = "diffrax"
+  inp.systems.sett.s1.solver_function = "newton_raphson"
+  inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
+                                             atol=1e-6,
+                                             max_steps=50,
+                                             norm="linalg_norm",
+                                             kappa=0.01)
+#+end_src
+
+*** Follower forces
+**** Run
+:PROPERTIES:
+:header-args: :eval (print Veval_blocks_run) :tangle ./results/run_Simo45BeamFollower.py
+:END:
+
+#+NAME: Simo45Follower
+#+begin_src python :session py1 :tangle ./results/run_Simo45Follower.py :mkdirp yes :noweb yes  :results none :exports results
+  <<PYTHONMODULES>>
+  <<Simo45Beam>>
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+  inp.systems.sett.s1.xloads.follower_forces = True
+  inp.systems.sett.s1.xloads.follower_points = [[15, 2]]
+  inp.systems.sett.s1.xloads.x = list(range(11))
+  inp.systems.sett.s1.xloads.follower_interpolation = [jnp.arange(0,3300,300)]
+  inp.systems.sett.s1.t = list(range(1,11))
+  config_simo45f = configuration.Config(inp)
+  sol_simofoll = fem4inas.fem4inas_main.main(input_obj=config_simo45f)
+#+end_src
+**** Plot
+:PROPERTIES:
+:header-args: :tangle ./results/plot_Simo45BeamFollower.py
+:END:
+
+#+NAME: Simo45FollowerPlot
+#+begin_src python :session py1 :tangle ./results/plot_Simo45Follower.py :results value file :exports results
+  u1=pd.read_csv(simo45beam_folder / "validationdata/u1.csv", names=["f","disp"])
+  u2=pd.read_csv(simo45beam_folder / "validationdata/u2.csv", names=["f","disp"])
+  u3=pd.read_csv(simo45beam_folder / "validationdata/u3.csv", names=["f","disp"])
+
+  import importlib
+  importlib.reload(putils)
+  importlib.reload(uplotly)
+  figname = "figs/s45follower.png"
+  sol_s45f = solution.IntrinsicReader("./results/Simo45Follower")
+  icomp = putils.IntrinsicStructComponent(config_simo45f.fem)
+  #icomp.add_solution(config_simo45f.fem.X.T)
+  icomp.add_solution(sol_s45f.data.staticsystem_s1.ra)
+  settline = list()
+  annotations = list()
+  colors = px.colors.qualitative.Dark24
+  annotations.append(dict(#xref='paper',
+      x=icomp.map_mra['ref1'][-1,0]-13,
+      y=icomp.map_mra['ref1'][-1,1],
+      xanchor='right', yanchor='middle',
+      text="Load: 0 N",
+      font=dict(family='Arial',
+                size=12),
+      showarrow=False))
+  loads = [f"Load: {li} N" for li in inp.systems.sett.s1.xloads.follower_interpolation[0][1:]]
+  for i in range(11):
+      line_settings=dict(mode="lines+markers",
+                         #marker_symbol="218",
+                         line=dict(color='navy',#colors[i],
+                                   width=3.5)
+                          )
+      settline.append(line_settings)
+      if i < 10:
+          annotations.append(dict(#xref='x',
+              x=icomp.map_mra[i+2][-1,0]-5.3,
+              y=icomp.map_mra[i+2][-1,1],
+              z=icomp.map_mra[i+2][-1,2],
+              #xanchor='right', yanchor='middle',
+              text=loads[i],
+              font=dict(family='Arial',
+                        size=12),
+              showarrow=False))
+
+  #fig = uplotly.render3d_struct(icomp)
+  fig = uplotly.render3d_multi(icomp,
+                               scatter_settings=settline)
+  fig.update_traces(marker=dict(size=1.5))
+  camera = dict(
+      eye=dict(x=-0.3, y=2.5, z=1.)
+  )
+  fig.update_layout(autosize=True,
+                    width=1200,
+                    height=1200,
+                    scene_camera=camera,
+                    margin=dict(
+                        autoexpand=True,
+                        l=0,
+                        r=0,
+                        t=0,
+                        b=0,
+                        pad=0
+                    ),
+                    showlegend=False,
+                    scene=dict(
+                    annotations=annotations))
+
+  fig.show()
+  fig.write_image(f"../{figname}")
   figname
 #+end_src
 
-** SPwing
-*** Read Nastran
-#+begin_src python :session py1 :results none
-  wingSP_folder = fem4inas.PATH / "../examples/wingSP"
-  nastran_path = wingSP_folder / "NASTRAN/"
-  nas_wspl = op2reader.NastranReader(op2name=(nastran_path / "wing_109d.op2"),
-                                     bdfname=(nastran_path / "wing_109b.bdf"))
-  nas_wspl.readModel()
-  t_wspl, u_wspl = nas_wspl.displacements()  
-  ###
-  nas_wsp = op2reader.NastranReader(op2name=(nastran_path / "wing400d.op2"),
-                                     bdfname=(nastran_path / "wing_109b.bdf"))
-  nas_wsp.readModel()
-  t_wsp, u_wsp = nas_wsp.displacements()
 
+#+NAME: Simoverificationfollower
+#+begin_src python :session py1 :results value file :exports results
+    figname = f"figs/{name}.png"
+    f = inp.systems.sett.s1.xloads.follower_interpolation[0][1:]
+    u1i = (sol_s45f.data.staticsystem_s1.ra[:,0,-1] -
+        config_simo45f.fem.X[-1,0])
+    u2i = (sol_s45f.data.staticsystem_s1.ra[:,1,-1] -
+        config_simo45f.fem.X[-1,1])
+    u3i = (sol_s45f.data.staticsystem_s1.ra[:,2,-1] -
+        config_simo45f.fem.X[-1,2])
+    settline = [dict(mode="lines",
+                     line=dict(color="navy",
+                               width=2.5),
+                   name="u1"
+                            ),
+                dict(mode="lines",
+                     line=dict(color="navy",
+                               width=2.5,
+                               dash='dot'),
+                   name="u2"
+                            ),
+                dict(mode="lines",
+                     line=dict(color="navy",
+                               width=2.5,
+                               dash='dash'),
+                   name="u3"
+                            )
+              ]
+
+    settmark = [dict(mode="markers",
+                     marker_symbol="circle-open",
+                     marker=dict(color="navy",
+                                 size=10),
+                   name="u1-ref"
+                            ),
+              dict(mode="markers",
+                     marker_symbol="square-open",
+                     marker=dict(color="navy",
+                                 size=10),
+                 name="u2-ref"
+                            ),
+              dict(mode="markers",
+                     marker_symbol="star-open",
+                     marker=dict(color="navy",
+                                 size=10),
+                 name="u3-ref"
+                            )
+              ]
+
+    fig = uplotly.iterate_lines2d([jnp.hstack([0,f]), jnp.hstack([0,f]), jnp.hstack([0,f])],
+                                  [jnp.hstack([0,u1i]), jnp.hstack([0,u2i]), jnp.hstack([0,u3i])],
+                                  scatter_settings=settline,
+                                  fig=None)
+
+    fig = uplotly.iterate_lines2d([u1.f, u2.f[0::2], u3.f],
+                                  [u1.disp, u2.disp[0::2], u3.disp],
+                                  scatter_settings=settmark,
+                                  fig=fig)
+    fig.update_xaxes(title='Load [N]',
+                     titlefont=dict(size=16),
+                     tickfont = dict(size=16))
+    fig.update_yaxes(title='Disp [m]', tickfont = dict(size=16),
+                     titlefont=dict(size=16))
+    fig.update_layout(legend=dict(font=dict(size=15)),
+        margin=dict(
+          autoexpand=True,
+          l=0,
+          r=0,
+          t=0,
+          b=0
+      ))
+
+    #fig.update_xaxes(range=[-25, 105])
+    #fig.update_yaxes(range=[-85, 65])
+    #fig.update_layout(showlegend=False,
+    #                  annotations=annotations)
+    fig.show()
+    fig.write_image(f"../{figname}")
+    figname
 #+end_src
 
+*** Dead forces
+**** Run
+:PROPERTIES:
+:header-args: :eval (print Veval_blocks_run) :tangle ./results/run_Simo45BeamDead.py
+:END:
 
+#+NAME: Simo45Dead
+#+begin_src python :session py1 :tangle ./results/run_Simo45Dead.py :mkdirp yes :noweb yes :var name=(org-element-property :name (org-element-context))
+  <<PYTHONMODULES>>
+  <<Simo45Beam>>
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+  inp.systems.sett.s1.xloads.dead_forces = True
+  inp.systems.sett.s1.xloads.dead_points = [[15, 2]]
+  inp.systems.sett.s1.xloads.x = list(range(11))
+  inp.systems.sett.s1.xloads.dead_interpolation = [jnp.arange(0,3300,300)]
+  inp.systems.sett.s1.t = list(range(1,11))
+  config_simo45d =  configuration.Config(inp)
+  sol_simodead = fem4inas.fem4inas_main.main(input_obj=config_simo45d)
+#+end_src
+**** Plot
+:PROPERTIES:
+:header-args: :tangle ./results/plot_Simo45BeamDead.py
+:END:
+
+#+NAME: Simo45DeadPlot
+#+begin_src python :session py1 :tangle ./results/plot_Simo45Follower.py :exports results :eval yes :results value file 
+  import importlib
+  importlib.reload(putils)
+  importlib.reload(uplotly)
+  figname = "figs/s45dead.png"
+  sol_s45d = solution.IntrinsicReader("./Simo45Dead")
+  icomp = putils.IntrinsicStructComponent(config_simo45f.fem)
+  #icomp.add_solution(config_simo45f.fem.X.T)
+  icomp.add_solution(sol_s45d.data.staticsystem_s1.ra)
+  settline = list()
+  annotations = list()
+  colors = px.colors.qualitative.Dark24
+  annotations.append(dict(#xref='paper',
+      x=icomp.map_mra['ref1'][-1,0]-13,
+      y=icomp.map_mra['ref1'][-1,1],
+      xanchor='right', yanchor='middle',
+      text="Load: 0 N",
+      font=dict(family='Arial',
+                size=12),
+      showarrow=False))
+  loads = [f"Load: {li} N" for li in inp.systems.sett.s1.xloads.follower_interpolation[0][1:]]
+  for i in range(11):
+      line_settings=dict(mode="lines+markers",
+                         #marker_symbol="218",
+                         line=dict(color=colors[i],
+                                   width=3.5),
+                         marker=dict(size=5)
+                          )
+      settline.append(line_settings)
+      if i < 10:
+          annotations.append(dict(#xref='x',
+              x=icomp.map_mra[i+2][-1,0]-8,
+              y=icomp.map_mra[i+2][-1,1],
+              z=icomp.map_mra[i+2][-1,2]+3,
+              #xanchor='right', yanchor='middle',
+              text=loads[i],
+              font=dict(family='Arial',
+                        size=12),
+              showarrow=False))
+
+  #fig = uplotly.render3d_struct(icomp)
+  fig = uplotly.render3d_multi(icomp,
+                               scatter_settings=settline)
+  fig.update_traces(marker=dict(size=1.5))
+  camera = dict(
+      up=dict(x=0, y=0, z=1),
+      center=dict(x=0, y=0, z=0),
+      eye=dict(x=1.5*2, y=0.75, z=0.5)
+  )
+  fig.update_layout(autosize=True,
+                    width=1200,
+                    height=1200,
+                    scene_camera=camera,
+                    margin=dict(
+                        autoexpand=True,
+                        l=0,
+                        r=0,
+                        t=0,
+                        b=0,
+                        pad=0
+                    ),
+                    showlegend=False,
+                    # scene=dict(
+                    # annotations=annotations)
+                    )
+  fig.update_xaxes(range=[-10, 35])
+  fig.show()
+  fig.write_image(f"../{figname}")
+  figname
+#+end_src
+** wingSP
 
 *** Run
+:PROPERTIES:
+:header-args: :eval (print Veval_blocks_run) :tangle ./results/run_wingSP.py
+:END:
 
 #+NAME: wingSP
 #+begin_src python :session py1 :results none
@@ -1291,7 +588,27 @@ An extensive verification has been carried out and is presented herein, starting
 
 #+end_src
 
-*** Data analysis
+*** Plot
+:PROPERTIES:
+:header-args: :tangle ./results/plot_wingSP.py
+:END:
+
+- Read Nastran
+#+begin_src python :session py1 :results none
+  wingSP_folder = fem4inas.PATH / "../examples/wingSP"
+  nastran_path = wingSP_folder / "NASTRAN/"
+  nas_wspl = op2reader.NastranReader(op2name=(nastran_path / "wing_109d.op2"),
+                                     bdfname=(nastran_path / "wing_109b.bdf"))
+  nas_wspl.readModel()
+  t_wspl, u_wspl = nas_wspl.displacements()  
+  ###
+  nas_wsp = op2reader.NastranReader(op2name=(nastran_path / "wing400d.op2"),
+                                     bdfname=(nastran_path / "wing_109b.bdf"))
+  nas_wsp.readModel()
+  t_wsp, u_wsp = nas_wsp.displacements()
+
+#+end_src
+
 #+NAME: wingSP_z
 #+begin_src python :session py1 :results value file :exports results
   figname = f"figs/{name}.pdf"
@@ -1311,10 +628,11 @@ An extensive verification has been carried out and is presented herein, starting
                                        dash="dash")
                              ))
   #fig.update_xaxes(range=[0, 5])
-  fig.write_image(figname)
+  fig.write_image(f"../{figname}")
   fig.show()
   figname
 #+end_src
+
 
 #+NAME: wingSP_x
 #+begin_src python :session py1 :results value file :exports results
@@ -1335,13 +653,11 @@ An extensive verification has been carried out and is presented herein, starting
                                        dash="dash")
                              ))
   #fig.update_xaxes(range=[0, 5])
-  fig.write_image(figname)
+  fig.write_image(f"../{figname}")
   fig.show()
   figname
 #+end_src
 
-#+RESULTS: wingSP_x
-[[file:figs/wingSP_x.pdf]]
 
 #+NAME: wingSP_y
 #+begin_src python :session py1 :results value file :exports results
@@ -1362,16 +678,645 @@ An extensive verification has been carried out and is presented herein, starting
                                        dash="dash")
                              ))
   #fig.update_xaxes(range=[0, 5])
-  fig.write_image(figname)
+  fig.write_image(f"../{figname}")
   fig.show()
   figname
 #+end_src
 
-#+RESULTS: wingSP_y
-[[file:figs/wingSP_y.pdf]]
+
+** XRF1
+:PROPERTIES:
+:header-args: :mkdirp yes :var name=(org-element-property :name (org-element-context))
+:END:
+
+*WARNING: private model, not available open source* 
+#+NAME: GustTable  
+#+begin_src org :tangle ./results/GustTable.org :mkdirp yes
+   L_g                          18.0,67.0,116.0,165.0,214
+   V0_g                         11.3047276743,14.0732311562,15.4214195361,16.3541764073,17.0785232867
+
+  | Index | Label         | Gust length | Gust intensity      | Intensity constant | u_inf    | rho_inf    | Mach      |
+  |-------+---------------+-------------+---------------------+--------------------+----------+------------+-----------|
+  |     0 | Gl0i0c0u0r0m0 | 18 (l0)     | 11.30472767427 (i0) | 0.01 (c0)          | 200 (u0) | 1.225 (r0) | 0.0 (m0)  |
+  |     1 | Gl1i1c0u0r0m0 | 67 (l1)     | 14.0732311562 (i1)  | 0.01 (c0)          | 200 (u0) | 1.225 (r0) | 0.0 (m0)  |
+  |     2 | Gl1i1c1u0r0m0 | 67 (l1)     | 14.0732311562 (i1)  | 2                  | 200 (u0) | 1.225 (r0) | 0.0 (m0)  |
+  |     3 | Gl1i1c0u0r0m1 | 67 (l1)     | 14.0732311562 (i1)  | 0.01 (c0)          | 200 (u0) | 1.225 (r0) | 0.81 (m0) |
+  |     4 | Gl1i1c1u0r0m1 | 67 (l1)     | 14.0732311562 (i1)  | 2 (c0)             | 200 (u0) | 1.225 (r0) | 0.81 (m0) |
+  |     5 |               |             |                     |                    |          |            |           |
+
+#+end_src
 
 
-* Run diagrams :noexport:
+#+NAME: GustInput
+#+begin_src python :session py1 :results none
+  xrf1_folder = fem4inas.PATH / "../examples/XRF1/"
+  inp = Inputs()
+  inp.engine = "intrinsicmodal"
+  inp.fem.eig_type = "input_memory"
+  inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
+  inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+  inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
+                          [8], [9], [10, 11], [29], [12], [],
+                          [14], [15], [16, 21], [17, 23, 25],
+                          [18], [19], [20], [], [22], [], [24], [],
+                          [26], [], [28], [], [30], [], []]
+  inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+  inp.fem.grid = "structuralGridc.txt"
+  inp.fem.num_modes = 70
+  inp.driver.typeof = "intrinsic"
+  inp.simulation.typeof = "single"
+  inp.systems.sett.s1.solution = "dynamic"
+  inp.systems.sett.s1.t1 = 15.
+  inp.systems.sett.s1.tn = 3001
+  inp.systems.sett.s1.solver_library = "runge_kutta"
+  inp.systems.sett.s1.solver_function = "ode"
+  inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
+  inp.systems.sett.s1.xloads.modalaero_forces = True
+  inp.systems.sett.s1.q0treatment = 2
+  inp.systems.sett.s1.aero.c_ref = 7.271
+  inp.systems.sett.s1.aero.gust_profile = "mc"
+  inp.systems.sett.s1.aero.gust_settings.shift = 0.
+  inp.systems.sett.s1.aero.gust_settings.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
+  inp.systems.sett.s1.aero.gust_settings.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+#+end_src
+*** 0
+(first gust in the table, not implemented)
+*** 1
+#+NAME: Gust1
+#+begin_src python :session py1  :mkdirp yes :noweb yes : results none
+  <<PYTHONMODULES>>
+  <<GustInput>>
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+  mach = "000"
+  inp.systems.sett.s1.aero.u_inf = 200.
+  inp.systems.sett.s1.aero.rho_inf = 1.225  
+  inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*0.01 #11.304727674272842/10000
+  inp.systems.sett.s1.aero.gust_settings.length = 67.
+  inp.systems.sett.s1.aero.gust_settings.step = 0.5
+  inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+  inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+  inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+  config_gust =  configuration.Config(inp)
+  sol_gust1 = fem4inas.fem4inas_main.main(input_obj=config_gust)
+
+#+end_src
+
+*** 2
+#+NAME: Gust2
+#+begin_src python :session py1  :noweb yes :results none
+  <<PYTHONMODULES>>
+  <<GustInput>>
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+  mach = "000"
+  inp.systems.sett.s1.aero.u_inf = 200.
+  inp.systems.sett.s1.aero.rho_inf = 1.225  
+  inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*2. #11.304727674272842/10000
+  inp.systems.sett.s1.aero.gust_settings.length = 67.
+  inp.systems.sett.s1.aero.gust_settings.step = 0.5
+  inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+  inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+  inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+  config_gust2 =  configuration.Config(inp)
+  sol_gust2 = fem4inas.fem4inas_main.main(input_obj=config_gust2)
+#+end_src
+
+*** 3
+
+#+NAME: Gust3
+#+begin_src python :session py1  :noweb yes :results none  :eval (print Veval_blocks_run) :tangle ./results/run_XRF1_G3.py
+  <<PYTHONMODULES>>
+  <<GustInput>>
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+  mach = "081"
+  inp.systems.sett.s1.aero.u_inf = 200.
+  inp.systems.sett.s1.aero.rho_inf = 1.225  
+  inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*0.01 #11.304727674272842/10000
+  inp.systems.sett.s1.aero.gust_settings.length = 67.
+  inp.systems.sett.s1.aero.gust_settings.step = 0.5
+  inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+  inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+  inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+  config_gust3 =  configuration.Config(inp)
+  sol_gust3 = fem4inas.fem4inas_main.main(input_obj=config_gust3)
+
+#+end_src
+
+*** 4
+
+#+NAME: Gust4
+#+begin_src python :session py1 :eval (print Veval_blocks_run) :tangle ./results/run_XRF1_G4.py :noweb yes :results none
+  <<PYTHONMODULES>>
+  <<GustInput>>
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+  mach = "081"
+  inp.systems.sett.s1.aero.u_inf = 200.
+  inp.systems.sett.s1.aero.rho_inf = 1.225  
+  inp.systems.sett.s1.aero.gust_settings.intensity = 14.0732311562*2 #11.304727674272842/10000
+  inp.systems.sett.s1.aero.gust_settings.length = 67.
+  inp.systems.sett.s1.aero.gust_settings.step = 0.5
+  inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+  inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+  inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+  config_gust4 =  configuration.Config(inp)
+  sol_gust4 = fem4inas.fem4inas_main.main(input_obj=config_gust4)
+
+#+end_src
+*** 5
+(not implemented)
+*** data analysis
+:PROPERTIES:
+:header-args: :tangle ./results/plot_XRF1.py
+:END:
+
+**** NASTRAN data
+Read data from Nastran simulations
+#+begin_src python :session py1 :results none
+  nastran_path = fem4inas.PATH / "../examples/XRF1/NASTRAN/146-111/"
+  nas111 = op2reader.NastranReader(op2name=(nastran_path / "XRF1-146run.op2"))
+  nas111.readModel()
+  t111, u111 = nas111.displacements()
+
+  nastran_pathm = fem4inas.PATH / "../examples/XRF1/NASTRAN/146-111_081"
+  nas111m = op2reader.NastranReader(op2name=(nastran_pathm / "XRF1-146run.op2"))
+  nas111m.readModel()
+  t111m, u111m = nas111m.displacements()
+  
+#+end_src
+**** Plot gusts
+
+#+NAME: Gust3Plot_x
+#+begin_src python :session py1 :results value file :exports results :dir results
+  gscale = 100./33.977
+  figname = f"figs/{name}.png"
+  sol_g3 = solution.IntrinsicReader("./Gust3")
+  x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
+                                sol_g3.data.dynamicsystem_s1.ra,
+                                fixaxis2=dict(node=150, dim=0))
+
+  fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
+                        dict(name="NMROM",
+                             line=dict(color="navy")
+                             ))
+
+  fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 0]*0.01*gscale, fig,
+                        dict(name="NASTRAN",
+                             line=dict(color="grey",
+                                       dash="dash")
+                             ))
+  fig.update_xaxes(range=[0, 4], title='time [s]',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16),
+                   mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+  fig.update_yaxes(title='$\hat{u}_x$', tickfont = dict(size=16),
+                   titlefont=dict(size=16),
+                   mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+  fig.update_layout(plot_bgcolor='white',
+                    showlegend=False,
+                    margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+
+  fig.show()
+
+  fig.write_image(f"../{figname}")
+  figname
+#+end_src
+
+#+RESULTS: Gust3Plot_x
+[[file:results]]
+
+
+#+NAME: Gust3Plot_y
+#+begin_src python :session py1 :results value file :exports results
+
+        figname = f"figs/{name}.png"
+        sol_g3 = solution.IntrinsicReader("./Gust3")
+        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
+                                      sol_g3.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=1))
+
+        fig = uplotly.lines2d(x[1:], y[:-1]-y[0], None,
+                              dict(name="NMROM",
+                                   line=dict(color="navy")
+                                   ))
+
+        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 1]*0.01, fig,
+                              dict(name="NASTRAN3",
+                                   line=dict(color="grey",
+                                             dash="dash")
+                                   ))
+        #fig.update_xaxes(range=[0, 4])
+        fig.update_xaxes(range=[0, 4], title='time [s]',tickfont = dict(size=16), titlefont=dict(size=16),
+                                            mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey')
+        fig.update_yaxes(title='$\hat{u}_y$', tickfont = dict(size=16),titlefont=dict(size=16),
+                                            mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+        fig.update_layout(showlegend=False, plot_bgcolor='white',
+            margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+
+        fig.show()
+
+        fig.write_image(f"../{figname}")
+        figname
+#+end_src
+
+#+RESULTS: Gust3Plot_y
+[[file:figs/Gust3Plot_y.png]]
+
+#+NAME: Gust3Plot_z
+#+begin_src python :session py1 :results value file :exports results
+
+  figname = f"figs/{name}.png"
+  x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
+                                sol_g3.data.dynamicsystem_s1.ra,
+                                fixaxis2=dict(node=150, dim=2))
+
+  fig = uplotly.lines2d(x[:], (y[:]-y[0])*gscale, None,
+                        dict(name="NMROM",
+                             line=dict(color="navy")
+                             ))
+
+  fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 2]*0.01*gscale, fig,
+                        dict(name="NASTRAN",
+                             line=dict(color="grey",
+                                       dash="dash")
+                             ))
+  fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
+                                      mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+  fig.update_yaxes(title='$\hat{u}_z$', titlefont=dict(size=16), tickfont = dict(size=16),
+                   mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+  fig.update_layout(plot_bgcolor='white',margin=dict(
+        autoexpand=True, 
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+
+  fig.show()
+
+  fig.write_image(f"../{figname}")
+  figname
+#+end_src
+
+#+RESULTS: Gust3Plot_z
+[[file:figs/Gust3Plot_z.png]]
+
+
+#+NAME: Gust4Plot_x
+#+begin_src python :session py1 :results value file :exports results
+
+        figname = f"figs/{name}.png"
+        sol_g3 = solution.IntrinsicReader("./Gl1i1c1u0r0m1")
+        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
+                                      sol_g3.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=0))
+
+        fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
+                              dict(name="NMROM",
+                                   line=dict(color="navy")
+                                   ))
+
+        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 0]*2*gscale, fig,
+                              dict(name="NASTRAN",
+                                   line=dict(color="grey",
+                                             dash="dash")
+                                   ))
+        fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey')
+        fig.update_yaxes(title='$\hat{u}_x$', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+        fig.update_layout(plot_bgcolor='white',showlegend=False,
+                          margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+
+        fig.show()
+
+        fig.write_image(f"../{figname}")
+        figname
+#+end_src
+
+#+RESULTS: Gust4Plot_x
+[[file:figs/Gust4Plot_x.png]]
+
+
+#+NAME: Gust4Plot_y
+#+begin_src python :session py1 :results value file :exports results
+
+      figname = f"figs/{name}.png"
+      sol_g3 = solution.IntrinsicReader("./Gl1i1c1u0r0m1")
+      x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
+                                    sol_g3.data.dynamicsystem_s1.ra,
+                                    fixaxis2=dict(node=150, dim=1))
+
+      fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
+                            dict(name="NMROM",
+                                 line=dict(color="navy")
+                                 ))
+
+      fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 1]*2*gscale, fig,
+                            dict(name="NASTRAN",
+                                 line=dict(color="grey",
+                                           dash="dash")
+                                 ))
+      fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
+                                          mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey')
+      fig.update_yaxes(title='$\hat{u}_y$', titlefont=dict(size=16), tickfont = dict(size=16),
+                                          mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+      fig.update_layout(plot_bgcolor='white',showlegend=False,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=0,
+                            b=0
+                        ))
+
+      fig.show()
+
+      fig.write_image(f"../{figname}")
+      figname
+#+end_src
+
+#+RESULTS: Gust4Plot_y
+[[file:figs/Gust4Plot_y.png]]
+
+
+#+NAME: Gust4Plot_z
+#+begin_src python :session py1 :results value file :exports results
+
+        figname = f"figs/{name}.png"
+        sol_g3 = solution.IntrinsicReader("./Gl1i1c1u0r0m1")
+        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
+                                      sol_g3.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=2))
+
+        fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
+                              dict(name="NMROM",
+                                   line=dict(color="navy")
+                                   ))
+
+        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 2]*2*gscale, fig,
+                              dict(name="NASTRAN",
+                                   line=dict(color="grey",
+                                             dash="dash")
+                                   ))
+        fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey')
+        fig.update_yaxes(title='$\hat{u}_z$', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+        fig.update_layout(plot_bgcolor='white',
+            margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+
+        fig.show()
+
+        fig.write_image(f"../{figname}")
+        figname
+#+end_src
+
+#+RESULTS: Gust4Plot_z
+[[file:figs/Gust4Plot_z.png]]
+
+**** Plot alphas
+#+begin_src python :session py1 :results none
+  import numpy as np
+  directory = fem4inas.PATH / "../Models/XRF1-2/Results_modes/"
+  nmodes = 70
+  #q = np.load("%s/q_%s.npy"%(directory, nmodes))
+  omega = np.load("%s/../Results_modes/Omega_%s.npy"%(directory, nmodes))
+  alpha1 = np.load("%s/../Results_modes/alpha1_%s.npy"%(directory, nmodes))
+  alpha2 = np.load("%s/../Results_modes/alpha2_%s.npy"%(directory, nmodes))
+  gamma1 = np.load("%s/../Results_modes/gamma1_%s.npy"%(directory, nmodes))
+  gamma2 = np.load("%s/../Results_modes/gamma2_%s.npy"%(directory, nmodes))
+#+end_src
+
+#+NAME: XRF1Plot_alpha1old
+#+begin_src python :session py1 :results value file :exports results
+  figname = f"figs/{name}.png"
+  fig = px.imshow(np.abs(alpha1-np.eye(70)),
+                  labels=dict(color="Absolute values"),
+                  color_continuous_scale="Blues"
+                  )
+  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+  fig.update_xaxes(title='Mode',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                   titlefont=dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  #fig.update_traces(colorbar_tickfont=dict(size=26))
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+
+#+NAME: XRF1Plot_alpha1
+#+begin_src python :session py1 :results value file :exports results
+
+  figname = f"figs/{name}.png"
+  sol_x1 = solution.IntrinsicReader("./Gl1i1c0u0r0m1")
+  fig = px.imshow(np.abs(sol_x1.data.couplings.alpha1-np.eye(70)),
+                  labels=dict(color="Absolute values"),
+                  color_continuous_scale="Blues"
+                  )
+  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+  fig.update_xaxes(title='Mode',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                   titlefont=dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+#+NAME: XRF1Plot_alpha2old
+#+begin_src python :session py1 :results value file :exports results
+  figname = f"figs/{name}.png"
+  fig = px.imshow(np.abs(alpha2-np.eye(70)),
+                  labels=dict(color="Absolute values"),
+                  color_continuous_scale="Blues"
+                  )
+  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+  fig.update_xaxes(title='Mode',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                   titlefont=dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+
+
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+#+NAME: XRF1Plot_alpha2
+#+begin_src python :session py1 :results value file :exports results
+  #px.colors.named_colorscales()
+  figname = f"figs/{name}.png"
+  sol_x1 = solution.IntrinsicReader("./Gl1i1c0u0r0m1")
+  fig = px.imshow(np.abs(sol_x1.data.couplings.alpha2-np.eye(70)),
+                  labels=dict(color="Absolute values"),
+                  color_continuous_scale="Blues"
+                  )
+  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+  fig.update_xaxes(title='Mode',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                   titlefont=dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+* Run UML diagrams                                                 :noexport:
 :PROPERTIES:
 :header-args: :mkdirp yes :eval no-export
 :END:
@@ -1896,14 +1841,16 @@ Next, a curved cantilever under static follower loads is shown in Fig. \ref{fig:
 It was first analysed  by Bathe and Bolourchi \cite{Bathe1979} and it has extensively been used to validate nonlinear structural implementations \cite{Simo1986a,Werter2016}.
 It increments the complexity with respect to the previous example by undergoing very large deformations in 3D space.
 The geometry consists of a 45-degree bend circle of 100 m radius, 1 m square cross section, Young’s modulus $E = 107$ Pa, and negligible Poisson ratio. A discretisation of 15 nodes with the full set of modes (90) are employed in the solution. This case runs in 7 seconds as opposed to the 2 minutes taken in the previous implementation. The difference is substantial but not as large as the previous case, where less modes were used in the solution. Also note previously Jacobians of the equations were being provided to the Newton-Raphson solvers, which are not (yet) implemented in the new solver.
-#+begin_export latex
-\begin{figure}[h!]
- \centering
- \subfigure[Beam evolution]{\includegraphics[width=0.49\textwidth]{figs/s45followerformat2.png}}
-\subfigure[Tip displacement]{\raisebox{15mm}{\includegraphics[width=0.499\textwidth]{figs/Simoverificationfollower.png}}}%\label{fig:simo_shapesFoll}
-\caption{45-deg bend cantilever deformations}\label{fig:simo45}
-\end{figure}
-#+end_export
+
+#+NAME: fig:simo45
+#+CAPTION: 45-deg bend cantilever deformations
+#+RESULTS: Simo45FollowerPlot
+[[file:figs/s45follower.png]]
+
+#+NAME: fig:simo45
+#+CAPTION: 45-deg bend cantilever deformations
+#+RESULTS: Simoverificationfollower
+[[file:figs/Simoverificationfollower.png]]
 
 *** Free vibrations of thin-walled cantilever
 Next, we study the dynamic behaviour of a cantilever previously studied in \cite{PALACIOS2019} and shown in Fig. \ref{fig:cantilever}. 
@@ -1977,7 +1924,6 @@ A first attempt into recovering the 3D structural response has been put in place
  \end{figure}
 #+end_export
 
-
 *** Large-amplitude nonlinear dynamics
 This test case demonstrates the accuracy of the NMROM approach for  dynamic geometrically-nonlinear calculations and was first introduced in [[cite:&CEA2021]]. The right wing of Fig. \ref{fig:SailPlane} is considered and dynamic nonlinear simulations are carried out  and compared to MSC Nastran linear and nonlinear analysis (SOL 109 and 400, respectively) on the full FE model. A force is applied at the wing tip with a triangular loading profile, followed by a sudden release of the applied force to heavily excite the wing.
 #+begin_comment
@@ -1999,6 +1945,15 @@ The dynamic response is presented in Fig. \ref{fig:sp_results}, where results ha
 \end{figure}
 #+end_export
 
+#+NAME: wingSP_z
+#+CAPTION: Span-normalised tip displacements in the dynamic simulation
+#+RESULTS: wingSP_z
+
+#+RESULTS: wingSP_x
+[[file:figs/wingSP_x.pdf]]
+#+RESULTS: wingSP_y
+[[file:figs/wingSP_y.pdf]]
+
 ** Dynamic loads on an industrial configuration
 The studies presented in this section are based on a reference configuration developed to industry standards by Airbus as part of the eXternal Research Forum (XRF), from which the aircraft takes its name, XRF1. The aircraft represents a long-range wide-body transport airplane  and has been used as a research platform for collaboration between the company, universities and research institutions. Fig. \ref{fig8:xrf1-model} shows the full aeroelastic model split up into the structural, mass and aerodynamic components. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. One of the strengths of the present methodology is that 
 The aerodynamic model contains $\sim 1,500$ aerodynamic panels.
@@ -2010,16 +1965,18 @@ The aerodynamic model contains $\sim 1,500$ aerodynamic panels.
 \end{figure}
 #+end_export
 
-#+begin_export latex
- \begin{figure}[h!]
- \centering
- \subfigure[$\alpha_1$ previous]{\includegraphics[width=0.49\textwidth]{./figs/XRF1Plot_alpha1old.png}}
- \subfigure[$\alpha_1$ current]{\includegraphics[width=0.49\textwidth]{./figs/XRF1Plot_alpha1.png}}
- \subfigure[$\alpha_2$ previous]{\includegraphics[width=0.49\textwidth]{./figs/XRF1Plot_alpha2old.png}}
- \subfigure[$\alpha_2$ current]{\includegraphics[width=0.49\textwidth]{./figs/XRF1Plot_alpha2.png}}
- \caption{Residual $\alpha_1$ and $\alpha_2$ in previous and current implementation}\label{fig:xrf1_alphas}
- \end{figure}
-#+end_export
+
+#+NAME: fig:xrf1_alphas
+#+CAPTION: Residual $\alpha_1$ and $\alpha_2$ in previous and current implementation
+#+RESULTS: XRF1Plot_alpha2
+[[file:figs/XRF1Plot_alpha2.png]]
+#+RESULTS: XRF1Plot_alpha2old
+[[file:figs/XRF1Plot_alpha2old.png]]
+#+RESULTS: XRF1Plot_alpha1
+[[file:figs/XRF1Plot_alpha1.png]]
+#+RESULTS: XRF1Plot_alpha1old
+[[file:figs/XRF1Plot_alpha1old.png]]
+
 
  Fig. \ref{fig:gust001} shows the normalised tip response to a low  intensity 1-cos gust shape for a 0.81 Mach flow. A very good agreement is found with NASTRAN calculations based on the full FE model for this case with very small displacements, i.e. linear. On the other hand, a high intensity gust in Fig. \ref{fig:gust2} induces large deformations whose effects are only captured by the nonlinear solver. 
 
