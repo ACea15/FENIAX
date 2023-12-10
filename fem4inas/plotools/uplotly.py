@@ -5,6 +5,7 @@ import fem4inas.plotools.utils as putils
 import numpy as np 
 from enum import Enum
 # see https://plotly.com/python/line-charts/
+# see https://plotly.com/python/marker-style/
 
 @dataclass
 class ScatterSettings:
