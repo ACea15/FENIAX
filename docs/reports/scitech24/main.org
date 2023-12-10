@@ -153,6 +153,7 @@ An extensive verification has been carried out and is presented herein, starting
 :END:
 
 #+begin_src python
+  <<PYTHONMODULES>>
   with open (fem4inas.PATH / "../examples/ArgyrisBeam" / "argyris_new.pickle", 'rb') as fp:
       argypickle  = pickle.load(fp)
   argypickle['c'][10][0] = argypickle['c'][10][0][6:]
@@ -161,9 +162,10 @@ An extensive verification has been carried out and is presented herein, starting
 
 #+NAME: ArgyrisBeamPlot
 #+begin_src python  :results value file :exports results
-  <<PYTHONMODULES>>
+
   figname = "figs/ArgyrisBeam.png"
   sol_argyf = solution.IntrinsicReader("./ArgyrisBeam")
+  config_argy =  configuration.Config.from_file("./ArgyrisBeam/config.yaml")
   icomp = putils.IntrinsicStructComponent(config_argy.fem)
   icomp.add_solution(sol_argyf.data.staticsystem_s1.ra)
   colors = px.colors.qualitative.G10
@@ -373,7 +375,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+NAME: Simoverificationfollower
 #+begin_src python  :results value file :exports results
     figname = f"figs/{name}.png"
-    f = inp.systems.sett.s1.xloads.follower_interpolation[0][1:]
+    f = config_simo45f.systems.mapper['s1'].xloads.follower_interpolation[0][1:]
     u1i = (sol_s45f.data.staticsystem_s1.ra[:,0,-1] -
         config_simo45f.fem.X[-1,0])
     u2i = (sol_s45f.data.staticsystem_s1.ra[:,1,-1] -
@@ -478,8 +480,8 @@ An extensive verification has been carried out and is presented herein, starting
   <<PYTHONMODULES>>
   figname = "figs/s45dead.png"
   sol_s45d = solution.IntrinsicReader("./Simo45Dead")
-  config_simo45f = configuration.Config.from_file("./Simo45Dead/config.yaml")
-  icomp = putils.IntrinsicStructComponent(config_simo45f.fem)
+  config_simo45d = configuration.Config.from_file("./Simo45Dead/config.yaml")
+  icomp = putils.IntrinsicStructComponent(config_simo45d.fem)
   #icomp.add_solution(config_simo45f.fem.X.T)
   icomp.add_solution(sol_s45d.data.staticsystem_s1.ra)
   settline = list()
@@ -493,7 +495,7 @@ An extensive verification has been carried out and is presented herein, starting
       font=dict(family='Arial',
                 size=12),
       showarrow=False))
-  loads = [f"Load: {li} N" for li in inp.systems.sett.s1.xloads.follower_interpolation[0][1:]]
+  loads = [f"Load: {li} N" for li in config_simo45d.systems.mapper['s1'].xloads.follower_interpolation[0][1:]]
   for i in range(11):
       line_settings=dict(mode="lines+markers",
                          #marker_symbol="218",
@@ -548,6 +550,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+NAME: wingSP
 #+begin_src python :results none :eval (print Veval_blocks_run) :tangle ./results/run_wingSP.py
   <<PYTHONMODULES>>
+  wingSP_folder = fem4inas.PATH / "../examples/wingSP"
   inp = Inputs()
   inp.engine = "intrinsicmodal"
   inp.fem.connectivity = {'c1': None}
@@ -891,7 +894,6 @@ Read data from Nastran simulations
 #+begin_src python :results value file :exports results
 
         figname = f"figs/{name}.png"
-        sol_g3 = solution.IntrinsicReader("./Gust3")
         x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
                                       sol_g3.data.dynamicsystem_s1.ra,
                                       fixaxis2=dict(node=150, dim=1))
@@ -983,9 +985,9 @@ Read data from Nastran simulations
 #+begin_src python :results value file :exports results
 
         figname = f"figs/{name}.png"
-        sol_g3 = solution.IntrinsicReader("./Gl1i1c1u0r0m1")
-        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
-                                      sol_g3.data.dynamicsystem_s1.ra,
+        sol_g4 = solution.IntrinsicReader("./Gust4")
+        x, y = putils.pickIntrinsic2D(sol_g4.data.dynamicsystem_s1.t,
+                                      sol_g4.data.dynamicsystem_s1.ra,
                                       fixaxis2=dict(node=150, dim=0))
 
         fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
@@ -1030,9 +1032,8 @@ Read data from Nastran simulations
 #+begin_src python :results value file :exports results 
 
       figname = f"figs/{name}.png"
-      sol_g3 = solution.IntrinsicReader("./Gl1i1c1u0r0m1")
-      x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
-                                    sol_g3.data.dynamicsystem_s1.ra,
+      x, y = putils.pickIntrinsic2D(sol_g4.data.dynamicsystem_s1.t,
+                                    sol_g4.data.dynamicsystem_s1.ra,
                                     fixaxis2=dict(node=150, dim=1))
 
       fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
@@ -1078,9 +1079,8 @@ Read data from Nastran simulations
 #+begin_src python :results value file :exports results 
 
         figname = f"figs/{name}.png"
-        sol_g3 = solution.IntrinsicReader("./Gl1i1c1u0r0m1")
-        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
-                                      sol_g3.data.dynamicsystem_s1.ra,
+        x, y = putils.pickIntrinsic2D(sol_g4.data.dynamicsystem_s1.t,
+                                      sol_g4.data.dynamicsystem_s1.ra,
                                       fixaxis2=dict(node=150, dim=2))
 
         fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
@@ -1176,7 +1176,7 @@ Read data from Nastran simulations
 #+begin_src python :results value file :exports results :tangle ./results/plot_XRF1.py
 
   figname = f"figs/{name}.png"
-  sol_x1 = solution.IntrinsicReader("./Gl1i1c0u0r0m1")
+  sol_x1 = solution.IntrinsicReader("./Gust3")
   fig = px.imshow(np.abs(sol_x1.data.couplings.alpha1-np.eye(70)),
                   labels=dict(color="Absolute values"),
                   color_continuous_scale="Blues"
@@ -1253,7 +1253,6 @@ Read data from Nastran simulations
 #+begin_src python :results value file :exports results :tangle ./results/plot_XRF1.py
   #px.colors.named_colorscales()
   figname = f"figs/{name}.png"
-  sol_x1 = solution.IntrinsicReader("./Gl1i1c0u0r0m1")
   fig = px.imshow(np.abs(sol_x1.data.couplings.alpha2-np.eye(70)),
                   labels=dict(color="Absolute values"),
                   color_continuous_scale="Blues"
