@@ -1,47 +1,45 @@
-# #+TITLE: A Geometrically Nonlinear Aeroelastic Framework for Real-Time Simulations on Modern Hardware Architectures
-# #+TITLE: A Geometrically Nonlinear Aeroelastic Framework for Real-Time Simulations of Representative Aircraft Models
 #+TITLE: A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
 #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
-:LATEX_PROPERTIES:
-#+OPTIONS: toc:nil
-#+LATEX_HEADER: \synctex=1
-#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
-#+LATEX_HEADER: \usepackage{graphicx}
-#+LATEX_HEADER: \usepackage{amsmath,bm}
-#+LATEX_HEADER: \usepackage[version=4]{mhchem}
-#+LATEX_HEADER: \usepackage{siunitx}
-#+LATEX_HEADER: \usepackage{longtable,tabularx}
-#+LATEX_HEADER: \usepackage{booktabs}
-#+LATEX_HEADER: \usepackage{tabularx,longtable,multirow,subfigure,caption}
-#+LATEX_HEADER: \setlength\LTleft{0pt} 
-#+LATEX_HEADER: \usepackage{mathrsfs}
-#+LATEX_HEADER: \usepackage{amsfonts}
-#+LATEX_HEADER: \usepackage{enumitem}
-#+LATEX_HEADER: \usepackage{mathalpha}
-#+LATEX_HEADER: \renewcommand{\figurename}{\bf \small Figure}
-#+LATEX_HEADER: \renewcommand{\tablename}{\bf \small Table}
-#+LATEX_HEADER: \newcommand{\de}{\delta}
-#+LATEX_HEADER: \newcommand{\ve}{\text{v}}
-#+LATEX_HEADER: \newcommand{\lo}{\mathcal{L}}
-#+LATEX_HEADER: \newcommand{\vt}{\overline{\delta\bm{\theta}}}
-#+LATEX_HEADER: \newcommand{\vu}{\overline{\delta\bm{u}}}
-#+LATEX_HEADER: \newcommand{\e}{\bm{\mathfrak{e}}}
-#+LATEX_HEADER: \newcommand{\E}{\bm{\mathbb{E}}}
-#+LATEX_HEADER: \newcommand{\T}{\bm{\mathcal{T}}}
-#+LATEX_HEADER: \newcommand{\fra}{(\mathtt{1})}
-#+LATEX_HEADER: \newcommand{\frb}{(\mathtt{2})}
-#+LATEX_HEADER: \newcommand{\fri}{(\mathfrak{i})}
-#+LATEX_HEADER: \newcommand{\bs}[1]{\boldsymbol{#1}}
-#+LATEX_HEADER: \newcommand{\rhoinf}{\rho}	
-#+LATEX_HEADER: \newcommand{\Vinf}{U}
-#+LATEX_HEADER: \newcommand{\Cl}[1]{c_{l_{#1}}}
-#+LATEX_HEADER: \newcommand{\barCl}[1]{\bar{c}_{l_{#1}}}
-#+LATEX_HEADER: \newcommand{\Cm}[1]{c_{m_{#1}}}
-#+LATEX_HEADER: \newcommand{\barCm}[1]{\bar{c}_{m_{#1}}}
-#+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
+# :LATEX_PROPERTIES:
+# #+OPTIONS: toc:nil
+# #+LATEX_HEADER: \synctex=1
+# #+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+# #+LATEX_HEADER: \usepackage{graphicx}
+# #+LATEX_HEADER: \usepackage{amsmath,bm}
+# #+LATEX_HEADER: \usepackage[version=4]{mhchem}
+# #+LATEX_HEADER: \usepackage{siunitx}
+# #+LATEX_HEADER: \usepackage{longtable,tabularx}
+# #+LATEX_HEADER: \usepackage{booktabs}
+# #+LATEX_HEADER: \usepackage{tabularx,longtable,multirow,subfigure,caption}
+# #+LATEX_HEADER: \setlength\LTleft{0pt} 
+# #+LATEX_HEADER: \usepackage{mathrsfs}
+# #+LATEX_HEADER: \usepackage{amsfonts}
+# #+LATEX_HEADER: \usepackage{enumitem}
+# #+LATEX_HEADER: \usepackage{mathalpha}
+# #+LATEX_HEADER: \renewcommand{\figurename}{\bf \small Figure}
+# #+LATEX_HEADER: \renewcommand{\tablename}{\bf \small Table}
+# #+LATEX_HEADER: \newcommand{\de}{\delta}
+# #+LATEX_HEADER: \newcommand{\ve}{\text{v}}
+# #+LATEX_HEADER: \newcommand{\lo}{\mathcal{L}}
+# #+LATEX_HEADER: \newcommand{\vt}{\overline{\delta\bm{\theta}}}
+# #+LATEX_HEADER: \newcommand{\vu}{\overline{\delta\bm{u}}}
+# #+LATEX_HEADER: \newcommand{\e}{\bm{\mathfrak{e}}}
+# #+LATEX_HEADER: \newcommand{\E}{\bm{\mathbb{E}}}
+# #+LATEX_HEADER: \newcommand{\T}{\bm{\mathcal{T}}}
+# #+LATEX_HEADER: \newcommand{\fra}{(\mathtt{1})}
+# #+LATEX_HEADER: \newcommand{\frb}{(\mathtt{2})}
+# #+LATEX_HEADER: \newcommand{\fri}{(\mathfrak{i})}
+# #+LATEX_HEADER: \newcommand{\bs}[1]{\boldsymbol{#1}}
+# #+LATEX_HEADER: \newcommand{\rhoinf}{\rho}	
+# #+LATEX_HEADER: \newcommand{\Vinf}{U}
+# #+LATEX_HEADER: \newcommand{\Cl}[1]{c_{l_{#1}}}
+# #+LATEX_HEADER: \newcommand{\barCl}[1]{\bar{c}_{l_{#1}}}
+# #+LATEX_HEADER: \newcommand{\Cm}[1]{c_{m_{#1}}}
+# #+LATEX_HEADER: \newcommand{\barCm}[1]{\bar{c}_{m_{#1}}}
+# #+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
 
-:END:
+# :END:
 
 #+begin_abstract
 This paper presents a novel aeroelastic framework that has been rebuilt for performance and robustness.
@@ -67,7 +65,7 @@ An extensive verification has been carried out and is presented herein, starting
   (setq Veval_blocks_run "yes") 
 #+end_src
 
-** Load modules                                                   :noexport:
+* Load modules                                             
 #+begin_src python :session py1 :results none :eval (print Veval_blocks)
   import plotly.express as px
   import pyNastran.op4.op4 as op4
@@ -100,7 +98,7 @@ An extensive verification has been carried out and is presented herein, starting
 
 #+end_src
 
-* Run models :noexport:
+* Run models 
 :PROPERTIES:
 :header-args: :var name=(org-element-property :name (org-element-context)) :mkdirp yes  :session py1 :noweb yes
 :END:
