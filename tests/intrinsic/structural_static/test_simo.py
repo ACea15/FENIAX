@@ -18,7 +18,7 @@ class TestCurveFollower:
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = {'Beam1':None}
-        inp.fem.folder = fem4inas.PATH / "../examples/Simo45Beam/FEM"
+        inp.fem.folder = file_path / "../../../examples/Simo45Beam/FEM"
         inp.fem.num_modes = 90
         inp.fem.eig_type = "inputs"
         #inp.fem.fe_order_start = 1
@@ -91,7 +91,7 @@ class TestCurveDead:
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = {'Beam1':None}
-        inp.fem.folder = fem4inas.PATH / "../examples/Simo45Beam/FEM"
+        inp.fem.folder = file_path / "../../../examples/Simo45Beam/FEM"
         inp.fem.num_modes = 90
         inp.fem.eig_type = "inputs"
         #inp.fem.fe_order_start = 1

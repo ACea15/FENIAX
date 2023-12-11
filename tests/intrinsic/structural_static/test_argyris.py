@@ -33,7 +33,7 @@ class TestBeamModal:
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = [[]]
-        inp.fem.folder = fem4inas.PATH / "../examples/ArgyrisBeam/FEM"
+        inp.fem.folder = file_path / "../../../examples/ArgyrisBeam/FEM"
         inp.fem.num_modes = 150
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
@@ -106,7 +106,7 @@ class TestBeamSolution:
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = [[]]
-        inp.fem.folder = fem4inas.PATH / "../examples/ArgyrisBeam/FEM"
+        inp.fem.folder = file_path / "../../../examples/ArgyrisBeam/FEM"
         inp.fem.num_modes = 150
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
@@ -188,7 +188,7 @@ class TestFrameModal:
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = [[1], []]
-        inp.fem.folder = fem4inas.PATH / "../examples/ArgyrisFrame/FEM"
+        inp.fem.folder = file_path / "../../../examples/ArgyrisFrame/FEM"
         inp.fem.eig_type = "inputs"
         inp.fem.num_modes = 120
         inp.fem.fe_order_start = 1
@@ -261,7 +261,7 @@ class TestFrameSolution:
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = [[1], []]
-        inp.fem.folder = fem4inas.PATH / "../examples/ArgyrisFrame/FEM"
+        inp.fem.folder = file_path / "../../../examples/ArgyrisFrame/FEM"
         inp.fem.num_modes = 120
         inp.fem.fe_order_start = 1
         inp.fem.eig_type = "inputs"
@@ -342,7 +342,7 @@ class TestFrame3D:
         inp.fem.connectivity = [[1], []]
         #inp.fem.connectivity = [[]]
         #inp.fem.grid = "structuralGrid2"
-        inp.fem.folder = fem4inas.PATH / "../examples/ArgyrisFrame/FEM"
+        inp.fem.folder = file_path / "../../../examples/ArgyrisFrame/FEM"
         inp.fem.num_modes = 120
         inp.fem.fe_order_start = 1
         inp.fem.eig_type = "inputs"

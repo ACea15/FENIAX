@@ -17,7 +17,7 @@ class TestWingSP:
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = {'c1': None}
         inp.fem.grid = "structuralGrid"
-        inp.fem.folder = fem4inas.PATH / "../examples/wingSP/FEM/"
+        inp.fem.folder = file_path / "../../../examples/wingSP/FEM/"
         inp.fem.num_modes = 50
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"

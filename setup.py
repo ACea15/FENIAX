@@ -8,15 +8,17 @@ setup(
     #long_description_content_type="text/markdown",
     keywords="nonlinear aeroelastic structural aerodynamic analysis",
     author="Alvaro Cea",
-    author_email="alvaro_cea",
+    author_email="alvaro_cea@outlook.com",
     url="https://github.com/ACea15/FEM4INAS",
-    license="",
+    license="GPL-3",
     packages=find_packages(
         where='./',
         include=['fem4inas*'],
         exclude=['tests']
         ),
     python_requires=">=3.11",
+    # include_package_data=True,
+    # package_data={'': ['examples/*']},
     install_requires=[
         "numpy",
         "scipy",

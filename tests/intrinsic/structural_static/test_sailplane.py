@@ -31,7 +31,7 @@ class TestSailPlane:
                                     Fin=None
                                     )
 
-        inp.fem.folder = fem4inas.PATH / "../examples/SailPlane/FEM"
+        inp.fem.folder = file_path / "../../../examples/SailPlane/FEM"
         inp.fem.num_modes = 50
         inp.driver.typeof = "intrinsic"
         inp.driver.save_fem = False

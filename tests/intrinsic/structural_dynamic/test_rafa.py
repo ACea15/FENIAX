@@ -16,7 +16,7 @@ class TestRafaBeam:
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = {'c1': None}
-        inp.fem.folder = fem4inas.PATH / "../examples/RafaBeam/FEM/"
+        inp.fem.folder = file_path / "../../../examples/RafaBeam/FEM/"
         inp.fem.num_modes = 100
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"

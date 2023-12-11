@@ -16,7 +16,7 @@ class Test2PointDead:
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = {'Beam1': ['Beam2'],
                                 'Beam2': None}
-        inp.fem.folder = fem4inas.PATH / "../examples/EbnerBeam/FEM"
+        inp.fem.folder = file_path / "../../../examples/EbnerBeam/FEM"
         inp.fem.num_modes = 60
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
