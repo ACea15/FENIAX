@@ -163,7 +163,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+end_src
 
 #+NAME: ArgyrisBeamPlot
-#+begin_src python  :results value file :exports results
+#+begin_src python  :results value file :exports both
 
   figname = "figs/ArgyrisBeam.png"
   sol_argyf = solution.IntrinsicReader("./ArgyrisBeam")
@@ -282,7 +282,7 @@ An extensive verification has been carried out and is presented herein, starting
 **** Run
 
 #+NAME: Simo45Follower
-#+begin_src python  :tangle ./results/run_Simo45Follower.py  :noweb yes  :results none :exports results :eval (print Veval_blocks_run) 
+#+begin_src python  :tangle ./results/run_Simo45Follower.py  :noweb yes  :results none :exports both :eval (print Veval_blocks_run) 
   <<PYTHONMODULES>>
   <<Simo45Beam>>
   inp.driver.sol_path = pathlib.Path(
@@ -301,7 +301,7 @@ An extensive verification has been carried out and is presented herein, starting
 :END:
 
 #+NAME: Simo45FollowerPlot
-#+begin_src python   :results value file :exports results
+#+begin_src python   :results value file :exports both
 
   <<PYTHONMODULES>>
   simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
@@ -375,7 +375,7 @@ An extensive verification has been carried out and is presented herein, starting
 
 
 #+NAME: Simoverificationfollower
-#+begin_src python  :results value file :exports results
+#+begin_src python  :results value file :exports both
   figname = f"figs/{name}.png"
   f = list(config_simo45f.systems.mapper['s1'].xloads.follower_interpolation[0][1:])
   u1i = (sol_s45f.data.staticsystem_s1.ra[:,0,-1] -
@@ -478,7 +478,7 @@ An extensive verification has been carried out and is presented herein, starting
 :END:
 
 #+NAME: Simo45DeadPlot
-#+begin_src python : :exports results :results value file
+#+begin_src python : :exports both :results value file
   <<PYTHONMODULES>>
   figname = "figs/s45dead.png"
   sol_s45d = solution.IntrinsicReader("./Simo45Dead")
@@ -605,7 +605,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+end_src
 
 #+NAME: wingSP_z
-#+begin_src python :results value file :exports results 
+#+begin_src python :results value file :exports both 
   figname = f"figs/{name}.png"
   sol_wsp1 = solution.IntrinsicReader("./wingSP")
   x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
@@ -629,7 +629,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+end_src
 
 #+NAME: wingSP_x
-#+begin_src python :results value file :exports results 
+#+begin_src python :results value file :exports both 
   figname = f"figs/{name}.png"
   sol_wsp1 = solution.IntrinsicReader("./wingSP")
   x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
@@ -653,7 +653,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+end_src
 
 #+NAME: wingSP_y
-#+begin_src python :results value file :exports results 
+#+begin_src python :results value file :exports both
   figname = f"figs/{name}.png"
   sol_wsp1 = solution.IntrinsicReader("./wingSP")
   x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
@@ -842,7 +842,7 @@ Read data from Nastran simulations
 **** Plot gusts
 
 #+NAME: Gust3Plot_x
-#+begin_src python :results value file :exports results 
+#+begin_src python :results value file :exports both 
   gscale = 100./33.977
   figname = f"figs/{name}.png"
   sol_g3 = solution.IntrinsicReader("./Gust3")
@@ -893,7 +893,7 @@ Read data from Nastran simulations
 
 
 #+NAME: Gust3Plot_y
-#+begin_src python :results value file :exports results
+#+begin_src python :results value file :exports both
 
         figname = f"figs/{name}.png"
         x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
@@ -939,7 +939,7 @@ Read data from Nastran simulations
 #+end_src
 
 #+NAME: Gust3Plot_z
-#+begin_src python :results value file :exports results 
+#+begin_src python :results value file :exports both 
 
   figname = f"figs/{name}.png"
   x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
@@ -984,7 +984,7 @@ Read data from Nastran simulations
 
 
 #+NAME: Gust4Plot_x
-#+begin_src python :results value file :exports results
+#+begin_src python :results value file :exports both
 
         figname = f"figs/{name}.png"
         sol_g4 = solution.IntrinsicReader("./Gust4")
@@ -1031,7 +1031,7 @@ Read data from Nastran simulations
 
 
 #+NAME: Gust4Plot_y
-#+begin_src python :results value file :exports results 
+#+begin_src python :results value file :exports both 
 
       figname = f"figs/{name}.png"
       x, y = putils.pickIntrinsic2D(sol_g4.data.dynamicsystem_s1.t,
@@ -1078,7 +1078,7 @@ Read data from Nastran simulations
 
 
 #+NAME: Gust4Plot_z
-#+begin_src python :results value file :exports results 
+#+begin_src python :results value file :exports both 
 
         figname = f"figs/{name}.png"
         x, y = putils.pickIntrinsic2D(sol_g4.data.dynamicsystem_s1.t,
@@ -1137,7 +1137,7 @@ Read data from Nastran simulations
 #+end_src
 
 #+NAME: XRF1Plot_alpha1old
-#+begin_src python :results value file :exports results :tangle ./results/plot_XRF1.py
+#+begin_src python :results value file :exports both :tangle ./results/plot_XRF1.py
   figname = f"figs/{name}.png"
   fig = px.imshow(np.abs(alpha1-np.eye(70)),
                   labels=dict(color="Absolute values"),
@@ -1175,7 +1175,7 @@ Read data from Nastran simulations
 
 
 #+NAME: XRF1Plot_alpha1
-#+begin_src python :results value file :exports results :tangle ./results/plot_XRF1.py
+#+begin_src python :results value file :exports both :tangle ./results/plot_XRF1.py
 
   figname = f"figs/{name}.png"
   sol_x1 = solution.IntrinsicReader("./Gust3")
@@ -1214,7 +1214,7 @@ Read data from Nastran simulations
 #+end_src
 
 #+NAME: XRF1Plot_alpha2old
-#+begin_src python :results value file :exports results :tangle ./results/plot_XRF1.py
+#+begin_src python :results value file :exports both :tangle ./results/plot_XRF1.py
   figname = f"figs/{name}.png"
   fig = px.imshow(np.abs(alpha2-np.eye(70)),
                   labels=dict(color="Absolute values"),
@@ -1252,7 +1252,7 @@ Read data from Nastran simulations
 #+end_src
 
 #+NAME: XRF1Plot_alpha2
-#+begin_src python :results value file :exports results :tangle ./results/plot_XRF1.py
+#+begin_src python :results value file :exports both :tangle ./results/plot_XRF1.py
   #px.colors.named_colorscales()
   figname = f"figs/{name}.png"
   fig = px.imshow(np.abs(sol_x1.data.couplings.alpha2-np.eye(70)),
@@ -1289,7 +1289,7 @@ Read data from Nastran simulations
   figname
 #+end_src
 
-* Run UML diagrams                                                 :noexport:
+* Run UML diagrams            
 :PROPERTIES:
 :header-args: :mkdirp yes :eval no-export
 :END:

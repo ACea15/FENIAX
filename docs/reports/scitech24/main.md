@@ -1,42 +1,43 @@
 
 # Table of Contents
 
-1.  [Load modules](#orgbbe2c7a)
-2.  [Run models](#org0277b2a)
-    1.  [ArgyrisBeam](#orgdf38327)
-        1.  [Run](#orgfb7584c)
-        2.  [Plot](#orgd26d43d)
-    2.  [Simo45Beam](#org1e59536)
-        1.  [Follower forces](#org3196291)
-        2.  [Dead forces](#org21824b5)
-    3.  [wingSP](#org2b4ad0c)
-        1.  [Run](#orgbd19420)
-        2.  [Plot](#orgb795fe0)
-    4.  [XRF1](#org30117e8)
-        1.  [0](#org54fcbee)
-        2.  [1](#orgbdb2137)
-        3.  [2](#org3b38680)
-        4.  [3](#org4aca7d1)
-        5.  [4](#org5d7dde1)
-        6.  [5](#orgdf2d63c)
-        7.  [data analysis](#org722d7d9)
-3.  [Introduction](#org80218f5)
-4.  [Theory](#org6a6b793)
-    1.  [Airframe idealisation](#org0bb7fb9)
-    2.  [Nonlinear aeroelastic system](#orgfad1e4d)
-5.  [Computational implementation](#orgd3d0449)
-    1.  [Software design](#org092494e)
-6.  [Examples](#org65d18ac)
-    1.  [Canonical cases](#orga00bc5a)
-        1.  [Beams static response](#org2918629)
-        2.  [Free vibrations of thin-walled cantilever](#org77f3d50)
-    2.  [Structural verification of a representative configuration](#orga2eebd6)
-        1.  [Geometrically nonlinear static response](#org4e034c8)
-        2.  [Large-amplitude nonlinear dynamics](#orga6fdb16)
-    3.  [Dynamic loads on an industrial configuration](#org681390d)
-7.  [Conclusions](#orgfb71e08)
+1.  [Load modules](#org14e4ac8)
+2.  [Run models](#org87efa13)
+    1.  [ArgyrisBeam](#orge898d94)
+        1.  [Run](#org5126d6c)
+        2.  [Plot](#org8492c8f)
+    2.  [Simo45Beam](#org0add37b)
+        1.  [Follower forces](#org52599b5)
+        2.  [Dead forces](#org08c0f07)
+    3.  [wingSP](#org6a349f4)
+        1.  [Run](#orgef306d1)
+        2.  [Plot](#org15f5f4d)
+    4.  [XRF1](#orgcb40e99)
+        1.  [0](#orgae49c47)
+        2.  [1](#orgf385f8c)
+        3.  [2](#org3e1d305)
+        4.  [3](#org3e41888)
+        5.  [4](#org616df8c)
+        6.  [5](#orga9550ad)
+        7.  [data analysis](#org2f9e55e)
+3.  [Run UML diagrams](#orgaf8a1f9)
+4.  [Introduction](#orgee1e088)
+5.  [Theory](#org0194fe5)
+    1.  [Airframe idealisation](#org9b6aadb)
+    2.  [Nonlinear aeroelastic system](#orgacf423a)
+6.  [Computational implementation](#org74e2129)
+    1.  [Software design](#org2b02d81)
+7.  [Examples](#org79440dc)
+    1.  [Canonical cases](#org67d8c61)
+        1.  [Beams static response](#org5e39ae7)
+        2.  [Free vibrations of thin-walled cantilever](#orgfaa43b8)
+    2.  [Structural verification of a representative configuration](#orgd1fc7d4)
+        1.  [Geometrically nonlinear static response](#org2d82efa)
+        2.  [Large-amplitude nonlinear dynamics](#org972848d)
+    3.  [Dynamic loads on an industrial configuration](#org498f7f4)
+8.  [Conclusions](#org5b9ba3f)
 
-<div class="abstract" id="orga9c5c4d">
+<div class="abstract" id="org9b75b9c">
 <p>
 This paper presents a novel aeroelastic framework that has been rebuilt for performance and robustness.
 Leveraging on the numerical library JAX, a highly vectorised codebase is written that is capable of nonlinear, time-domain computations and achieves two orders of magnitude accelerations compare to its predecessor. This brings the calculations to run close to if not in real-time, thus opening new possibilities for aircraft aeroelastic analysis which have traditionally been constrained to either linear, frequency domain solutions, or to their nonlinear counterparts but with a narrower scope.   
@@ -47,7 +48,7 @@ An extensive verification has been carried out and is presented herein, starting
 </div>
 
 
-<a id="orgbbe2c7a"></a>
+<a id="org14e4ac8"></a>
 
 # Load modules
 
@@ -78,17 +79,17 @@ An extensive verification has been carried out and is presented herein, starting
     import fem4inas.unastran.op2reader as op2reader
 
 
-<a id="org0277b2a"></a>
+<a id="org87efa13"></a>
 
 # Run models
 
 
-<a id="orgdf38327"></a>
+<a id="orge898d94"></a>
 
 ## ArgyrisBeam
 
 
-<a id="orgfb7584c"></a>
+<a id="org5126d6c"></a>
 
 ### Run
 
@@ -143,7 +144,7 @@ An extensive verification has been carried out and is presented herein, starting
     sol_argy = fem4inas.fem4inas_main.main(input_obj=config_argy)
 
 
-<a id="orgd26d43d"></a>
+<a id="org8492c8f"></a>
 
 ### Plot
 
@@ -166,8 +167,98 @@ An extensive verification has been carried out and is presented herein, starting
     argypickle['c'][10][0] = argypickle['c'][10][0][6:]
     argypickle['c'][10][1] = argypickle['c'][10][1][6:]
 
+    
+    figname = "figs/ArgyrisBeam.png"
+    sol_argyf = solution.IntrinsicReader("./ArgyrisBeam")
+    config_argy =  configuration.Config.from_file("./ArgyrisBeam/config.yaml")
+    icomp = putils.IntrinsicStructComponent(config_argy.fem)
+    icomp.add_solution(sol_argyf.data.staticsystem_s1.ra)
+    colors = px.colors.qualitative.G10
+    loads = ["Load: 3.7 KN",
+             "Load: 12.1 KN" ,
+             "Load: 17.5 KN",
+             "Load: 39.3 KN",
+             "Load: 61. KN",
+             "Load: 94.5 KN",
+             "Load: 120 KN"]
+    settline = list()
+    settmark = list()
+    annotations = list()
+    annotations.append(dict(#xref='paper',
+        x=icomp.map_mra['ref1'][-1,0]+1,
+        y=icomp.map_mra['ref1'][-1,1]+3,
+        xanchor='right', yanchor='middle',
+        text="Load: 0. KN",
+        font=dict(family='Arial',
+                  size=14),
+        showarrow=False))
+    
+    for i in range(8):
+          line_settings=dict(mode="lines+markers",
+                             #marker_symbol="218",
+                             line=dict(color=colors[i],
+                                       width=2.5)
+                              )
+          marker_settings=dict(mode="markers",
+                               marker_symbol="17",
+                               marker=dict(color=colors[i+1],
+                                           size=10)
+                              )
+    
+          settline.append(line_settings)
+          settmark.append(marker_settings)
+    
+          if i < 7:
+              annotations.append(dict(#xref='paper',
+                  x=float(icomp.map_mra[i+2][-1,0]-3),
+                  y=float(icomp.map_mra[i+2][-1,1]+1),
+                  xanchor='right', yanchor='middle',
+                  text=loads[i],
+                  font=dict(family='Arial',
+                            size=14),
+                  showarrow=False))
+    # plot intrinsic solution
+    fig = uplotly.render2d_multi(icomp,
+                                   scatter_settings=settline)
+    # plot data from Argyris
+    fig = uplotly.iterate_lines2d([pi[0] for i, pi in enumerate(argypickle['c']) if (i % 2 ==0)],
+                                  [pi[1] for i, pi in enumerate(argypickle['c']) if (i % 2 ==0)],
+                                  scatter_settings=settmark,
+                                  fig=fig)
+    fig.update_layout(margin=dict(
+          autoexpand=True,
+          l=0,
+          r=1.5,
+          t=1.5,
+          b=0
+    ))
+    
+    fig.update_xaxes(range=[-25, 105],title='x [cm]',
+                     titlefont=dict(size=16),
+                     tickfont = dict(size=16),
+                     mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey'
+    )
+    fig.update_yaxes(range=[-85, 65],title='y [cm]',
+                     titlefont=dict(size=16),
+                     tickfont = dict(size=16),
+                     mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey'
+    )
+    fig.update_layout(showlegend=False,plot_bgcolor='white',
+                      annotations=annotations)
+    fig.show()
+    fig.write_image(f"../{figname}")
+    figname
 
-<a id="org1e59536"></a>
+
+<a id="org0add37b"></a>
 
 ## Simo45Beam
 
@@ -191,16 +282,219 @@ An extensive verification has been carried out and is presented herein, starting
                                                kappa=0.01)
 
 
-<a id="org3196291"></a>
+<a id="org52599b5"></a>
 
 ### Follower forces
 
 1.  Run
 
+        import pathlib
+        import plotly.express as px
+        import pickle
+        import jax.numpy as jnp
+        import pandas as pd
+        import numpy as np
+        import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+        from fem4inas.preprocessor.inputs import Inputs
+        import fem4inas.fem4inas_main
+        import fem4inas.plotools.uplotly as uplotly
+        import fem4inas.plotools.utils as putils
+        import fem4inas.preprocessor.solution as solution
+        import fem4inas.unastran.op2reader as op2reader
+        
+        simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
+        inp = Inputs()
+        inp.engine = "intrinsicmodal"
+        inp.fem.connectivity = {'Beam1':None}
+        inp.fem.folder = pathlib.Path(f'{simo45beam_folder}/FEM/')
+        inp.fem.num_modes = 90
+        inp.fem.eig_type = "inputs"
+        #inp.fem.fe_order_start = 1
+        inp.driver.typeof = "intrinsic"
+        inp.simulation.typeof = "single"
+        inp.systems.sett.s1.solution = "static"
+        inp.systems.sett.s1.solver_library = "diffrax"
+        inp.systems.sett.s1.solver_function = "newton_raphson"
+        inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
+                                                   atol=1e-6,
+                                                   max_steps=50,
+                                                   norm="linalg_norm",
+                                                   kappa=0.01)
+        inp.driver.sol_path = pathlib.Path(
+            f"./{name}")
+        inp.systems.sett.s1.xloads.follower_forces = True
+        inp.systems.sett.s1.xloads.follower_points = [[15, 2]]
+        inp.systems.sett.s1.xloads.x = list(range(11))
+        inp.systems.sett.s1.xloads.follower_interpolation = [[float(li) for li in np.arange(0.,3300.,300)]]
+        inp.systems.sett.s1.t = list(range(1,11))
+        config_simo45f = configuration.Config(inp)
+        sol_simofoll = fem4inas.fem4inas_main.main(input_obj=config_simo45f)
+
 2.  Plot
 
+        
+        import pathlib
+        import plotly.express as px
+        import pickle
+        import jax.numpy as jnp
+        import pandas as pd
+        import numpy as np
+        import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+        from fem4inas.preprocessor.inputs import Inputs
+        import fem4inas.fem4inas_main
+        import fem4inas.plotools.uplotly as uplotly
+        import fem4inas.plotools.utils as putils
+        import fem4inas.preprocessor.solution as solution
+        import fem4inas.unastran.op2reader as op2reader
+        
+        simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
+        u1=pd.read_csv(simo45beam_folder / "validationdata/u1.csv", names=["f","disp"])
+        u2=pd.read_csv(simo45beam_folder / "validationdata/u2.csv", names=["f","disp"])
+        u3=pd.read_csv(simo45beam_folder / "validationdata/u3.csv", names=["f","disp"])
+        config_simo45f =  configuration.Config.from_file("./Simo45Follower/config.yaml")
+        
+        figname = "figs/s45follower.png"
+        sol_s45f = solution.IntrinsicReader("./Simo45Follower")
+        icomp = putils.IntrinsicStructComponent(config_simo45f.fem)
+        #icomp.add_solution(config_simo45f.fem.X.T)
+        icomp.add_solution(sol_s45f.data.staticsystem_s1.ra)
+        settline = list()
+        annotations = list()
+        colors = px.colors.qualitative.Dark24
+        annotations.append(dict(#xref='paper',
+            x=icomp.map_mra['ref1'][-1,0]-13,
+            y=icomp.map_mra['ref1'][-1,1],
+            xanchor='right', yanchor='middle',
+            text="Load: 0 N",
+            font=dict(family='Arial',
+                      size=12),
+            showarrow=False))
+        loads = [f"Load: {li} N" for li in config_simo45f.systems.mapper['s1'].xloads.follower_interpolation[0][1:]]
+        for i in range(11):
+            line_settings=dict(mode="lines+markers",
+                               #marker_symbol="218",
+                               line=dict(color='navy',#colors[i],
+                                         width=3.5)
+                                )
+            settline.append(line_settings)
+            if i < 10:
+                annotations.append(dict(#xref='x',
+                    x=icomp.map_mra[i+2][-1,0]-5.3,
+                    y=icomp.map_mra[i+2][-1,1],
+                    z=icomp.map_mra[i+2][-1,2],
+                    #xanchor='right', yanchor='middle',
+                    text=loads[i],
+                    font=dict(family='Arial',
+                              size=12),
+                    showarrow=False))
+        
+        #fig = uplotly.render3d_struct(icomp)
+        fig = uplotly.render3d_multi(icomp,
+                                     scatter_settings=settline)
+        fig.update_traces(marker=dict(size=1.5))
+        camera = dict(
+            eye=dict(x=-0.3, y=2.5, z=1.)
+        )
+        fig.update_layout(autosize=True,
+                          width=1200,
+                          height=1200,
+                          scene_camera=camera,
+                          margin=dict(
+                              autoexpand=True,
+                              l=0,
+                              r=0,
+                              t=0,
+                              b=0,
+                              pad=0
+                          ),
+                          showlegend=False,
+                          scene=dict(
+                          annotations=annotations))
+        
+        fig.show()
+        fig.write_image(f"../{figname}")
+        figname
+    
+        figname = f"figs/{name}.png"
+        f = list(config_simo45f.systems.mapper['s1'].xloads.follower_interpolation[0][1:])
+        u1i = (sol_s45f.data.staticsystem_s1.ra[:,0,-1] -
+            config_simo45f.fem.X[-1,0])
+        u2i = (sol_s45f.data.staticsystem_s1.ra[:,1,-1] -
+            config_simo45f.fem.X[-1,1])
+        u3i = (sol_s45f.data.staticsystem_s1.ra[:,2,-1] -
+            config_simo45f.fem.X[-1,2])
+        settline = [dict(mode="lines",
+                         line=dict(color="navy",
+                                   width=2.5),
+                       name="u1"
+                                ),
+                    dict(mode="lines",
+                         line=dict(color="navy",
+                                   width=2.5,
+                                   dash='dot'),
+                       name="u2"
+                                ),
+                    dict(mode="lines",
+                         line=dict(color="navy",
+                                   width=2.5,
+                                   dash='dash'),
+                       name="u3"
+                                )
+                  ]
+        
+        settmark = [dict(mode="markers",
+                         marker_symbol="circle-open",
+                         marker=dict(color="navy",
+                                     size=10),
+                       name="u1-ref"
+                                ),
+                  dict(mode="markers",
+                         marker_symbol="square-open",
+                         marker=dict(color="navy",
+                                     size=10),
+                     name="u2-ref"
+                                ),
+                  dict(mode="markers",
+                         marker_symbol="star-open",
+                         marker=dict(color="navy",
+                                     size=10),
+                     name="u3-ref"
+                                )
+                  ]
+        
+        fig = uplotly.iterate_lines2d([jnp.hstack([0,f]), jnp.hstack([0,f]), jnp.hstack([0,f])],
+                                      [jnp.hstack([0,u1i]), jnp.hstack([0,u2i]), jnp.hstack([0,u3i])],
+                                      scatter_settings=settline,
+                                      fig=None)
+        
+        fig = uplotly.iterate_lines2d([u1.f, u2.f[0::2], u3.f],
+                                      [u1.disp, u2.disp[0::2], u3.disp],
+                                      scatter_settings=settmark,
+                                      fig=fig)
+        fig.update_xaxes(title='Load [N]',
+                         titlefont=dict(size=16),
+                         tickfont = dict(size=16))
+        fig.update_yaxes(title='Disp [m]', tickfont = dict(size=16),
+                         titlefont=dict(size=16))
+        fig.update_layout(legend=dict(font=dict(size=15)),
+            margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        
+        #fig.update_xaxes(range=[-25, 105])
+        #fig.update_yaxes(range=[-85, 65])
+        #fig.update_layout(showlegend=False,
+        #                  annotations=annotations)
+        fig.show()
+        fig.write_image(f"../{figname}")
+        figname
 
-<a id="org21824b5"></a>
+
+<a id="org08c0f07"></a>
 
 ### Dead forces
 
@@ -250,13 +544,94 @@ An extensive verification has been carried out and is presented herein, starting
 
 2.  Plot
 
+        import pathlib
+        import plotly.express as px
+        import pickle
+        import jax.numpy as jnp
+        import pandas as pd
+        import numpy as np
+        import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+        from fem4inas.preprocessor.inputs import Inputs
+        import fem4inas.fem4inas_main
+        import fem4inas.plotools.uplotly as uplotly
+        import fem4inas.plotools.utils as putils
+        import fem4inas.preprocessor.solution as solution
+        import fem4inas.unastran.op2reader as op2reader
+        
+        figname = "figs/s45dead.png"
+        sol_s45d = solution.IntrinsicReader("./Simo45Dead")
+        config_simo45d = configuration.Config.from_file("./Simo45Dead/config.yaml")
+        icomp = putils.IntrinsicStructComponent(config_simo45d.fem)
+        #icomp.add_solution(config_simo45f.fem.X.T)
+        icomp.add_solution(sol_s45d.data.staticsystem_s1.ra)
+        settline = list()
+        annotations = list()
+        colors = px.colors.qualitative.Dark24
+        annotations.append(dict(#xref='paper',
+            x=icomp.map_mra['ref1'][-1,0]-13,
+            y=icomp.map_mra['ref1'][-1,1],
+            xanchor='right', yanchor='middle',
+            text="Load: 0 N",
+            font=dict(family='Arial',
+                      size=12),
+            showarrow=False))
+        loads = [f"Load: {li} N" for li in config_simo45d.systems.mapper['s1'].xloads.dead_interpolation[0][1:]]
+        for i in range(11):
+            line_settings=dict(mode="lines+markers",
+                               #marker_symbol="218",
+                               line=dict(color=colors[i],
+                                         width=3.5),
+                               marker=dict(size=5)
+                                )
+            settline.append(line_settings)
+            if i < 10:
+                annotations.append(dict(#xref='x',
+                    x=icomp.map_mra[i+2][-1,0]-8,
+                    y=icomp.map_mra[i+2][-1,1],
+                    z=icomp.map_mra[i+2][-1,2]+3,
+                    #xanchor='right', yanchor='middle',
+                    text=loads[i],
+                    font=dict(family='Arial',
+                              size=12),
+                    showarrow=False))
+        
+        #fig = uplotly.render3d_struct(icomp)
+        fig = uplotly.render3d_multi(icomp,
+                                     scatter_settings=settline)
+        fig.update_traces(marker=dict(size=1.5))
+        camera = dict(
+            up=dict(x=0, y=0, z=1),
+            center=dict(x=0, y=0, z=0),
+            eye=dict(x=1.5*2, y=0.75, z=0.5)
+        )
+        fig.update_layout(autosize=True,
+                          width=1200,
+                          height=1200,
+                          scene_camera=camera,
+                          margin=dict(
+                              autoexpand=True,
+                              l=0,
+                              r=0,
+                              t=0,
+                              b=0,
+                              pad=0
+                          ),
+                          showlegend=False,
+                          # scene=dict(
+                          # annotations=annotations)
+                          )
+        fig.update_xaxes(range=[-10, 35])
+        fig.show()
+        fig.write_image(f"../{figname}")
+        figname
 
-<a id="org2b4ad0c"></a>
+
+<a id="org6a349f4"></a>
 
 ## wingSP
 
 
-<a id="orgbd19420"></a>
+<a id="orgef306d1"></a>
 
 ### Run
 
@@ -304,7 +679,7 @@ An extensive verification has been carried out and is presented herein, starting
     sol_wsp = fem4inas.fem4inas_main.main(input_obj=config_wsp)
 
 
-<a id="orgb795fe0"></a>
+<a id="org15f5f4d"></a>
 
 ### Plot
 
@@ -336,8 +711,71 @@ An extensive verification has been carried out and is presented herein, starting
     nas_wsp.readModel()
     t_wsp, u_wsp = nas_wsp.displacements()
 
+    figname = f"figs/{name}.png"
+    sol_wsp1 = solution.IntrinsicReader("./wingSP")
+    x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
+                                  sol_wsp1.data.dynamicsystem_s1.ra,
+                                  fixaxis2=dict(node=23, dim=2))
+    
+    fig = uplotly.lines2d(x, y - y[0], None,
+                          dict(name="NMROM",
+                               line=dict(color="navy")
+                               ),
+                          dict())
+    fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 2], fig,
+                          dict(name="NASTRAN",
+                               line=dict(color="grey",
+                                         dash="dash")
+                               ))
+    #fig.update_xaxes(range=[0, 5])
+    fig.write_image(f"../{figname}")
+    fig.show()
+    figname
 
-<a id="org30117e8"></a>
+    figname = f"figs/{name}.png"
+    sol_wsp1 = solution.IntrinsicReader("./wingSP")
+    x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
+                                  sol_wsp1.data.dynamicsystem_s1.ra,
+                                  fixaxis2=dict(node=23, dim=0))
+    
+    fig = uplotly.lines2d(x, y - y[0], None,
+                          dict(name="NMROM",
+                               line=dict(color="navy")
+                               ),
+                          dict())
+    fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 0], fig,
+                          dict(name="NASTRAN",
+                               line=dict(color="grey",
+                                         dash="dash")
+                               ))
+    #fig.update_xaxes(range=[0, 5])
+    fig.write_image(f"../{figname}")
+    fig.show()
+    figname
+
+    figname = f"figs/{name}.png"
+    sol_wsp1 = solution.IntrinsicReader("./wingSP")
+    x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
+                                  sol_wsp1.data.dynamicsystem_s1.ra,
+                                  fixaxis2=dict(node=23, dim=1))
+    
+    fig = uplotly.lines2d(x, y - y[0], None,
+                          dict(name="NMROM",
+                               line=dict(color="navy")
+                               ),
+                          dict())
+    fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 1], fig,
+                          dict(name="NASTRAN",
+                               line=dict(color="grey",
+                                         dash="dash")
+                               ))
+    #fig.update_xaxes(range=[0, 5])
+    fig.write_image(f"../{figname}")
+    fig.show()
+    figname
+
+
+<a id="orgcb40e99"></a>
 
 ## XRF1
 
@@ -386,14 +824,14 @@ An extensive verification has been carried out and is presented herein, starting
     inp.systems.sett.s1.aero.gust_settings.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
 
 
-<a id="org54fcbee"></a>
+<a id="orgae49c47"></a>
 
 ### 0
 
 (first gust in the table, not implemented)
 
 
-<a id="orgbdb2137"></a>
+<a id="orgf385f8c"></a>
 
 ### 1
 
@@ -455,7 +893,7 @@ An extensive verification has been carried out and is presented herein, starting
     sol_gust1 = fem4inas.fem4inas_main.main(input_obj=config_gust)
 
 
-<a id="org3b38680"></a>
+<a id="org3e1d305"></a>
 
 ### 2
 
@@ -517,7 +955,7 @@ An extensive verification has been carried out and is presented herein, starting
     sol_gust2 = fem4inas.fem4inas_main.main(input_obj=config_gust2)
 
 
-<a id="org4aca7d1"></a>
+<a id="org3e41888"></a>
 
 ### 3
 
@@ -579,7 +1017,7 @@ An extensive verification has been carried out and is presented herein, starting
     sol_gust3 = fem4inas.fem4inas_main.main(input_obj=config_gust3)
 
 
-<a id="org5d7dde1"></a>
+<a id="org616df8c"></a>
 
 ### 4
 
@@ -641,14 +1079,14 @@ An extensive verification has been carried out and is presented herein, starting
     sol_gust4 = fem4inas.fem4inas_main.main(input_obj=config_gust4)
 
 
-<a id="orgdf2d63c"></a>
+<a id="orga9550ad"></a>
 
 ### 5
 
 (not implemented)
 
 
-<a id="org722d7d9"></a>
+<a id="org2f9e55e"></a>
 
 ### data analysis
 
@@ -682,6 +1120,264 @@ An extensive verification has been carried out and is presented herein, starting
 
 2.  Plot gusts
 
+        gscale = 100./33.977
+        figname = f"figs/{name}.png"
+        sol_g3 = solution.IntrinsicReader("./Gust3")
+        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
+                                      sol_g3.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=0))
+        
+        fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
+                              dict(name="NMROM",
+                                   line=dict(color="navy")
+                                   ))
+        
+        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 0]*0.01*gscale, fig,
+                              dict(name="NASTRAN",
+                                   line=dict(color="grey",
+                                             dash="dash")
+                                   ))
+        fig.update_xaxes(range=[0, 4], title='time [s]',
+                         titlefont=dict(size=16),
+                         tickfont = dict(size=16),
+                         mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+                         gridcolor='lightgrey')
+        fig.update_yaxes(title='$\hat{u}_x$', tickfont = dict(size=16),
+                         titlefont=dict(size=16),
+                         mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+                         gridcolor='lightgrey')
+        fig.update_layout(plot_bgcolor='white',
+                          showlegend=False,
+                          margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        
+        fig.show()
+        
+        fig.write_image(f"../{figname}")
+        figname
+    
+        
+        figname = f"figs/{name}.png"
+        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
+                                      sol_g3.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=1))
+        
+        fig = uplotly.lines2d(x[1:], y[:-1]-y[0], None,
+                              dict(name="NMROM",
+                                   line=dict(color="navy")
+                                   ))
+        
+        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 1]*0.01, fig,
+                              dict(name="NASTRAN3",
+                                   line=dict(color="grey",
+                                             dash="dash")
+                                   ))
+        #fig.update_xaxes(range=[0, 4])
+        fig.update_xaxes(range=[0, 4], title='time [s]',tickfont = dict(size=16), titlefont=dict(size=16),
+                                            mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey')
+        fig.update_yaxes(title='$\hat{u}_y$', tickfont = dict(size=16),titlefont=dict(size=16),
+                                            mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+        fig.update_layout(showlegend=False, plot_bgcolor='white',
+            margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        
+        fig.show()
+        
+        fig.write_image(f"../{figname}")
+        figname
+    
+        
+        figname = f"figs/{name}.png"
+        x, y = putils.pickIntrinsic2D(sol_g3.data.dynamicsystem_s1.t,
+                                      sol_g3.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=2))
+        
+        fig = uplotly.lines2d(x[:], (y[:]-y[0])*gscale, None,
+                              dict(name="NMROM",
+                                   line=dict(color="navy")
+                                   ))
+        
+        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 2]*0.01*gscale, fig,
+                              dict(name="NASTRAN",
+                                   line=dict(color="grey",
+                                             dash="dash")
+                                   ))
+        fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+                         gridcolor='lightgrey')
+        fig.update_yaxes(title='$\hat{u}_z$', titlefont=dict(size=16), tickfont = dict(size=16),
+                         mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+                         gridcolor='lightgrey')
+        fig.update_layout(plot_bgcolor='white',margin=dict(
+              autoexpand=True, 
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        
+        fig.show()
+        
+        fig.write_image(f"../{figname}")
+        figname
+    
+        
+        figname = f"figs/{name}.png"
+        sol_g4 = solution.IntrinsicReader("./Gust4")
+        x, y = putils.pickIntrinsic2D(sol_g4.data.dynamicsystem_s1.t,
+                                      sol_g4.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=0))
+        
+        fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
+                              dict(name="NMROM",
+                                   line=dict(color="navy")
+                                   ))
+        
+        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 0]*2*gscale, fig,
+                              dict(name="NASTRAN",
+                                   line=dict(color="grey",
+                                             dash="dash")
+                                   ))
+        fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey')
+        fig.update_yaxes(title='$\hat{u}_x$', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+        fig.update_layout(plot_bgcolor='white',showlegend=False,
+                          margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        
+        fig.show()
+        
+        fig.write_image(f"../{figname}")
+        figname
+    
+        
+        figname = f"figs/{name}.png"
+        x, y = putils.pickIntrinsic2D(sol_g4.data.dynamicsystem_s1.t,
+                                      sol_g4.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=1))
+        
+        fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
+                              dict(name="NMROM",
+                                   line=dict(color="navy")
+                                   ))
+        
+        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 1]*2*gscale, fig,
+                              dict(name="NASTRAN",
+                                   line=dict(color="grey",
+                                             dash="dash")
+                                   ))
+        fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                       ticks='outside',
+                       showline=True,
+                       linecolor='black',
+                       gridcolor='lightgrey')
+        fig.update_yaxes(title='$\hat{u}_y$', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey')
+        fig.update_layout(plot_bgcolor='white',showlegend=False,
+                          margin=dict(
+                              autoexpand=True,
+                              l=0,
+                              r=0,
+                              t=0,
+                              b=0
+                          ))
+        
+        fig.show()
+        
+        fig.write_image(f"../{figname}")
+        figname
+    
+        
+        figname = f"figs/{name}.png"
+        x, y = putils.pickIntrinsic2D(sol_g4.data.dynamicsystem_s1.t,
+                                      sol_g4.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=2))
+        
+        fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*gscale, None,
+                              dict(name="NMROM",
+                                   line=dict(color="navy")
+                                   ))
+        
+        fig = uplotly.lines2d(t111m[2], u111m[2,:,-1, 2]*2*gscale, fig,
+                              dict(name="NASTRAN",
+                                   line=dict(color="grey",
+                                             dash="dash")
+                                   ))
+        fig.update_xaxes(range=[0, 4], title='time [s]', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                     ticks='outside',
+                     showline=True,
+                     linecolor='black',
+                     gridcolor='lightgrey')
+        fig.update_yaxes(title='$\hat{u}_z$', titlefont=dict(size=16), tickfont = dict(size=16),
+                                            mirror=True,
+                   ticks='outside',
+                   showline=True,
+                   linecolor='black',
+                   gridcolor='lightgrey')
+        fig.update_layout(plot_bgcolor='white',
+            margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        
+        fig.show()
+        
+        fig.write_image(f"../{figname}")
+        figname
+
 3.  Plot alphas
 
         import numpy as np
@@ -693,9 +1389,154 @@ An extensive verification has been carried out and is presented herein, starting
         alpha2 = np.load("%s/../Results_modes/alpha2_%s.npy"%(directory, nmodes))
         gamma1 = np.load("%s/../Results_modes/gamma1_%s.npy"%(directory, nmodes))
         gamma2 = np.load("%s/../Results_modes/gamma2_%s.npy"%(directory, nmodes))
+    
+        figname = f"figs/{name}.png"
+        fig = px.imshow(np.abs(alpha1-np.eye(70)),
+                        labels=dict(color="Absolute values"),
+                        color_continuous_scale="Blues"
+                        )
+        fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        fig.update_xaxes(title='Mode',
+                         titlefont=dict(size=16),
+                         tickfont = dict(size=16)
+                         # mirror=True,
+                         # ticks='outside',
+                         # showline=True,
+                         # linecolor='black',
+                         # gridcolor='lightgrey'
+                         )
+        fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                         titlefont=dict(size=16)
+                         # mirror=True,
+                         # ticks='outside',
+                         # showline=True,
+                         # linecolor='black',
+                         # gridcolor='lightgrey'
+                         )
+        #fig.update_traces(colorbar_tickfont=dict(size=26))
+        fig.write_image(f"../{figname}")
+        fig.show()
+        figname
+    
+        
+        figname = f"figs/{name}.png"
+        sol_x1 = solution.IntrinsicReader("./Gust3")
+        fig = px.imshow(np.abs(sol_x1.data.couplings.alpha1-np.eye(70)),
+                        labels=dict(color="Absolute values"),
+                        color_continuous_scale="Blues"
+                        )
+        fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        fig.update_xaxes(title='Mode',
+                         titlefont=dict(size=16),
+                         tickfont = dict(size=16)
+                         # mirror=True,
+                         # ticks='outside',
+                         # showline=True,
+                         # linecolor='black',
+                         # gridcolor='lightgrey'
+                         )
+        fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                         titlefont=dict(size=16)
+                         # mirror=True,
+                         # ticks='outside',
+                         # showline=True,
+                         # linecolor='black',
+                         # gridcolor='lightgrey'
+                         )
+        
+        fig.write_image(f"../{figname}")
+        fig.show()
+        figname
+    
+        figname = f"figs/{name}.png"
+        fig = px.imshow(np.abs(alpha2-np.eye(70)),
+                        labels=dict(color="Absolute values"),
+                        color_continuous_scale="Blues"
+                        )
+        fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        fig.update_xaxes(title='Mode',
+                         titlefont=dict(size=16),
+                         tickfont = dict(size=16)
+                         # mirror=True,
+                         # ticks='outside',
+                         # showline=True,
+                         # linecolor='black',
+                         # gridcolor='lightgrey'
+                         )
+        fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                         titlefont=dict(size=16)
+                         # mirror=True,
+                         # ticks='outside',
+                         # showline=True,
+                         # linecolor='black',
+                         # gridcolor='lightgrey'
+                         )
+        
+        
+        fig.write_image(f"../{figname}")
+        fig.show()
+        figname
+    
+        #px.colors.named_colorscales()
+        figname = f"figs/{name}.png"
+        fig = px.imshow(np.abs(sol_x1.data.couplings.alpha2-np.eye(70)),
+                        labels=dict(color="Absolute values"),
+                        color_continuous_scale="Blues"
+                        )
+        fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+              autoexpand=True,
+              l=0,
+              r=0,
+              t=0,
+              b=0
+          ))
+        fig.update_xaxes(title='Mode',
+                         titlefont=dict(size=16),
+                         tickfont = dict(size=16)
+                         # mirror=True,
+                         # ticks='outside',
+                         # showline=True,
+                         # linecolor='black',
+                         # gridcolor='lightgrey'
+                         )
+        fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                         titlefont=dict(size=16)
+                         # mirror=True,
+                         # ticks='outside',
+                         # showline=True,
+                         # linecolor='black',
+                         # gridcolor='lightgrey'
+                         )
+        
+        fig.write_image(f"../{figname}")
+        fig.show()
+        figname
 
 
-<a id="org80218f5"></a>
+<a id="orgaf8a1f9"></a>
+
+# Run UML diagrams
+
+
+<a id="orgee1e088"></a>
 
 # Introduction
 
@@ -708,22 +1549,22 @@ These 3 facts set the goals for the current enterprise: 1) to be able to perform
 Grounded on previous developments where the first two points where demonstrated <&PALACIOS2019>, <&CEA2021>, <&CEA2023> we tackle the third point herein with a new implementation that achieves remarkable computational performance.
 The numerical library JAX <&jax2018github> was leveraged to produce highly vectorised, automatically differentiated routines that are managed by a modular, object-oriented approach in Python. The power of JAX for scientific computation has been proved recently in fluid dynamics <&BEZGIN2023> and solid mechanics <&XUE2023> applications. We add to those an aeroelastic solution to enhance already built models for linear loads analysis. This aligns with current efforts to build robust methods that incorporate nonlinear effects to complex 3-D FEMs, via stick models <&RISO2023> or other modal-based methods <&DRACHINSKY2022>.
   
-The proposed solution procedure can be divided into the five stages shown in Fig. [8](#orgf1769ab): 1) A linear (arbitrarily complex) model is the input for the analysis. 2) Model condensation is employed to derive a skeleton-like substructure, along the main load path, containing the main features of the full 3D model. 3) The modes of the reduced structure are evaluated in intrinsic variables (velocities and strains) and used as a basis of a Galerkin-projection of the geometrically-nonlinear intrinsic beam equations. 4) The projected equations are solved in time-domain under given forces: aerodynamic influence coefficient matrices are obtained here from DLM and a rational function approximation (RFA) <&ROGER1975> is used to transform to the time domain. We have also presented a more efficient data-driven approach that circumvents the additional states added by the RFA in <&PALACIOS2024> and the approach would also be amendable more accurate Computational Fluids Aerodynamics (CFD).  5) The full 3D solution using the nonlinear 1D solution, the reduced order transformations and interpolation. Therefore geometrically-nonlinear behaviour is captured along the principal skeleton and the linear response of the cross-sections (in the form of ribs and fuselage reinforcements) is also represented –if nonlinear deformations also occur in the cross-sections, there is no reliable analysis other than high-fidelity solutions of the full model. The overall procedure has been implemented in what we have named as \emph{Nonlinear Modal Reduced Order Model} (NMROM).
+The proposed solution procedure can be divided into the five stages shown in Fig. [8](#org037cc6e): 1) A linear (arbitrarily complex) model is the input for the analysis. 2) Model condensation is employed to derive a skeleton-like substructure, along the main load path, containing the main features of the full 3D model. 3) The modes of the reduced structure are evaluated in intrinsic variables (velocities and strains) and used as a basis of a Galerkin-projection of the geometrically-nonlinear intrinsic beam equations. 4) The projected equations are solved in time-domain under given forces: aerodynamic influence coefficient matrices are obtained here from DLM and a rational function approximation (RFA) <&ROGER1975> is used to transform to the time domain. We have also presented a more efficient data-driven approach that circumvents the additional states added by the RFA in <&PALACIOS2024> and the approach would also be amendable more accurate Computational Fluids Aerodynamics (CFD).  5) The full 3D solution using the nonlinear 1D solution, the reduced order transformations and interpolation. Therefore geometrically-nonlinear behaviour is captured along the principal skeleton and the linear response of the cross-sections (in the form of ribs and fuselage reinforcements) is also represented –if nonlinear deformations also occur in the cross-sections, there is no reliable analysis other than high-fidelity solutions of the full model. The overall procedure has been implemented in what we have named as \emph{Nonlinear Modal Reduced Order Model} (NMROM).
 
 ![img](./figs/aircraft_process2.pdf "Aircraft solution process")
 
-The structure of the rest of the paper is as follows. Sec. [4](#org6a6b793) presents a summary of the mathematical description that conforms the backbone behind the computational implementation of \texttt{FEM$_4$INAS} (Finite-Element-Models for Intrinsic Nonlinear Aeroelastic Simulations), the high performance software for aeroelasticity outlined in Sec. [5](#orgd3d0449). Sec. [6](#org65d18ac) shows the verification examples that cover the static and dynamic structural response of canonical cases and of a simplified aircraft model, and the aeroelastic response to a gust of a full aircraft configuration. The improvements in performance are highlighted in all of the examples. 
-Lastly, sec. [7](#orgfb71e08) summarises the the achievements and further developments planned for future work.
+The structure of the rest of the paper is as follows. Sec. [5](#org0194fe5) presents a summary of the mathematical description that conforms the backbone behind the computational implementation of \texttt{FEM$_4$INAS} (Finite-Element-Models for Intrinsic Nonlinear Aeroelastic Simulations), the high performance software for aeroelasticity outlined in Sec. [6](#org74e2129). Sec. [7](#org79440dc) shows the verification examples that cover the static and dynamic structural response of canonical cases and of a simplified aircraft model, and the aeroelastic response to a gust of a full aircraft configuration. The improvements in performance are highlighted in all of the examples. 
+Lastly, sec. [8](#org5b9ba3f) summarises the the achievements and further developments planned for future work.
 
 
-<a id="org6a6b793"></a>
+<a id="org0194fe5"></a>
 
 # Theory
 
 In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelasticity modelling. For further details, see <&CEA2021>, <&CEA2023>.
 
 
-<a id="org0bb7fb9"></a>
+<a id="org9b6aadb"></a>
 
 ## Airframe idealisation
 
@@ -753,14 +1594,14 @@ where we have used implicit summation over repeated indices, with $\delta^{ij}$ 
 with $\pmb{\psi}_1 = \bm{\mathcal{M}}\pmb{\phi}_1$ and $\pmb{\psi}_2 = \bm{\mathcal{C}}\pmb{\phi}_2$ also cast as momentum and strain mode shapes. In other words, each natural vibration mode can be uniquely expressed in terms of velocity, force/moment, momentum, or strain variables. While those would be redundant in a conventional linear vibration analysis, they will enable to identify all the coefficients in the geometrically-nonlinear equations \eqref{eq2:sol_qs}. Furthermore, they can all be directly obtained from a condensation of a general built-up finite-element model along load paths, as outlined next.
 
 
-<a id="orgfad1e4d"></a>
+<a id="orgacf423a"></a>
 
 ## Nonlinear aeroelastic system
 
 The full aeroelastic solution is described extending Eq.  \eqref{eq2:sol_qs} with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{w}_g$. Control states can also be included <&CEA2021a>, but they are not necessary for this work. For a set of reduced frequencies and a given Mach number, the DLM (or a higher fidelity aerodynamic method) yields the modal forces in the frequency domain. The current implementation uses Roger's rational function approximation to those GAFs, which results in the follower modal forces
 
 
-<a id="orgd3d0449"></a>
+<a id="org74e2129"></a>
 
 # Computational implementation
 
@@ -776,26 +1617,26 @@ The new capabilities come at the expense of a higher restriction in the way the 
 These very constraints are the enabler to achieve the capabilities describe above via the many abstractions implemented internally in the library. The challenge after the algorithms have been implemented appropriately is to manage a general aeroelastic code that can deal with arbitrary configurations, solutions that may range from purely structural to aeroelastic simulations with multibody components, and even workflows that may involve various simulations in serial or in parallel. A good example is the calculation of the nonlinear trimmed flight state on which various gust profiles are to be assessed. A mixed approach has been employed for this whereby numerical algorithms are written using functional programming but the flow of execution is managed using an object oriented approach that focus on modularity and extensibility. This will be outline in the following section.
 
 
-<a id="org092494e"></a>
+<a id="org2b02d81"></a>
 
 ## Software design
 
 \textit{"Supporting state-of-the-art AI research means balancing rapid prototyping and quick iteration with the ability to deploy experiments at a scale traditionally associated with production systems."}.
 Jax target inside DeepMind would also be desirable in a scientific research environment. It however entails a good amount of labour and expertise into the field of software design, whose payoffs are only realisable in the long term.    
 
-Fig. [26](#org7d3c9a9) shows a high-level view of this first version of the software in terms of components. A Configuration component builds the necessary settings for the simulation, including geometric coordinates, load-paths information.
+Fig. [26](#org119ef53) shows a high-level view of this first version of the software in terms of components. A Configuration component builds the necessary settings for the simulation, including geometric coordinates, load-paths information.
 The Configuration is injected into the Driver component that initialises the Simulation component, the Systems and the Solution component, after which it triggers the simulation. The Systems are run as managed by the Simulation component and encapsulate the various equations to be solved (time marching, nonlinear static equilibrium or stability for instance). The solution component acts as a memory-efficient container of the new data to be kept as the solution process advances, and it is responsible for loading (from a previous simulations) and writing solution data too. It is thus passed to every System. 
 
 ![img](figs/components_architecture.png "Components architecture diagram")
 
-Fig. [28](#org29dc53e) shows a lower view of the abstractions, interfaces between classes and how they interact via their public methods. The inputs to the program may be given via a .yaml file or a python dictionary in memory. The starting point in the main file is the initialisation of the driver corresponding to the mathematical description to be solved (so far only the intrinsic modal is available, Eqs. \eqref{eq3:intrinsic_full_aeroelastic}). The intrinsic driver computes (or loads), as a pre-simulation step, the intrinsic modal shapes and nonlinear tensors from the linear stiffness and mass matrices and the nodal coordinates; then it runs the cases by triggering the simulation class. This class is responsible for managing how the systems are being run (in serial, in parallel, or even in a coupling process between systems). From the configuration settings, the intrinsic system loads the equations (dqs), the external loads in Eqs. \eqref{eq2:sol_qs}, such as point-forces, gravity or modal aerodynamic GAFs. Various libraries can be chosen to either solve the static equations or march in time if the solution is dynamic; importantly, the JAX-based Diffrax library has been integrated and supports ordinary, stochastic and controlled equations, with many solvers and multiple adjoint methods which could be used in an optimization framework. This initial layout of the software is expected to evolve and to be consolidated as the software matures. 
+Fig. [28](#orgcfc6193) shows a lower view of the abstractions, interfaces between classes and how they interact via their public methods. The inputs to the program may be given via a .yaml file or a python dictionary in memory. The starting point in the main file is the initialisation of the driver corresponding to the mathematical description to be solved (so far only the intrinsic modal is available, Eqs. \eqref{eq3:intrinsic_full_aeroelastic}). The intrinsic driver computes (or loads), as a pre-simulation step, the intrinsic modal shapes and nonlinear tensors from the linear stiffness and mass matrices and the nodal coordinates; then it runs the cases by triggering the simulation class. This class is responsible for managing how the systems are being run (in serial, in parallel, or even in a coupling process between systems). From the configuration settings, the intrinsic system loads the equations (dqs), the external loads in Eqs. \eqref{eq2:sol_qs}, such as point-forces, gravity or modal aerodynamic GAFs. Various libraries can be chosen to either solve the static equations or march in time if the solution is dynamic; importantly, the JAX-based Diffrax library has been integrated and supports ordinary, stochastic and controlled equations, with many solvers and multiple adjoint methods which could be used in an optimization framework. This initial layout of the software is expected to evolve and to be consolidated as the software matures. 
 
 ![img](figs/classes_architecture.png "Class architecture UML diagram")
 
 \newpage
 
 
-<a id="org65d18ac"></a>
+<a id="org79440dc"></a>
 
 # Examples
 
@@ -807,19 +1648,19 @@ Six examples are presented, first three are static cases and the other three are
 The model complexity is also augmenting starting with beams to then move to a representative aircraft of medium complexity, the so-called Sail Plane, and finally considering an industrial-scale aircraft, the XRF1 model. Note the longer dynamic simulation of the Sail Plane wing compared to the XRF1 gust response: despite i.e. more operations in the solution time step, driven the largest eigenvalue in the solution, was much smaller in the Sail Plane results 
 
 
-<a id="orga00bc5a"></a>
+<a id="org67d8c61"></a>
 
 ## Canonical cases
 
 Structural static and dynamic cases of simple models undergoing very large deformations are shown in this section. Even though the models are simple,  the complexity here is found in the more challenging physics than a normal airplane undergoes in terms of geometric nonlinearities.
 
 
-<a id="org2918629"></a>
+<a id="org5e39ae7"></a>
 
 ### Beams static response
 
 Initially we consider a series of simple beam models that have been standard for the verification of geometrically nonlinear theories.
-First a 2D problem of a straight cantilever under a follower tip force is shown in Fig. [33](#orgb6f3a47). The structure is deformed into a hook undergoing very large deformations.
+First a 2D problem of a straight cantilever under a follower tip force is shown in Fig. [33](#org41fe582). The structure is deformed into a hook undergoing very large deformations.
 The beam properties are 100 cm length, cross-sectional area of 20 cm$^2$, $I=3/2$ cm$^4$, $E=2.1\times 10^7$ N/cm$^2$. The example first appeared in \cite{Argyris1981} but a finer discretisation with 25 nodes is used here, which explains the small differences.
 This case, which consists of 7 different load increments, runs in the new implementation with the full set of modes (150) in 7.8 seconds and it used to run in almost 10 minutes, for a 75 times speed-up.
 
@@ -836,7 +1677,7 @@ The geometry consists of a 45-degree bend circle of 100 m radius, 1 m square cro
 ![img](figs/Simoverificationfollower.png "45-deg bend cantilever deformations")
 
 
-<a id="org77f3d50"></a>
+<a id="orgfaa43b8"></a>
 
 ### Free vibrations of thin-walled cantilever
 
@@ -850,7 +1691,7 @@ NMROMs are built from three linear models in MSC Nastran and a 30-node spanwise 
 The free-vibrations of the system are investigated by imposing an initial parabolic velocity distribution along the undeformed cantilever. A small excitation results in a linear response as shown in the displacements in y and z directions in Fig. \ref{fig:cantilever_sollinA}. Axial displacements are exactly zero. The lumped shell and beam models show identical response while the distributed mass model is slightly shifted with respect to them. Geometrically-nonlinear effects become relevant as the amplitude of the initial velocity is increased. Displacements over 35$\%$ are obtained as presented in the time history of the free-end displacements in Fig. \ref{fig:cantilever_sollinB}. Converged simulations are obtained with 85 modes and a time step of $\Delta t = 0.002$.  \textbf{The difference between previous and current implementations is nearly three orders of magnitude: 34.3 seconds versus 6 hours, 16 minutes and 53 seconds.}
 
 
-<a id="orga2eebd6"></a>
+<a id="orgd1fc7d4"></a>
 
 ## Structural verification of a representative configuration
 
@@ -858,7 +1699,7 @@ The free-vibrations of the system are investigated by imposing an initial parabo
 A representative FE model for aeroelastic analysis of a full aircraft without engines is used to demonstrate the capabilities of the current methodology on large finite-element models. The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs. Flexible tail and rear stabiliser are rigidly attached to the wing. Structural and aerodynamic models are shown in Fig. \ref{fig:SailPlane}. This is a good test case as it is not very complex yet has all the features for detailed aeroelastic analysis and it is available open source.  
 
 
-<a id="org4e034c8"></a>
+<a id="org2d82efa"></a>
 
 ### Geometrically nonlinear static response
 
@@ -874,7 +1715,7 @@ A first attempt into recovering the 3D structural response has been put in place
 ![img](./figs/3Dstatic-sideview.png "3D configuration")
 
 
-<a id="orga6fdb16"></a>
+<a id="org972848d"></a>
 
 ### Large-amplitude nonlinear dynamics
 
@@ -889,7 +1730,7 @@ The dynamic response is presented in Fig. \ref{fig:sp_results}, where results ha
 ![img](figs/wingSP_y.png "Span-normalised tip displacements in the dynamic simulation, y-component")
 
 
-<a id="org681390d"></a>
+<a id="org498f7f4"></a>
 
 ## Dynamic loads on an industrial configuration
 
@@ -919,7 +1760,7 @@ Fig. \ref{fig:gust001} shows the normalised tip response to a low  intensity 1-c
 An important remark about these computations is that the gusts have been input in the reference configuration. Undergoing updates in the implementation aim to update the gust intensity at each panel with its normal component. This will account for the added nonlinearity of the changing in downwash.
 
 
-<a id="orgfb71e08"></a>
+<a id="org5b9ba3f"></a>
 
 # Conclusions
 
