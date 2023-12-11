@@ -64,7 +64,7 @@ An extensive verification has been carried out and is presented herein, starting
   (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   (setq Veval_blocks "yes") ;; yes, no, no-export
-  (setq Veval_blocks_run "no-export") 
+  (setq Veval_blocks_run "yes") 
 #+end_src
 
 ** Load modules                                                   :noexport:
@@ -78,7 +78,8 @@ An extensive verification has been carried out and is presented herein, starting
   if not os.path.isdir("./results"):
       print("***** creating results folder ******")
       os.mkdir("./results")
-  os.chdir("./results")
+  if os.getcwd().split('/')[-1] != 'results':
+     os.chdir("./results")
 #+end_src
 
 #+NAME: PYTHONMODULES
@@ -377,83 +378,83 @@ An extensive verification has been carried out and is presented herein, starting
 
 #+NAME: Simoverificationfollower
 #+begin_src python  :results value file :exports results
-    figname = f"figs/{name}.png"
-    f = config_simo45f.systems.mapper['s1'].xloads.follower_interpolation[0][1:]
-    u1i = (sol_s45f.data.staticsystem_s1.ra[:,0,-1] -
-        config_simo45f.fem.X[-1,0])
-    u2i = (sol_s45f.data.staticsystem_s1.ra[:,1,-1] -
-        config_simo45f.fem.X[-1,1])
-    u3i = (sol_s45f.data.staticsystem_s1.ra[:,2,-1] -
-        config_simo45f.fem.X[-1,2])
-    settline = [dict(mode="lines",
-                     line=dict(color="navy",
-                               width=2.5),
-                   name="u1"
-                            ),
-                dict(mode="lines",
-                     line=dict(color="navy",
-                               width=2.5,
-                               dash='dot'),
-                   name="u2"
-                            ),
-                dict(mode="lines",
-                     line=dict(color="navy",
-                               width=2.5,
-                               dash='dash'),
-                   name="u3"
-                            )
-              ]
+  figname = f"figs/{name}.png"
+  f = list(config_simo45f.systems.mapper['s1'].xloads.follower_interpolation[0][1:])
+  u1i = (sol_s45f.data.staticsystem_s1.ra[:,0,-1] -
+      config_simo45f.fem.X[-1,0])
+  u2i = (sol_s45f.data.staticsystem_s1.ra[:,1,-1] -
+      config_simo45f.fem.X[-1,1])
+  u3i = (sol_s45f.data.staticsystem_s1.ra[:,2,-1] -
+      config_simo45f.fem.X[-1,2])
+  settline = [dict(mode="lines",
+                   line=dict(color="navy",
+                             width=2.5),
+                 name="u1"
+                          ),
+              dict(mode="lines",
+                   line=dict(color="navy",
+                             width=2.5,
+                             dash='dot'),
+                 name="u2"
+                          ),
+              dict(mode="lines",
+                   line=dict(color="navy",
+                             width=2.5,
+                             dash='dash'),
+                 name="u3"
+                          )
+            ]
 
-    settmark = [dict(mode="markers",
-                     marker_symbol="circle-open",
-                     marker=dict(color="navy",
-                                 size=10),
-                   name="u1-ref"
-                            ),
-              dict(mode="markers",
-                     marker_symbol="square-open",
-                     marker=dict(color="navy",
-                                 size=10),
-                 name="u2-ref"
-                            ),
-              dict(mode="markers",
-                     marker_symbol="star-open",
-                     marker=dict(color="navy",
-                                 size=10),
-                 name="u3-ref"
-                            )
-              ]
+  settmark = [dict(mode="markers",
+                   marker_symbol="circle-open",
+                   marker=dict(color="navy",
+                               size=10),
+                 name="u1-ref"
+                          ),
+            dict(mode="markers",
+                   marker_symbol="square-open",
+                   marker=dict(color="navy",
+                               size=10),
+               name="u2-ref"
+                          ),
+            dict(mode="markers",
+                   marker_symbol="star-open",
+                   marker=dict(color="navy",
+                               size=10),
+               name="u3-ref"
+                          )
+            ]
 
-    fig = uplotly.iterate_lines2d([jnp.hstack([0,f]), jnp.hstack([0,f]), jnp.hstack([0,f])],
-                                  [jnp.hstack([0,u1i]), jnp.hstack([0,u2i]), jnp.hstack([0,u3i])],
-                                  scatter_settings=settline,
-                                  fig=None)
+  fig = uplotly.iterate_lines2d([jnp.hstack([0,f]), jnp.hstack([0,f]), jnp.hstack([0,f])],
+                                [jnp.hstack([0,u1i]), jnp.hstack([0,u2i]), jnp.hstack([0,u3i])],
+                                scatter_settings=settline,
+                                fig=None)
 
-    fig = uplotly.iterate_lines2d([u1.f, u2.f[0::2], u3.f],
-                                  [u1.disp, u2.disp[0::2], u3.disp],
-                                  scatter_settings=settmark,
-                                  fig=fig)
-    fig.update_xaxes(title='Load [N]',
-                     titlefont=dict(size=16),
-                     tickfont = dict(size=16))
-    fig.update_yaxes(title='Disp [m]', tickfont = dict(size=16),
-                     titlefont=dict(size=16))
-    fig.update_layout(legend=dict(font=dict(size=15)),
-        margin=dict(
-          autoexpand=True,
-          l=0,
-          r=0,
-          t=0,
-          b=0
-      ))
+  fig = uplotly.iterate_lines2d([u1.f, u2.f[0::2], u3.f],
+                                [u1.disp, u2.disp[0::2], u3.disp],
+                                scatter_settings=settmark,
+                                fig=fig)
+  fig.update_xaxes(title='Load [N]',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16))
+  fig.update_yaxes(title='Disp [m]', tickfont = dict(size=16),
+                   titlefont=dict(size=16))
+  fig.update_layout(legend=dict(font=dict(size=15)),
+      margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
 
-    #fig.update_xaxes(range=[-25, 105])
-    #fig.update_yaxes(range=[-85, 65])
-    #fig.update_layout(showlegend=False,
-    #                  annotations=annotations)
-    fig.show()
-    fig.write_image(f"../{figname}")
-    figname
+  #fig.update_xaxes(range=[-25, 105])
+  #fig.update_yaxes(range=[-85, 65])
+  #fig.update_layout(showlegend=False,
+  #                  annotations=annotations)
+  fig.show()
+  fig.write_image(f"../{figname}")
+  figname
 #+end_src
 
 *** Dead forces
@@ -607,7 +608,7 @@ An extensive verification has been carried out and is presented herein, starting
 
 #+NAME: wingSP_z
 #+begin_src python :results value file :exports results 
-  figname = f"figs/{name}.pdf"
+  figname = f"figs/{name}.png"
   sol_wsp1 = solution.IntrinsicReader("./wingSP")
   x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
                                 sol_wsp1.data.dynamicsystem_s1.ra,
@@ -631,7 +632,7 @@ An extensive verification has been carried out and is presented herein, starting
 
 #+NAME: wingSP_x
 #+begin_src python :results value file :exports results 
-  figname = f"figs/{name}.pdf"
+  figname = f"figs/{name}.png"
   sol_wsp1 = solution.IntrinsicReader("./wingSP")
   x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
                                 sol_wsp1.data.dynamicsystem_s1.ra,
@@ -655,7 +656,7 @@ An extensive verification has been carried out and is presented herein, starting
 
 #+NAME: wingSP_y
 #+begin_src python :results value file :exports results 
-  figname = f"figs/{name}.pdf"
+  figname = f"figs/{name}.png"
   sol_wsp1 = solution.IntrinsicReader("./wingSP")
   x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
                                 sol_wsp1.data.dynamicsystem_s1.ra,
@@ -1810,6 +1811,9 @@ This case, which consists of 7 different load increments, runs in the new implem
 #+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: ArgyrisBeamPlot
 [[file:figs/ArgyrisBeam.png]]
+
+
+
 \\
 Next, a curved cantilever under static follower loads is shown in Fig. \ref{fig:simo45}.
 It was first analysed  by Bathe and Bolourchi \cite{Bathe1979} and it has extensively been used to validate nonlinear structural implementations \cite{Simo1986a,Werter2016}.
@@ -1832,24 +1836,24 @@ Three equivalent models are built: 1) with beam elements and lumped masses, 2) s
 The material properties are $E = 106$ N/m$^2$, $v = 0.3$ and $\rho = 1$ Kg/m$^3$.
 MSC Nastran 4-noded elements (CQUADs) are employed; mass properties are given either as density in the material cards  or as discrete mass elements (CONM2s) representing sectional inertia; and interpolation elements (RBE3s) which link the nodes in full and reduced models.
 The differences between the shell and beam models, are shown as well as how those are captured by the current methodology in dynamical problems.
-#+begin_export latex
-\begin{figure}[h!]
-\centering
-\includegraphics[width=0.7\textwidth]{./figs/cantilever30e}
-\caption{3D cantilever-box model \label{fig:cantilever}}
-\end{figure}
-#+end_export
+# #+begin_export latex
+# \begin{figure}[h!]
+# \centering
+# \includegraphics[width=0.7\textwidth]{./figs/cantilever30e}
+# \caption{3D cantilever-box model \label{fig:cantilever}}
+# \end{figure}
+# #+end_export
 NMROMs are built from three linear models in MSC Nastran and a 30-node spanwise discretisation along the main load path is used for the model condensation using Guyan reduction. This was found to provide converged solution for the nonlinear response studied --which surpassed 30$\%$ of displacements with respect to the cantilever length. 
 The free-vibrations of the system are investigated by imposing an initial parabolic velocity distribution along the undeformed cantilever. A small excitation results in a linear response as shown in the displacements in y and z directions in Fig. \ref{fig:cantilever_sollinA}. Axial displacements are exactly zero. The lumped shell and beam models show identical response while the distributed mass model is slightly shifted with respect to them. Geometrically-nonlinear effects become relevant as the amplitude of the initial velocity is increased. Displacements over 35$\%$ are obtained as presented in the time history of the free-end displacements in Fig. \ref{fig:cantilever_sollinB}. Converged simulations are obtained with 85 modes and a time step of $\Delta t = 0.002$.  \textbf{The difference between previous and current implementations is nearly three orders of magnitude: 34.3 seconds versus 6 hours, 16 minutes and 53 seconds.}
  
-#+begin_export latex
-\begin{figure}[h!]
-\centering
-\subfigure[Small excitation \label{fig:cantilever_sollinA}]{\includegraphics[width=0.499\textwidth]{./figs/cantilever_sollin3}}
-\subfigure[Large excitation \label{fig:cantilever_sollinB}]{\includegraphics[width=0.47\textwidth]{./figs/cantilever_solnl2}}
-\caption{Displacements at the free end under initial parabolic velocity distribution}
-\end{figure}
-#+end_export
+# #+begin_export latex
+# \begin{figure}[h!]
+# \centering
+# \subfigure[Small excitation \label{fig:cantilever_sollinA}]{\includegraphics[width=0.499\textwidth]{./figs/cantilever_sollin3}}
+# \subfigure[Large excitation \label{fig:cantilever_sollinB}]{\includegraphics[width=0.47\textwidth]{./figs/cantilever_solnl2}}
+# \caption{Displacements at the free end under initial parabolic velocity distribution}
+# \end{figure}
+# #+end_export
 
 ** Structural verification of a representative configuration
 \label{sec:representative_aircraft}
@@ -1889,14 +1893,9 @@ Excellent agreement is obtained between the nonlinear static calculations from M
 \\
 A first attempt into recovering the 3D structural response has been put in place with a very good agreement between the obtained configuration and Nastran 400 solution. A mapping between the aerodynamic model (surface of panels) and the condensed model is built using the positions and rotations from the solution; then an RBF kernel is placed at every corner of each of the panels, which deforms the 3D structural mesh. Fig. \ref{fig:sailplane3Dstatic} shows the overlap in the Nastran solution (in blue) and the NMROM (in red) for the 2000 and 5300 KN loadings. A similar but more realistic strategy is to use the nodes connected by the RBE3s elements instead of the aerodynamic panels as the interpolation points. Furthermore, the cross-sectional information from the 3D modal shapes could also be added if necessary. The accuracy of those will be assessed in future work but the current results already show the potential of this method to reproduce full 3D nonlinear solutions and, for instance, be able to couple the solvers to a CFD aerodynamic model for more accurate results on the aerodynamic side.   
 
-#+begin_export latex
- \begin{figure}[h!]
- \centering
- \subfigure[Front view]{\includegraphics[width=0.9\textwidth]{./figs/3Dstatic-frontview.pdf}}
- \subfigure[Side view]{\includegraphics[width=0.9\textwidth]{./figs/3Dstatic-sideview.pdf}}
- \caption{3D structural configuration for wing-tip follower loads}\label{fig:sailplane3Dstatic}
- \end{figure}
-#+end_export
+#+CAPTION: 3D configuration 
+[[./figs/3Dstatic-frontview.png]]
+[[./figs/3Dstatic-sideview.png]]
 
 *** Large-amplitude nonlinear dynamics
 This test case demonstrates the accuracy of the NMROM approach for  dynamic geometrically-nonlinear calculations and was first introduced in [[cite:&CEA2021]]. The right wing of Fig. \ref{fig:SailPlane} is considered and dynamic nonlinear simulations are carried out  and compared to MSC Nastran linear and nonlinear analysis (SOL 109 and 400, respectively) on the full FE model. A force is applied at the wing tip with a triangular loading profile, followed by a sudden release of the applied force to heavily excite the wing.
@@ -1913,13 +1912,15 @@ This test case demonstrates the accuracy of the NMROM approach for  dynamic geom
 The dynamic response is presented in Fig. \ref{fig:sp_results}, where results have been normalised with the wing semi-span. As expected, linear analysis over predicts vertical displacements and does not capture displacements in the $x$ and $y$ directions. NMROMs were built with 15 and 50 modes. An impressive reduction of computational time is achieved in the new implementation that for the 50 modes case and with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the nonlinear response of the full model in \textbf{Nastran took 1 hour 22 minutes.}   
 
 #+NAME: wingSP_z
-#+CAPTION: Span-normalised tip displacements in the dynamic simulation
+#+CAPTION: Span-normalised tip displacements in the dynamic simulation, z-component
 #+RESULTS: wingSP_z
-
+[[file:figs/wingSP_z.png]]
+#+CAPTION: Span-normalised tip displacements in the dynamic simulation, x-component
 #+RESULTS: wingSP_x
-[[file:figs/wingSP_x.pdf]]
+[[file:figs/wingSP_x.png]]
+#+CAPTION: Span-normalised tip displacements in the dynamic simulation, y-component
 #+RESULTS: wingSP_y
-[[file:figs/wingSP_y.pdf]]
+[[file:figs/wingSP_y.png]]
 
 ** Dynamic loads on an industrial configuration
 The studies presented in this section are based on a reference configuration developed to industry standards by Airbus as part of the eXternal Research Forum (XRF), from which the aircraft takes its name, XRF1. The aircraft represents a long-range wide-body transport airplane  and has been used as a research platform for collaboration between the company, universities and research institutions. Fig. \ref{fig8:xrf1-model} shows the full aeroelastic model split up into the structural, mass and aerodynamic components. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. One of the strengths of the present methodology is that 
@@ -1934,42 +1935,59 @@ The aerodynamic model contains $\sim 1,500$ aerodynamic panels.
 
 
 #+NAME: fig:xrf1_alphas
-#+CAPTION: Residual $\alpha_1$ and $\alpha_2$ in previous and current implementation
+#+CAPTION: Residual $\alpha_2$ in  current implementation
 #+RESULTS: XRF1Plot_alpha2
-[[file:figs/XRF1Plot_alpha2.png]]
+[[figs/XRF1Plot_alpha2.png]]
+
+#+CAPTION: Residual $\alpha_2$ in previous implementation
 #+RESULTS: XRF1Plot_alpha2old
-[[file:figs/XRF1Plot_alpha2old.png]]
+[[figs/XRF1Plot_alpha2old.png]]
+
+#+CAPTION: Residual $\alpha_1$ current implementation
 #+RESULTS: XRF1Plot_alpha1
-[[file:figs/XRF1Plot_alpha1.png]]
+[[figs/XRF1Plot_alpha1.png]]
+
+#+CAPTION: Residual $\alpha_1$ in previous implementation
 #+RESULTS: XRF1Plot_alpha1old
-[[file:figs/XRF1Plot_alpha1old.png]]
+[[figs/XRF1Plot_alpha1old.png]]
 
 
  Fig. \ref{fig:gust001} shows the normalised tip response to a low  intensity 1-cos gust shape for a 0.81 Mach flow. A very good agreement is found with NASTRAN calculations based on the full FE model for this case with very small displacements, i.e. linear. On the other hand, a high intensity gust in Fig. \ref{fig:gust2} induces large deformations whose effects are only captured by the nonlinear solver. 
 
 #+NAME: fig:gust001
-#+CAPTION: gust 001 
+#+CAPTION: Low intensity gust, x-component
 #+RESULTS: Gust3Plot_x
+
+#+CAPTION: Low intensity gust, y-component
 #+RESULTS: Gust3Plot_y
-[[file:figs/Gust3Plot_y.png]]
+[[figs/Gust3Plot_y.png]]
+
+#+CAPTION: Low intensity gust, z-component
 #+RESULTS: Gust3Plot_z
-[[file:figs/Gust3Plot_z.png]]
+[[figs/Gust3Plot_z.png]]
 
 #+NAME: fig:gust2
-#+CAPTION: gust 4 
+#+CAPTION: High intensity gust, x-component
 #+RESULTS: Gust4Plot_x
-[[file:figs/Gust4Plot_x.png]]
+[[figs/Gust4Plot_x.png]]
+
+#+CAPTION: High intensity gust, y-component
 #+RESULTS: Gust4Plot_y
-[[file:figs/Gust4Plot_y.png]]
+[[figs/Gust4Plot_y.png]]
+
+#+CAPTION: High intensity gust, z-component
 #+RESULTS: Gust4Plot_z
-[[file:figs/Gust4Plot_z.png]]
+[[figs/Gust4Plot_z.png]]
 
 An important remark about these computations is that the gusts have been input in the reference configuration. Undergoing updates in the implementation aim to update the gust intensity at each panel with its normal component. This will account for the added nonlinearity of the changing in downwash.
 * Conclusions
 
-
-In the immediate future two targets are foreseen with the already built implementation: the first a further assessment of the computational gains by running the examples presented here on GPUs; the second, and more important, the propagation of derivatives in the solution process via the Algorithmic Differentiation tool embedded in JAX. This will complete a fully differentiated aeroelastic framework that can run very efficient in modern software architectures while enhancing traditional FE models that can be very complex by construction but lack the physics of geometrically nonlinear effects.    
-
+This paper has presented a modal-based description that incorporates geometrically nonlinear effects due to structural slenderness onto generic FE models initially built for linear analysis. 
+While the underlying theory had already been introduced, a new implementation has been put in-place for both high-performance and software modularity, with the numerical library JAX as the engine powering the computations. 
+Furthermore, a relevant amount of test cases accompany the software, of which a subset has been presented to illustrate the main capabilities that may range from a canonical beam undergoing extremely large deformations to a full-vehicle nonlinear aeroelastic response. A major highlight are the computational accelerations experimented which reach two orders of magnitude in dynamic analysis. This is due to the heavy use of vectorisation and just-in-time compilation.  
+The ability to recover the full 3D state from the NMROM was also demonstrated and compared to the solution in NASTRAN.  
+\\
+In the immediate future two objectives are foreseen with this implementation: first, a further assessment of the computational gains by running the examples presented here on GPUs; second and more important, the propagation of derivatives in the solution process via the Algorithmic Differentiation tool embedded in JAX. This will complete a fully differentiated aeroelastic framework that can run very efficient in modern software architectures while enhancing traditional FE models that can be very complex by construction but lack the physics of geometrically nonlinear effects. After that, increasing the fidelity in the load calculations to consider CFD-based aerodynamics would be an additional necessary step in order to achieve a more accurate nonlinear aeroelastic methodology. 
 bibliographystyle:plain
 # bibliography:/home/acea/Documents/Engineering.bib
 bibliography:~/Documents/Engineering.bib
