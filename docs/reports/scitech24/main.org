@@ -63,8 +63,8 @@ An extensive verification has been carried out and is presented herein, starting
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
   (pyvenv-workon "fem4inas")
   (require 'org-tempo)
-  (setq Veval_blocks "no-export") ;; yes, no, no-export
-  (setq Veval_blocks_run "no-export") 
+  (setq Veval_blocks "yes") ;; yes, no, no-export
+  (setq Veval_blocks_run "yes") 
 #+end_src
 
 ** Load modules                                                   :noexport:
@@ -495,7 +495,7 @@ An extensive verification has been carried out and is presented herein, starting
       font=dict(family='Arial',
                 size=12),
       showarrow=False))
-  loads = [f"Load: {li} N" for li in config_simo45d.systems.mapper['s1'].xloads.follower_interpolation[0][1:]]
+  loads = [f"Load: {li} N" for li in config_simo45d.systems.mapper['s1'].xloads.dead_interpolation[0][1:]]
   for i in range(11):
       line_settings=dict(mode="lines+markers",
                          #marker_symbol="218",

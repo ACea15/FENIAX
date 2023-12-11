@@ -16,10 +16,6 @@ setup(
         include=['fem4inas*'],
         exclude=['tests']
         ),
-    # data_files=[
-    #     ("./lib/UVLM/lib", ["libuvlm.so"]),
-    #     ("./lib/xbeam/lib", ["libxbeam.so"])
-    #     ],
     python_requires=">=3.11",
     install_requires=[
         "numpy",
@@ -49,7 +45,10 @@ setup(
             "sphinx_rtd_theme",
             "nbsphinx"
                  ],
+        "tests": [
+            "pytest"],
         "all": [
+            "pytest",
             "pyNastran",
             "jupyterlab",
             "pandas",
