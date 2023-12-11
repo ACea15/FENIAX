@@ -550,7 +550,7 @@ An extensive verification has been carried out and is presented herein, starting
 ** wingSP
 *** Run
 #+NAME: wingSP
-#+begin_src python :results none :eval (print Veval_blocks_run) :tangle ./results/run_wingSP.py
+#+begin_src python :results none :eval (print Veval_blocks_run) :tangle ./results/run_wingSP.py :exports both
   <<PYTHONMODULES>>
   wingSP_folder = fem4inas.PATH / "../examples/wingSP"
   inp = Inputs()
@@ -587,8 +587,9 @@ An extensive verification has been carried out and is presented herein, starting
 :header-args+: :tangle ./results/plot_wingSP.py :eval (print Veval_blocks)
 :END:
 
-- Read Nastran
-#+begin_src python :results none 
+Read Nastran
+
+#+begin_src python :results none :exports both
   <<PYTHONMODULES>>
   wingSP_folder = fem4inas.PATH / "../examples/wingSP"
   nastran_path = wingSP_folder / "NASTRAN/"
@@ -1295,7 +1296,7 @@ Read data from Nastran simulations
 :END:
 
 #+Name: classes_architecture
-#+begin_src plantuml :file figs/classes_architecture.png
+#+begin_src plantuml :file figs/classes_architecture.png :exports both
   abstract Driver {
             +pre_simulation()
             +run_cases()
@@ -1463,7 +1464,7 @@ Read data from Nastran simulations
 #+end_src
 
 #+Name: components_architecture
-#+begin_src plantuml :file figs/components_architecture.png
+#+begin_src plantuml :file figs/components_architecture.png :exports both
   skinparam linetype ortho
   [Driver] as d
   [Config] as c
