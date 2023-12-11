@@ -1751,14 +1751,14 @@ The Configuration is injected into the Driver component that initialises the Sim
 #+CAPTION: Components architecture diagram
 #+ATTR_LATEX: :width 0.4\textwidth 
 #+RESULTS: components_architecture
-[[file:figs/components_architecture.png]]
+[[.figs/components_architecture.png]]
 Fig. [[classes_architecture]] shows a lower view of the abstractions, interfaces between classes and how they interact via their public methods. The inputs to the program may be given via a .yaml file or a python dictionary in memory. The starting point in the main file is the initialisation of the driver corresponding to the mathematical description to be solved (so far only the intrinsic modal is available, Eqs. \eqref{eq3:intrinsic_full_aeroelastic}). The intrinsic driver computes (or loads), as a pre-simulation step, the intrinsic modal shapes and nonlinear tensors from the linear stiffness and mass matrices and the nodal coordinates; then it runs the cases by triggering the simulation class. This class is responsible for managing how the systems are being run (in serial, in parallel, or even in a coupling process between systems). From the configuration settings, the intrinsic system loads the equations (dqs), the external loads in Eqs. \eqref{eq2:sol_qs}, such as point-forces, gravity or modal aerodynamic GAFs. Various libraries can be chosen to either solve the static equations or march in time if the solution is dynamic; importantly, the JAX-based Diffrax library has been integrated and supports ordinary, stochastic and controlled equations, with many solvers and multiple adjoint methods which could be used in an optimization framework. This initial layout of the software is expected to evolve and to be consolidated as the software matures. 
 
 #+NAME: classes_architecture
 #+CAPTION: Class architecture UML diagram
 #+ATTR_LATEX: :width 1.\textwidth 
 #+RESULTS: classes_architecture
-[[file:figs/classes_architecture.png]]
+[[./figs/classes_architecture.png]]
 
 \newpage
 * Examples
@@ -1810,9 +1810,7 @@ This case, which consists of 7 different load increments, runs in the new implem
 #+CAPTION: Beam under follower tip load pointing down
 #+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: ArgyrisBeamPlot
-[[file:figs/ArgyrisBeam.png]]
-
-
+[[./figs/ArgyrisBeam.png]]
 
 \\
 Next, a curved cantilever under static follower loads is shown in Fig. \ref{fig:simo45}.
@@ -1823,12 +1821,12 @@ The geometry consists of a 45-degree bend circle of 100 m radius, 1 m square cro
 #+NAME: fig:simo45
 #+CAPTION: 45-deg bend cantilever deformations
 #+RESULTS: Simo45FollowerPlot
-[[file:figs/s45follower.png]]
+[[./figs/s45follower.png]]
 
 #+NAME: fig:simo45
 #+CAPTION: 45-deg bend cantilever deformations
 #+RESULTS: Simoverificationfollower
-[[file:figs/Simoverificationfollower.png]]
+[[./figs/Simoverificationfollower.png]]
 
 *** Free vibrations of thin-walled cantilever
 Next, we study the dynamic behaviour of a cantilever previously studied in \cite{PALACIOS2019} and shown in Fig. \ref{fig:cantilever}. 
@@ -1914,13 +1912,13 @@ The dynamic response is presented in Fig. \ref{fig:sp_results}, where results ha
 #+NAME: wingSP_z
 #+CAPTION: Span-normalised tip displacements in the dynamic simulation, z-component
 #+RESULTS: wingSP_z
-[[file:figs/wingSP_z.png]]
+[[./figs/wingSP_z.png]]
 #+CAPTION: Span-normalised tip displacements in the dynamic simulation, x-component
 #+RESULTS: wingSP_x
-[[file:figs/wingSP_x.png]]
+[[./figs/wingSP_x.png]]
 #+CAPTION: Span-normalised tip displacements in the dynamic simulation, y-component
 #+RESULTS: wingSP_y
-[[file:figs/wingSP_y.png]]
+[[./figs/wingSP_y.png]]
 
 ** Dynamic loads on an industrial configuration
 The studies presented in this section are based on a reference configuration developed to industry standards by Airbus as part of the eXternal Research Forum (XRF), from which the aircraft takes its name, XRF1. The aircraft represents a long-range wide-body transport airplane  and has been used as a research platform for collaboration between the company, universities and research institutions. Fig. \ref{fig8:xrf1-model} shows the full aeroelastic model split up into the structural, mass and aerodynamic components. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. One of the strengths of the present methodology is that 
@@ -1928,7 +1926,7 @@ The aerodynamic model contains $\sim 1,500$ aerodynamic panels.
 #+begin_export latex
 \begin{figure}[th!]
 \centering
-\includegraphics[width=1.\textwidth]{./figs/xrf1-model.pdf}
+\includegraphics[width=1.\textwidth]{././figs/xrf1-model.pdf}
 \caption{Modified XRF1 aeroelastic subcomponents}\label{fig8:xrf1-model}
 \end{figure}
 #+end_export
@@ -1937,19 +1935,19 @@ The aerodynamic model contains $\sim 1,500$ aerodynamic panels.
 #+NAME: fig:xrf1_alphas
 #+CAPTION: Residual $\alpha_2$ in  current implementation
 #+RESULTS: XRF1Plot_alpha2
-[[figs/XRF1Plot_alpha2.png]]
+[[./figs/XRF1Plot_alpha2.png]]
 
 #+CAPTION: Residual $\alpha_2$ in previous implementation
 #+RESULTS: XRF1Plot_alpha2old
-[[figs/XRF1Plot_alpha2old.png]]
+[[./figs/XRF1Plot_alpha2old.png]]
 
 #+CAPTION: Residual $\alpha_1$ current implementation
 #+RESULTS: XRF1Plot_alpha1
-[[figs/XRF1Plot_alpha1.png]]
+[[./figs/XRF1Plot_alpha1.png]]
 
 #+CAPTION: Residual $\alpha_1$ in previous implementation
 #+RESULTS: XRF1Plot_alpha1old
-[[figs/XRF1Plot_alpha1old.png]]
+[[./figs/XRF1Plot_alpha1old.png]]
 
 
  Fig. \ref{fig:gust001} shows the normalised tip response to a low  intensity 1-cos gust shape for a 0.81 Mach flow. A very good agreement is found with NASTRAN calculations based on the full FE model for this case with very small displacements, i.e. linear. On the other hand, a high intensity gust in Fig. \ref{fig:gust2} induces large deformations whose effects are only captured by the nonlinear solver. 
@@ -1960,24 +1958,24 @@ The aerodynamic model contains $\sim 1,500$ aerodynamic panels.
 
 #+CAPTION: Low intensity gust, y-component
 #+RESULTS: Gust3Plot_y
-[[figs/Gust3Plot_y.png]]
+[[./figs/Gust3Plot_y.png]]
 
 #+CAPTION: Low intensity gust, z-component
 #+RESULTS: Gust3Plot_z
-[[figs/Gust3Plot_z.png]]
+[[./figs/Gust3Plot_z.png]]
 
 #+NAME: fig:gust2
 #+CAPTION: High intensity gust, x-component
 #+RESULTS: Gust4Plot_x
-[[figs/Gust4Plot_x.png]]
+[[./figs/Gust4Plot_x.png]]
 
 #+CAPTION: High intensity gust, y-component
 #+RESULTS: Gust4Plot_y
-[[figs/Gust4Plot_y.png]]
+[[./figs/Gust4Plot_y.png]]
 
 #+CAPTION: High intensity gust, z-component
 #+RESULTS: Gust4Plot_z
-[[figs/Gust4Plot_z.png]]
+[[./figs/Gust4Plot_z.png]]
 
 An important remark about these computations is that the gusts have been input in the reference configuration. Undergoing updates in the implementation aim to update the gust intensity at each panel with its normal component. This will account for the added nonlinearity of the changing in downwash.
 * Conclusions
