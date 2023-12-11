@@ -1806,10 +1806,8 @@ Initially we consider a series of simple beam models that have been standard for
 First a 2D problem of a straight cantilever under a follower tip force is shown in Fig. [[ArgyrisBeamPlot]]. The structure is deformed into a hook undergoing very large deformations.
 The beam properties are 100 cm length, cross-sectional area of 20 cm$^2$, $I=3/2$ cm$^4$, $E=2.1\times 10^7$ N/cm$^2$. The example first appeared in \cite{Argyris1981} but a finer discretisation with 25 nodes is used here, which explains the small differences.
 This case, which consists of 7 different load increments, runs in the new implementation with the full set of modes (150) in 7.8 seconds and it used to run in almost 10 minutes, for a 75 times speed-up.
-#+NAME: ArgyrisBeamPlot
+
 #+CAPTION: Beam under follower tip load pointing down
-#+ATTR_LATEX: :width 0.5\textwidth 
-#+RESULTS: ArgyrisBeamPlot
 [[./figs/ArgyrisBeam.png]]
 
 \\
