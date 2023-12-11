@@ -64,22 +64,25 @@ An extensive verification has been carried out and is presented herein, starting
   (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   (setq Veval_blocks "yes") ;; yes, no, no-export
-  (setq Veval_blocks_run "yes") 
+  (setq Veval_blocks_run "no-export") 
 #+end_src
 
 ** Load modules                                                   :noexport:
-#+begin_src python :session py1 :results none
+#+begin_src python :session py1 :results none :eval (print Veval_blocks)
   import plotly.express as px
   import pyNastran.op4.op4 as op4
   import matplotlib.pyplot as plt
   import pdb
   import datetime
   import os
+  if not os.path.isdir("./results"):
+      print("***** creating results folder ******")
+      os.mkdir("./results")
   os.chdir("./results")
 #+end_src
 
 #+NAME: PYTHONMODULES
-#+begin_src python :session py1 :results none
+#+begin_src python :session py1 :results none :eval (print Veval_blocks)
   import pathlib
   import plotly.express as px
   import pickle
@@ -98,7 +101,7 @@ An extensive verification has been carried out and is presented herein, starting
 
 * Run models :noexport:
 :PROPERTIES:
-:header-args: :var name=(org-element-property :name (org-element-context)) :mkdirp yes :eval (print Veval_blocks) :session py1 :noweb yes
+:header-args: :var name=(org-element-property :name (org-element-context)) :mkdirp yes  :session py1 :noweb yes
 :END:
 ** ArgyrisBeam
 *** Run
@@ -149,7 +152,7 @@ An extensive verification has been carried out and is presented herein, starting
 
 *** Plot
 :PROPERTIES:
-:header-args+: :tangle ./results/plot_ArgyrisBeam.py
+:header-args+: :tangle ./results/plot_ArgyrisBeam.py :eval (print Veval_blocks)
 :END:
 
 #+begin_src python
@@ -295,7 +298,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+end_src
 **** Plot
 :PROPERTIES:
-:header-args+: :tangle ./results/plot_Simo45BeamFollower.py
+:header-args+: :tangle ./results/plot_Simo45BeamFollower.py :eval (print Veval_blocks)
 :END:
 
 #+NAME: Simo45FollowerPlot
@@ -472,7 +475,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+end_src
 **** Plot
 :PROPERTIES:
-:header-args+: :tangle ./results/plot_Simo45BeamDead.py
+:header-args+: :tangle ./results/plot_Simo45BeamDead.py :eval (print Veval_blocks)
 :END:
 
 #+NAME: Simo45DeadPlot
@@ -582,7 +585,7 @@ An extensive verification has been carried out and is presented herein, starting
 #+end_src
 *** Plot
 :PROPERTIES:
-:header-args+: :tangle ./results/plot_wingSP.py
+:header-args+: :tangle ./results/plot_wingSP.py :eval (print Veval_blocks)
 :END:
 
 - Read Nastran
@@ -614,7 +617,7 @@ An extensive verification has been carried out and is presented herein, starting
                         dict(name="NMROM",
                              line=dict(color="navy")
                              ),
-                        dict(title="1-Cos simulation"))
+                        dict())
   fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 2], fig,
                         dict(name="NASTRAN",
                              line=dict(color="grey",
@@ -638,7 +641,7 @@ An extensive verification has been carried out and is presented herein, starting
                         dict(name="NMROM",
                              line=dict(color="navy")
                              ),
-                        dict(title="1-Cos simulation"))
+                        dict())
   fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 0], fig,
                         dict(name="NASTRAN",
                              line=dict(color="grey",
@@ -662,7 +665,7 @@ An extensive verification has been carried out and is presented herein, starting
                         dict(name="NMROM",
                              line=dict(color="navy")
                              ),
-                        dict(title="1-Cos simulation"))
+                        dict())
   fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 1], fig,
                         dict(name="NASTRAN",
                              line=dict(color="grey",
@@ -819,7 +822,7 @@ An extensive verification has been carried out and is presented herein, starting
 (not implemented)
 *** data analysis
 :PROPERTIES:
-:header-args+: :tangle ./results/plot_XRF1.py
+:header-args+: :tangle ./results/plot_XRF1.py :eval (print Veval_blocks)
 :END:
 
 **** NASTRAN data
@@ -1908,13 +1911,6 @@ This test case demonstrates the accuracy of the NMROM approach for  dynamic geom
 \end{equation}
 #+end_comment
 The dynamic response is presented in Fig. \ref{fig:sp_results}, where results have been normalised with the wing semi-span. As expected, linear analysis over predicts vertical displacements and does not capture displacements in the $x$ and $y$ directions. NMROMs were built with 15 and 50 modes. An impressive reduction of computational time is achieved in the new implementation that for the 50 modes case and with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the nonlinear response of the full model in \textbf{Nastran took 1 hour 22 minutes.}   
-#+begin_export latex
-\begin{figure}[h!]
-\centering
-\includegraphics[width=0.9\textwidth]{./figs/wingSP11}
-\caption{Span-normalised tip displacements in the dynamic simulation of $M_1$}\label{fig:sp_results}
-\end{figure}
-#+end_export
 
 #+NAME: wingSP_z
 #+CAPTION: Span-normalised tip displacements in the dynamic simulation
