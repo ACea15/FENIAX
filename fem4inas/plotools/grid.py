@@ -8,6 +8,10 @@ import fem4inas.plotools.interpolation as interpolation
 import fem4inas.preprocessor.solution as solution
 import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
 import fem4inas.plotools.grid as grid
+import fem4inas.unastran.bdfextractor as bdfextractor
+
+def transform_rigid(ra, Rab, R0ab, pa):
+    return ra + Rab @ (R0ab.T @ pa)
 
 def transform_grid_rigid(ra, Rab, R0ab, pa):
     f = jax.vmap(lambda ra_i, Rab_i, R0ab_i, pa_i: ra_i.reshape((3, 1)) + Rab_i @ (R0ab_i.T @ pa_i),
@@ -140,6 +144,59 @@ class Model:
 
     def map_mxm1(self):
         ...
+
+class RBE3Model:
+
+    def __init__(self,
+                 bdf_model: BDF,
+                 model2_coord: list | jnp.ndarray,
+                 tol_identification=1e-6,
+                 **kwargs):
+
+        self.bdf_model = bdf_model
+        self.model2_coord = model2_coord
+        self.tol_identification = tol_identification
+        self._link_models()
+        self._link_solution()
+        
+    def _link_models(self):
+
+        self.rbe3 = bdfextractor.build_RBE3(self.bdf_model)
+        self.model0_nodes = self.rbe3.dependent_nodes
+        self.model0_coord = self.rbe3.dnodes_coord
+        self.model1_nodes = self.rbe3.independent_nodes
+        self.model1_coord = self.rbe3.inodes_coord
+        self.model1_map = self.rbe3.inodes_map
+        self.link_m0m1 = self.rbe3.dinpendent_link
+        self.model01_coord = self.rbe3.arm_coord        
+        
+    def _link_solution(self):
+        
+        self.link_m0m2 = ASETModel.aset2id_intrinsic(self.model2_coord,
+                                                     self.model0_nodes,
+                                                     self.model0_coord,
+                                                     self.tol_identification)
+        
+    def map_m1mx(self, ra, Rab, R0ab, arm):
+        model1x_coord_ij = transform_rigid(ra, Rab, R0ab, arm)
+        return model1x_coord_ij
+
+    def set_solution(self, ra, Rab, R0ab):
+        """
+        """
+        model1x_coord = []
+        for i, niref in enumerate(self.model0_nodes):
+            nmrom_node = self.link_m0m2[niref]
+            for j, nj in enumerate(self.link_m0m1[i]):
+                node_index = self.model1_map[nj]
+                # model1_coord = self.model1_coord[node_index]
+                arm = self.model01_coord[node_index]
+                model1x_coord_ij = self.map_m1mx(ra[:, nmrom_node],
+                                                 Rab[:, :, nmrom_node],
+                                                 R0ab[:, :, nmrom_node],
+                                                 arm)
+                model1x_coord.append(model1x_coord_ij)
+        self.model1x_coord = np.array(model1x_coord)
         
 class ASETModel(Model):
     """
