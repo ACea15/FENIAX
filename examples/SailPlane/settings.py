@@ -29,8 +29,10 @@ inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.num_modes = 50
 inp.driver.typeof = "intrinsic"
 
+#inp.driver.sol_path = pathlib.Path(
+#    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
+    f"./results_struct")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "static"
 inp.systems.sett.s1.solver_library = "diffrax"
@@ -75,6 +77,24 @@ config =  configuration.Config(inp)
 sol = fem4inas.fem4inas_main.main(input_obj=config)
 
 
+import fem4inas.plotools.uplotly as uplotly
+import fem4inas.plotools.utils as putils
+import fem4inas.plotools.upyvista as upyvista
+icomp = putils.IntrinsicStructComponent(config.fem)
+icomp.add_solution(sol.staticsystem_s1.ra)
+settings = {}
+fig = uplotly.render3d_multi(icomp,
+                             **settings)
+
+istruct = putils.IntrinsicStruct(config.fem)
+pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
+istruct.add_solution(sol.staticsystem_s1.ra)
+
+pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
+pl.show_grid()
+#pl.view_xy()
+for k, v in istruct.map_ra.items():
+    pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
 # import scipy.linalg
 # import numpy as np
 # Ka = np.load("./FEM/Ka.npy")
@@ -86,3 +106,6 @@ sol = fem4inas.fem4inas_main.main(input_obj=config)
 #     np.save("./FEM/eigenvals.npy", w)
 #     np.save("./FEM/eigenvecs.npy", v)
 
+
+import fem4inas.plotools.streamlit.intrinsic as sti
+sti.sys_3Dconfiguration0(config)

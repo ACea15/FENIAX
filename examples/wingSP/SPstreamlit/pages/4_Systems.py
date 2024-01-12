@@ -10,4 +10,4 @@ st.set_page_config(
 )
 
 
-sti.systems(st.session_state.sol)
+sti.systems(st.session_state.sol, st.session_state.config)

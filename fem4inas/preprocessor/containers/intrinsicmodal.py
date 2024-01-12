@@ -300,7 +300,7 @@ class Dfem(DataContainer):
         setobj("Ma_name", Ma_name)
         setobj("grid", grid)
         if self.folder is not None:
-            setobj("folder", pathlib.Path(self.folder))
+            setobj("folder", pathlib.Path(self.folder).absolute())
         if self.Ka is None:
             if self.folder is None:
                 setobj("Ka", load_jnp(self.Ka_name))

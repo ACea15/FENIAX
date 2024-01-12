@@ -63,7 +63,7 @@ class UpdateLayout:
     #                                   font=dict(family='Arial',
     #                                             size=16),
     #                                   showarrow=False))
-    
+
 def lines2d(x, y,
             fig=None,
             scatter_settings=None,
@@ -93,7 +93,7 @@ def lines3d(x, y, z,
         fig = go.Figure()
     if scatter_settings is None:
         scatters = ScatterSettings()
-        fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **scatters.__dict__))        
+        fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **scatters.__dict__))
     else:
         fig.add_trace(go.Scatter3d(x=x, y=y, z=z, **scatter_settings))
     if update_layout is not None:
@@ -189,12 +189,12 @@ def render3d_struct(structcomp: putils.IntrinsicStructComponent,
     if label is None:
         structure = list(structcomp.map_components.values())[0]
     else:
+        #breakpoint()
         structure = structcomp.map_components[label]
     # components = list(structcomp.map_components.keys())
     num_components = len(structure)
     if scatter_settings is None:
         scatter_settings = {}
-    # import pdb; pdb.set_trace()
     for i, v in enumerate(structure):
         if isinstance(scatter_settings, list):
             scsettings = scatter_settings[i]

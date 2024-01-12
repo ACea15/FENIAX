@@ -83,33 +83,39 @@ class IntrinsicStruct:
         mid_points = mid_points.at[:,0].set(ra[:, 0])
         return mid_points.T
     
-    def add_solution(self, ra: jnp.array, label=None):
+    def add_solution(self, ra: jnp.array, label=None, label_final=None):
 
         ra_shape = ra.shape
         self.labels_new = list()
         assert ra_shape[-1] == self.npoints, "ra not the same number of nodes"
-        if len(ra_shape) == 3:  # bunch of solutions
-            print("loading solutions")
-            for i, ra_i in enumerate(ra):
+        if label_final is not None:
+            self.nsol += 1
+            self.map_mra[label_final] = self._calculate_midpoints(ra)
+            self.map_ra[label_final] = ra.T
+            self.labels_new.append(label_final)
+        else:
+            if len(ra_shape) == 3:  # bunch of solutions
+                print("loading solutions")
+                for i, ra_i in enumerate(ra):
+                    self.nsol += 1
+                    if label is None:
+                        labeli = self.nsol
+                    else:
+                        labeli = f"{label}{self.nsol}"
+                    self.map_mra[labeli] = self._calculate_midpoints(ra_i)
+                    self.map_ra[labeli] = ra_i.T
+                    self.labels_new.append(labeli)
+            else:
                 self.nsol += 1
                 if label is None:
                     labeli = self.nsol
                 else:
                     labeli = f"{label}{self.nsol}"
-                self.map_mra[labeli] = self._calculate_midpoints(ra_i)
-                self.map_ra[labeli] = ra_i.T
+                #breakpoint()
+                self.map_mra[labeli] = self._calculate_midpoints(ra)
+                self.map_ra[labeli] = ra.T
                 self.labels_new.append(labeli)
-        else:
-            self.nsol += 1
-            if label is None:
-                labeli = self.nsol
-            else:
-                labeli = f"{label}{self.nsol}"
-            #breakpoint()
-            self.map_mra[labeli] = self._calculate_midpoints(ra)
-            self.map_ra[labeli] = ra.T
-            self.labels_new.append(labeli)
-            
+
 class IntrinsicStructComponent(IntrinsicStruct):
 
     def __init__(self, fem):
@@ -117,14 +123,17 @@ class IntrinsicStructComponent(IntrinsicStruct):
         super().__init__(fem)
         self.map_components = dict()
         self.add_solution(self.X.T, label="ref")
-        
+
     def _set_linetopology(self):
-        
+
         self.lines = dict()
         for i, ci in enumerate(self.fem.component_names):
             if i > 0:
                 ci_father = self.fem.component_father[ci]
-                ci_father_node = self.fem.component_nodes[ci_father][-1]
+                if ci_father is None:
+                    ci_father_node = 0
+                else:
+                    ci_father_node = self.fem.component_nodes[ci_father][-1]
                 self.lines[ci] = [ci_father_node] + self.fem.component_nodes[ci]
             else:
                 self.lines[ci] = self.fem.component_nodes[ci]
@@ -136,8 +145,8 @@ class IntrinsicStructComponent(IntrinsicStruct):
             for k, v in self.lines.items():
                 self.map_components[labeli].append(self.map_ra[labeli][jnp.array(v)])
             #self.map_components[labeli] = np.array(self.map_components[labeli])
-            
-    def add_solution(self, ra: jnp.array, label=None):
 
-        super().add_solution(ra, label)
+    def add_solution(self, ra: jnp.array, label=None, label_final=None):
+
+        super().add_solution(ra, label, label_final)
         self._add_solcomponent()
