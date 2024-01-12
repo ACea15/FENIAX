@@ -152,13 +152,24 @@ def eta_rogerstruct(q0, q1, ql,
     #jax.debug.breakpoint()
     return eta
 
-#@jax.jit
-def eta_manoeuvre(q0: jnp.ndarray,
-                  qalpha: jnp.ndarray,
-                  A0hat: jnp.ndarray,
+@jax.jit
+def eta_steadyaero(q0: jnp.ndarray,
+                   A0hat: jnp.ndarray):
+
+    eta = A0hat @ q0
+    return eta
+
+@jax.jit
+def eta_manoeuvre(qalpha: jnp.ndarray,
                   C0hat: jnp.ndarray):
 
-    eta = A0hat @ q0 + C0hat @ qalpha
+    eta = C0hat @ qalpha
+    return eta
+
+@jax.jit
+def eta_control(qh, B0hat: jnp.ndarray):
+
+    eta = B0hat @ qh
     return eta
 
 @jax.jit
