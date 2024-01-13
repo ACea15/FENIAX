@@ -151,11 +151,13 @@ class RBE3Model:
                  bdf_model: BDF,
                  model2_coord: list | jnp.ndarray,
                  tol_identification=1e-6,
+                 rbe3s_full=True,
                  **kwargs):
 
         self.bdf_model = bdf_model
         self.model2_coord = model2_coord
         self.tol_identification = tol_identification
+        self.rbe3s_full = rbe3s_full
         self._link_models()
         self._link_solution()
         
@@ -176,7 +178,27 @@ class RBE3Model:
                                                      self.model0_nodes,
                                                      self.model0_coord,
                                                      self.tol_identification)
-        
+        self.link_m0m2_valid = {k:vi for k, vi in self.link_m0m2.items() if vi is not None}
+        self.model1_coord_valid = []
+        self.repeated = []
+        for niref in self.link_m0m2_valid.keys():
+            #nmrom_node = self.link_m0m2[niref]
+            i = self.model0_nodes.index(niref)
+            for j, nj in enumerate(self.link_m0m1[i]):
+                node_index = self.model1_map[nj]
+                # model1_coord = self.model1_coord[node_index]
+                coord = self.model1_coord[node_index]
+                if len(self.model1_coord_valid) > 0:
+                    check_repeated = (np.linalg.norm([coord - ci for ci in self.model1_coord_valid],
+                                                     axis=1) < self.tol_identification*1e-3).any()
+                else:
+                    check_repeated = False
+                if not check_repeated:
+                    self.model1_coord_valid.append(coord)
+                else:
+                    self.repeated.append((i,j))
+        self.model1_coord_valid = np.array(self.model1_coord_valid)
+
     def map_m1mx(self, ra, Rab, R0ab, arm):
         model1x_coord_ij = transform_rigid(ra, Rab, R0ab, arm)
         return model1x_coord_ij
@@ -185,17 +207,33 @@ class RBE3Model:
         """
         """
         model1x_coord = []
-        for i, niref in enumerate(self.model0_nodes):
-            nmrom_node = self.link_m0m2[niref]
-            for j, nj in enumerate(self.link_m0m1[i]):
-                node_index = self.model1_map[nj]
-                # model1_coord = self.model1_coord[node_index]
-                arm = self.model01_coord[node_index]
-                model1x_coord_ij = self.map_m1mx(ra[:, nmrom_node],
-                                                 Rab[:, :, nmrom_node],
-                                                 R0ab[:, :, nmrom_node],
-                                                 arm)
-                model1x_coord.append(model1x_coord_ij)
+        if self.rbe3s_full:
+            for i, niref in enumerate(self.model0_nodes):
+                nmrom_node = self.link_m0m2[niref]
+                for j, nj in enumerate(self.link_m0m1[i]):
+                    node_index = self.model1_map[nj]
+                    # model1_coord = self.model1_coord[node_index]
+                    arm = self.model01_coord[node_index]
+                    model1x_coord_ij = self.map_m1mx(ra[:, nmrom_node],
+                                                     Rab[:, :, nmrom_node],
+                                                     R0ab[:, :, nmrom_node],
+                                                     arm)
+                    model1x_coord.append(model1x_coord_ij)
+        else:
+            for niref, nmrom_node in self.link_m0m2_valid.items():
+                #nmrom_node = self.link_m0m2[niref]
+                i = self.model0_nodes.index(niref)
+                for j, nj in enumerate(self.link_m0m1[i]):
+                    if (i, j) not in self.repeated:
+                        node_index = self.model1_map[nj]
+                        # model1_coord = self.model1_coord[node_index]
+                        arm = self.model01_coord[node_index]
+                        model1x_coord_ij = self.map_m1mx(ra[:, nmrom_node],
+                                                         Rab[:, :, nmrom_node],
+                                                         R0ab[:, :, nmrom_node],
+                                                         arm)
+                        model1x_coord.append(model1x_coord_ij)
+
         self.model1x_coord = np.array(model1x_coord)
         
 class ASETModel(Model):

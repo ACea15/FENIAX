@@ -108,4 +108,24 @@ for k, v in istruct.map_ra.items():
 
 
 import fem4inas.plotools.streamlit.intrinsic as sti
-sti.sys_3Dconfiguration0(config)
+
+fig = sti.sys_3Dconfiguration0(config)
+
+
+icomp = putils.IntrinsicStructComponent(config.fem)
+#breakpoint()
+fig = uplotly.render3d_struct(icomp,
+                              label="ref1",
+                              # scatter_settings=[dict(customdata=ti,
+                              #                        hovertemplate=ti) for ti in template],
+                              update_traces=dict(line=dict(width=1.2,color="navy"),
+                                                 marker=dict(size=1.5)))
+
+
+icomp = putils.IntrinsicStructComponent(config.fem)
+label = "ref1"
+icomp.add_solution(sol.modes.phi1[0], label_final=label)
+fig = uplotly.render3d_struct(icomp,
+                              label,
+                              **settings)
+fig.show()

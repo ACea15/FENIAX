@@ -67,12 +67,12 @@ class DefBdf:
         for i, ni in enumerate(nid):
             self.mbdf.Node(ni).set_position(self.mbdf, nposition[i])
             
-    def plot_vtk(self, file_path):
+    def plot_vtk(self, file_path,size_cards=8):
         path = pathlib.Path(file_path)
         path_folder = path.parent
         path_folder.mkdir(parents=True, exist_ok=True)
         path_vtk = path.with_suffix(".vtk")
-        self.mbdf.write_bdf(path)
+        self.mbdf.write_bdf(path, size=size_cards)
         bdf2vtk.run(str(path), None, str(path_vtk), False, fileformat="ascii")
         
 if (__name__ == "__main__"):

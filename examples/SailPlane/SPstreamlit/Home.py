@@ -12,21 +12,21 @@ st.set_page_config(
     layout="wide"
     )
 
-sti.home()
-video_file = open('/Users/ac5015/postdoc2/Papers/Scitech2024/out4.mp4', 'rb')
-video_bytes = video_file.read()
-st.video(video_bytes)
+# sti.home()
+# video_file = open('/Users/ac5015/postdoc2/Papers/Scitech2024/out4.mp4', 'rb')
+# video_bytes = video_file.read()
+# st.video(video_bytes)
 
-st.divider()
-st.image('/Users/ac5015/projects/FEM4INAS/docs/reports/scitech24/figs/classes_architecture.png',
-         caption='Classes architecture')
+# st.divider()
+# st.image('/Users/ac5015/projects/FEM4INAS/docs/reports/scitech24/figs/classes_architecture.png',
+#          caption='Classes architecture')
 
-st.divider()
-st.image('/Users/ac5015/projects/FEM4INAS/docs/reports/oct23/img/aircraft_process.pdf',
-         caption='Aircraft process')
+# st.divider()
+# st.image('/Users/ac5015/projects/FEM4INAS/docs/reports/oct23/img/aircraft_process.pdf',
+#          caption='Aircraft process')
 
 
-st.image('sunrise.jpg', caption='Sunrise by the mountains')
+# st.image('sunrise.jpg', caption='Sunrise by the mountains')
 if ('sol' not in st.session_state and
     'config' not in st.session_state):
     sol_path =  "../results_struct"
