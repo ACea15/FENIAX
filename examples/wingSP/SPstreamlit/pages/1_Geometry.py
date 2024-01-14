@@ -8,5 +8,5 @@ st.set_page_config(
 )
 
 sti.df_geometry(st.session_state.config.fem)
-sti.fe_matrices(st.session_state.config.fem)
 sti.sys_3Dconfiguration0(st.session_state.config)
+sti.fe_matrices(st.session_state.config.fem)

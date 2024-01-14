@@ -7,4 +7,5 @@ st.set_page_config(
     layout="wide"
 )
 
-sti.df_modes(st.session_state.sol)
+sti.df_modes(st.session_state.sol,
+             st.session_state.config)

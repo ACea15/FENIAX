@@ -35,12 +35,26 @@ def home():
 
 def file_selector(folder_path='.'):
     filenames = os.listdir(folder_path)
-    selected_filename = st.selectbox('Select a file', filenames)
-    return os.path.join(folder_path, selected_filename)
+    selected_filename = st.selectbox('Select a file', filenames,None)
+    if selected_filename is not None:
+        return os.path.join(folder_path, selected_filename)
+    else:
+        return selected_filename
 
+def multifolder_selector(folder_path='.'):
+    folder_path = pathlib.Path(folder_path)
+    names = [folder_path / pathlib.Path(fi) for fi in os.listdir(folder_path)]
+    #breakpoint()
+    folder_names = [ni for ni in names if ni.is_dir()]
+    selected_foldernames = st.multiselect('Select solution folders', [fi.name for fi in folder_names],None)
+    if selected_foldernames is not None:
+        folders = [folder_path / pathlib.Path(sfi) for sfi in selected_foldernames]
+        return folders
+    else:
+        return selected_foldernames
 
-def build_op2modes():
-    bdfdef.vtk_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None)
+# def build_op2modes():
+#     bdfdef.vtk_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None)
 
 def show_vtu(vtu_folder, stream_out="streamlit"):
     """
@@ -82,7 +96,7 @@ def fe_matrices(fem):
     with st.expander("See mass matrix"):
         st.table(fem.Ma)
 
-def df_modes(sol):
+def df_modes(sol, config):
     
     st.header('Intrinsic modal data')
     names = [mi for mi in dir(sol.data.modes) if mi[0] != "_"]
@@ -93,8 +107,17 @@ def df_modes(sol):
     mname = col1.selectbox('Select mode type', options=modes_names)
     mnumber = col2.selectbox('Select Mode number', options=range(num_modes))
     mvalue = getattr(sol.data.modes, mname)
-    df = pd.DataFrame(mvalue[mnumber].T, columns=['x', 'y', 'z', 'rx', 'ry', 'rz'])
+    scale = st.sidebar.slider("Select a scaling", min_value=-100., max_value=100.,
+                   value=0., step=0.1, format=None, key=None, help=None,
+                   on_change=None, args=None, kwargs=None, disabled=False,
+                   label_visibility="visible")
+    
+    df = pd.DataFrame(mvalue[mnumber].T * scale, columns=['x', 'y', 'z', 'rx', 'ry', 'rz'])
     st.table(df)
+    st.divider()
+    fig = modes_3Dconfiguration(mode=mvalue[mnumber] * scale, config=config, mode_label=mname,settings=None)
+    #breakpoint()
+    st.plotly_chart(fig, use_container_width=False)
 
 def df_couplings(sol):
     st.header('Modal couplings')
@@ -111,7 +134,7 @@ def df_couplings(sol):
         df = pd.DataFrame(mvalue)
     st.subheader("Coupling heat map")
     fig = px.imshow(df.abs(), aspect="auto")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=False)
     #st.pyplot(fig)
     with st.expander("See Data Frame"):
         st.table(df)
@@ -158,12 +181,45 @@ def sys_states(solsys):
             for li in linput[1:]:
                 fig2 = uplotly.lines2d(t, q[:, li], fig2,
                                        dict(name=f"State {li}",
-                                            mode="lines+markers"))
+                                            mode=mode))
                 fig2.update_xaxes(title='time [s]')
                 fig2.update_yaxes(title='q')
 
             st.plotly_chart(fig2, use_container_width=True)
 
+def sys_states_comparison(solsys):
+
+    labels = list(solsys.keys())
+    syss = list(solsys.values())
+    q = [ss.q for ss in syss]
+    if hasattr(syss[0], "t"):
+        t = [ss.t for ss in syss]
+        mode = "lines"
+    else:
+        t = [list(range(len(qi))) for qi in q]
+        mode = "lines+markers"
+
+    statei = None
+    statei = st.selectbox(
+        "Select a state for plotting",
+        range(len(q[0][0])),
+        index=None,
+        placeholder="Pick one...",
+    )
+    if statei is not None:
+        #statei = 0#col1s.selectbox('Select state', options=range(len(q[0])))
+        fig = None
+        for i, (ti, qi) in enumerate(zip(t, q)):
+            fig = uplotly.lines2d(ti, qi[:, statei], fig,
+                                  dict(name=labels[i],
+                                       mode=mode,
+                                       #line=dict(color="navy")
+                                       ),
+                                  dict(title="Solution state evolution"))
+        fig.update_xaxes(title='time [s]')
+        fig.update_yaxes(title='q')
+
+        st.plotly_chart(fig, use_container_width=True)
 
 def sys_X(X, solsys, label='X'):
 
@@ -171,10 +227,12 @@ def sys_X(X, solsys, label='X'):
     componenti = None
     col1, col2 = st.columns(2)
     ntimes, ncomponents, nnodes = X.shape
-    if "t" in dir(solsys):
+    if hasattr(solsys, "t"):
         t = solsys.t
+        mode = "lines"
     else:
-        t = list(range(ntimes))
+        t = list(range(ntimes))        
+        mode = "lines+markers"
 
     nodei = col1.selectbox('Select a node', options=range(nnodes))
     componenti = col2.selectbox('Select a component', options=range(ncomponents))
@@ -182,7 +240,8 @@ def sys_X(X, solsys, label='X'):
     if nodei is not None:
         fig = uplotly.lines2d(t, X[:, componenti, nodei], None,
                               dict(name="NMROM",
-                                   line=dict(color="navy")
+                                   line=dict(color="navy"),
+                                   mode=mode
                                    ),
                               dict(title='Time evolution'))
         fig.update_xaxes(title='time [s]',
@@ -218,7 +277,7 @@ def sys_X(X, solsys, label='X'):
                         fig2 = uplotly.lines2d(t, X[:, ci, ni],
                                                fig2,
                                                dict(name=f"Node {ni}, component {ci}",
-                                                    mode="lines+markers"))
+                                                    mode=mode))
                 st.plotly_chart(fig2, use_container_width=True)
 
 def sys_displacements(solsys, config):
@@ -363,6 +422,13 @@ def sys_3Dconfiguration0(config):
         dados_sim.append(x2)
         x3 = f'<BR><b>z: </b> {z[n_i]}'
         dados_sim.append(x3)
+        index = f'<BR><b>Index: </b> {n_i}'
+        dados_sim.append(index)
+        fe_orderi = config.fem.df_grid.fe_order[n_i]
+        fe_index = f'<BR><b>FE_Index: </b> {fe_orderi}'
+        dados_sim.append(fe_index)
+        Component_i = f'<BR><b>Component: </b> {componenti}'
+        dados_sim.append(Component_i)
         dados_sim = ','.join(dados_sim) + '<extra></extra>'
         templatei.append(dados_sim)
     template.append(templatei)
@@ -430,24 +496,76 @@ def systems(sol, config):
                 st.plotly_chart(fig2, use_container_width=False)
             case show.CONFIGURATION3D_PV.name:
                 sys_3Dconfiguration_pv(solsys, config)
-# def df_system_X(sol, ):
-#     st.header('Systems')
-#     show = Enum('States', ['STATES', 'POSITIONS','VELOCITIES',
-#                             'STRAINS', 'INTERNALFORCES'])
-#     names = [mi for mi in dir(sol.data) if (mi[0] != "_" and
-#                                             "system" in mi)]
-#     option = st.sidebar.radio('Select what you want to display:',
-#                               State._member_names_)
-#     match :
-#         case show.STATES:
-#             ...
-#         case show.POSITIONS:
-#             ...
-#         case show.VELOCITIES:
-#             ...
-#         case show.STRAINS:
-#             ...
-#         case show.INTERNALFORCES:
-#             ...
 
+def systems_comparison(sol, config):
+    st.header('Comparison')
+    show = Enum('States', ['STATES', 'DISPLACEMENTS','VELOCITIES',
+                            'STRAINS', 'INTERNALFORCES', 'CONFIGURATION3D', 'CONFIGURATION3D_PV'])
+    sys_names = [mi for mi in dir(list(sol.values())[0].data) if (mi[0] != "_" and
+                                            "system" in mi)]
+    sys_option = st.selectbox(
+        "Select a system for the analysis",
+        sys_names,
+        index=None,
+        placeholder="Select system...",
+    )
+
+    st.write('System being analysed:', sys_option)
+    if sys_option is not None:
+        solsys = {k: getattr(solk.data, sys_option) for k, solk in sol.items()}
+        field_option = st.sidebar.radio('Select what you want to display:',
+                                        show._member_names_)
+        match field_option:
+            case show.STATES.name:
+                sys_states_comparison(solsys)
+            case show.DISPLACEMENTS.name:
+                ...
+                #sys_displacements(solsys, config)
+            case show.VELOCITIES.name:
+                ...
+                #sys_velocities(solsys)
+            case show.STRAINS.name:
+                ...
+                #sys_strains(solsys)
+            case show.INTERNALFORCES.name:
+                ...
+                #sys_internalforces(solsys)
+            case show.CONFIGURATION3D.name:
+                # fig = sys_3Dconfiguration(solsys, config)
+                #st.plotly_chart(fig, use_container_width=False)
+                #st.subheader("Slide")
+                fig2 = sys_3Dconfiguration_ti(solsys, config)
+                st.plotly_chart(fig2, use_container_width=False)
+            case show.CONFIGURATION3D_PV.name:
+                sys_3Dconfiguration_pv(solsys, config)
+
+                
+def modes_3Dconfiguration(mode, config, mode_label,settings=None):
+
+    icomp = putils.IntrinsicStructComponent(config.fem)
+    label = f"{mode_label}"
+    if "2" in label:
+        mode2plot = (jnp.column_stack([jnp.zeros(3), mode[:3,1:]]) +
+                     +config.fem.X.T)
+    else:
+        mode2plot = mode[:3] + config.fem.X.T
+    icomp.add_solution(mode2plot, label_final=label)
+    if settings is None:
+        settings = {}
+    #breakpoint()
+    fig = uplotly.render3d_struct(icomp,
+                                  label,
+                                  **settings)
+    fig.update_layout(showlegend=False,width=1000, height=900,
+                      margin=dict(
+                          autoexpand=True,
+                          l=0,
+                          r=0,
+                          t=0,
+                          b=0
+                      ))
+    fig.update_traces(line=dict(width=1.2, color="navy"),
+                      marker=dict(size=1.5))
+    #breakpoint()
+    return fig
 

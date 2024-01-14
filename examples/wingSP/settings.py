@@ -12,13 +12,13 @@ inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'c1': None}
 inp.fem.grid = "structuralGrid"
 inp.fem.folder = pathlib.Path('./FEM/')
-inp.fem.num_modes = 50
+inp.fem.num_modes = 15
 inp.fem.eig_type = "inputs"
 inp.driver.typeof = "intrinsic"
 # inp.driver.sol_path= pathlib.Path(
 #     f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path= pathlib.Path(
-    "./results_dynamics")
+    "./results_dynamics_m15")
 
 #inp.driver.sol_path=None
 inp.simulation.typeof = "single"
