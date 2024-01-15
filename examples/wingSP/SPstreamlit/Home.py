@@ -13,6 +13,14 @@ st.set_page_config(
     )
 
 sti.home()
+st.divider()
+st.title("Sail Plane wing")
+st.text("This is what we can do!!")
+video_file = open('/Users/ac5015/postdoc2/Papers/Scitech2024/out4.mp4', 'rb')
+video_bytes = video_file.read()
+st.video(video_bytes)
+st.divider()
+
 st.markdown("""
 ### Select a folder with results for postprocessing
 """)
@@ -23,9 +31,6 @@ if selected_folder is not None:
 st.write('Solution Folder `%s`' % solfolder)
 if solfolder is not None:
     sol = solution.IntrinsicReader(solfolder)
-    # sol.load_container("Modes")
-    # sol.load_container("Couplings")
-    # sol.load_container("DynamicSystem", label="_s1")
     config = configuration.Config.from_file(f"{solfolder}/config.yaml")
     st.session_state['sol'] = sol
     st.session_state['config'] = config

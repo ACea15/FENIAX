@@ -12,6 +12,7 @@ st.set_page_config(
     layout="wide"
     )
 
+
 # sti.home()
 # video_file = open('/Users/ac5015/postdoc2/Papers/Scitech2024/out4.mp4', 'rb')
 # video_bytes = video_file.read()
@@ -26,14 +27,19 @@ st.set_page_config(
 #          caption='Aircraft process')
 
 
-# st.image('sunrise.jpg', caption='Sunrise by the mountains')
-if ('sol' not in st.session_state and
-    'config' not in st.session_state):
-    sol_path =  "../results_struct"
-    sol = solution.IntrinsicSolution(sol_path)
-    sol.load_container("Modes")
-    sol.load_container("Couplings")
-    sol.load_container("StaticSystem", label="_s1")
-    config = configuration.Config.from_file(f"{sol_path}/config.yaml")
+
+sti.home()
+st.divider()
+st.markdown("""
+### Select a folder with results for postprocessing
+""")
+solfolder = "../results_struct"
+selected_folder = sti.file_selector('../')
+if selected_folder is not None:
+    solfolder = selected_folder
+st.write('Solution Folder `%s`' % solfolder)
+if solfolder is not None:
+    sol = solution.IntrinsicReader(solfolder)
+    config = configuration.Config.from_file(f"{solfolder}/config.yaml")
     st.session_state['sol'] = sol
     st.session_state['config'] = config
