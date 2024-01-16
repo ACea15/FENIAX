@@ -77,8 +77,8 @@ def show_vtu(vtu_folder, stream_out="streamlit"):
 
 def df_geometry(fem):
 
-    st.header('Geometry and FE Model')
-    st.subheader('Condensed structural models')
+    st.header('Geometry and FE Models')
+    st.subheader('Condensed model')
     st.table(fem.df_grid)
     
 def fe_matrices(fem):
@@ -98,7 +98,6 @@ def fe_matrices(fem):
 
 def df_modes(sol, config):
     
-    st.header('Intrinsic modal data')
     names = [mi for mi in dir(sol.data.modes) if mi[0] != "_"]
     modes_names = [ni for ni in names if ni[0] == "p"]
     col1, col2 = st.columns(2)
@@ -120,7 +119,7 @@ def df_modes(sol, config):
     st.plotly_chart(fig, use_container_width=False)
 
 def df_couplings(sol):
-    st.header('Modal couplings')
+    
     names = [mi for mi in dir(sol.data.couplings) if mi[0] != "_"]
     col1, col2 = st.columns(2)
     num_modes = len(sol.data.couplings.gamma1)
@@ -280,9 +279,73 @@ def sys_X(X, solsys, label='X'):
                                                     mode=mode))
                 st.plotly_chart(fig2, use_container_width=True)
 
+def sys_X_comparison(X, t, labels):
+
+    statei = None
+    statei = st.selectbox(
+        "Select a state for plotting",
+        range(len(q[0][0])),
+        index=None,
+        placeholder="Pick one...",
+    )
+    fig = None
+    #for i, (ti, qi) in enumerate(zip(t, q)):
+    nodei = None
+    componenti = None
+    col1, col2 = st.columns(2)
+    ntimes, ncomponents, nnodes = X[0].shape
+    if hasattr(solsys, "t"):
+        t = solsys.t
+        mode = "lines"
+    else:
+        t = list(range(ntimes))        
+        mode = "lines+markers"
+
+    nodei = col1.selectbox('Select a node', options=range(nnodes))
+    componenti = col2.selectbox('Select a component', options=range(ncomponents))
+
+    if nodei is not None:
+        for i, Xi in enumerate(X):
+            fig = uplotly.lines2d(t[i], Xi[:, componenti, nodei], None,
+                                  dict(name=labels[i],
+                                       #line=dict(color="navy"),
+                                       mode=mode
+                                       ),
+                                  dict(title='Time evolution'))
+        fig.update_xaxes(title='time [s]'
+                         )
+        fig.update_yaxes(title=label
+                         )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+def sys_displacements_comp(solsys, config):
+    
+    labels = list(solsys.keys())
+    Xvs = list(solsys.values())
+    xra = [x.ra for x in Xvs]
+    if hasattr(Xvs[0], "t"):
+        t = [x.t for x in Xvs]
+        mode = "lines"
+    else:
+        t = [list(range(len(qi))) for qi in q]
+        mode = "lines+markers"
+
+    sys_X(solsys.ra - config.fem.X.T, solsys, label='Displacements')
+
 def sys_displacements(solsys, config):
 
     sys_X(solsys.ra - config.fem.X.T, solsys, label='Displacements')
+
+def sys_velocities_comp(solsys):
+
+    if hasattr(solsys, "X1"):
+        labels = list(solsys.keys())
+        Xvs = list(solsys.values())
+        x1 = [x.X1 for x in Xvs]
+        sys_X(solsys.X1, solsys, label='X1')
+    else:
+        st.text("Static solution!! All velocities are 0")
 
 def sys_velocities(solsys):
 
