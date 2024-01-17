@@ -279,34 +279,21 @@ def sys_X(X, solsys, label='X'):
                                                     mode=mode))
                 st.plotly_chart(fig2, use_container_width=True)
 
-def sys_X_comparison(X, t, labels):
+def sys_X_comparison(X, t, labels, ylabel, mode="lines"):
 
-    statei = None
-    statei = st.selectbox(
-        "Select a state for plotting",
-        range(len(q[0][0])),
-        index=None,
-        placeholder="Pick one...",
-    )
     fig = None
-    #for i, (ti, qi) in enumerate(zip(t, q)):
+    # for i, (ti, qi) in enumerate(zip(t, q)):
     nodei = None
     componenti = None
     col1, col2 = st.columns(2)
     ntimes, ncomponents, nnodes = X[0].shape
-    if hasattr(solsys, "t"):
-        t = solsys.t
-        mode = "lines"
-    else:
-        t = list(range(ntimes))        
-        mode = "lines+markers"
 
     nodei = col1.selectbox('Select a node', options=range(nnodes))
     componenti = col2.selectbox('Select a component', options=range(ncomponents))
-
+    #breakpoint()
     if nodei is not None:
         for i, Xi in enumerate(X):
-            fig = uplotly.lines2d(t[i], Xi[:, componenti, nodei], None,
+            fig = uplotly.lines2d(t[i], Xi[:, componenti, nodei], fig,
                                   dict(name=labels[i],
                                        #line=dict(color="navy"),
                                        mode=mode
@@ -314,24 +301,23 @@ def sys_X_comparison(X, t, labels):
                                   dict(title='Time evolution'))
         fig.update_xaxes(title='time [s]'
                          )
-        fig.update_yaxes(title=label
+        fig.update_yaxes(title=ylabel
                          )
-        
         st.plotly_chart(fig, use_container_width=True)
 
 def sys_displacements_comp(solsys, config):
-    
+
     labels = list(solsys.keys())
     Xvs = list(solsys.values())
-    xra = [x.ra for x in Xvs]
     if hasattr(Xvs[0], "t"):
         t = [x.t for x in Xvs]
         mode = "lines"
     else:
-        t = [list(range(len(qi))) for qi in q]
+        t = [list(range(len(qi))) for qi in Xvs[0].q]
         mode = "lines+markers"
 
-    sys_X(solsys.ra - config.fem.X.T, solsys, label='Displacements')
+    ra = [x.ra - config[labels[i]].fem.X.T for i, x in enumerate(Xvs)]
+    sys_X_comparison(ra, t, labels, "Displacements", mode)
 
 def sys_displacements(solsys, config):
 
@@ -339,11 +325,12 @@ def sys_displacements(solsys, config):
 
 def sys_velocities_comp(solsys):
 
-    if hasattr(solsys, "X1"):
+    Xvs = list(solsys.values())
+    if hasattr(Xvs[0], "X1"):
         labels = list(solsys.keys())
-        Xvs = list(solsys.values())
         x1 = [x.X1 for x in Xvs]
-        sys_X(solsys.X1, solsys, label='X1')
+        t = [x.t for x in Xvs]
+        sys_X_comparison(x1, t, labels, "X1")
     else:
         st.text("Static solution!! All velocities are 0")
 
@@ -357,9 +344,25 @@ def sys_strains(solsys):
 
     sys_X(solsys.X3, solsys, label='X3')
 
+def sys_strains_comp(solsys):
+    
+    labels = list(solsys.keys())
+    Xvs = list(solsys.values())
+    x3 = [x.X3 for x in Xvs]
+    t = [x.t for x in Xvs]
+    sys_X_comparison(x3, t, labels, "X3")
+
 def sys_internalforces(solsys):
 
     sys_X(solsys.X2, solsys, label='X2')
+
+def sys_internalforces_comp(solsys):
+
+    labels = list(solsys.keys())
+    Xvs = list(solsys.values())
+    x2 = [x.X2 for x in Xvs]
+    t = [x.t for x in Xvs]
+    sys_X_comparison(x2, t, labels, "X2")
 
 def sys_3Dconfiguration(solsys, config, ti=None, labels=None, settings=None):
 
@@ -578,21 +581,18 @@ def systems_comparison(sol, config):
         solsys = {k: getattr(solk.data, sys_option) for k, solk in sol.items()}
         field_option = st.sidebar.radio('Select what you want to display:',
                                         show._member_names_)
+        #breakpoint()
         match field_option:
             case show.STATES.name:
                 sys_states_comparison(solsys)
             case show.DISPLACEMENTS.name:
-                ...
-                #sys_displacements(solsys, config)
+                sys_displacements_comp(solsys, config)
             case show.VELOCITIES.name:
-                ...
-                #sys_velocities(solsys)
+                sys_velocities_comp(solsys)
             case show.STRAINS.name:
-                ...
-                #sys_strains(solsys)
+                sys_strains_comp(solsys)
             case show.INTERNALFORCES.name:
-                ...
-                #sys_internalforces(solsys)
+                sys_internalforces_comp(solsys)
             case show.CONFIGURATION3D.name:
                 # fig = sys_3Dconfiguration(solsys, config)
                 #st.plotly_chart(fig, use_container_width=False)
