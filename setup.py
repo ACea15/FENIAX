@@ -30,7 +30,8 @@ setup(
         "diffrax",
         "jaxopt",
         "tabulate",
-        "multipledispatch"
+        "multipledispatch",
+        "pyNastran"
     ],
     extras_require={
         "cpu":[
@@ -38,8 +39,7 @@ setup(
         "plot": [
             "matplotlib",
             "plotly",
-            "pyvista",
-            "stpyvista"
+            "pyvista"
             ],
         "docs": [
             "sphinx",
@@ -49,17 +49,41 @@ setup(
                  ],
         "tests": [
             "pytest"],
+        "streamlit": [
+            "streamlit",
+            "stpyvista",
+            "streamlit-pdf-viewer"],
         "all": [
-            "pytest",
-            "pyNastran",
-            "jupyterlab",
+            "numpy",
+            "scipy",
             "pandas",
+            "ruamel.yaml",
+            "jax",
+            "jaxlib",
+            "diffrax",
+            "jaxopt",
+            "tabulate",
+            "multipledispatch",
+            "pyNastran",            
+            ####
             "matplotlib",
             "plotly",
             "pyvista",
+            ####
+            "pytest",
+            ####
+            "jupyterlab",
+            "matplotlib",
+            "plotly",
+            "pyvista",
+            ####
             "sphinx",
             "myst-parser",
             "sphinx_rtd_theme",
-            "nbsphinx"
+            "nbsphinx",
+            #####
+            "streamlit",
+            "stpyvista",
+            "streamlit-pdf-viewer"
                  ],
     })
