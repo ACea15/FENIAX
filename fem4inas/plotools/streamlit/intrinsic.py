@@ -479,9 +479,25 @@ def sys_3Dconfiguration0(config):
             template.append(templatei)
             componenti = config.fem.df_grid.component[n_i]
             templatei = []
-        dados_sim=[]
-        index = f'<BR><b>Index: </b> {n_i}'
-        dados_sim.append(index)
+            dados_sim = []
+            n_iprev = config.fem.prevnodes[n_i]
+            x1 = f'<BR><b>x: </b> {x[n_iprev]}'
+            dados_sim.append(x1)
+            x2 = f'<BR><b>y: </b> {y[n_iprev]}'
+            dados_sim.append(x2)
+            x3 = f'<BR><b>z: </b> {z[n_iprev]}'
+            dados_sim.append(x3)
+            index = f'<BR><b>Index: </b> {n_iprev}'
+            dados_sim.append(index)
+            fe_orderi = config.fem.df_grid.fe_order[n_iprev]
+            fe_index = f'<BR><b>FE_Index: </b> {fe_orderi}'
+            dados_sim.append(fe_index)
+            Component_i = f'<BR><b>Component: </b> {componenti}'
+            dados_sim.append(Component_i)
+            dados_sim = ','.join(dados_sim) + '<extra></extra>'
+            templatei.append(dados_sim)
+
+        dados_sim = []
         x1 = f'<BR><b>x: </b> {x[n_i]}'
         dados_sim.append(x1)
         x2 = f'<BR><b>y: </b> {y[n_i]}'
