@@ -1,5 +1,5 @@
 import diffrax
-from diffrax.solution import Solution
+import optimistix as optx
 import jax.numpy as jnp
 
 dict_norm = dict(linalg_norm=jnp.linalg.norm)
@@ -13,7 +13,7 @@ def ode(F: callable,
         tn,
         dt,
         save_at=None,
-        **kwargs) -> Solution:
+        **kwargs) -> diffrax.Solution:
     term = diffrax.ODETerm(F)
     if save_at is None:
         saveat = diffrax.SaveAt(ts=jnp.linspace(t0, t1, tn))#diffrax.SaveAt(steps=True) #
@@ -43,7 +43,7 @@ def ode2(F: callable,
         tn,
         dt,
         save_at=None,
-        **kwargs) -> Solution:
+        **kwargs) -> diffrax.Solution:
     
     term = diffrax.ODETerm(F)
     if save_at is None:
@@ -68,13 +68,12 @@ def ode2(F: callable,
 
 def newton_raphson(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **kwargs):
 
-    solver = diffrax.NewtonNonlinearSolver(rtol=rtol,
-                                           atol=atol,
-                                           max_steps=max_steps,
-                                           kappa=kappa,
-                                           norm=dict_norm[norm],
-                                           tolerate_nonconvergence=False)
-    sol = solver(F, q0, args, jac)
+    solver = optx.Newton(rtol=rtol,
+                         atol=atol,
+                         kappa=kappa,
+                         norm=dict_norm[norm])
+    sol = optx.root_find(F, solver, q0, args=args, max_steps=max_steps)
+    #sol = solver(F, q0, args, jac)
     return sol
 
 def pull_ode(sol):
@@ -84,7 +83,7 @@ def pull_ode(sol):
 
 def pull_newton_raphson(sol):
 
-    qs = jnp.array(sol.root)
+    qs = jnp.array(sol.value)
     return qs
 
 #__init__(self, rtol: Optional[Scalar] = None, atol: Optional[Scalar] = None, max_steps: Optional[int] = 10, kappa: Scalar = 0.01, norm: Callable = <function rms_norm>, tolerate_nonconvergence: bool = False)
