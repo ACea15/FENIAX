@@ -93,21 +93,19 @@ class Daero(DataContainer):
                     jnp.ndarray] = dfield("", default=None)
     poles: str | jnp.ndarray = dfield("", default=None)
     num_poles: int = dfield("", default=None)
-    gust_profile: dict = dfield("", default=None, options=["mc"])
-    gust_settings: dict = dfield("", default=None, yaml_save=False)
-    gust: DGust = dfield("", init=False)
+    gust_profile: str = dfield("", default="mc", options=["mc"])
+    #gust_settings: dict = dfield("", default=None, yaml_save=False)
+    gust: dict | DGust = dfield("Gust settings", default=None)
     controller_name: dict = dfield("", default=None)
     controller_settings: dict = dfield("", default=None)
     controller: DController = dfield("", init=False)
-    
+
     def __post_init__(self):
         object.__setattr__(self, "approx", self.approx.capitalize())
-        if self.gust_profile is not None:
+        if self.gust is not None:
             gust_class = globals()[f"DGust{self.gust_profile.capitalize()}"]
-            gust_obj = initialise_Dclass(self.gust_settings, gust_class)
-            object.__setattr__(self, "gust", gust_obj)
-        else:
-            object.__setattr__(self, "gust", None)
+            object.__setattr__(self, 'gust',
+                               initialise_Dclass(self.gust, gust_class))
         if self.controller_name is not None:
             controller_class = globals()[f"DController{self.controller_name.upper()}"]
             controller_obj = initialise_Dclass(self.controller_settings, controller_class)
