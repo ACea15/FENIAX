@@ -35,9 +35,9 @@ pytest tests
 
 - Thus a typical installation would comprise of these 4 steps:
 ```
-pip install -e .[all]
 conda create -n fem4inas python=3.11
 conda activate fem4inas
+pip install -e .[all]
 pytest tests
 ```
 
