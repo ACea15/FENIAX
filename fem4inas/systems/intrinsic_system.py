@@ -7,8 +7,6 @@ import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
 import fem4inas.preprocessor.solution as solution
 import fem4inas.intrinsic.initcond as initcond
 import fem4inas.intrinsic.args as libargs
-import fem4inas.intrinsic.aero as aero
-import fem4inas.intrinsic.gust as gust
 
 import jax.numpy as jnp
 
@@ -56,6 +54,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             self.settings.xloads.build_point_dead(
                 self.fem.num_nodes)
         if self.settings.aero is not None:
+            import fem4inas.intrinsic.aero as aero            
             approx = self.settings.aero.approx.capitalize()
             aeroobj = aero.Registry.create_instance(f"Aero{approx}",
                                                     self.settings,
@@ -63,6 +62,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             aeroobj.get_matrices()
             aeroobj.save_sol()
             if self.settings.aero.gust is not None:
+                import fem4inas.intrinsic.gust as gust
                 profile = self.settings.aero.gust_profile.capitalize()
                 gustobj = gust.Registry.create_instance(f"Gust{approx}{profile}",
                                                         self.settings,

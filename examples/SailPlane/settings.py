@@ -77,55 +77,57 @@ config =  configuration.Config(inp)
 sol = fem4inas.fem4inas_main.main(input_obj=config)
 
 
-import fem4inas.plotools.uplotly as uplotly
-import fem4inas.plotools.utils as putils
-import fem4inas.plotools.upyvista as upyvista
-icomp = putils.IntrinsicStructComponent(config.fem)
-icomp.add_solution(sol.staticsystem_s1.ra)
-settings = {}
-fig = uplotly.render3d_multi(icomp,
-                             **settings)
+CHECK_SOL = False
+if CHECK_SOL:
+    import fem4inas.plotools.uplotly as uplotly
+    import fem4inas.plotools.utils as putils
+    import fem4inas.plotools.upyvista as upyvista
+    icomp = putils.IntrinsicStructComponent(config.fem)
+    icomp.add_solution(sol.staticsystem_s1.ra)
+    settings = {}
+    fig = uplotly.render3d_multi(icomp,
+                                 **settings)
 
-istruct = putils.IntrinsicStruct(config.fem)
-pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
-istruct.add_solution(sol.staticsystem_s1.ra)
+    istruct = putils.IntrinsicStruct(config.fem)
+    pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
+    istruct.add_solution(sol.staticsystem_s1.ra)
 
-pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
-pl.show_grid()
-#pl.view_xy()
-for k, v in istruct.map_ra.items():
-    pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
-# import scipy.linalg
-# import numpy as np
-# Ka = np.load("./FEM/Ka.npy")
-# Ma = np.load("./FEM/Ma.npy")
-# w, v = scipy.linalg.eigh(Ka, Ma)
+    pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
+    pl.show_grid()
+    #pl.view_xy()
+    for k, v in istruct.map_ra.items():
+        pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
+    # import scipy.linalg
+    # import numpy as np
+    # Ka = np.load("./FEM/Ka.npy")
+    # Ma = np.load("./FEM/Ma.npy")
+    # w, v = scipy.linalg.eigh(Ka, Ma)
 
-# save_eigs = True
-# if save_eigs:
-#     np.save("./FEM/eigenvals.npy", w)
-#     np.save("./FEM/eigenvecs.npy", v)
-
-
-import fem4inas.plotools.streamlit.intrinsic as sti
-
-fig = sti.sys_3Dconfiguration0(config)
+    # save_eigs = True
+    # if save_eigs:
+    #     np.save("./FEM/eigenvals.npy", w)
+    #     np.save("./FEM/eigenvecs.npy", v)
 
 
-icomp = putils.IntrinsicStructComponent(config.fem)
-#breakpoint()
-fig = uplotly.render3d_struct(icomp,
-                              label="ref1",
-                              # scatter_settings=[dict(customdata=ti,
-                              #                        hovertemplate=ti) for ti in template],
-                              update_traces=dict(line=dict(width=1.2,color="navy"),
-                                                 marker=dict(size=1.5)))
+    import fem4inas.plotools.streamlit.intrinsic as sti
+
+    fig = sti.sys_3Dconfiguration0(config)
 
 
-icomp = putils.IntrinsicStructComponent(config.fem)
-label = "ref1"
-icomp.add_solution(sol.modes.phi1[0], label_final=label)
-fig = uplotly.render3d_struct(icomp,
-                              label,
-                              **settings)
-fig.show()
+    icomp = putils.IntrinsicStructComponent(config.fem)
+    #breakpoint()
+    fig = uplotly.render3d_struct(icomp,
+                                  label="ref1",
+                                  # scatter_settings=[dict(customdata=ti,
+                                  #                        hovertemplate=ti) for ti in template],
+                                  update_traces=dict(line=dict(width=1.2,color="navy"),
+                                                     marker=dict(size=1.5)))
+
+
+    icomp = putils.IntrinsicStructComponent(config.fem)
+    label = "ref1"
+    icomp.add_solution(sol.modes.phi1[0], label_final=label)
+    fig = uplotly.render3d_struct(icomp,
+                                  label,
+                                  **settings)
+    fig.show()
