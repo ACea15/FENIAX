@@ -34,9 +34,9 @@ def redirect_to(another_function):
 #     f_interpol = weight_upper * f_upper + weight_lower  * f_lower
 #     return f_interpol
 
-@jax.jit
+# @jax.jit
+@partial(jax.jit, static_argnames=['t'])
 def linear_interpolation(t, x, data_tensor):
-
     len_x = x.shape[0]
     xindex_upper = jnp.argwhere(jax.lax.select(x >= t,
                                                jnp.ones(len_x),
@@ -116,9 +116,11 @@ def linear_interpolation3(t, x, data_tensor):
     return f_interpol
 
 @jax.jit
-def eta_pointfollower(t, phi1, x, force_follower):
+def eta_pointfollower(t, phi1, x, force_follower) -> jnp.array:
+    # jax.debug.breakpoint()
 
     f = linear_interpolation(t, x, force_follower)
+    #jax.debug.print("f {f}",f=f)
     eta = jnp.tensordot(phi1, f, axes=([1, 2],
                                        [0, 1]))
     return eta

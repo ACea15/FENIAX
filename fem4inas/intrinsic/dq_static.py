@@ -5,7 +5,6 @@ import fem4inas.intrinsic.xloads as xloads
 import fem4inas.intrinsic.postprocess as postprocess
 import fem4inas.intrinsic.dq_common as common
 
-
 def dq_10g11(q, *args):
     """Structural static with follower point forces."""
     
@@ -48,7 +47,6 @@ def dq_10g121(q, *args):
     F = _dq_10g121(q)
     return F
 
-
 def dq_10g15(q, *args):
     """Manoeuvre under qalpha."""
     
@@ -59,7 +57,6 @@ def dq_10g15(q, *args):
     F += xloads.eta_steadyaero(q0, A0)
     F += xloads.eta_manoeuvre(qalpha, A0)
     return F
-
 
 def dq_10g150(q, *args):
     """Static trim"""

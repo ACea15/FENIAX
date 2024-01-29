@@ -221,12 +221,13 @@ def integrate_X3_t(carry, x):
     carry = jnp.concatenate([Cab, Cab0_x, ra_reshaped], axis=0)
     return carry, y
 
-def integrate_strains_t(ra_0n, Cab_0n, X3, sol, fem):
+def integrate_strains_t(ra_0n, Cab_0n, X3, fem, X_xdelta, C0ab):
 
-    ds = sol.data.modes.X_xdelta
-    C0ab = sol.data.modes.C0ab  # 3x3xNn
+    # ds = sol.data.modes.X_xdelta
+    # C0ab = sol.data.modes.C0ab  # 3x3xNn
+    ds = X_xdelta
     tn, _, num_nodes = X3.shape
-    # TODO: make as fori loop
+    # TODO: make as fori loop (or not cause it is not back differentiated)
     Cab = jnp.zeros((tn, 3, 3, num_nodes))
     ra = jnp.zeros((tn, 3, num_nodes))
     comp_nodes = jnp.array(fem.component_nodes[fem.component_names[0]])[1:]

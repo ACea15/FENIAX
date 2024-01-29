@@ -5,6 +5,7 @@ import fem4inas.intrinsic.xloads as xloads
 import fem4inas.intrinsic.postprocess as postprocess
 import fem4inas.intrinsic.dq_common as common
 from functools import partial
+
 #@jax.jit
 def dq_20g1(t, q, *args):
     """Clamped Structural dynamics, free vibrations."""
@@ -19,14 +20,14 @@ def dq_20g1(t, q, *args):
 #@jax.jit
 def dq_20g11(t, q, *args):
     """Structural dynamic follower point forces."""
-    
-    (gamma1, gamma2, omega, phi1, x,
+
+    (gamma1, gamma2, omega, phi1l, x,
      force_follower, states) = args[0]
 
     q1 = q[states['q1']]
     q2 = q[states['q2']]
     eta = xloads.eta_pointfollower(t,
-                                   phi1,
+                                   phi1l,
                                    x,
                                    force_follower)
     F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2)

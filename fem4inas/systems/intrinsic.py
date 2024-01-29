@@ -16,14 +16,12 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
                  name: str,
                  settings: intrinsicmodal.Dsystem,
                  fem: intrinsicmodal.Dfem,
-                 sol: solution.IntrinsicSolution,
-                 config):
+                 sol: solution.IntrinsicSolution):
 
         self.name = name
         self.settings = settings
         self.fem = fem
         self.sol = sol
-        self.config = config
         #self._set_xloading()
         #self._set_generator()
         #self._set_solver()
@@ -149,12 +147,13 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         Cab, ra = postprocess.integrate_strains_t(ra0,
                                                   Cab0,
                                                   X3,
-                                                  self.sol,
-                                                  self.fem
+                                                  self.fem,
+                                                  self.sol.data.modes.X_xdelta,
+                                                  self.sol.data.modes.C0ab
                                                   )
         self.sol.add_container('StaticSystem', label="_"+self.name,
-                          q=self.qs, X2=X2, X3=X3,
-                          Cab=Cab, ra=ra)
+                               q=self.qs, X2=X2, X3=X3,
+                               Cab=Cab, ra=ra)
         if self.settings.save:
             self.sol.save_container('StaticSystem', label="_"+self.name)
 
@@ -257,9 +256,11 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
         Cab, ra = postprocess.integrate_strains_t(ra0,
                                                   Cab0,
                                                   X3,
-                                                  self.sol,
-                                                  self.fem
+                                                  self.fem,
+                                                  self.sol.data.modes.X_xdelta,
+                                                  self.sol.data.modes.C0ab
                                                   )
+        
         self.sol.add_container('DynamicSystem', label="_" + self.name,
                                q=self.qs, X1=X1, X2=X2, X3=X3,
                                Cab=Cab, ra=ra, t=self.settings.t)

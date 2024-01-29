@@ -37,11 +37,11 @@ def arg_10g11(sol: solution.IntrinsicSolution,
               *args, **kwargs):
 
     gamma2 = sol.data.couplings.gamma2
-    phi1 = sol.data.modes.phi1l
+    phi1l = sol.data.modes.phi1l
     omega = sol.data.modes.omega
     x = system.xloads.x
     force_follower = system.xloads.force_follower
-    return (gamma2, omega, phi1, x,
+    return (gamma2, omega, phi1l, x,
             force_follower, t)
 
 @catter2library
