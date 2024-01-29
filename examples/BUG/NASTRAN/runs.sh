@@ -39,19 +39,19 @@ if [ "$s_option" = "s103c" ]
 
 then
 
-    nastran XRF1-144run.bdf  scr=yes batch=no &
+    nastran BUG_103cao.bdf  scr=yes batch=no &
     
     pidn=$!
 
     wait $pidn
 
-    if grep -q 'FATAL' XRF1-144run.f06
+    if grep -q 'FATAL' BUG_103cao.f06
 
     then echo 'FATAL error in a'
 
     fi
 
-    find . -maxdepth 1 -mindepth 1 -name 'XRF1-144run.*' -not -name 'XRF1-144run.bdf' -print0 | xargs -0 mv -t runs
+    # find . -maxdepth 1 -mindepth 1 -name '144run.*' -not -name '144run.bdf' -print0 | xargs -0 mv -t runs
 
 fi
 
