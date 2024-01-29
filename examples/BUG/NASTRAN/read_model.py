@@ -1,9 +1,16 @@
 from pyNastran.bdf.bdf import BDF
 import pandas as pd
 
-bdf = BDF()
-bdf.read_bdf("./BUG_BothWingbox_tipload.dat", validate=False)
+bdf = BDF()#debug=False)
+bdf.read_bdf("./BUG_103cao.bdf", validate=False)
 
+# bdf_conm2 = BDF()
+# conm2_ids = list(range(314, 345)) + [376, 377, 378]
+# for cmi in conm2_ids:
+#     conm2 = bdf.masses[cmi]
+#     bdf_conm2.add_conm2(conm2.eid, conm2.nid, conm2.mass, conm2.cid, conm2.X, conm2.I)
+
+# bdf_conm2.write_bdf("./Parts/MTOW_FUEL_RWBOXmod.bdf")
 
 components_ids = dict()
 components_ids['FusWing'] = [2000]
