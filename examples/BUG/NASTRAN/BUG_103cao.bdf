@@ -20,11 +20,12 @@ $ BULK   									  $
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 BEGIN BULK
-$ PARAM,BAILOUT,0
+PARAM,AUTOMSET,YES
+$ PARAM,BAILOUT,-1
 $ PARAM,GRDPNT,0                                                              
 $ PARAM,K6ROT,1.0
 $ PARAM,SNORM,20.0
-$ PARAM,POST,-1
+PARAM,POST,-1
 $ PARAM,MAXRATIO,1.0E07
 $ PARAM,EXTOUT,DMIGPCH
 EIGRL,100,,,100
@@ -47,20 +48,20 @@ $$$$$$$$$$$$$$$$$$$$$$$$$
 $ SPCS                  $
 $$$$$$$$$$$$$$$$$$$$$$$$$
 
-INCLUDE './Config/spcs.bdf'
+$ INCLUDE './Config/spcs.bdf'
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 $ CLAMPING NODE									  $
 $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
-$ SPC1    1       123456  1005
+SPC1    1       123456  1005
 
 
 $$$$$$$$$$$$$$$$$$$$$$$$$
 $ ASETs                 $
 $$$$$$$$$$$$$$$$$$$$$$$$$
 
-INCLUDE './Config/asets_clamped.bdf'
+INCLUDE './Config/asets_clamped_reduced.bdf'
 
 $$$$$$$$$$$$$$$$$$$$$$$$$$$
 ENDDATA
