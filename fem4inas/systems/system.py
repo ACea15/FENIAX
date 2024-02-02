@@ -10,7 +10,7 @@ class System(ABC):
 
         self.name = name
         self.settings = settings
-        
+
     # @abstractmethod
     # def set_init(self):
     #     pass

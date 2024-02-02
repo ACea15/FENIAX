@@ -9,6 +9,7 @@ import fem4inas.intrinsic.initcond as initcond
 import fem4inas.intrinsic.args as libargs
 
 import jax.numpy as jnp
+import jax
 
 class IntrinsicSystem(System, cls_name="intrinsic"):
 
@@ -115,6 +116,30 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         self.dFq = getattr(dq_static, label)
 
     def solve(self):
+
+        label = self.settings.label.split("_")[-1]
+        solver_args = getattr(libargs,
+                              f"arg_{label}")
+
+        #@jax.jit
+        def iterate(q0, ti):
+
+            args1 = solver_args(self.sol,
+                                self.settings,
+                                self.fem,
+                                ti)
+            sol = self.eqsolver(self.dFq,
+                                q0,
+                                args1,
+                                **self.settings.solver_settings)
+            qi = self.states_puller(sol)
+            return qi, qi
+
+        qcarry, self.qs = jax.lax.scan(iterate,
+                                       self.q0,
+                                       jnp.array(self.settings.t))
+
+    def solve_forloop(self):
 
         label = self.settings.label.split("_")[-1]
         solver_args = getattr(libargs,
