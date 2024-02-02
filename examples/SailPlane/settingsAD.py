@@ -17,6 +17,7 @@ import jax.numpy as jnp
 import jax
 from jax.config import config; config.update("jax_enable_x64", True)
 
+
 tarray = jnp.array([1,2,3,5])
 tarray_len = len(tarray)
 t = 4
@@ -147,7 +148,7 @@ def sys_10g11(q,
                            x_forceinterpol,
                            y_forceinterpol)
     #jax.debug.breakpoint()
-    jax.debug.print("system t: {t}",t=t)
+    # jax.debug.print("system t: {t}",t=t)
     return F
 
 def q_10g11(q0, args):
@@ -156,14 +157,18 @@ def q_10g11(q0, args):
                          atol=1e-6,
                          #kappa=kappa,
                          norm=jnp.linalg.norm)
-    sol = optx.root_find(sys_10g11, solver, q0, args=args, max_steps=300
+    # sol = optx.root_find(sys_10g11, solver, q0, args=args, max_steps=300
+    #                      )
+    sol = optx.root_find(dq_static.dq_10g11, solver, q0,
+                         args=args, max_steps=300
                          )
+    
     #sol = solver(F, q0, args, jac)
     return sol.value
 
 @partial(jax.jit, static_argnames=[])
 def iter_10g11(tarray, q0, args):
-    jax.debug.print("tarray: {t}",t=tarray)
+    # jax.debug.print("tarray: {t}",t=tarray)
     @partial(jax.jit)
     def sol_10g11(q0, t):
         
@@ -196,7 +201,7 @@ def rec_10g11(q, tn, X, phi2l, psi2l, fem, X_xdelta, C0ab):
 
 def OBJ1_10g11(ra, node):
 
-    return ra[-1,:,node]
+    return ra[-1,2,node]
 
 
 @partial(jax.jit, static_argnames=['config'])
@@ -241,22 +246,14 @@ def main_10g11(t,
     args = (gamma2, omega, phi1l, x_forceinterpol,
             y_forceinterpol)
     # args = args_10g11(gamma2, omega, phi1l, t, config)    
-    q = iter_10g11(t_array, q0, args)
+    qcarry, q = iter_10g11(t_array, q0, args)
     # f = linear_interpolation(t, x_forceinterpol, y_forceinterpol)
     # F = sys_10g11(q0,
     #                args)
-    # X2, X3, ra = rec_10g11(q, tn, X, phi2l, psi2l, config.fem, X_xdelta, C0ab)
-    # return OBJ1_10g11(ra, node)
-    return q 
-
-#grad_10g11 = jax.grad(main_10g11)
-def args_10g11(gamma2, omega, phi1l, t, config):
-    
-    x_forceinterpol = config.system.xloads.x
-    y_forceinterpol = config.system.xloads.follower_interpolation
-    args = (gamma2, omega, phi1l, x_forceinterpol,
-            y_forceinterpol, t)
-    return args
+    X2, X3, ra = rec_10g11(q, tn, X, phi2l,
+                           psi2l, config.fem, X_xdelta, C0ab)
+    return OBJ1_10g11(ra, node)
+    #return q 
     
 
 # class IntrinsicADSystem(System, cls_name="intrinsicAD"):
@@ -343,13 +340,22 @@ inp.system.t = [1, 2, 3, 4, 5, 6]
 # path2config = pathlib.Path("./config.yaml")
 config =  configuration.Config(inp)
 #main_10g11
-F = main_10g11(4.2,
-               t_array=jnp.array([1, 2, 3, 4]),#jnp.array(config.system.t[:-1]),
+F0 = main_10g11(1.49,
+               t_array=jnp.array([1]),#jnp.array(config.system.t[:-1]),
                q0=jnp.zeros(config.fem.num_modes),
                Ka=config.fem.Ka,
                Ma=config.fem.Ma,
                node=25,
                config=config)
+fprime = jax.value_and_grad(main_10g11)
+F, Fp  =fprime(1.5,
+               t_array=jnp.array([1]), #jnp.array(config.system.t[:-1]),
+               q0=jnp.zeros(config.fem.num_modes),
+               Ka=config.fem.Ka,
+               Ma=config.fem.Ma,
+               node=25,
+               config=config)
+
 
 @partial(jax.jit, static_argnames=[])
 def interpolation(t, x, data_tensor):
