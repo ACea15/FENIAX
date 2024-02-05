@@ -41,15 +41,15 @@ def rk2(ys, dt, N, f, args):
 
 def ode(F: callable,
         args,
+        sett,
         q0,
         dt,
         tn,
-        solver_name: str,
         **kwargs) -> jnp.ndarray:
   
     ys = jnp.zeros((tn, len(q0)))
     ys  = ys.at[0].set(q0)
-    _solver = globals()[solver_name]
+    _solver = globals()[sett.solver_name]
     sol = _solver(ys, dt, tn, F, args)
     return sol
 

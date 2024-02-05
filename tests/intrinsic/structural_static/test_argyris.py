@@ -118,7 +118,7 @@ class TestBeamSolution:
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.save = False 
         inp.systems.sett.s1.solver_library = "diffrax"
-        inp.systems.sett.s1.solver_function = "newton_raphson"
+        inp.systems.sett.s1.solver_function = "newton"
         inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                    atol=1e-6,
                                                    max_steps=50,
@@ -272,7 +272,7 @@ class TestFrameSolution:
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.save = False 
         inp.systems.sett.s1.solver_library = "diffrax"
-        inp.systems.sett.s1.solver_function = "newton_raphson"
+        inp.systems.sett.s1.solver_function = "newton"
         inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                    atol=1e-6,
                                                    max_steps=50,
@@ -355,7 +355,7 @@ class TestFrame3D:
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.save = False         
         inp.systems.sett.s1.solver_library = "diffrax"
-        inp.systems.sett.s1.solver_function = "newton_raphson"
+        inp.systems.sett.s1.solver_function = "newton"
         inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                    atol=1e-6,
                                                    max_steps=50,

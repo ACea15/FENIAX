@@ -417,6 +417,46 @@ class StateTrack:
                                         self.num_states + v)
             self.num_states += v
 
+@dataclass(frozen=True, kw_only=True)
+class Dlibrary(DataContainer):
+    
+    function: str = dfield("Function wrapper calling the library",
+                           default=None)
+    
+@dataclass(frozen=True, kw_only=True)
+class DdiffraxOde(Dlibrary):
+    solver_name: str = dfield("", default="Dopri5")
+    save_at: jnp.ndarray | list = dfield("", default=None)
+    
+    def __post_init__(self):
+
+        object.__setattr__(self, "function",
+                           "ode")
+
+@dataclass(frozen=True, kw_only=True)
+class Drunge_kuttaOde(Dlibrary):
+    solver_name: str = dfield("", default="rk4")
+
+    def __post_init__(self):
+
+        object.__setattr__(self, "function",
+                           "ode")
+
+
+@dataclass(frozen=True, kw_only=True)
+class DdiffraxNewton(Dlibrary):
+
+    rtol: float = dfield("", default=1e-7)
+    atol: float = dfield("", default=1e-7)
+    max_steps: int = dfield("", default=100)
+    norm: str = dfield("", default="linalg_norm")
+    kappa: float = dfield("", default=0.01)
+    
+    def __post_init__(self):
+
+        object.__setattr__(self, "function",
+                           "newton")
+
 @dataclass(frozen=True)
 class Dsystem(DataContainer):
 
@@ -449,11 +489,11 @@ class Dsystem(DataContainer):
     t: jnp.array = dfield("Time vector",
                           default=None)
     solver_library: str = dfield("Library solving our system of equations",
-                                 default=None)
+                                 default="diffrax")
     solver_function: str = dfield(
         "Name for the solver of the previously defined library",
         default=None)
-    solver_settings: str = dfield(
+    solver_settings: dict = dfield(
         "Settings for the solver", default=None)
     q0treatment: int = dfield(
         """Modal velocities, q1, and modal forces, q2, are the main variables
@@ -492,6 +532,11 @@ class Dsystem(DataContainer):
                                    2)
             object.__setattr__(self, "t",
                                jnp.linspace(self.t0, self.t1, self.tn))
+        else:
+            object.__setattr__(self, "t",
+                               jnp.array(self.t)
+                               )
+
         if self.dt is None:
             object.__setattr__(self, "dt", self.t[1] - self.t[0])
         object.__setattr__(self, 'xloads', initialise_Dclass(self.xloads,
@@ -500,8 +545,12 @@ class Dsystem(DataContainer):
             object.__setattr__(self, 'aero', initialise_Dclass(self.aero,
                                                                Daero))
         #self.xloads = initialise_Dclass(self.xloads, Dxloads)
-        if self.solver_settings is None:
-            object.__setattr__(self, "solver_settings", dict())
+        libsettings_class = globals()[f"D{self.solver_library}{self.solver_function.capitalize()}"]
+        object.__setattr__(self,
+                           'solver_settings',
+                           initialise_Dclass(self.solver_settings,
+                                             libsettings_class)
+                           )
         
         if self.label is None:
             self.build_label()

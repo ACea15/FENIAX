@@ -33,7 +33,6 @@ def catter2library(fun: callable):
 def arg_10g11(sol: solution.IntrinsicSolution,
               system: intrinsicmodal.Dsystem,
               fem: intrinsicmodal.Dfem,
-              t: float,
               *args, **kwargs):
 
     gamma2 = sol.data.couplings.gamma2
@@ -42,13 +41,12 @@ def arg_10g11(sol: solution.IntrinsicSolution,
     x = system.xloads.x
     force_follower = system.xloads.force_follower
     return (gamma2, omega, phi1l, x,
-            force_follower, t)
+            force_follower)
 
 @catter2library
 def arg_10g121(sol: solution.IntrinsicSolution,
                system: intrinsicmodal.Dsystem,
                fem: intrinsicmodal.Dfem,
-               t: float,
                *args, **kwargs):
 
     phi1l = sol.data.modes.phi1l
@@ -68,13 +66,12 @@ def arg_10g121(sol: solution.IntrinsicSolution,
             X_xdelta,
             C0ab,
             component_names, num_nodes,
-            component_nodes, component_father, t)
+            component_nodes, component_father)
 
 @catter2library
 def arg_10g15(sol: solution.IntrinsicSolution,
               sys: intrinsicmodal.Dsystem,
               fem: intrinsicmodal.Dfem,
-              t: float,
               *args, **kwargs):
 
     gamma2 = sol.data.couplings.gamma2

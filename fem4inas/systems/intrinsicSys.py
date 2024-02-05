@@ -101,6 +101,19 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
     def save(self):
         pass
 
+def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
+
+    def _iter(qim1, t):
+        args = dq_args + (t,)
+        sol = eqsolver(dq, qim1, args, sett)
+        qi = jnp.array(sol.value) #_static_optx(dq, qim1, args, config)
+        return qi, qi
+
+    qcarry, qs = jax.lax.scan(_iter,
+                              q0,
+                              t_loads)
+    return qs
+
 class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
     def set_ic(self, q0):
@@ -120,24 +133,39 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         label = self.settings.label.split("_")[-1]
         solver_args = getattr(libargs,
                               f"arg_{label}")
+        args1 = solver_args(self.sol,
+                            self.settings,
+                            self.fem)
+        
+        self.qs =_staticSolve(self.eqsolver,
+                              self.dFq,
+                              self.settings.t,
+                              self.q0,
+                              args1,
+                              self.settings.solver_settings)
 
-        #@jax.jit
+    def solve_direct(self):
+
+        label = self.settings.label.split("_")[-1]
+        solver_args = getattr(libargs,
+                              f"arg_{label}")
+        args1 = solver_args(self.sol,
+                            self.settings,
+                            self.fem)
+
         def iterate(q0, ti):
 
-            args1 = solver_args(self.sol,
-                                self.settings,
-                                self.fem,
-                                ti)
+            args = args1 + (ti,)
             sol = self.eqsolver(self.dFq,
                                 q0,
-                                args1,
-                                **self.settings.solver_settings)
+                                args,
+                                self.settings.solver_settings)
             qi = self.states_puller(sol)
             return qi, qi
 
         qcarry, self.qs = jax.lax.scan(iterate,
                                        self.q0,
-                                       jnp.array(self.settings.t))
+                                       self.settings.t)
 
     def solve_forloop(self):
 
@@ -148,11 +176,11 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         for i, ti in enumerate(self.settings.t):
             args1 = solver_args(self.sol,
                                 self.settings,
-                                self.fem,
-                                ti)
+                                self.fem)
+            args = args1 + (ti,)
             sol = self.eqsolver(self.dFq,
                                 qs[-1],
-                                args1,
+                                args,
                                 **self.settings.solver_settings)
             qi = self.states_puller(sol)
             qs.append(qi)
@@ -228,13 +256,13 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
                             self.fem)
         sol = self.eqsolver(self.dFq,
                             args1,
+                            self.settings.solver_settings,
                             q0=self.q0,
                             t0=self.settings.t0,
                             t1=self.settings.t1,
                             tn=self.settings.tn,
                             dt=self.settings.dt,
-                            t=self.settings.t,
-                            **self.settings.solver_settings)
+                            t=self.settings.t)
         self.qs = self.states_puller(sol)
 
     def build_solution_loop(self):
