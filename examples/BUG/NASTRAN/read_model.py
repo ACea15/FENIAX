@@ -111,6 +111,13 @@ model_red = BuildAsetModel(components_ids, clamped_node=1005)
 model_red.write_asets("./Config/asets_clamped_reduced.bdf")
 
 
+string = ""
+for i, ai in enumerate(model_red.asets_ids):
+
+    if i%8 == 0 and i!= 0:
+        string += "\n"
+    string += str(ai)+","
+
 # grid = dict()
 # clamped_node = 1005
 
