@@ -11,6 +11,60 @@ import fem4inas.intrinsic.args as libargs
 import jax.numpy as jnp
 import jax
 
+def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
+
+    def _iter(qim1, t):
+        args = dq_args + (t,)
+        sol = eqsolver(dq, qim1, args, sett)
+        qi = jnp.array(sol.value) #_static_optx(dq, qim1, args, config)
+        return qi, qi
+
+    qcarry, qs = jax.lax.scan(_iter,
+                              q0,
+                              t_loads)
+    return qs
+
+def recover_fields(q1, q2, tn, X,
+                   phi1l, phi2l, psi2l, X_xdelta, C0ab, fem):
+
+    ra0 = jnp.broadcast_to(X[0], (tn, 3))
+    Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
+    X1 = postprocess.compute_velocities(phi1l,
+                                        q1)
+    
+    X2 = postprocess.compute_internalforces(phi2l,
+                                            q2)
+    X3 = postprocess.compute_strains(psi2l,
+                                     q2)
+    Cab, ra = postprocess.integrate_strains_t(ra0,
+                                              Cab0,
+                                              X3,
+                                              fem,
+                                              X_xdelta,
+                                              C0ab
+                                              )
+
+    return X1, X2, X3, ra, Cab
+
+def recover_staticfields(q2, tn, X, phi2l, psi2l, X_xdelta, C0ab, fem):
+
+    ra0 = jnp.broadcast_to(X[0], (tn, 3))
+    Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
+    X2 = postprocess.compute_internalforces(phi2l,
+                                            q2)
+    X3 = postprocess.compute_strains(psi2l,
+                                     q2)
+    Cab, ra = postprocess.integrate_strains_t(ra0,
+                                              Cab0,
+                                              X3,
+                                              fem,
+                                              X_xdelta,
+                                              C0ab
+                                              )
+
+    return X2, X3, ra, Cab
+
+
 class IntrinsicSystem(System, cls_name="intrinsic"):
 
     def __init__(self,
@@ -87,32 +141,10 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
     def build_solution(self, sol: solution.IntrinsicSolution):
 
-        qs = self.states_puller(self.state_sol)
-        q1 = qs[self.settings.q1_index, :]
-        q2 = qs[self.settings.q2_index, :]
-        X1 = postprocess.compute_velocities(self.fem.phi1l, q1)
-        X2 = postprocess.compute_internalforces(self.fem.phi2l, q2)
-        X3 = postprocess.compute_strains(self.fem.cphi2l, q2)
-        Rab = postprocess.velocity_Rab(X1)
-        ra = postprocess.velocity_ra(X1, Rab)
-        sol.add_container('DynamicSystem', label=self.name,
-                          q=qs, X1=X1, X2=X2, X3=X3,
-                          Rab=Rab, ra=ra)
+        ...
+
     def save(self):
         pass
-
-def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
-
-    def _iter(qim1, t):
-        args = dq_args + (t,)
-        sol = eqsolver(dq, qim1, args, sett)
-        qi = jnp.array(sol.value) #_static_optx(dq, qim1, args, config)
-        return qi, qi
-
-    qcarry, qs = jax.lax.scan(_iter,
-                              q0,
-                              t_loads)
-    return qs
 
 class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
@@ -136,7 +168,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         args1 = solver_args(self.sol,
                             self.settings,
                             self.fem)
-        
+
         self.qs =_staticSolve(self.eqsolver,
                               self.dFq,
                               self.settings.t,
@@ -189,21 +221,31 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
     def build_solution(self):
 
         # q1 = qs[self.settings.q1_index, :]
-        # q2 = qs[self.settings.q2_index, :]
+        q2_index = self.settings.states['q2']
+        q2 = self.qs[:, q2_index]
         tn = len(self.qs)
-        ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
-        Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
-        X2 = postprocess.compute_internalforces(self.sol.data.modes.phi2l,
-                                                self.qs)
-        X3 = postprocess.compute_strains(self.sol.data.modes.psi2l,
-                                         self.qs)
-        Cab, ra = postprocess.integrate_strains_t(ra0,
-                                                  Cab0,
-                                                  X3,
-                                                  self.fem,
-                                                  self.sol.data.modes.X_xdelta,
-                                                  self.sol.data.modes.C0ab
-                                                  )
+        X2, X3, ra, Cab = recover_staticfields(q2,
+                                               tn,
+                                               self.fem.X,
+                                               self.sol.data.modes.phi2l,
+                                               self.sol.data.modes.psi2l,
+                                               self.sol.data.modes.X_xdelta,
+                                               self.sol.data.modes.C0ab,
+                                               self.fem)
+
+        # ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
+        # Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
+        # X2 = postprocess.compute_internalforces(self.sol.data.modes.phi2l,
+        #                                         self.qs)
+        # X3 = postprocess.compute_strains(self.sol.data.modes.psi2l,
+        #                                  self.qs)
+        # Cab, ra = postprocess.integrate_strains_t(ra0,
+        #                                           Cab0,
+        #                                           X3,
+        #                                           self.fem,
+        #                                           self.sol.data.modes.X_xdelta,
+        #                                           self.sol.data.modes.C0ab
+        #                                           )
         self.sol.add_container('StaticSystem', label="_"+self.name,
                                q=self.qs, X2=X2, X3=X3,
                                Cab=Cab, ra=ra)
@@ -295,24 +337,38 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
     def build_solution(self):
 
-        # q1 = qs[self.settings.q1_index, :]
-        # q2 = qs[self.settings.q2_index, :]
+        q1_index = self.settings.states['q1']
+        q2_index = self.settings.states['q2']
+        q1 = self.qs[:, q1_index]
+        q2 = self.qs[:, q2_index]
         tn = len(self.qs)
-        ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
-        Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
-        X1 = postprocess.compute_velocities(self.sol.data.modes.phi1l,
-                                            self.qs[:, self.settings.states['q1']])
-        X2 = postprocess.compute_internalforces(self.sol.data.modes.phi2l,
-                                                self.qs[:, self.settings.states['q2']])
-        X3 = postprocess.compute_strains(self.sol.data.modes.psi2l,
-                                         self.qs[:, self.settings.states['q2']])
-        Cab, ra = postprocess.integrate_strains_t(ra0,
-                                                  Cab0,
-                                                  X3,
-                                                  self.fem,
-                                                  self.sol.data.modes.X_xdelta,
-                                                  self.sol.data.modes.C0ab
-                                                  )
+        X1, X2, X3, ra, Cab = recover_fields(q1,
+                                             q2,
+                                             tn,
+                                             self.fem.X,
+                                             self.sol.data.modes.phi1l,
+                                             self.sol.data.modes.phi2l,
+                                             self.sol.data.modes.psi2l,
+                                             self.sol.data.modes.X_xdelta,
+                                             self.sol.data.modes.C0ab,
+                                             self.fem
+                                             )
+
+        # ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
+        # Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
+        # X1 = postprocess.compute_velocities(self.sol.data.modes.phi1l,
+        #                                     self.qs[:, self.settings.states['q1']])
+        # X2 = postprocess.compute_internalforces(self.sol.data.modes.phi2l,
+        #                                         self.qs[:, self.settings.states['q2']])
+        # X3 = postprocess.compute_strains(self.sol.data.modes.psi2l,
+        #                                  self.qs[:, self.settings.states['q2']])
+        # Cab, ra = postprocess.integrate_strains_t(ra0,
+        #                                           Cab0,
+        #                                           X3,
+        #                                           self.fem,
+        #                                           self.sol.data.modes.X_xdelta,
+        #                                           self.sol.data.modes.C0ab
+        #                                           )
         
         self.sol.add_container('DynamicSystem', label="_" + self.name,
                                q=self.qs, X1=X1, X2=X2, X3=X3,

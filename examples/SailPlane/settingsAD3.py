@@ -146,7 +146,7 @@ _solve2 = partial(jax.jit, static_argnames=['eqsolver', 'dq', 'sett'])(isys._sta
 
 @partial(jax.jit, static_argnames=['config', 'f_obj'])
 def main_10g11(t,
-               t_array,
+               #t_array,
                q0,
                Ka,
                Ma,
@@ -158,7 +158,8 @@ def main_10g11(t,
     if obj_args is None:
         obj_args = dict()
 
-    t_loads = jnp.hstack([t_array, t])
+    #t_loads = jnp.hstack([t_array, t])
+    t_loads = jnp.hstack([config.system.t, t])
     tn = len(t_loads)
     config.system.build_states(config.fem.num_modes)
     q2_index = config.system.states['q2']
@@ -194,11 +195,14 @@ def main_10g11(t,
     #q = _solve(dq_static.dq_10g11, t_loads, q0, dq_args, config.system.solver_settings)
     # q = _solve(dq_static.dq_10g11, t_loads, q0, dq_args, config.system.solver_settings)
     q = _solve2(newton, dq_static.dq_10g11, t_loads, q0, dq_args, config.system.solver_settings)
-    X2, X3, ra, Cab = recover_staticfields(q, tn, X, q2_index,
+    q2 = q[:, q2_index]
+    # X2, X3, ra, Cab = recover_staticfields(q, tn, X, q2_index,
+    #                                        phi2l, psi2l, X_xdelta, C0ab, config.fem)
+    X2, X3, ra, Cab = isys.recover_staticfields(q2, tn, X,
                                            phi2l, psi2l, X_xdelta, C0ab, config.fem)
+    
     objective = f_obj(X2=X2, X3=X3, ra=ra, Cab=Cab, **obj_args)
     return objective
-
 
 import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
 from fem4inas.preprocessor.inputs import Inputs
@@ -259,7 +263,7 @@ inp.system.xloads.follower_interpolation = [[0.,
                                              4.8e5,
                                              5.3e5]
                                             ]
-inp.system.t = [1, 2, 3, 4, 5, 6]
+inp.system.t = [1, 2, 3]
 config =  configuration.Config(inp)
 
 fprime = jax.value_and_grad(main_10g11)
@@ -276,8 +280,8 @@ if root_args is None:
 else:
     root_args = RootFindArgs(root_args)
 
-F, Fp  =fprime(6.,
-               t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+F, Fp  =fprime(4.5,
+               #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
                q0=jnp.zeros(config.fem.num_modes),
                Ka=config.fem.Ka,
                Ma=config.fem.Ma,
