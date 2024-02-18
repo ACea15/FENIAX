@@ -26,14 +26,14 @@ inp.driver.typeof = "intrinsic"
 # inp.driver.sol_path = pathlib.Path(
 #     f"./resultsGust_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    "./resultsGust_g1i2_m50")
+    "./resultsGust_g1i1_m50diffrax")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 7.5
 inp.systems.sett.s1.tn = 2001
-inp.systems.sett.s1.solver_library = "runge_kutta"
+inp.systems.sett.s1.solver_library = "diffrax"#"runge_kutta"
 inp.systems.sett.s1.solver_function = "ode"
-inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
+inp.systems.sett.s1.solver_settings = dict(solver_name="Dopri5")#"rk4")
 inp.systems.sett.s1.xloads.modalaero_forces = True
 inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271

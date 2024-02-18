@@ -349,8 +349,16 @@ def sys_strains_comp(solsys):
     labels = list(solsys.keys())
     Xvs = list(solsys.values())
     x3 = [x.X3 for x in Xvs]
-    t = [x.t for x in Xvs]
-    sys_X_comparison(x3, t, labels, "X3")
+    t = []
+    for x in Xvs:
+        if hasattr(x, "t"):
+            t.append(x.t)
+            mode = "lines"
+        else:
+            times, ncomponents, nnodes = x.X3.shape
+            t.append(list(range(1, times + 1)))
+            mode = "lines+markers"
+    sys_X_comparison(x3, t, labels, "X3", mode=mode)
 
 def sys_internalforces(solsys):
 
@@ -361,8 +369,16 @@ def sys_internalforces_comp(solsys):
     labels = list(solsys.keys())
     Xvs = list(solsys.values())
     x2 = [x.X2 for x in Xvs]
-    t = [x.t for x in Xvs]
-    sys_X_comparison(x2, t, labels, "X2")
+    t = []
+    for x in Xvs:
+        if hasattr(x, "t"):
+            t.append(x.t)
+            mode = "lines"
+        else:
+            times, ncomponents, nnodes = x.X2.shape
+            t.append(list(range(1, times + 1)))
+            mode = "lines+markers"
+    sys_X_comparison(x2, t, labels, "X2",mode=mode)
 
 def sys_3Dconfiguration(solsys, config, ti=None, labels=None, settings=None):
 

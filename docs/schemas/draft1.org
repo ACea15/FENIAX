@@ -650,29 +650,29 @@ derivatives
 
 | Sol name |                                                 | label                 | Imp |
 |----------+-------------------------------------------------+-----------------------+-----|
-| 10G_1    | Structural static under Gravity                 | [1,0,'G']             | N   |
-| 10g_11   | Structural static with follower point forces    | [1,0,'g',0,0,0,0,1]   | Y   |
-| 10g_121  | Structural static with dead point forces        | [1,0,'g',0,0,0,0,2]   | Y   |
-| 10g_1331 | Structural static with follower+dead forces     | [1,0,'g',0,0,0,0,3]   | N   |
-| 10g_15   | Manoeuvre under qalpha                          | [1,0,'g',0,1,1]       | Y   |
-| 10G_15   | Manoeuvre under qalpha and Gravity              | [1,0,'G',0,1,1]       | N   |
-| 10g_75   | Manoeuvre under qalpha and controls             | [1,0,'g',0,1,2]       | N   |
-| 10G_75   | Manoeuvre under qalpha+controls+Gravity         | [1,0,'G',0,1,2]       | N   |
-| 20g_1    | Clamped Structural dynamics, free vibrations    | [2,0,'g']             | N   |
-| 20G_2    | Free Structural dynamic with gravity forces     | [2,0,'G',1]           | N   |
-| 20g_11   | Structural dynamic follower point forces        | [2,0,'g',0,0,0,0,1]   | Y   |
-| 20g_121  | Structural dynamic dead point forces            | [2,0,'g',0,0,0,0,2]   | Y   |
-| 20g_22   | Free Structural dynamic follower point forces   | [2,0,'g',1,0,0,0,1]   | N   |
-| 20g_242  | Free Structural dynamic dead point forces       | [2,0,'g',1,0,0,0,2]   | N   |
-| 11G_150  | Static trimmed State (elevator input)           | [1,1,'G',1,1,2]       | N   |
-| 11G_750  | Static trimmed State (elevator and qalpha)      | [1,1,'G',1,1,3]       | N   |
-| 21G_150  | Dynamic trimmed State                           | [2,1,'G',1,1,2]       | N   |
-| 20g_21   | Gust response                                   | [2,0,'g',0,1,0,1]     | Y   |
-| 20g_273  | Gust response, q0 obtained via integrator q1    | [2,0,'g',0,1,0,1,0,1] | Y   |
-| 20g_105  | Gust response with steady qalpha                | [2,0,'g',0,1,1,1]     | N   |
-| 20g_42   | Gust response Free-flight                       | [2,0,'g',1,1,0,1]     | N   |
-| 20G_42   | Gust response Free-flight and gravity (X error) | [2,0,'G',1,1,0,1]     | N   |
-| 20G_1050 | Gust response Free-flight, gravity, controls    | [2,0,'G',1,1,2,1]     | N   |
+| 10G1     | Structural static under Gravity                 | [1,0,'G']             | N   |
+| 10g11    | Structural static with follower point forces    | [1,0,'g',0,0,0,0,1]   | Y   |
+| 10g121   | Structural static with dead point forces        | [1,0,'g',0,0,0,0,2]   | Y   |
+| 10g1331  | Structural static with follower+dead forces     | [1,0,'g',0,0,0,0,3]   | N   |
+| 10g15    | Manoeuvre under qalpha                          | [1,0,'g',0,1,1]       | Y   |
+| 10G15    | Manoeuvre under qalpha and Gravity              | [1,0,'G',0,1,1]       | N   |
+| 10g75    | Manoeuvre under qalpha and controls             | [1,0,'g',0,1,2]       | N   |
+| 10G75    | Manoeuvre under qalpha+controls+Gravity         | [1,0,'G',0,1,2]       | N   |
+| 20g1     | Clamped Structural dynamics, free vibrations    | [2,0,'g']             | N   |
+| 20G2     | Free Structural dynamic with gravity forces     | [2,0,'G',1]           | N   |
+| 20g11    | Structural dynamic follower point forces        | [2,0,'g',0,0,0,0,1]   | Y   |
+| 20g121   | Structural dynamic dead point forces            | [2,0,'g',0,0,0,0,2]   | Y   |
+| 20g22    | Free Structural dynamic follower point forces   | [2,0,'g',1,0,0,0,1]   | N   |
+| 20g242   | Free Structural dynamic dead point forces       | [2,0,'g',1,0,0,0,2]   | N   |
+| 11G150   | Static trimmed State (elevator input)           | [1,1,'G',1,1,2]       | N   |
+| 11G750   | Static trimmed State (elevator and qalpha)      | [1,1,'G',1,1,3]       | N   |
+| 21G150   | Dynamic trimmed State                           | [2,1,'G',1,1,2]       | N   |
+| 20g21    | Gust response                                   | [2,0,'g',0,1,0,1]     | Y   |
+| 20g273   | Gust response, q0 obtained via integrator q1    | [2,0,'g',0,1,0,1,0,1] | Y   |
+| 20g105   | Gust response with steady qalpha                | [2,0,'g',0,1,1,1]     | N   |
+| 20g42    | Gust response Free-flight                       | [2,0,'g',1,1,0,1]     | N   |
+| 20G42    | Gust response Free-flight and gravity (X error) | [2,0,'G',1,1,0,1]     | N   |
+| 20G1050  | Gust response Free-flight, gravity, controls    | [2,0,'G',1,1,2,1]     | N   |
 |          |                                                 |                       |     |
 
 #+begin_src python :session py1 :results output

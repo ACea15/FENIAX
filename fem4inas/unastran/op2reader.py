@@ -20,7 +20,7 @@ class NastranReader:
 
         if self.op2name:
             self.op2 = OP2()
-            self.op2.set_additional_matrices_to_read({b'OPHP':False})
+            self.op2.set_additional_matrices_to_read({b'OPHP':False, b'OUG1':False})
             self.op2.read_op2(self.op2name)
             print(self.op2.get_op2_stats())
         if self.bdfname:
@@ -37,10 +37,9 @@ class NastranReader:
 
     def eigenvectors(self):
 
-        eig1=op2.eigenvectors[1]
-        eigen=eig1.data
+        eig1 = self.op2.eigenvectors[1]
+        eigen = eig1.data
         NumNodes = np.shape(eig1.data[0])[0]
-        np.reshape(SRafa2.op2.eigenvectors[1].data[0],(1,6*25))
         #model.eigenvectors[1].modes
         #model.eigenvectors[1]._times
 
