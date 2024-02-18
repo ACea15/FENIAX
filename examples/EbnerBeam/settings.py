@@ -32,7 +32,7 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 # inp.systems.sett.s1.solver_function = "root"
 # inp.systems.sett.s1.solver_settings = dict(method='hybr',#'krylov',
 #                                             tolerance=1e-9)
-inp.systems.sett.s1.label = 'dq_00101'
+#inp.systems.sett.s1.label = 'dq_00101'
 inp.systems.sett.s1.xloads.dead_forces = True
 inp.systems.sett.s1.xloads.dead_points = [[9, 2], [18, 2]]
 inp.systems.sett.s1.xloads.x = [0, 1, 2]
