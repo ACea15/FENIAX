@@ -14,13 +14,25 @@ def ode(F: callable,
         dt,
         save_at=None,
         **kwargs) -> diffrax.Solution:
+
+    solver_sett = dict()
+    diffeqsolve_sett = dict()
     term = diffrax.ODETerm(F)
     if save_at is None:
         saveat = diffrax.SaveAt(ts=jnp.linspace(t0, t1, tn))#diffrax.SaveAt(steps=True) #
     else:
         saveat = save_at
     _solver = getattr(diffrax, solver_name)
-    solver = _solver()
+    if (root := "root_finder") in kwargs.keys():
+        _root_finder = getattr(optx, list(kwargs[root].keys())[0])
+        root_finder = _root_finder(**list(kwargs[root].values())[0])
+        solver_sett["root_finder"] = root_finder
+
+    solver = _solver(**solver_sett)
+    if (controller := "stepsize_controller") in kwargs.keys():
+        _stepsize_controller = getattr(diffrax, list(kwargs[controller].keys())[0])
+        stepsize_controller = _stepsize_controller(**list(kwargs[controller].values())[0])
+        diffeqsolve_sett["stepsize_controller"] = stepsize_controller
     sol = diffrax.diffeqsolve(term,
                               solver,
                               t0=t0,
@@ -30,7 +42,8 @@ def ode(F: callable,
                               args=args,
                               #throw=False,
                               max_steps=20000,
-                              saveat=saveat
+                              saveat=saveat,
+                              **diffeqsolve_sett
                               )
     return sol
 
