@@ -30,7 +30,7 @@ def ode(F: callable,
                               y0=q0,
                               args=args,
                               #throw=False,
-                              #max_steps=sett.max_steps,
+                              max_steps=16000,
                               saveat=saveat
                               )
     return sol

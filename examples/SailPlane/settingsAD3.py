@@ -263,24 +263,29 @@ inp.system.xloads.follower_interpolation = [[0.,
                                              4.8e5,
                                              5.3e5]
                                             ]
-inp.system.t = [1, 2, 3]
-config =  configuration.Config(inp)
 
 fprime = jax.value_and_grad(main_10g11)
-solver_args=dict(rtol=1e-6,
-                 atol=1e-6)
-root_args=dict(max_steps=300)
 
-if solver_args is None:
-    solver_args = NewtonArgs()
-else:
-    solver_args = NewtonArgs(**solver_args)
-if root_args is None:
-    root_args = RootFindArgs()
-else:
-    root_args = RootFindArgs(root_args)
+# solver_args=dict(rtol=1e-6,
+#                  atol=1e-6)
+# root_args=dict(max_steps=300)
 
-F, Fp  =fprime(4.5,
+# if solver_args is None:
+#     solver_args = NewtonArgs()
+# else:
+#     solver_args = NewtonArgs(**solver_args)
+# if root_args is None:
+#     root_args = RootFindArgs()
+# else:
+#     root_args = RootFindArgs(root_args)
+
+
+inp.system.t = [1]
+config =  configuration.Config(inp)
+tload = 1.5
+epsilon = 1e-4
+
+F1, F1p  =fprime(tload,
                #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
                q0=jnp.zeros(config.fem.num_modes),
                Ka=config.fem.Ka,
@@ -289,4 +294,103 @@ F, Fp  =fprime(4.5,
                f_obj=objectives.OBJ_ra,
                obj_args=dict(node=25,
                              component=2))
+F11 = main_10g11(tload,
+           #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+           q0=jnp.zeros(config.fem.num_modes),
+           Ka=config.fem.Ka,
+           Ma=config.fem.Ma,
+           config=config,
+           f_obj=objectives.OBJ_ra,
+           obj_args=dict(node=25,
+                         component=2))
 
+F12 = main_10g11(tload + epsilon,
+           #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+           q0=jnp.zeros(config.fem.num_modes),
+           Ka=config.fem.Ka,
+           Ma=config.fem.Ma,
+           config=config,
+           f_obj=objectives.OBJ_ra,
+           obj_args=dict(node=25,
+                         component=2))
+
+F1dp = (F12 - F11) / epsilon
+#########################################################
+
+inp.system.t = [1, 2, 3]
+config =  configuration.Config(inp)
+tload = 3.5
+epsilon = 1e-4
+
+F2, F2p  =fprime(tload,
+               #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+               q0=jnp.zeros(config.fem.num_modes),
+               Ka=config.fem.Ka,
+               Ma=config.fem.Ma,
+               config=config,
+               f_obj=objectives.OBJ_ra,
+               obj_args=dict(node=25,
+                             component=2))
+F21 = main_10g11(tload,
+           #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+           q0=jnp.zeros(config.fem.num_modes),
+           Ka=config.fem.Ka,
+           Ma=config.fem.Ma,
+           config=config,
+           f_obj=objectives.OBJ_ra,
+           obj_args=dict(node=25,
+                         component=2))
+
+F22 = main_10g11(tload + epsilon,
+           #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+           q0=jnp.zeros(config.fem.num_modes),
+           Ka=config.fem.Ka,
+           Ma=config.fem.Ma,
+           config=config,
+           f_obj=objectives.OBJ_ra,
+           obj_args=dict(node=25,
+                         component=2))
+
+F2dp = (F22 - F21) / epsilon
+#########################################################
+inp.system.t = [1, 2, 3, 4, 5]
+config =  configuration.Config(inp)
+tload = 5.5
+epsilon = 1e-4
+
+F3, F3p  =fprime(tload,
+               #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+               q0=jnp.zeros(config.fem.num_modes),
+               Ka=config.fem.Ka,
+               Ma=config.fem.Ma,
+               config=config,
+               f_obj=objectives.OBJ_ra,
+               obj_args=dict(node=25,
+                             component=2))
+F31 = main_10g11(tload,
+           #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+           q0=jnp.zeros(config.fem.num_modes),
+           Ka=config.fem.Ka,
+           Ma=config.fem.Ma,
+           config=config,
+           f_obj=objectives.OBJ_ra,
+           obj_args=dict(node=25,
+                         component=2))
+
+F32 = main_10g11(tload + epsilon,
+           #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+           q0=jnp.zeros(config.fem.num_modes),
+           Ka=config.fem.Ka,
+           Ma=config.fem.Ma,
+           config=config,
+           f_obj=objectives.OBJ_ra,
+           obj_args=dict(node=25,
+                         component=2))
+
+F3dp = (F32 - F31) / epsilon
+#########################################################
+
+
+# tload(1.5) => 2.810, 0.69996887, 0.69996838, 
+# tload(3.5) => 4.5272, 1.34359547, 1.34359279
+# tload(6.5) => 6.53826, 0.6234064, 0.62340551
