@@ -12,19 +12,19 @@ inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'c1': None}
 inp.fem.grid = "structuralGrid"
 inp.fem.folder = pathlib.Path('./FEM/')
-inp.fem.num_modes = 15
+inp.fem.num_modes = 50
 inp.fem.eig_type = "inputs"
 inp.driver.typeof = "intrinsic"
 # inp.driver.sol_path= pathlib.Path(
 #     f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path= pathlib.Path(
-    "./results_dynamics_m15")
+    "./results_dynamics_m50")
 
 #inp.driver.sol_path=None
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 15.
-inp.systems.sett.s1.tn = 15001
+inp.systems.sett.s1.tn = 10001
 
 #inp.systems.sett.s1.solver_library = "diffrax"
 inp.systems.sett.s1.solver_library = "runge_kutta"
