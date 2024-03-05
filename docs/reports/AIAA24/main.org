@@ -43,10 +43,11 @@
 # :END:
 
 #+begin_abstract
-This paper presents a novel aeroelastic framework for time-domain aeroelastic simulation that has been built for performance and robustness. Leveraging on the numerical library JAX, a highly vectorised codebase is written that is capable of nonlinear, time-domain  computations and achieves two orders of magnitude accelerations compare to conventional implementations. This brings full-vehicle simulations to run close to if not in real-time, thus opening new possibilities for aircraft aeroelastic analysis which have traditionally been constrained to either linear, frequency domain solutions, or to their nonlinear counterparts but narrower in scope.   
+This paper presents a new implementation for time-domain nonlinear aeroelastic simulations that has been built for performance and robustness.
+Leveraging on the numerical library JAX, a highly vectorised codebase is written that achieves two orders of magnitude accelerations compare to conventional implementations. This brings full-vehicle simulations to run close to if not in real-time, thus opening new possibilities for aircraft aeroelastic analysis which have traditionally been constrained to either linear, frequency domain solutions, or to their nonlinear counterparts but narrower in scope.
 Moreover, the approach seamlessly integrates with conventional aeroelastic load packages which facilitates the analysis of complex aircraft configurations.
-An extensive verification has been carried out and includes 
-starting from simple beam problems up to a full industrial finite-element model that is assessed for dynamic aeroelastic loads with geometrically-nonlinear effects. 
+An extensive verification has been carried out on representative aircraft models and compared with MSC Nastran linear and nonlinear solutions.
+We further demonstrate the suitability of the methodology to accurately reconstruct the full 3D solution.
 #+end_abstract
 
 * House keeping  :noexport:
@@ -60,7 +61,7 @@ starting from simple beam problems up to a full industrial finite-element model 
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "fem4inasdev")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -152,33 +153,37 @@ starting from simple beam problems up to a full industrial finite-element model 
       pd_times = pd.DataFrame(TIMES_DICT)
       pd_times.to_csv("./run_times.csv")
 
-  #def error_
 #+end_src
 
 
 - Models run on this exercise:
 
-  | Label  | Model         | NumModes | Solver | dt |
-  |--------+---------------+----------+--------+----|
-  | SP1    | SailPlane     |        5 |        |    |
-  | SP2    | ...           |       15 |        |    |
-  | SP3    | ...           |       30 |        |    |
-  | SP4    | ...           |       50 |        |    |
-  | SP5    | ...           |       75 |        |    |
-  |--------+---------------+----------+--------+----|
-  | WSP1   | WingSailPlane |        5 |        |    |
-  | WSP2   | ...           |       15 |        |    |
-  | WSP3   |               |       30 |        |    |
-  | WSP4   | ...           |       50 |        |    |
-  | WSP5   | ...           |       75 |        |    |
-  |--------+---------------+----------+--------+----|
-  | XRF1   |               |       70 |        |    |
-  |        |               |       70 |        |    |
-  |        |               |       70 |        |    |
-  |        |               |          |        |    |
+  | Label | Model         | NumModes | Solver                      | tol/dt    | settings       |
+  |-------+---------------+----------+-----------------------------+-----------+----------------|
+  | SP1   | SailPlane     |        5 | Newton-Raphson (Diffrax)    | 1e-6/     |                |
+  | SP2   | ...           |       15 | ...                         | 1e-6/     |                |
+  | SP3   | ...           |       30 | ...                         | 1e-6/     |                |
+  | SP4   | ...           |       50 | ...                         | 1e-6/     |                |
+  | SP5   | ...           |      100 | ...                         | 1e-6/     |                |
+  |-------+---------------+----------+-----------------------------+-----------+----------------|
+  | WSP1  | WingSailPlane |        5 | RK4                         | /         |                |
+  | WSP2  | ...           |       15 | RK4                         | /         |                |
+  | WSP3  | ...           |       30 | RK4                         | /         |                |
+  | WSP4  | ...           |       50 | RK4                         | /         |                |
+  | WSP5  | ...           |      100 | RK4                         | /         |                |
+  |-------+---------------+----------+-----------------------------+-----------+----------------|
+  | XRF1  | XRF1 Airbus   |       70 | RK4                         | 0.005     | [[Table2]],Index=1 |
+  | XRF2  | ...           |       70 | RK4                         | 0.005     | [[Table2]],Index=2 |
+  | XRF3  | ...           |       70 | RK4                         | 0.005     | [[Table2]],Index=3 |
+  | XRF4  | ...           |       70 | RK4                         | 0.005     | [[Table2]],Index=4 |
+  | XRF5  | ...           |       70 | Dopri5 (Diffrax)            | 0.005     | [[Table2]],Index=2 |
+  | XRF6  | ...           |       70 | RK4                         | 0.02      | [[Table2]],Index=2 |
+  | XRF7  | ...           |       70 | Implicit Euler (Diffrax)    | 1e-5/0.02 | [[Table2]],Index=2 |
+  | XRF8  | ...           |       70 | Implicit Kvaerno3 (Diffrax) | 1e-5/0.02 | [[Table2]],Index=2 |
+  |-------+---------------+----------+-----------------------------+-----------+----------------|
 
 
-
+#+begin_comment
 |   t | $f(t)$ | $f'(t)$ [AD] | $f'(t)$ [FD] |
 |-----+--------+--------------+--------------|
 | 1.5 |   2.81 m |        0.700 |        0.700 |
@@ -191,8 +196,7 @@ starting from simple beam problems up to a full industrial finite-element model 
 |      0.5 | $1723.2 \times 10^3$ | $3587.71 \times 10^3$ | $3587.77 \times 10^3$ |
 |      1.0 | $3624.4 \times 10^3$ | $3735.26 \times 10^3$ | $3735.11 \times 10^3$ |
 |      1.5 | $5608.3 \times 10^3$ | $3957.81 \times 10^3$ | $3958.31 \times 10^3$ |
-
-
+#+end_comment
 
 ** SailPlane
 *** Runs
@@ -510,21 +514,25 @@ Read Nastran
 :END:
 
 *WARNING: private model, not available open source* 
-#+NAME: GustTable  
-#+begin_src org :tangle ./results/GustTable.org :mkdirp yes
-   L_g                          18.0,67.0,116.0,165.0,214
-   V0_g                         11.3047276743,14.0732311562,15.4214195361,16.3541764073,17.0785232867
 
-  | Index | Label         | Gust length | Gust intensity      | Intensity constant | u_inf    | rho_inf    | Mach      |
-  |-------+---------------+-------------+---------------------+--------------------+----------+------------+-----------|
-  |     0 | Gl0i0c0u0r0m0 | 18 (l0)     | 11.30472767427 (i0) | 0.01 (c0)          | 200 (u0) | 1.225 (r0) | 0.0 (m0)  |
-  |     1 | Gl1i1c0u0r0m0 | 67 (l1)     | 14.0732311562 (i1)  | 0.01 (c0)          | 200 (u0) | 1.225 (r0) | 0.0 (m0)  |
-  |     2 | Gl1i1c1u0r0m0 | 67 (l1)     | 14.0732311562 (i1)  | 2                  | 200 (u0) | 1.225 (r0) | 0.0 (m0)  |
-  |     3 | Gl1i1c0u0r0m1 | 67 (l1)     | 14.0732311562 (i1)  | 0.01 (c0)          | 200 (u0) | 1.225 (r0) | 0.81 (m0) |
-  |     4 | Gl1i1c1u0r0m1 | 67 (l1)     | 14.0732311562 (i1)  | 2 (c0)             | 200 (u0) | 1.225 (r0) | 0.81 (m0) |
-  |     5 |               | 214         | 17.0785             | 0.01               |          |            |           |
+Gust lengths and corresponding gust velocities that have been run here and elsewhere.
+L_g                          18.0,67.0,116.0,165.0,214
+V0_g                         11.3047276743,14.0732311562,15.4214195361,16.3541764073,17.0785232867
 
-#+end_src
+#+NAME: Table2
+#+CAPTION: Table with various gusts on the XRF1 that have been run in this work or in the past
+| Index | Gust length [m] | Gust intensity | Intensity constant | u_inf [m/s] | rho_inf [Kg/m^3008] | Mach |
+|-------+-----------------+----------------+--------------------+-------------+---------------------+------|
+|     1 |              67 |  14.0732311562 |               0.01 |         200 |               1.225 | 0.81 |
+|     2 |              67 |  14.0732311562 |                  2 |         200 |               1.225 | 0.81 |
+|     3 |            165. |  16.3541764073 |               0.01 |         200 |               1.225 | 0.81 |
+|     4 |            165. |  16.3541764073 |                  2 |         200 |               1.225 | 0.81 |
+|     5 |              67 |  14.0732311562 |               0.01 |         200 |               1.225 |   0. |
+|     6 |              67 |  14.0732311562 |                  2 |         200 |               1.225 |   0. |
+|     7 |            165. |  16.3541764073 |               0.01 |         200 |               1.225 |   0. |
+|     8 |            165. |  16.3541764073 |                  2 |         200 |               1.225 |   0. |
+
+
 
 
 #+NAME: XRF
@@ -645,6 +653,28 @@ Read Nastran
   <<XRF>>
   inp.driver.sol_path = pathlib.Path(
       f"./{name}")
+
+  inp.systems.sett.s1.tn = 501
+  inp.systems.sett.s1.solver_library = "diffrax"
+  inp.systems.sett.s1.solver_function = "ode"
+  inp.systems.sett.s1.solver_settings = dict(solver_name="Dopri5",#"Kvaerno3",
+                                           )
+
+  inp.systems.sett.s1.aero.gust.intensity = 14.0732311562*2 #11.304727674272842/10000
+  inp.systems.sett.s1.aero.gust.length = 67.
+  inp.systems.sett.s1.aero.gust.step = 0.5
+
+  run(inp, label=name)
+#+end_src
+
+*** XRF6
+
+#+NAME: XRF6
+#+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
+
+  <<XRF>>
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
   inp.systems.sett.s1.tn = 501
   inp.systems.sett.s1.solver_library = "runge_kutta"
   inp.systems.sett.s1.solver_function = "ode"
@@ -656,8 +686,8 @@ Read Nastran
   run(inp, label=name)
 #+end_src
 
-*** XRF6
-#+NAME: XRF6
+*** XRF7
+#+NAME: XRF7
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
   <<XRF>>
@@ -680,8 +710,8 @@ Read Nastran
 
   run(inp, label=name)
 #+end_src
-*** XRF7
-#+NAME: XRF7
+*** XRF8
+#+NAME: XRF8
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
   <<XRF>>
@@ -698,10 +728,9 @@ Read Nastran
             #                              rtol=1e-6))
                                            )
 
-  inp.systems.sett.s1.aero.gust.intensity = 14.0732311562*0.01 #11.304727674272842/10000
+  inp.systems.sett.s1.aero.gust.intensity = 14.0732311562*2 #11.304727674272842/10000
   inp.systems.sett.s1.aero.gust.length = 67.
   inp.systems.sett.s1.aero.gust.step = 0.5
-
   run(inp, label=name)
 #+end_src
 
@@ -711,7 +740,7 @@ Read Nastran
 #+end_src
 * NASTRAN
 :PROPERTIES:
-:header-args: :mkdirp yes :tangle ./results/run_nastran.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
+:header-args: :mkdirp yes :tangle ./results/run_nastran.py :eval no :exports (print export_blocks) :comments both
 :END:
 
 #+begin_src bash :shebang #!/bin/zsh :session *nastran*
@@ -736,7 +765,7 @@ Read Nastran
   # nastran $WSP109file
 #+end_src
 
-[[file:~/projects/FEM4INAS/examples/SailPlane/generate3D.py][SailPlane generate 3D]]
+[[file:../../../examples/SailPlane/generate3D.py][SailPlane generate 3D]]
 
 * Plotting
 :PROPERTIES:
@@ -1479,23 +1508,23 @@ Read data from Nastran simulations
 #+end_src
 
 * Introduction
-The ever-growing need for performance and operating costs reduction, together with the even more urgent push for sustainability in aviation, are driving new aircraft designs outside the conventional envelop. A particular feature are very high aspect ratio wings to minimise induced drag, which when combined with advancements in lighter materials to reduced vehicle weight, can significantly increase wing flexibility.  
-In this scenario, aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines. In this more nonlinear landscape, the overall aerodynamic performance needs to be calculated around a flight shape with large deformations cite:&GRAY2021; the input for efficient control laws account for the steady state and nonlinear couplings cite:&Artola2021; and the loads ultimately sizing the wings are atmospheric disturbances computed in the time-domain cite:&CESNIK2014a.
+The ever-growing need for performance and operating costs reduction, together with the current push for sustainability in aviation, are driving new aircraft designs outside the conventional envelop. A particular feature are very high aspect ratio wings to minimise induced drag, which when combined with advancements in lighter materials to reduced vehicle weight, can significantly increase wing flexibility.  
+In this scenario, aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines.
+In this more nonlinear landscape, the overall aerodynamic performance needs to be calculated around a flight shape with large deformations cite:&GRAY2021; the input for efficient control laws account for the steady state and nonlinear couplings cite:&Artola2021; and the loads ultimately sizing the wings are atmospheric disturbances computed in the time-domain cite:&CESNIK2014a.
+This is also the case for more radical configurations that may or may not exhibit high flexibility but whose aeroelastic behaviour is more uncertain.
 A more holistic approach to the design also increases the complexity of the processes exponentially, and the trade-offs and cost-benefit analysis may not be possible until robust computational tools are in-place to simulate the different assumptions.
- Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations cite:&Kier2017, as it[[cite:&WILSON2017]] considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitly expensive computational times.
+ Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations cite:&Kier2017, as it considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitly expensive computational times.
 Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above.
 Those previous considerations set the goals for the current effort: 1) to be able to perform geometrically nonlinear aeroelastic analysis, 2) to work with generic FE models in a non-intrusive manner, and 3) to achieve a computational efficiency that is equivalent to present linear methods (if not faster).
 Grounded on previous developments where the first two points where demonstrated cite:&PALACIOS2019, cite:&CEA2021, cite:&CEA2023 we tackle the third point herein with a new implementation that achieves remarkable computational performance.
 The numerical library JAX cite:&jax2018github was leveraged to produce highly vectorised, automatically differentiated routines that are managed by a modular, object-oriented approach in Python. The power of JAX for scientific computation has been proved recently in fluid dynamics cite:&BEZGIN2023 and solid mechanics cite:&XUE2023 applications. We add to those an aeroelastic solution to enhance already built models for linear loads analysis. This aligns with current efforts to build robust methods that incorporate nonlinear effects to complex 3-D FEMs, via stick models cite:&RISO2023 or other modal-based methods cite:&DRACHINSKY2022.
 \\[0pt]
-
-The proposed solution procedure can be divided into the five stages shown in Fig. \ref{fig:orgadeb2ce: 1) A linear (arbitrarily complex) model is the input for the analysis. 2) Model condensation is employed to derive a skeleton-like substructure, along the main load path, containing the main features of the full 3D model. 3) The modes of the reduced structure are evaluated in intrinsic variables (velocities and strains) and used as a basis of a Galerkin-projection of the geometrically-nonlinear intrinsic beam equations. 4) The projected equations are solved in time-domain under given forces: aerodynamic influence coefficient matrices are obtained here from the Doublet Lattice Method (DLM) and a rational function approximation (RFA) cite:&ROGER1975 is used to transform to the time domain. We have also presented a more efficient data-driven approach that circumvents the additional states added by the RFA in cite:&PALACIOS2023b and the approach would also be suitable for more accurate Computational Fluids Aerodynamics (CFD).  5) The full 3D solution using the nonlinear 1D solution, the reduced order transformations and interpolation. Therefore geometrically-nonlinear behaviour is captured along the principal skeleton and the linear response of the cross-sections (in the form of ribs and fuselage reinforcements) is also represented –if nonlinear deformations also occur in the cross-sections, there is no reliable analysis other than high-fidelity solutions of the full model. The overall procedure has been implemented in what we have named as \emph{Nonlinear Modal Reduced Order Model (NMROM).
-
-
-The proposed solution procedure can be divided into the five stages shown in Fig. [[aircraft_process2]]: 1) A linear (arbitrarily complex) model is the input for the analysis. 2) Model condensation is employed to derive a skeleton-like substructure, along the main load path, containing the main features of the full 3D model. 3) The modes of the reduced structure are evaluated in intrinsic variables (velocities and strains) and used as a basis of a Galerkin-projection of the geometrically-nonlinear intrinsic beam equations. 4) The projected equations are solved in time-domain under given forces: aerodynamic influence coefficient matrices are obtained here from DLM and a rational function approximation (RFA) [[cite:&ROGER1975]] is used to transform to the time domain. We have also presented a more efficient data-driven approach that circumvents the additional states added by the RFA in [[cite:&PALACIOS2024]] and the approach would also be amendable more accurate Computational Fluids Aerodynamics (CFD).  5) The full 3D solution using the nonlinear 1D solution, the reduced order transformations and interpolation. Therefore geometrically-nonlinear behaviour is captured along the principal skeleton and the linear response of the cross-sections (in the form of ribs and fuselage reinforcements) is also represented –if nonlinear deformations also occur in the cross-sections, there is no reliable analysis other than high-fidelity solutions of the full model. The overall procedure has been implemented in what we have named as \emph{Nonlinear Modal Reduced Order Model} (NMROM).
-
-
-The structure of the rest of the paper is as follows. Sec. [[Theory]] presents a summary of the mathematical description that conforms the backbone behind the computational implementation of \texttt{FEM$_4$INAS} (Finite-Element-Models for Intrinsic Nonlinear Aeroelastic Simulations), the high performance software for aeroelasticity outlined in Sec. . Sec. [[Examples]] shows the verification examples that cover the static and dynamic structural response of of a simplified aircraft model, and the aeroelastic response to gusts of a full aircraft configuration. The improvements in performance are highlighted in all of the examples. 
+Our proposed method has two main inputs for the analysis: a linear (arbitrarily complex) FE model; and aerodynamic influence coefficient matrices that provide the mapping between FE states and the corresponding aerodynamic forces (either in modal or in physical coordinates). The latter are obtained herein from the Doublet Lattice Method (DLM) and a rational function approximation (RFA) cite:&ROGER1975 to transform to the time domain. We have also presented a more efficient data-driven approach that circumvents the additional states added by the RFA in cite:&PALACIOS2023b and the approach would also be suitable for more accurate Computational Fluids Aerodynamics (CFD). Using the 3D FE model, a skeleton-like substructure along the main load paths is derived, on which modal shapes and nonlinear couplings are evaluated in intrinsic variables (velocities and strains). They conform a basis of a Galerkin-projection of the geometrically-nonlinear 1D domain after which the projected equations are solved in time-domain. Advantages of the approach are its direct and accurate map between the 3D and 1D domains, as it only requires of a modal condensation that is already available in many industrial aeroelastic models to link the structural model to the aerodynamic loading.
+This is unlike stick models which need of various post-processing steps to build the equivalent stiffness and mass models.
+Furthermore, we show how the full 3D solution using the nonlinear 1D solution is computed to a good accuracy by reconstructing the cross-sectional elements and applying a Radial Basis Function (RBF) interpolation to the remaining nodes in the domain.
+A well established formulation effectively applied to industrial-scale aeroelastic models and now combined with a highly vectorised implementation in JAX results in an extremely efficient nonlinear aeroelastic solver. The overall procedure has been implemented in what we have named as \emph{Nonlinear Modal Reduced Order Model (NMROM). 
+\\[0pt]
+The structure of the rest of the paper is as follows. Sec. [[Theory and implementation]] presents a summary of the mathematical description that conforms the backbone behind the computational implementation of \texttt{FEM$_4$INAS} (Finite-Element-Models for Intrinsic Nonlinear Aeroelastic Simulations), the high performance software for aeroelasticity outlined in Sec. . Sec. [[Examples]] shows the verification examples that cover the static and dynamic structural response of of a simplified aircraft model, and the aeroelastic response to gusts of a full aircraft configuration. The improvements in performance are highlighted in all of the examples. 
 Lastly, sec. [[Conclusions]] summarises the the achievements and further developments planned for future work.
 
 * Theory and implementation
@@ -1721,6 +1750,8 @@ after rescaling the matrices above, the subsequent nonlinear aeroelastic system 
 #+end_export
 # for $i,j,k \in \{1,...,N_m\}$, $p \in \{1,...,N_p\}$, and $s  \in \{1,...,3\}$. The natural frequencies in the system have been written as $\Omega_j$ to distinguish them from the angular velocities.
 ** Computational implementation
+
+cite:&CEA2024
 The main contribution of this work is a new computational implementation that can reproduce linear aeroelastic results
 
 
@@ -1815,7 +1846,7 @@ Geometric nonlinearities are better illustrated by representing a sectional view
 #+end_src
 
 #+RESULTS: SPerror
-[[file:figs/SPerror.png]]
+[[file:]]
 
 #+NAME: SPerror3D
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -1939,14 +1970,14 @@ The aerodynamic model contains $\sim 1,500$ aerodynamic panels.
 #+NAME: GustXRF1_x
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
 
-  sol_g = solution.IntrinsicReader("./XRF2")
+  sol_g = solution.IntrinsicReader("./XRF1")
   fig, figname = fig_out(name)(xrf1_wingtip)(sol_g, dim=0, nast_scale=0.01, nast_load=6)
   figname
 #+end_src
 
 #+CAPTION: 
 #+RESULTS: GustXRF1_x
-[[file:figs/GustXRF1_x.png]]
+[[file:]]
 
 #+NAME: GustXRF12_x
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
