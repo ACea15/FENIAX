@@ -61,7 +61,7 @@ We further demonstrate the suitability of the methodology to accurately reconstr
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inasdev")
+  (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -1549,42 +1549,48 @@ The process of enhancing the linear 3D model with geometric nonlinearities along
 Applying the appropriate integration over the cross sectional reference area of the distributed traction forces, a Cosserat rod model is built, where the deformed state on the full domain is approximated by a deformable space curve $\Gamma$ -- identified with the aircraft major load-paths. The primary variables, defined along  are the local inertial (linear and angular) velocities, grouped in the variable $\bm{x}_1(s, t)$, and internal force and moments combined in $\bm{x}_2(s, t)$. They are function of the 1D spatial dimension, $s$, and time, $t$.
 Applied forces and moments per unit length, $\bm{f}_1$, come naturally as follower forces and moments per unit span length, respectively.
 The Constitutive properties are given by the compliance matrix, $\bm{\mathcal{C}}$, relating sectional forces and moments to strains and curvatures and the sectional mass matrix, $\bm{\mathcal{M}}$, linking velocities and momenta. Finding a good approximation to these matrices is a common challenge in formulations that aim to build nonlinear 1D models from full FE models. This work circumvents having to calculate explicit expressions of $\bm{\mathcal{C}}$ and $\bm{\mathcal{M}}$ by solving the equations in modal space and linking them to the modal shapes and their derivatives; furthermore, they are time-independent due to the material formulation, which greatly facilities the nonlinear computations.
-Using the intrinsic modes and the projection of the state variables, a Galerkin projection is performed on Eqs. \eqref{eq2:intrinsic_eqs} such that $\pmb{x}_1 = \pmb{\phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\phi}_2\pmb{q}_2$. Taking the inner product in the 1D domain, $\langle \pmb{u},\pmb{v}  \rangle = \int_\Gamma \pmb{u}^\top \pmb{v} ds$, for any $\pmb{u}\in\mathbb{R}^6$ and $\pmb{v}\in\mathbb{R}^6$, the final form of the equations is \cite[Ch. 8]{PALACIOS2023}
+
+Using the intrinsic modes and the projection of the state variables, a Galerkin projection is performed  such that $\pmb{x}_1 = \pmb{\phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\phi}_2\pmb{q}_2$. 
 #+begin_export latex
 \begin{equation}
 \label{eq2:sol_qs}
 \begin{split}
-\dot{\pmb{q}}_{1} &=  \pmb{\omega} \odot  \pmb{q}_{2} - \pmb{\Gamma}_{1} \overset{1}{\bullet} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \pmb{\Gamma}_{2} \overset{1}{\bullet} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \bm{\eta}  \\
-\dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2} \overset{2}{\bullet} \left( \pmb{q}_{1} \otimes  \pmb{q}_{2} \right)
+\dot{\pmb{q}}_{1} &=  \pmb{\omega} \odot  \pmb{q}_{2} - \pmb{\Gamma}_{1} \pmb{:} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \bm{\eta}  \\
+\dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right)
 \end{split}
 \end{equation}
 #+end_export
 
-The above description is geometrically-exact with quadratic nonlinearities only.
-cite:&COMON2014
 
-Hadamard product (element-wise multiplication)
+where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product [fn:1]
+
+
+[fn:1] The double dot product, commonly found in solid mechanics descriptions, represents a contraction of the last two indexes of the first tensor with the first two indexes of the second one; it however needs further specification as two alternative definitions can be adopted and here we opt for the following: \(\pmb{a} \pmb{:} \pmb{b} = a_{..ij} b_{ij..} \). This has implementations on the definition of the transpose of \(\bm{\Gamma}_2 \) in the second equation since for high order tensors multiple transpose operators can be defined.  \( \pmb{x} \cdot $\bm{\Gamma} \pmb{:} \left(\pmb{y} \otimes \pmb{z}  \right) = \pmb{y} \cdot $\bm{\Gamma}^{\top} \pmb{:} \left(\pmb{z} \otimes \pmb{x}  \right) \) this means that \( \bm{\Gamma} = \Gamma^{ijk} ; \bm{\Gamma}^{\top} = \Gamma^{jki} \)
+
+
+
+
+This description is geometrically-exact with quadratic nonlinearities only. The new form of the equations in compact tensorial form is in fact the way they have been implemented 
+
+
+of the cubic tensor $\bm{\Gamma}$ with the first two of the second tensor, a second order one;
+
 
 if $\bm{\Gamma} \in \bm{\mathbb{R}}^{I\times J \times K}$ and $\bm{\Gamma} \in \bm{\mathbb{R}}^{I\times J \times K}$
 i.e. in conventional terms, $\overset{1}{\bullet} = \bullet_{1,2}^{2,3}$, i.e index 2 is contracted with index 1 and index 3 with 2
 and what is left is index 1 of 
 
 
-where we have used implicit summation over repeated indices, with $\delta^{ij}$ the Kronecker delta. The coefficients $\pmb{\Gamma}_{1}$ and $\pmb{\Gamma}_{2}$ are third-order tensors that encapsulate the nonlinear modal couplings in the response (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation), and $\pmb{\eta}$ is the modal projection of the external forcing terms. They can be written as:
+The coefficients $\pmb{\Gamma}_{1}$ and $\pmb{\Gamma}_{2}$ are third-order tensors that encapsulate the nonlinear modal couplings in the response (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation), and $\pmb{\eta}$ is the modal projection of the external forcing terms. They are computed as integrals along the load-path 1D domain as an inner product: $\langle \pmb{u},\pmb{v}  \rangle = \int_\Gamma \pmb{u}^\top \pmb{v} ds$, for any $\pmb{u}\in\mathbb{R}^6$ and $\pmb{v}\in\mathbb{R}^6$:
 #+begin_export latex
 \begin{align}\label{eq2:gammas12}
-\Gamma_{1}^{jkl} & = \langle \pmb{\phi}_{1j}, \lo_1(\pmb{\phi}_{1k})\pmb{\psi}_{1l}\rangle, \nonumber \\
-\Gamma_{2}^{jkl} & = \langle \pmb{\phi}_{1j}, \lo_2(\pmb{\phi}_{2k})\pmb{\psi}_{2l}\rangle,  \\
-\eta_{j} & = \langle \pmb{\phi}_{1j}, \pmb{f}_1\rangle  \nonumber
+\Gamma_{1}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_1(\pmb{\phi}_{1j})\pmb{\psi}_{1k}\rangle, \nonumber \\
+\Gamma_{2}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_2(\pmb{\phi}_{2j})\pmb{\psi}_{2k}\rangle,  \\
+\eta_{i} & = \langle \pmb{\phi}_{1i}, \pmb{f}_1\rangle  \nonumber
 \end{align}
 #+end_export
 
-
-
-where $\lo_1$ and $\lo_2$ are linear operators.
-
-
-with $\pmb{\psi}_1 = \bm{\mathcal{M}}\pmb{\phi}_1$ and $\pmb{\psi}_2 = \bm{\mathcal{C}}\pmb{\phi}_2$ also cast as momentum and strain mode shapes. In other words, each natural vibration mode can be uniquely expressed in terms of velocity, force/moment, momentum, or strain variables. While those would be redundant in a conventional linear vibration analysis, they will enable to identify all the coefficients in the geometrically-nonlinear equations \eqref{eq2:sol_qs}. Furthermore, they can all be directly obtained from a condensation of a general built-up finite-element model along load paths, as outlined next.
+where $\lo_1$ and $\lo_2$ are linear operators, $\pmb{\psi}_1 = \bm{\mathcal{M}}\pmb{\phi}_1$ and $\pmb{\psi}_2 = \bm{\mathcal{C}}\pmb{\phi}_2$ also cast as momentum and strain mode shapes and approximated . In other words, each natural vibration mode can be uniquely expressed in terms of velocity, force/moment, momentum, or strain variables. While those would be redundant in a conventional linear vibration analysis, they will enable to identify all the coefficients in the geometrically-nonlinear equations \eqref{eq2:sol_qs}.
 *** COMMENT Dynamic condensation of linear FE models
 \label{sec:dynamic_condensation}
 Model order reduction techniques aim to increase computational efficiency by reducing the size of the problem while maintaining its fundamental characteristics. Regarding industrial applications, ROMs are very important, even when the majority of the analysis is linear, due to the need for fast simulations and the very large models that can surpass the millions of DoF. In aircraft loads analysis, trim and stability studies, it is common practice condensing the (linear) full-FE models into the major load paths of the aircraft, to reduce the total number of DoF to a few hundreds. That is Step 2 in figure [[aircraft_process2]]. Herein we not only use a condensation approach to reduce the size of the model, but also to represent a structure that can be modelled as a one-dimensional domain --making use of the slenderness of transport aircraft main components, where the span of wetted-surfaces and the fuselage length take predominance over the other dimensions.
@@ -1705,14 +1711,15 @@ The full aeroelastic solution is described extending Eq.  \eqref{eq2:sol_qs} wit
 \begin{equation}
 \label{eq2:sol_qs}
 \begin{split}
-\dot{\pmb{q}}_{1} &=  \hat{\pmb{\Omega}}  \pmb{q}_{2} - \hat{\pmb{\Gamma}}_{1} \overset{1}{\bullet} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \hat{\pmb{\Gamma}}_{2} \overset{1}{\bullet} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \hat{\bm{\eta}}  \\
-\dot{\pmb{q}}_{2} &= -\hat{\pmb{\Omega}} \pmb{q}_{1} + \hat{\pmb{\Gamma}}_{2} \overset{2}{\bullet} \left( \pmb{q}_{1} \otimes  \pmb{q}_{2} \right) \\
+\dot{\pmb{q}}_{1} &=  \hat{\pmb{\Omega}}  \pmb{q}_{2} - \hat{\pmb{\Gamma}}_{1} \pmb{:} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \hat{\pmb{\Gamma}}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \hat{\bm{\eta}}  \\
+\dot{\pmb{q}}_{2} &= - \hat{\pmb{\Omega}} \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right) \\
 \dot{\bm{\lambda}}_{p} &= \hat{\bm{\mathcal{A}}}_{p+2}\pmb{q}_{1}
                        + \hat{\bm{\mathcal{A}}}_{p+2}\dot{\pmb{v}}_g
-                      -\frac{2U_\infty\gamma_p}{c}\bm{\lambda}_{p} 
+                       -\frac{2U_\infty\gamma_p}{c}\bm{\lambda}_{p}
 \end{split}
 \end{equation}
 #+end_export
+
 
 
 ** Computational implementation
@@ -1731,6 +1738,9 @@ Moreover, its extensible system of composable function transformations provides 
 The new capabilities come at the expense of a higher restriction in the way the code is written. Compilation and transformations in JAX only work for functionally pure programs, which pushes the software to comply with a nonconventional functional paradigm. Some of these characteristics are *pure functions*, i.e. functions that have no side effects, *input/output* stream management needs to be placed outside the numerical algorithms, *inmutability* of arrays, and *function composition*, or the ability to create functions by chaining other callables.
 \\
 These very constraints allow to achieve the capabilities describe above via the many abstractions implemented internally in the library. The challenge after the algorithms have been implemented appropriately is to manage a general aeroelastic code. Thus a mixed approach has been employed for this whereby numerical algorithms are written using functional programming but the flow of execution is managed using an object oriented approach that focus on modularity and extensibility.
+
+\textit{einsum('jik,jk->i', gamma2, tensordot(q1, q2, axes=0)}
+
 ** COMMENT Software design
 \textit{"Supporting state-of-the-art AI research means balancing rapid prototyping and quick iteration with the ability to deploy experiments at a scale traditionally associated with production systems."}.
 Jax target inside DeepMind would also be desirable in a scientific research environment. It however entails a good amount of labour and expertise into the field of software design, whose payoffs are only realisable in the long term.    
@@ -2041,3 +2051,5 @@ In the immediate future two objectives are foreseen with this implementation: fi
 bibliographystyle:plain
 # bibliography:/home/acea/Documents/Engineering.bib
 bibliography:~/Documents/Engineering.bib
+
+* Footnotes
