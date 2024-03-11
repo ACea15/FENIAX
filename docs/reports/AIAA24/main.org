@@ -1721,13 +1721,12 @@ The full aeroelastic solution is described extending Eq.  \eqref{eq2:sol_qs} wit
 #+end_export
 
 
-
 ** Computational implementation
-The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures and the computation of sensitivities via algorithmic differentiation (AD) has been implemented as a crucial part for design optimisation, both of which will be exemplified in future work.
+The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor[fn:2]. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures and the computation of sensitivities via algorithmic differentiation (AD) has been implemented as a crucial part for design optimisation, both of which will be exemplified in future work.
 \\
 The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. This library is developed and maintained by Google research team. It combines XLA (accelerated linear algebra) and Autograd, the former being a compiler that optimises models for different hardware platforms, the latter is an Automatic Differentiation (AD) tool in Python. 
 Moreover, its extensible system of composable function transformations provides a set of important features for Computational Science as illustrated in Fig. \ref{fig:JAX-overview}. For instance, the vmap function allows for complex *vectorisation* operations and the pmap function for Single-Program Multiple-Data (SPMD) *parallelisation*. Both forward and reverse mode *automatic differentiation* are supported. Finally the *just-in-time compilation* (jit) relies on the XLA engine to compile and execute functions on CPUs but also on accelerators such as GPUs and TPUs, offering a versatile solution for seamlessly connecting the software to various types of hardware without requiring extra CUDA code, or a Domain Specific Language (DSL).
-
+[fn:2] Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.
 #+begin_export latex
 \begin{figure}[htbp]
 \centering
@@ -1917,8 +1916,11 @@ The dynamic response is presented in Fig. \ref{fig:sp_results}, where results ha
 # [[file:figs/WSPerror3D.png]]
 
 ** Dynamic loads on an industrial configuration
-The studies presented in this section are based on a reference configuration developed to industry standards by Airbus as part of the eXternal Research Forum (XRF), from which the aircraft takes its name, XRF1. The aircraft represents a long-range wide-body transport airplane  and has been used as a research platform for collaboration between the company, universities and research institutions. Fig. \ref{fig8:xrf1-model} shows the full aeroelastic model split up into the structural, mass and aerodynamic components. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. One of the strengths of the present methodology is that 
-The aerodynamic model contains $\sim 1,500$ aerodynamic panels.
+
+The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution. 
+Fig. \ref{fig8:xrf1-model} shows the full aeroelastic model split up into the structural, mass and aerodynamic components. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. 
+The aerodynamic model contains \(\sim 1,500\) aerodynamic panels.
+
 #+begin_export latex
 \begin{figure}[th!]
 \centering
