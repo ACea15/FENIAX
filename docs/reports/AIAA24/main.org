@@ -795,6 +795,11 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
       def inner(*args, **kwargs):
           fig = func(*args, **kwargs)
+          # if fig.data[0].showlegend is None:
+          #     showlegend = True
+          # else:
+          #     showlegend = fig.data[0].showlegend
+
           fig.update_xaxes(
                          titlefont=dict(size=16),
                          tickfont = dict(size=16),
@@ -816,7 +821,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
                          gridcolor='lightgrey')
           fig.update_layout(plot_bgcolor='white',
                             yaxis=dict(zerolinecolor='lightgrey'),
-                            showlegend=True,
+                            showlegend=True, #showlegend,
                             margin=dict(
                                 autoexpand=True,
                                 l=0,
@@ -880,14 +885,14 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
                                 dict(name=f"NASTRAN-{labels[0]}",
                                      line=dict(color="black",
                                                dash="dash",
-                                               line=1.5)
+                                               width=1.5)
                                      ))
           offset2 = 0. #u111m[nast_load[1],0,-1, dim]
           fig = uplotly.lines2d(t111m[nast_load[1]], (u111m[nast_load[1],:,-1, dim] - offset2)*nast_scale*scale, fig,
                                 dict(name=f"NASTRAN-{labels[1]}",
                                      line=dict(color="grey",
                                                dash="dash",
-                                               line=1.5)
+                                               width=1.5)
                                      ))
       dim_dict = {0:'x', 1:'y', 2:'z'}
       fig.update_yaxes(title='$\hat{u}' + f'_{dim_dict[dim]}$')
@@ -1073,6 +1078,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
       fig.update_yaxes(type="log", tickformat= '.0e')
       fig.update_layout(height=700,
+                        showlegend=False,
                         xaxis_title='Loading [KN]',
                         yaxis_title='Error')
 
@@ -1324,7 +1330,7 @@ Read data from Nastran simulations
   op2model = op2reader.NastranReader(SP_folder / "NASTRAN/static400/run.op2",
                                      SP_folder / "NASTRAN/static400/run.bdf",
                                    static=True)
-  
+
   op2model.readModel()
   t_sp, u_sp = op2model.displacements()
 
@@ -1350,6 +1356,9 @@ Read data from Nastran simulations
   nas111m = op2reader.NastranReader(op2name=(nastran_pathm / "XRF1-146run.op2"))
   nas111m.readModel()
   t111m, u111m = nas111m.displacements()
+
+  sp_error3d = jnp.load(examples_path/ "SailPlane/sp_err.npy")
+  wsp_error3d = jnp.load(examples_path/ "wingSP/wsp_err.npy")
 
 #+end_src
 
@@ -1779,7 +1788,7 @@ Fig. [[classes_architecture]] shows a lower view of the abstractions, interfaces
 The cases presented are a demonstration of our solution approach to manage geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved.
 All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed. The previous version of the code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. The main reason to show those previous results is to highlight the potential improvements in scientific software when paying attention to the implementation solely.
 
-** COMMENT Structural verification of a representative configuration
+** Structural verification of a representative configuration
 \label{sec:representative_aircraft}
 A representative FE model for aeroelastic analysis of a full aircraft without engines is used to demonstrate the capabilities of the current methodology on large finite-element models. The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs. Flexible tail and rear stabiliser are rigidly attached to the wing. Structural and aerodynamic models are shown in Fig. \ref{fig:SailPlane}. This is a good test case as it is not very complex yet representative of aircraft FE models and it is available open source.  
 #+begin_export latex
@@ -1843,9 +1852,8 @@ The error metric of this 3D solution is also assessed in Fig. [[fig:SPerror3D]],
 
 #+NAME: SPerror3D
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  sp_error3D = jnp.load("~/pCloudDrive/tmp/sp_err.npy")
   sp_error1D = [sp_error[f'M4_L{i}'] for i in range(6)]
-  fig, figname = fig_out(name)(fn_spPloterror3D)(sp_error1D, sp_error3D)
+  fig, figname = fig_out(name)(fn_spPloterror3D)(sp_error1D, sp_error3d)
   figname
 #+end_src
 
@@ -1853,16 +1861,16 @@ The error metric of this 3D solution is also assessed in Fig. [[fig:SPerror3D]],
 #+CAPTION: 3D 
 #+ATTR_LATEX: :width 0.8\textwidth 
 #+RESULTS: SPerror3D
-[[file:]]
+[[file:figs/SPerror3D.png]]
 
 
 #+NAME: SP_times
 #+begin_src python  :results raw
   dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
   values = ["Time [s]"]
-  values += [dfruns[f'SP{i+1}'].iloc[0] for i in range(5)]
+  values += [', '.join([str(round(dfruns[f'SP{i+1}'].iloc[0], 2)) for i in range(5)])]
   values += [1*60*60 + 22*60]
-  header = [f"NMROM ({i})" for i in [5, 15, 30, 50, 100]]
+  header = ["NMROM (modes: 5, 15, 30, 50, 100)"]
   header += ["NASTRAN 400"]
   # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
   #                         index=TIMES_DICT.keys())
@@ -1877,10 +1885,9 @@ The error metric of this 3D solution is also assessed in Fig. [[fig:SPerror3D]],
 #+CAPTION: Computational times Sail Plane static solution
 #+ATTR_LATEX: :width 0.7\textwidth :environment longtable :caption  
 #+RESULTS: SP_times
-|          | NMROM (5) | NMROM (15) | NMROM (30) | NMROM (50) | NMROM (100) | NASTRAN 400 |
-|----------+-----------+------------+------------+------------+-------------+-------------|
-| Time [s] |   9.57535 |    9.58945 |    9.81136 |    9.93232 |     10.6391 |        4920 |
-
+|          | NMROM (modes: 5, 15, 30, 50, 100) | NASTRAN 400 |
+|----------+-----------------------------------+-------------|
+| Time [s] | 6.88, 6.98, 6.94, 7.42, 7.79      |        4920 |
 
 *** Large-amplitude nonlinear dynamics
 This test case demonstrates the accuracy of the NMROM approach for  dynamic geometrically-nonlinear calculations and was first introduced in [[cite:&CEA2021]]. The right wing of Fig. \ref{fig:SailPlane} is considered and dynamic nonlinear simulations are carried out  and compared to MSC Nastran linear and nonlinear analysis (SOL 109 and 400, respectively) on the full FE model. A force is applied at the wing tip with a triangular loading profile, followed by a sudden release of the applied force to heavily excite the wing. The force profile is \(f(a, b) =  a+\frac{1-a}{b}t \text{if \(t \leq b\) else 0.}\) and the force at the tip is $f_{tip} = [-2\times 10^5, 0., 6\times 10^5]f(0.05, 4)$.
@@ -1940,7 +1947,13 @@ Next we look at the error of the dynamic simulation with the same error metric e
 #+NAME: WSP_error
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   wsp_error = fn_wspError(sol_wsp)
-  fig, figname = fig_out(name)(fn_wspPloterror)(wsp_error)
+  wsp_error_time = jnp.linspace(0,15,10001)
+  fig, figname = fig_out(name, update_layout=dict(showlegend=False, margin=dict(
+                                autoexpand=True,
+                                l=0,
+                                r=5,
+                                t=2,
+                                b=0)))(fn_wspPloterror3D)(wsp_error_time,wsp_error3d)
   figname
 #+end_src
 
@@ -1958,9 +1971,9 @@ with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the no
 #+begin_src python  :results raw
   dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
   values = ["Time [s]"]
-  values += [dfruns[f'WSP{i+1}'].iloc[0] for i in range(5)]
+  values += [', '.join([str(round(dfruns[f'WSP{i+1}'].iloc[0], 2)) for i in range(5)])]
   values += [1*60*60 + 22*60]
-  header = [f"NMROM ({i})" for i in [5, 15, 30, 50, 100]]
+  header = ["NMROM (modes: 5, 15, 30, 50, 100)"]
   header += ["NASTRAN 400"]
   # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
   #                         index=TIMES_DICT.keys())
@@ -1974,10 +1987,9 @@ with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the no
 #+CAPTION: Computational times Sail Plane dynamic solution
 #+ATTR_LATEX: :width 0.7\textwidth :environment longtable :caption  
 #+RESULTS: WSP_times
-|          | NMROM (5) | NMROM (15) | NMROM (30) | NMROM (50) | NMROM (100) | NASTRAN 400 |
-|----------+-----------+------------+------------+------------+-------------+-------------|
-| Time [s] |   4.01167 |    4.16546 |    7.27942 |    12.3168 |     207.241 |        4920 |
-
+|          | NMROM (modes: 5, 15, 30, 50, 100) | NASTRAN 400 |
+|----------+-----------------------------------+-------------|
+| Time [s] | 2.81, 3.21, 5.08, 7.33, 145.27    |        4920 |
 
 ** Dynamic loads on an industrial configuration
 
@@ -2088,10 +2100,10 @@ An important remark about these computations is that the gusts have been input i
 #+begin_src python  :results raw
   dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
   values = ["Time [s]"]
-  values += [dfruns[f'XRF{i}'].iloc[0] for i in [3,5,6,7,8]]
+  values += [', '.join([str(round(dfruns[f'XRF{i}'].iloc[0], 2)) for i in [3,5,6,7,8]])]
   values += [1*60*60 + 22*60]
-  header = [f"NMROM (l{i})" for i in [3,5,6,7,8]]
-  header += ["$\delta$ NASTRAN 146"]
+  header = ["NMROM [l3, l5, l6, l7, l8]" ]
+  header += ["$\Delta$ NASTRAN 146"]
   # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
   #                         index=TIMES_DICT.keys())
 
@@ -2104,9 +2116,6 @@ An important remark about these computations is that the gusts have been input i
 #+CAPTION: Computational times XRF1 gust solution
 #+ATTR_LATEX: :width 0.7\textwidth :environment longtable :caption  
 #+RESULTS: XRF1_times
-|          | NMROM (l3) | NMROM (l5) | NMROM (l6) | NMROM (l7) | NMROM (l8) | $\delta$ NASTRAN 146 |
-|----------+------------+------------+------------+------------+------------+----------------------|
-| Time [s] |    20.8496 |    15.8366 |    15.2906 |    188.948 |    691.783 |                 4920 |
 
 * Conclusions
 #+begin_comment
