@@ -1,45 +1,45 @@
 #+TITLE: A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
 #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
-# :LATEX_PROPERTIES:
-# #+OPTIONS: toc:nil
-# #+LATEX_HEADER: \synctex=1
-# #+LATEX_HEADER: \usepackage[margin=1in]{geometry}
-# #+LATEX_HEADER: \usepackage{graphicx}
-# #+LATEX_HEADER: \usepackage{amsmath,bm}
-# #+LATEX_HEADER: \usepackage[version=4]{mhchem}
-# #+LATEX_HEADER: \usepackage{siunitx}
-# #+LATEX_HEADER: \usepackage{longtable,tabularx}
-# #+LATEX_HEADER: \usepackage{booktabs}
-# #+LATEX_HEADER: \usepackage{tabularx,longtable,multirow,subfigure,caption}
-# #+LATEX_HEADER: \setlength\LTleft{0pt} 
-# #+LATEX_HEADER: \usepackage{mathrsfs}
-# #+LATEX_HEADER: \usepackage{amsfonts}
-# #+LATEX_HEADER: \usepackage{enumitem}
-# #+LATEX_HEADER: \usepackage{mathalpha}
-# #+LATEX_HEADER: \renewcommand{\figurename}{\bf \small Figure}
-# #+LATEX_HEADER: \renewcommand{\tablename}{\bf \small Table}
-# #+LATEX_HEADER: \newcommand{\de}{\delta}
-# #+LATEX_HEADER: \newcommand{\ve}{\text{v}}
-# #+LATEX_HEADER: \newcommand{\lo}{\mathcal{L}}
-# #+LATEX_HEADER: \newcommand{\vt}{\overline{\delta\bm{\theta}}}
-# #+LATEX_HEADER: \newcommand{\vu}{\overline{\delta\bm{u}}}
-# #+LATEX_HEADER: \newcommand{\e}{\bm{\mathfrak{e}}}
-# #+LATEX_HEADER: \newcommand{\E}{\bm{\mathbb{E}}}
-# #+LATEX_HEADER: \newcommand{\T}{\bm{\mathcal{T}}}
-# #+LATEX_HEADER: \newcommand{\fra}{(\mathtt{1})}
-# #+LATEX_HEADER: \newcommand{\frb}{(\mathtt{2})}
-# #+LATEX_HEADER: \newcommand{\fri}{(\mathfrak{i})}
-# #+LATEX_HEADER: \newcommand{\bs}[1]{\boldsymbol{#1}}
-# #+LATEX_HEADER: \newcommand{\rhoinf}{\rho}	
-# #+LATEX_HEADER: \newcommand{\Vinf}{U}
-# #+LATEX_HEADER: \newcommand{\Cl}[1]{c_{l_{#1}}}
-# #+LATEX_HEADER: \newcommand{\barCl}[1]{\bar{c}_{l_{#1}}}
-# #+LATEX_HEADER: \newcommand{\Cm}[1]{c_{m_{#1}}}
-# #+LATEX_HEADER: \newcommand{\barCm}[1]{\bar{c}_{m_{#1}}}
-# #+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
+:LATEX_PROPERTIES:
+#+OPTIONS: toc:nil
+#+LATEX_HEADER: \synctex=1
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{graphicx}
+#+LATEX_HEADER: \usepackage{amsmath,bm}
+#+LATEX_HEADER: \usepackage[version=4]{mhchem}
+#+LATEX_HEADER: \usepackage{siunitx}
+#+LATEX_HEADER: \usepackage{longtable,tabularx}
+#+LATEX_HEADER: \usepackage{booktabs}
+#+LATEX_HEADER: \usepackage{tabularx,longtable,multirow,subfigure,caption}
+#+LATEX_HEADER: \setlength\LTleft{0pt} 
+#+LATEX_HEADER: \usepackage{mathrsfs}
+#+LATEX_HEADER: \usepackage{amsfonts}
+#+LATEX_HEADER: \usepackage{enumitem}
+#+LATEX_HEADER: \usepackage{mathalpha}
+#+LATEX_HEADER: \renewcommand{\figurename}{\bf \small Figure}
+#+LATEX_HEADER: \renewcommand{\tablename}{\bf \small Table}
+#+LATEX_HEADER: \newcommand{\de}{\delta}
+#+LATEX_HEADER: \newcommand{\ve}{\text{v}}
+#+LATEX_HEADER: \newcommand{\lo}{\mathcal{L}}
+#+LATEX_HEADER: \newcommand{\vt}{\overline{\delta\bm{\theta}}}
+#+LATEX_HEADER: \newcommand{\vu}{\overline{\delta\bm{u}}}
+#+LATEX_HEADER: \newcommand{\e}{\bm{\mathfrak{e}}}
+#+LATEX_HEADER: \newcommand{\E}{\bm{\mathbb{E}}}
+#+LATEX_HEADER: \newcommand{\T}{\bm{\mathcal{T}}}
+#+LATEX_HEADER: \newcommand{\fra}{(\mathtt{1})}
+#+LATEX_HEADER: \newcommand{\frb}{(\mathtt{2})}
+#+LATEX_HEADER: \newcommand{\fri}{(\mathfrak{i})}
+#+LATEX_HEADER: \newcommand{\bs}[1]{\boldsymbol{#1}}
+#+LATEX_HEADER: \newcommand{\rhoinf}{\rho}	
+#+LATEX_HEADER: \newcommand{\Vinf}{U}
+#+LATEX_HEADER: \newcommand{\Cl}[1]{c_{l_{#1}}}
+#+LATEX_HEADER: \newcommand{\barCl}[1]{\bar{c}_{l_{#1}}}
+#+LATEX_HEADER: \newcommand{\Cm}[1]{c_{m_{#1}}}
+#+LATEX_HEADER: \newcommand{\barCm}[1]{\bar{c}_{m_{#1}}}
+#+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
 
-# :END:
+:END:
 
 #+begin_abstract
 This paper presents a novel aeroelastic framework that has been rebuilt for performance and robustness.

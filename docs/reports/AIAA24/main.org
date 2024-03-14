@@ -654,7 +654,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   inp.driver.sol_path = pathlib.Path(
       f"./{name}")
 
-  inp.systems.sett.s1.tn = 501
+  inp.systems.sett.s1.tn = 2001
   inp.systems.sett.s1.solver_library = "diffrax"
   inp.systems.sett.s1.solver_function = "ode"
   inp.systems.sett.s1.solver_settings = dict(solver_name="Dopri5",#"Kvaerno3",
@@ -694,7 +694,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   inp.driver.sol_path = pathlib.Path(
       f"./{name}")
 
-  inp.systems.sett.s1.tn = 501
+  inp.systems.sett.s1.tn = 1501
   inp.systems.sett.s1.solver_library = "diffrax"
   inp.systems.sett.s1.solver_function = "ode"
   inp.systems.sett.s1.solver_settings = dict(solver_name="ImplicitEuler",#"Kvaerno3",
@@ -718,7 +718,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   inp.driver.sol_path = pathlib.Path(
       f"./{name}")
 
-  inp.systems.sett.s1.tn = 501
+  inp.systems.sett.s1.tn = 1501
   inp.systems.sett.s1.solver_library = "diffrax"
   inp.systems.sett.s1.solver_function = "ode"
   inp.systems.sett.s1.solver_settings = dict(solver_name="Kvaerno3", #"ImplicitEuler",#"Kvaerno3",
@@ -850,7 +850,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
                                                    offset) * nast_scale*scale, fig,
                                 dict(name="NASTRAN",
                                      line=dict(color="grey",
-                                               dash="dash")
+                                               dash="dot")
                                      ))
       dim_dict = {0:'x', 1:'y', 2:'z'}
       fig.update_yaxes(title='$\hat{u}'+f'_{dim_dict[dim]}$')
@@ -891,7 +891,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
           fig = uplotly.lines2d(t111m[nast_load[1]], (u111m[nast_load[1],:,-1, dim] - offset2)*nast_scale*scale, fig,
                                 dict(name=f"NASTRAN-{labels[1]}",
                                      line=dict(color="grey",
-                                               dash="dash",
+                                               dash="dot",
                                                width=1.5)
                                      ))
       dim_dict = {0:'x', 1:'y', 2:'z'}
@@ -904,36 +904,36 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
       scale = 100./33.977
       fig=None
       x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
-                                    sol1.data.dynamicsystem_s1.ra,
-                                    fixaxis2=dict(node=150, dim=dim))
+                                      sol1.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
       x2, y2 = putils.pickIntrinsic2D(sol2.data.dynamicsystem_s1.t,
-                                    sol2.data.dynamicsystem_s1.ra,
-                                    fixaxis2=dict(node=150, dim=dim))
+                                      sol2.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+      x3, y3 = putils.pickIntrinsic2D(sol3.data.dynamicsystem_s1.t,
+                                      sol3.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+      x4, y4 = putils.pickIntrinsic2D(sol4.data.dynamicsystem_s1.t,
+                                      sol4.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
 
-      fig = uplotly.lines2d(x1[:], (y1[:]-y1[0])*scale, fig,
+      fig = uplotly.lines2d(x1[1:], (y1[:-1]-y1[0])*scale, fig,
                             dict(name=f"NMROM-{labels[0]}",
-                                 line=dict(color="navy")
+                                 line=dict(color="orange",
+                                           dash="solid")
                                  ))
-      fig = uplotly.lines2d(x2[1:], (y2[:-1]-y2[0])*scale, fig,
+      fig = uplotly.lines2d(x2[:], (y2[:]-y2[0])*scale, fig,
                             dict(name=f"NMROM-{labels[1]}",
-                                 line=dict(color="blue")
+                                 line=dict(color="blue", dash="dot")
+                                 ))
+      fig = uplotly.lines2d(x3[:], (y3[:]-y3[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[2]}",
+                                 line=dict(color="red")
+                                 ))
+      fig = uplotly.lines2d(x4[:], (y4[:]-y4[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[3]}",
+                                 line=dict(color="grey", dash="dash")
                                  ))
 
-      if nast_scale is not None:
-          offset = 0. #u111m[nast_load[0],0,-1, dim]
-          fig = uplotly.lines2d(t111m[nast_load[0]], (u111m[nast_load[0],:,-1, dim] - offset)*nast_scale*scale, fig,
-                                dict(name=f"NASTRAN-{labels[0]}",
-                                     line=dict(color="black",
-                                               dash="dash",
-                                               line=1.5)
-                                     ))
-          offset2 = 0. #u111m[nast_load[1],0,-1, dim]
-          fig = uplotly.lines2d(t111m[nast_load[1]], (u111m[nast_load[1],:,-1, dim] - offset2)*nast_scale*scale, fig,
-                                dict(name=f"NASTRAN-{labels[1]}",
-                                     line=dict(color="grey",
-                                               dash="dash",
-                                               line=1.5)
-                                     ))
       dim_dict = {0:'x', 1:'y', 2:'z'}
       fig.update_yaxes(title='$\hat{u}' + f'_{dim_dict[dim]}$')
       fig.update_xaxes(range=[0, 4], title='time [s]')
@@ -1784,10 +1784,9 @@ Fig. [[classes_architecture]] shows a lower view of the abstractions, interfaces
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
-
 The cases presented are a demonstration of our solution approach to manage geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved.
-All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed. The previous version of the code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. The main reason to show those previous results is to highlight the potential improvements in scientific software when paying attention to the implementation solely.
-
+All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed.
+# The previous version of the code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. The main reason to show those previous results is to highlight the potential improvements in scientific software when paying attention to the implementation solely.
 ** Structural verification of a representative configuration
 \label{sec:representative_aircraft}
 A representative FE model for aeroelastic analysis of a full aircraft without engines is used to demonstrate the capabilities of the current methodology on large finite-element models. The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs. Flexible tail and rear stabiliser are rigidly attached to the wing. Structural and aerodynamic models are shown in Fig. \ref{fig:SailPlane}. This is a good test case as it is not very complex yet representative of aircraft FE models and it is available open source.  
@@ -1992,7 +1991,6 @@ with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the no
 | Time [s] | 2.81, 3.21, 5.08, 7.33, 145.27    |        4920 |
 
 ** Dynamic loads on an industrial configuration
-
 The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
 Fig. \ref{fig8:xrf1-model} shows the full aeroelastic model split up into the structural, mass and aerodynamic components. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. 
 The aerodynamic model contains \(\sim 1,500\) aerodynamic panels.
@@ -2011,7 +2009,7 @@ Fig. [[fig:GustXRF12_x]] shows the normalised wing-tip response with our NMROM t
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   sol1= solution.IntrinsicReader("./XRF1")
   sol2= solution.IntrinsicReader("./XRF2")
-  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=0, nast_scale=0.01, nast_load=[2,6])
+  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6], dim=0, nast_scale=0.01, nast_load=[2,6])
   figname
 #+end_src
 
@@ -2027,6 +2025,9 @@ Fig. [[fig:GustXRF12_x]] shows the normalised wing-tip response with our NMROM t
   figname
 #+end_src
 
+#+NAME: fig:GustXRF12_y
+#+CAPTION: $y$ Wing-tip response to low intensity gust
+#+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: GustXRF12_y
 [[file:figs/GustXRF12_y.png]]
 
@@ -2036,11 +2037,13 @@ Fig. [[fig:GustXRF12_x]] shows the normalised wing-tip response with our NMROM t
   figname
 #+end_src
 
+#+NAME: fig:GustXRF12_z
+#+CAPTION: $z$ Wing-tip response to low intensity gust
+#+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: GustXRF12_z
 [[file:figs/GustXRF12_z.png]]
 
-
-Next we increase the gust intensity by a factor of 200 in order to show the effects of geometric nonlinearities that are only captured by the nonlinear solver. As seen in Fig. [[fig:GustXRF34_x]],  
+Next we increase the gust intensity by a factor of 200 in order to show the effects of geometric nonlinearities that are only captured by the nonlinear solver. As seen in Fig. [[fig:GustXRF34_x]], there are major differences in the $x$ and $y$ components of the response due to follower and shortening effects, and a slight reduction in the $z$-component. These are well known geometrically nonlinear effects, the main contribution here is the ability to add them to an existing linear Nastran model with industrial features.   
 
 #+NAME: GustXRF34_x
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -2051,11 +2054,10 @@ Next we increase the gust intensity by a factor of 200 in order to show the effe
 #+end_src
 
 #+NAME: fig:GustXRF34_x
-#+CAPTION: Wing-tip response to high intensity gust, $x-$component
+#+CAPTION: Wing-tip response to high intensity gust, $x-$ component
 #+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: GustXRF34_x
-[[file:]]
-
+[[file:figs/GustXRF34_x.png]]
 
 #+NAME: GustXRF34_y
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -2063,7 +2065,7 @@ Next we increase the gust intensity by a factor of 200 in order to show the effe
   figname
 #+end_src
 
-#+CAPTION: Wing-tip response to high intensity gust, $y-$component
+#+CAPTION: Wing-tip response to high intensity gust, $y-$ component
 #+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: GustXRF34_y
 [[file:figs/GustXRF34_y.png]]
@@ -2071,7 +2073,8 @@ Next we increase the gust intensity by a factor of 200 in order to show the effe
 
 #+NAME: GustXRF34_z
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=2, nast_scale=2, nast_load=[2,6])
+  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],
+                                              dim=2, nast_scale=2, nast_load=[2,6])
   figname
 #+end_src
 
@@ -2080,21 +2083,52 @@ Next we increase the gust intensity by a factor of 200 in order to show the effe
 #+RESULTS: GustXRF34_z
 [[file:figs/GustXRF34_z.png]]
 
-In previous examples the same Runge-Kutta 4 time-marching scheme is used and now we explore the dynamic solution with other solvers to assess their accuracy and also their computational performance. 
-#+NAME: GustXRF56_z
-#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+In previous examples the same Runge-Kutta 4 (RK4) time-marching scheme is used and now we explore the dynamic solution with other solvers to assess their accuracy and also their computational performance. Two explicit ODE solvers, RK4 and Dormand-Prince's 5/4 method, and two implicit, Euler first order and Kvaerno's 3/2 method, are compared. In order to justify the use of implicit solvers we reduce the time step from 0.005 to 0.02 seconds, at which point both explicit solvers diverge.
 
-  sol1= solution.IntrinsicReader("./XRF6")
-  sol2= solution.IntrinsicReader("./XRF5")
-  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=2)
+#+NAME: GustXRF56_x
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol3= solution.IntrinsicReader("./XRF3")
+  sol5= solution.IntrinsicReader("./XRF5")
+  sol7= solution.IntrinsicReader("./XRF7")
+  sol8= solution.IntrinsicReader("./XRF8")
+  fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8,
+                                              labels=["l3","l5","l7","l8"],
+                                              dim=0)
   figname
 #+end_src
 
+#+NAME: fig:GustXRF56_x
+#+CAPTION: Comparison of solvers
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF56_x
+[[file:figs/GustXRF56_x.png]]
+
+#+NAME: GustXRF56_y
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8, labels=["l3","l5","l7","l8"],
+                                              dim=1)
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF56_y
+#+CAPTION: Comparison of solvers
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF56_y
+[[file:figs/GustXRF56_y.png]]
+
+#+NAME: GustXRF56_z
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8, labels=["l3","l5","l7","l8"],dim=2)
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF56_z
+#+CAPTION: Comparison of solvers
+#+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: GustXRF56_z
 [[file:figs/GustXRF56_z.png]]
 
-
-An important remark about these computations is that the gusts have been input in the reference configuration. Undergoing updates in the implementation aim to update the gust intensity at each panel with its normal component. This will account for the added nonlinearity of the changing in downwash.
+The computational times of the different solvers are shown in Table [[table:XRF1_times]]. The implicit solvers have taken one order of magnitude more time to run despite the reduction in time step. Therefore the insight we get on this is that for moderately large frequency dynamics, the explicit solvers offer a much efficient solution. The turning point for using implicit solvers would be when the largest eigenvalue in Eqs. \ref{eq2:sol_qs} led to prohibitly small time steps. In terms of the Nastran solution, we are not showing the whole simulation time because that would include the time to sample the DLM aerodynamics which are input into the NMROM as a post-processing step. Instead, the increase in time when adding an extra gust subcase to an already existing analysis is shown, i.e. the difference between one simulation that only computes one gust response and another with two. It is remarkable that the explicit solvers are faster on the nonlinear solution than the linear solution on an industrial software. Besides our highly efficient implementation, the main reason for this might be the Nastran solution involves a frequency domain analysis and then an inverse Fourier transform to obtain the time-domain results. 
 
 #+NAME: XRF1_times
 #+begin_src python  :results raw
@@ -2113,9 +2147,12 @@ An important remark about these computations is that the gusts have been input i
 #+end_src
 
 #+NAME: table:XRF1_times
-#+CAPTION: Computational times XRF1 gust solution
+#+CAPTION: Computational times XRF1 gust solution.
 #+ATTR_LATEX: :width 0.7\textwidth :environment longtable :caption  
 #+RESULTS: XRF1_times
+|          | NMROM [l3, l5, l6, l7, l8]         | $\Delta$ NASTRAN 146 |
+|----------+------------------------------------+----------------------|
+| Time [s] | 22.49, 18.94, 18.8, 273.95, 847.89 |                 4920 |
 
 * Conclusions
 #+begin_comment
@@ -2130,6 +2167,7 @@ conventional implementations.
 Fully differentiated code via Algorithmic Differentiation (AD).
 Capable on running on modern architectures, e.g. GPUs.
 
+An important remark about these computations is that the gusts have been input in the reference configuration. Undergoing updates in the implementation aim to update the gust intensity at each panel with its normal component. This will account for the added nonlinearity of the changing in downwash.
 
 Furthermore, a relevant amount of test cases accompany the software, of which a subset has been presented to illustrate the main capabilities that may range from a canonical beam undergoing extremely large deformations to a full-vehicle nonlinear aeroelastic response. A major highlight are the computational accelerations experimented which reach two orders of magnitude in dynamic analysis. This is due to the heavy use of vectorisation and just-in-time compilation.  
 The ability to recover the full 3D state from the NMROM was also demonstrated and compared to the solution in NASTRAN.  
