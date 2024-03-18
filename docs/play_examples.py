@@ -3,6 +3,8 @@ from jax import jit
 import jax
 from functools import partial
 
+
+
 @jit
 def reshape_arrays(x: jnp.ndarray):
 
@@ -270,6 +272,114 @@ final, result = jax.lax.scan(wealth_func, init=starting_wealth, xs=timesteps)
 
 assert np.allclose(wealth_record, result)
 
+def fibonacci(n, init):
+
+    array = jnp.arange(n-2)
+    #init = jnp.array(init)
+    @jax.jit
+    def loop(carry, xi):
+
+        out = carry[-1] + carry[-2]
+        carry_new = jnp.array([carry[-1], out])
+        return carry_new, out
+
+    carry, out = jax.lax.scan(loop, init, array)
+    return jnp.hstack([init, out])
+
+fibo = fibonacci(8, jnp.array([1,1]))
+
+###############################
+# sliding windows
+# https://github.com/google/jax/issues/3171
+
+from functools import partial
+import jax
+import jax.numpy as jnp
+from jax import jit, vmap
+
+@partial(jit, static_argnums=(1,))
+def moving_window(a, size: int):
+    starts = jnp.arange(len(a) - size + 1)
+    return vmap(lambda start: jax.lax.dynamic_slice(a, (start,), (size,)))(starts)
+
+a = jnp.arange(10)
+print(moving_window(a, 4))
+
+
+from functools import partial
+import jax
+import jax.numpy as jnp
+from jax import jit, vmap
+
+@partial(jit, static_argnums=(1,))
+def moving_window(matrix, window_shape):
+    matrix_width = matrix.shape[1]
+    matrix_height = matrix.shape[0]
+
+    window_width = window_shape[0]
+    window_height = window_shape[1]
+
+    startsx = jnp.arange(matrix_width - window_width + 1)
+    startsy = jnp.arange(matrix_height - window_height + 1)
+    starts_xy = jnp.dstack(jnp.meshgrid(startsx, startsy)).reshape(-1, 2) # cartesian product => [[x,y], [x,y], ...]
+
+    return vmap(lambda start: jax.lax.dynamic_slice(matrix, (start[1], start[0]), (window_height, window_width)))(starts_xy)
+
+matrix = jnp.asarray([
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12]
+])
+print(moving_window(matrix, (2, 3))) # window width = 2, window height = 3
+
+from functools import partial
+import jax
+import jax.numpy as jnp
+from jax import jit, vmap
+
+@partial(jit, static_argnums=(1,))
+def moving_window(matrix, window_shape):
+    matrix_width = matrix.shape[1]
+    matrix_height = matrix.shape[0]
+
+    window_width = window_shape[0]
+    window_height = window_shape[1]
+
+    startsx = jnp.arange(matrix_width - window_width + 1)
+    startsy = jnp.arange(matrix_height - window_height + 1)
+    starts_xy = jnp.dstack(jnp.meshgrid(startsx, startsy)).reshape(-1, 2) # cartesian product => [[x,y], [x,y], ...]
+
+    return vmap(lambda start: jax.lax.dynamic_slice(matrix, (start[1], start[0]), (window_height, window_width)))(starts_xy)
+
+matrix = jnp.asarray([
+    [1, 2, 3, 4],
+    [5, 6, 7, 8],
+    [9, 10, 11, 12]
+])
+print(moving_window(matrix, (3, 3))) # window width = 2, window height = 3
+
+
+# https://github.com/google/jax/issues/1646#issuecomment-551955947
+@jax.jit
+def toeplitz(x):
+  if len(x.shape) == 1:
+    return toeplitz(x[:,None])
+  n = x.shape[-2]
+  m = x.shape[-1]
+  if m == n:
+    return x
+  if m > n:
+    return x[...,:n]
+  r  = jnp.roll(x,m,axis=-2)
+  return toeplitz(jnp.concatenate([x,r], axis=-1))
+
+@jax.jit
+def toeplitz2(x):
+  n = x.shape[-1]
+  iota = jnp.arange(n)
+  def roll(x,i):
+    return jnp.roll(x, i, axis=-1)
+  return jax.vmap(roll,in_axes=(None,0),out_axes=1)(x, iota)
 ###########################
 
 class passing_class:
@@ -361,3 +471,5 @@ class FrozenDataClass:
         #self.c = self.a + self.b
 
 d1 = FrozenDataClass(3,4)
+
+
