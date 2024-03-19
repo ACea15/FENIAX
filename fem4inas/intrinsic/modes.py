@@ -200,7 +200,7 @@ def shapes(X: jnp.ndarray,
     num_nodes = config.fem.num_nodes  # Nn
     X_diff = jnp.matmul(X, config.fem.Mdiff, precision=precision)
     X_xdelta = jnp.linalg.norm(X_diff, axis=0)
-    X_xdelta = X_xdelta.at[0].set(1.0)  #  so that there is no devision
+    X_xdelta = X_xdelta.at[0].set(1.0)  #  so that there is no division by 0
     # by 0 below
     C0ab = compute_C0ab(X_diff, X_xdelta, config)  # shape=(3x3xNn)
     C06ab = make_C6(C0ab)  # shape=(6x6xNn)

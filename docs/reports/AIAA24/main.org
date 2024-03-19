@@ -8,6 +8,9 @@
 #+LATEX_HEADER: \usepackage[margin=1in]{geometry}
 #+LATEX_HEADER: \usepackage{graphicx}
 #+LATEX_HEADER: \usepackage{amsmath,bm}
+# +LATEX_HEADER: \usepackage{algorithm}
+#+LATEX_HEADER: \usepackage{algpseudocode}
+#+LATEX_HEADER: \usepackage[ruled,vlined]{algorithm2e}
 #+LATEX_HEADER: \usepackage[version=4]{mhchem}
 #+LATEX_HEADER: \usepackage{siunitx}
 #+LATEX_HEADER: \usepackage{longtable,tabularx}
@@ -429,7 +432,7 @@ Read Nastran
 #+end_src
 
 #+NAME: WSP1_z
-#+begin_src python :results value file :exports (print export_blocks) 
+#+begin_src python :results value file :exports no 
   figname = f"figs/{name}.png"
   sol_wsp1 = solution.IntrinsicReader("./WSP5")
   x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
@@ -457,56 +460,6 @@ Read Nastran
   figname
 #+end_src
 
-#+RESULTS: WSP1_z
-[[file:]]
-
-#+NAME: wingSP_x
-#+begin_src python :results value file :exports (print export_blocks) 
-  figname = f"figs/{name}.png"
-  sol_wsp1 = solution.IntrinsicReader("./wingSP")
-  x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
-                                sol_wsp1.data.dynamicsystem_s1.ra,
-                                fixaxis2=dict(node=23, dim=0))
-
-  fig = uplotly.lines2d(x, y - y[0], None,
-                        dict(name="NMROM",
-                             line=dict(color="navy")
-                             ),
-                        dict())
-  fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 0], fig,
-                        dict(name="NASTRAN",
-                             line=dict(color="grey",
-                                       dash="dash")
-                             ))
-  #fig.update_xaxes(range=[0, 5])
-  fig.write_image(f"../{figname}")
-  fig.show()
-  figname
-#+end_src
-
-#+NAME: wingSP_y
-#+begin_src python :results value file :exports (print export_blocks)
-  figname = f"figs/{name}.png"
-  sol_wsp1 = solution.IntrinsicReader("./wingSP")
-  x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
-                                sol_wsp1.data.dynamicsystem_s1.ra,
-                                fixaxis2=dict(node=23, dim=1))
-
-  fig = uplotly.lines2d(x, y - y[0], None,
-                        dict(name="NMROM",
-                             line=dict(color="navy")
-                             ),
-                        dict())
-  fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 1], fig,
-                        dict(name="NASTRAN",
-                             line=dict(color="grey",
-                                       dash="dash")
-                             ))
-  #fig.update_xaxes(range=[0, 5])
-  fig.write_image(f"../{figname}")
-  fig.show()
-  figname
-#+end_src
 
 ** XRF1
 :PROPERTIES:
@@ -1584,44 +1537,20 @@ Lastly, sec. [[Conclusions]] summarises the the achievements and further develop
 In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelasticity modelling. For further details, see cite:&CEA2021, cite:&CEA2023. First we present the main formulation that leads to a geometrically nonlinear enhancement of generic aircraft models; subsequently we show how the main aeroelastic system is built using modal-based aerodynamics, and finally some implementation details are highlighted.
 ** Airframe idealisation
 An illustration of the overall solution process is presented in Fig. [[workflow]].  
-We start with a representative FE model of the airframe. It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements. With those characteristics  a reduced model can be obtained that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$, via a static or dynamic condensation.
-A database of Aerodynamic Influence Coefficient matrices (AICs) is also needed as input; this may be given in the time-domain, as in the UVLM cite:&Maraniello2019, or in frequency domain, as in the DLM, in which case a RFA in used to amend the data for time-domain simulations.
+We start with a global FE model of the airframe. It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements. With those characteristics  a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$.
+A database of Aerodynamic Influence Coefficient matrices (AICs) is also needed as input; this may be given in a CFD-based ROM cite:&RIPEPI2018a, in time-domain panel method, as in the Unsteady Vortex Lattice (UVLM) cite:&Maraniello2019, or in frequency domain, as in the Doublet Lattice  (DLM), in which case a RFA in used to amend the data for time-domain simulations. 
 The modal-based aerodynamics and the condensed matrices of the structure are input into a our analysis framework that builds the nonlinear dynamics of the condensed model without having to call back the stiffness and mass matrices. To achieve this a formulation based on velocities and strains in the material frame of reference is employed. 
 \\
-After the state of the condensed model has been solved for, the full 3D state can be reconstructed: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model. It is demonstrated with representative aircraft structures that this process yields accurate results when compared to simulations with the full FEM, which paves the way for potentially a more detailed analysis: first with the addition of CFD as the aerodynamic solver, and second with the transfer of the full deformed state back to the original FE solver to study other phenomena such as buckling. 
+After the state of the condensed model has been solved for, the full 3D state can be reconstructed: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model. We demonstrate in this work that this process yields accurate results on representative aircraft structures when compared to simulations with the full FEM, thus paving the way for a more detailed, multidisciplinary analysis: first with the addition of CFD as the aerodynamic solver, and second with the transfer of the full deformed state back to the original FE solver to study other phenomena such as buckling. 
 
 #+NAME: workflow
 #+CAPTION: Workflow of the solution process
 #+ATTR_LATEX: :width 1.\textwidth 
 [[./figs/workflow2.pdf]]
 
-This process of enhancing the linear 3D model with geometric nonlinearities along the slender dimension relies on the main assumption that cross-sectional deformations of the solid body in the reference configuration are not coupled to the this dimension as moving through configurations in time. As a result, distributed internal stresses act only through the normal of the cross-sections in the undeformed configuration \cite{CEA2021a}.
-Applying the appropriate integration over the cross sectional reference area of the distributed traction forces, a Cosserat rod model is built, where the deformed state on the full domain is approximated by a deformable space curve $\Gamma$ -- identified with the aircraft major load-paths. The primary variables  are the local inertial (linear and angular) velocities, grouped in the variable $\bm{x}_1(s, t)$, and internal force and moments combined in $\bm{x}_2(s, t)$. They are function of the 1D spatial dimension, $s$, and time, $t$. 
-Applied forces and moments per unit length, $\bm{f}_1$, come naturally as follower forces and moments respectively. The equations are well described in \cite[Ch. 8]{PALACIOS2023}.
-Constitutive properties are given by the compliance matrix, $\bm{\mathcal{C}}$, relating sectional forces and moments to strains and curvatures and the sectional mass matrix, $\bm{\mathcal{M}}$, linking velocities and momenta. Finding a good approximation to these matrices is a common challenge in formulations that aim to build nonlinear 1D models from full FE models. This work circumvents having to calculate explicit expressions of $\bm{\mathcal{C}}$ and $\bm{\mathcal{M}}$ by solving the equations in modal space and linking them to the modal shapes and their derivatives as first described in cite:&PALACIOS2012.
-
-Using the intrinsic modes and the projection of the state variables, a Galerkin projection is carried out such that $\pmb{x}_1 = \pmb{\phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\phi}_2\pmb{q}_2$ and the equations of motion take the following form:
-
-\begin{equation}
-\label{eq2:sol_qs}
-\begin{split}
-\dot{\pmb{q}}_{1} &=  \pmb{\omega} \odot  \pmb{q}_{2} - \pmb{\Gamma}_{1} \pmb{:} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \bm{\eta}  \\
-\dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right)
-\end{split}
-\end{equation}
-where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product[fn:1: The double dot product, commonly found in solid mechanics descriptions, represents a contraction of the last two indexes of the first tensor with the first two indexes of the second one; it however needs further specification as two alternative definitions can be adopted and here we opt for the following: \(\pmb{a} \pmb{:} \pmb{b} = a_{..ij} b_{ij..} \). This has implications on the definition of the transpose of \(\bm{\Gamma}_2 \) in the second equation since for high order tensors multiple transpose operators can be defined. Consistency is achieved by ensuring the dot product operation satisfies the following: \( \pmb{x} \cdot \left(\bm{\Gamma} \pmb{:} \left( \pmb{y} \otimes \pmb{z} \right)  \right) = \pmb{y} \cdot \left(\bm{\Gamma}^{\top} \pmb{:} \left(\pmb{z} \otimes \pmb{x} \right)  \right) \), which leads to the transpose of the third order tensor, \( \bm{\Gamma} = \Gamma^{ijk} \), as \( \bm{\Gamma}^{\top} = \Gamma^{jki} \).].
-The new form of the equations in compact tensorial notation is in fact the way they have been implemented and vectorised. This description is geometrically-exact with quadratic nonlinearities only, encapsulated in the nonlinear modal couplings of the third-order tensors $\pmb{\Gamma}_{1}$ and $\pmb{\Gamma}_{2}$ (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation). $\pmb{\eta}$ is the modal projection of the external forcing terms. They are computed as integrals along the load-path 1D domain as an inner product: $\langle \pmb{u},\pmb{v}  \rangle = \int_\Gamma \pmb{u}^\top \pmb{v} ds$, for any $\pmb{u}\in\mathbb{R}^6$ and $\pmb{v}\in\mathbb{R}^6$:
-#+begin_export latex
-\begin{align}\label{eq2:gammas12}
-\Gamma_{1}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_1(\pmb{\phi}_{1j})\pmb{\psi}_{1k}\rangle, \nonumber \\
-\Gamma_{2}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_2(\pmb{\phi}_{2j})\pmb{\psi}_{2k}\rangle,  \\
-\eta_{i} & = \langle \pmb{\phi}_{1i}, \pmb{f}_1\rangle  \nonumber
-\end{align}
-#+end_export
-where $\lo_1$ and $\lo_2$ are linear operators, $\pmb{\psi}_1 = \bm{\mathcal{M}}\pmb{\phi}_1$ and $\pmb{\psi}_2 = \bm{\mathcal{C}}\pmb{\phi}_2$ are also cast as momentum and strain mode shapes and approximated using the Linear Normal Modes of the FE model. In other words, each natural vibration mode can be uniquely expressed in terms of velocity, force/moment, momentum, or strain variables. While those would be redundant in a conventional linear vibration analysis, they will enable to identify all the coefficients in Eqs. \eqref{eq2:sol_qs}.
-*** COMMENT Dynamic condensation of linear FE models
+*** Dynamic condensation of linear FE models
 \label{sec:dynamic_condensation}
-Model order reduction techniques aim to increase computational efficiency by reducing the size of the problem while maintaining its fundamental characteristics. Regarding industrial applications, ROMs are very important, even when the majority of the analysis is linear, due to the need for fast simulations and the very large models that can surpass the millions of DoF. In aircraft loads analysis, trim and stability studies, it is common practice condensing the (linear) full-FE models into the major load paths of the aircraft, to reduce the total number of DoF to a few hundreds. That is Step 2 in figure [[aircraft_process2]]. Herein we not only use a condensation approach to reduce the size of the model, but also to represent a structure that can be modelled as a one-dimensional domain --making use of the slenderness of transport aircraft main components, where the span of wetted-surfaces and the fuselage length take predominance over the other dimensions.
+Model order reduction techniques aim to increase computational efficiency by reducing the size of the problem while maintaining its fundamental characteristics. Regarding industrial applications, ROMs are very important, even when the majority of the analysis is linear, due to the need for fast simulations and the very large models that can surpass the millions of DoF. In aircraft loads analysis, trim and stability studies, it is common practice condensing the (linear) full-FE models into the major load paths of the aircraft, to reduce the total number of DoF to a few hundreds. That is Step 2 in figure . Herein we not only use a condensation approach to reduce the size of the model, but also to represent a structure that can be modelled as a one-dimensional domain --making use of the slenderness of transport aircraft main components, where the span of wetted-surfaces and the fuselage length take predominance over the other dimensions.
 \\
 In order to obtain the condensed model, the degrees of freedom of the full model are divided into those on active (or master) nodes, located along the load path $\Gamma$, and those of the omitted (or slave) nodes. The displacement vector can therefore be reordered as, $\pmb{u}_n= \left(\pmb{u}_a^\top \;\pmb{u}_o^\top\right)^\top$, and similarly for the LNMs of the unloaded structure $\pmb{\Phi}=[\pmb{\Phi}_a^\top \; \pmb{\Phi}_o^\top]^\top$, so that the eigenvalue problem of $\bm{K}$ and $\bm{M}$ is arranged as,
 #+begin_export latex
@@ -1652,7 +1581,196 @@ In general, the condensation is dependent on the frequencies and forms a nonline
 \end{equation}
 #+end_export
 This is the so-called exact-condensation matrix, where we have also introduced Kidder's mode expansion. The first-order approximation of this equation is attained by letting $\omega_j =0$, thereby removing inertia effects. This results in a static condensation, proposed by Guyan and Irons in 1965 \cite{Guyan1965}, still one of the most popular condensation methods today, also known as Guyan reduction. Note that when the mass model consists only of lumped masses on the active degrees of freedom, $\pmb{M}_{oo} = \pmb{M}_{oa} = \pmb{0}$, Guyan reduction is the exact condensation. 
-Using Linear Normal Modes (LNMs) from the condensed stiffness and mass matrices, we approximate the modal shapes introduced in the previous section, $\pmb{\psi}_1$ and $\pmb{\psi}_2$, as in \cite{PALACIOS2019}, thus avoiding the explicit calculation of sectional properties $\bm{\mathcal{M}}$ and $\bm{\mathcal{C}}$ --which would not be easily available if the starting model is a full FE. 
+Using Linear Normal Modes (LNMs) from the condensed stiffness and mass matrices, we approximate the modal shapes introduced in the previous section, $\pmb{\psi}_1$ and $\pmb{\psi}_2$, as in \cite{PALACIOS2019}, thus avoiding the explicit calculation of sectional properties $\bm{\mathcal{M}}$ and $\bm{\mathcal{C}}$ --which would not be easily available if the starting model is a full FE.
+*** Kinematics of aircraft main load-paths
+This process of enhancing the linear 3D model with geometric nonlinearities along the slender dimension relies on the main assumption that cross-sectional deformations of the solid body in the reference configuration are not coupled to the this dimension as moving through configurations in time. As a result, distributed internal stresses act only through the normal of the cross-sections in the undeformed configuration \cite{CEA2021a}.
+Applying the appropriate integration over the cross sectional reference area of the distributed traction forces, a Cosserat rod model is built, where the deformed state on the full domain is approximated by a deformable space curve $\Gamma$ -- identified with the aircraft major load-paths. The primary variables  are the local inertial (linear and angular) velocities, grouped in the variable $\bm{x}_1(s, t)$, and internal force and moments combined in $\bm{x}_2(s, t)$. They are function of the 1D spatial dimension, $s$, and time, $t$. 
+Applied forces and moments per unit length, $\bm{f}_1$, come naturally as follower forces and moments respectively. The equations are well described in \cite[Ch. 8]{PALACIOS2023}.
+Constitutive properties are given by the compliance matrix, $\bm{\mathcal{C}}$, relating sectional forces and moments to strains and curvatures and the sectional mass matrix, $\bm{\mathcal{M}}$, linking velocities and momenta. Finding a good approximation to these matrices is a common challenge in formulations that aim to build nonlinear 1D models from full FE models. This work circumvents having to calculate explicit expressions of $\bm{\mathcal{C}}$ and $\bm{\mathcal{M}}$ by solving the equations in modal space and linking them to the modal shapes and their derivatives as first described in cite:&PALACIOS2012.
+
+Thus, combining Eqs. \eqref{eq2:motion2}, \eqref{eq2:costitutive1} and \eqref{eq2:x1} a Cosserat rod model is built, where the deformed state on the full domain is approximated by a deformable space curve $\mathcal{P}$ -- identified with the aircraft major load-paths -- whose dynamics are described by the intrinsic equations, written here in compact form as in \citep{Palacios2017},
+\begin{subequations}\label{eq2:intrinsic_eqs}
+\begin{align}
+\mathcal{M}\dot{\pmb{x}}_1-\pmb{x}_2'-\pmb{\mathsf{E}}\bm{x}_2+ \lo_1(\pmb{x}_1)\mathcal{M}\pmb{x}_1 + \lo_2(\pmb{x}_2)\mathcal{C}\pmb{x}_2 & = \pmb{f}_1  \\
+\mathcal{C}\dot{\pmb{x}_2}-\pmb{x}_1' + \pmb{\mathsf{E}}^\top\pmb{x}_1- \lo_1^\top(\pmb{x}_1)\mathcal{C}\pmb{x}_2 & = \pmb{0}
+\end{align}
+\end{subequations}
+The linear operators, $\lo_1$, $\lo_2$, and the matrix $\pmb{\mathsf{E}}$ are defined as,
+\begin{equation}
+\lo_1 (\pmb{x}_1)  = \begin{bmatrix} \tilde{\pmb{\omega}} & \pmb{0} \\ \tilde{\pmb{\ve}} & \tilde{\pmb{\omega}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}
+\lo_2 (\pmb{x}_2)=  \begin{bmatrix} \pmb{0} & \tilde{\pmb{f}} \\ \tilde{\pmb{f}} & \tilde{\pmb{m}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}  \pmb{\mathsf{E}}= \lo_1 \begin{pmatrix} \begin{bmatrix} \pmb{e}_x \\ \pmb{k}_0 \end{bmatrix} \end{pmatrix}
+\end{equation}
+The above description is geometrically-exact with quadratic nonlinearities only. It easily allows 
+
+
+Using the intrinsic modes and the projection of the state variables, a Galerkin projection is carried out such that $\pmb{x}_1 = \pmb{\phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\phi}_2\pmb{q}_2$ and the equations of motion take the following form:
+
+\begin{equation}
+\label{eq2:sol_qs}
+\begin{split}
+\dot{\pmb{q}}_{1} &=  \pmb{\omega} \odot  \pmb{q}_{2} - \pmb{\Gamma}_{1} \pmb{:} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \bm{\eta}  \\
+\dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right)
+\end{split}
+\end{equation}
+where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product[fn:1: The double dot product, commonly found in solid mechanics descriptions, represents a contraction of the last two indexes of the first tensor with the first two indexes of the second one; it however needs further specification as two alternative definitions can be adopted and here we opt for the following: \(\pmb{a} \pmb{:} \pmb{b} = a_{..ij} b_{ij..} \). This has implications on the definition of the transpose of \(\bm{\Gamma}_2 \) in the second equation since for high order tensors multiple transpose operators can be defined. Consistency is achieved by ensuring the dot product operation satisfies the following: \( \pmb{x} \cdot \left(\bm{\Gamma} \pmb{:} \left( \pmb{y} \otimes \pmb{z} \right)  \right) = \pmb{y} \cdot \left(\bm{\Gamma}^{\top} \pmb{:} \left(\pmb{z} \otimes \pmb{x} \right)  \right) \), which leads to the transpose of the third order tensor, \( \bm{\Gamma} = \Gamma^{ijk} \), as \( \bm{\Gamma}^{\top} = \Gamma^{jki} \).].
+The new form of the equations in compact tensorial notation is in fact the way they have been implemented and vectorised. This description is geometrically-exact with quadratic nonlinearities only, encapsulated in the nonlinear modal couplings of the third-order tensors $\pmb{\Gamma}_{1}$ and $\pmb{\Gamma}_{2}$ (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation). $\pmb{\eta}$ is the modal projection of the external forcing terms. They are computed as integrals along the load-path 1D domain as an inner product: $\langle \pmb{u},\pmb{v}  \rangle = \int_\Gamma \pmb{u}^\top \pmb{v} ds$, for any $\pmb{u}\in\mathbb{R}^6$ and $\pmb{v}\in\mathbb{R}^6$:
+#+begin_export latex
+\begin{align}\label{eq2:gammas12}
+\Gamma_{1}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_1(\pmb{\phi}_{1j})\pmb{\psi}_{1k}\rangle, \nonumber \\
+\Gamma_{2}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_2(\pmb{\phi}_{2j})\pmb{\psi}_{2k}\rangle,  \\
+\eta_{i} & = \langle \pmb{\phi}_{1i}, \pmb{f}_1\rangle  \nonumber
+\end{align}
+#+end_export
+where $\lo_1$ and $\lo_2$ are linear operators, $\pmb{\psi}_1 = \bm{\mathcal{M}}\pmb{\phi}_1$ and $\pmb{\psi}_2 = \bm{\mathcal{C}}\pmb{\phi}_2$ are also cast as momentum and strain mode shapes and approximated using the Linear Normal Modes of the FE model. In other words, each natural vibration mode can be uniquely expressed in terms of velocity, force/moment, momentum, or strain variables. While those would be redundant in a conventional linear vibration analysis, they will enable to identify all the coefficients in Eqs. \eqref{eq2:sol_qs}.
+*** Intrinsic modes
+
+Let $\pmb{\Phi}_{a}$ be the solution of the eigenvalue problem using the condensed matrices, $\pmb{M}_a$ and $\pmb{K}_a$, defined in Eq. \eqref{eq2:energy_condensed_matrices}. $\pmb{\Phi}_{a}$ includes the full set of modes in the condensed system written as displacement and linear rotations at the nodes along  $\Gamma$.
+
+Thus the discrete velocity mode is defined as $\pmb{\Phi}_{1j} = \pmb{\Phi}_{0j}$.
+
+The corresponding distribution of linear and rotational momenta at the master nodes can be  obtained using the condensed inertia matrix, $\pmb{\Psi}_{1j}  = \pmb{M}_a \pmb{\Phi}_{1j} = \pmb{M}_a \pmb{\Phi}_{0j}$, expressed in their components in the global frame of reference. The introduction of this momentum mode has allowed calculations to be performed on distributed mass models and the use of any type of condensation technique. Because the mass matrix is already calculated as an inte
+
+Each displacement mode also generates a corresponding internal stress state. This defines discrete force/moment modes, $\pmb{\Phi}_{2}$, which are obtained from the displacement modes and the condensed stiffness matrix using a summation-of-forces approach from aircraft load analysis, \cite[Ch. 18]{Wright2007}. If $N_n$ is the total number of nodes, the internal node forces are for each mode $j$ computed as $\bm{\mathfrak{f}}_{(j)}  = \pmb{K}_a\pmb{\Phi}_{0j}^{1-3}$, with $\bm{\mathfrak{f}}_{(j)} \in \mathbb{R}^{3N_n}$; and analogously the internal moments as $\bm{\mathfrak{m}}_{\mathfrak{f}(j)}  = \pmb{K}_a\pmb{\Phi}_{0j}^{4-6}$. Next, a function $\mathcal{S}(\bm{\mathfrak{h}},s_i)$ is defined so that it sums the  value of $\bm{\mathfrak{h}}$ at each node in the path from a free end to the node $s_i$ in the structure. $\pmb{\Phi}_{2}$ is calculated as
+%
+\begin{align}\label{eq:phi2}
+\pmb{\Phi}_{2j,i+\frac{1}{2}}&= \begin{bmatrix}\mathcal{S}(\bm{\mathfrak{f}}_{(j)},s_i)\\  \mathcal{S} \left( \bm{\mathfrak{m}}_{\mathfrak{f}(j)} + (\bm{r}_i-\bm{r}_{i+\frac{1}{2}}) \times \bm{\mathfrak{f}}_{(j)},s_i \right)
+\end{bmatrix} 
+\end{align}
+%
+where $\pmb{r}_i$ is the position vector of the nodes summed by $\mathcal{S}$, and $\bm{r}_{i+\frac{1}{2}}$ the mid position between nodes $s_i$ and $s_{i+1}$. The first term is the sum of forces due to modal displacements and the second one the sum of moments due to modal rotations and the cross product of the  position vector and the previous calculated force. This equation represents an equilibrium of internal forces and moments -- between node $i$ and $i+1$. Results are presented in the mid-point $i+\frac{1}{2}$ because more information cannot be extracted in terms of linear stresses from one node to the other.
+
+
+the strain modes $\pmb{\psi}_{2}$ are obtained from spatial derivatives of the displacement modes along $\Gamma$, following Eq. \eqref{eq2:linear CPhi2}, and interpolated as piece-wise constant too,
+\begin{align}\label{eq2:psi2}
+\pmb{\psi}_{2j}(s) = -\frac{\pmb{\phi}_{1j}(s_{i+1})-\pmb{\phi}_{1j}(s_{i})}{\Delta s_{i}}+ \pmb{E}^\top\frac{\pmb{\phi}_{1j}(s_{i+1})+\pmb{\phi}_{1j}(s_{i})}{2} 
+\end{align}
+
+
+
+
+\begin{algorithm}[h!]
+\DontPrintSemicolon
+%\KwData{$G=(X,U)$ such that $G^{tc}$ is an order.}
+%\KwResult{$G’=(X,V)$ with $V\subseteq U$ such that $G’^{tc}$ is an interval order.}
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\Input{Full FE matrices, $\bm{K}$ and $\bm{M}$; master points, $\bm{p}$; \\
+           algorithm to calculate the eigenvalue problem, $\bm{\phi}$; split function, $\bm{S}$}
+\Output{Condensed FE matrices, $\bm{K}_a$ and $\bm{M}_a$}
+\BlankLine
+\Begin{
+  \BlankLine
+    $\bm{K}_{aa}, \bm{K}_{ao}, \bm{K}_{oa}, \bm{K}_{oo} \longleftarrow \bm{S}(\bm{K},\bm{p})$ \;
+  \BlankLine
+      $\bm{M}_{aa}, \bm{M}_{ao}, \bm{M}_{oa}, \bm{M}_{oo} \longleftarrow \bm{S}(\bm{M},\bm{p})$ \;
+  \BlankLine
+  $\bm{K}_a^{(0)} \longleftarrow  \bm{K}_{aa} -\bm{K}_{ao}\bm{K}_{oo}^{-1} \bm{K}_{oa}$ \;
+  \BlankLine
+  $\bm{M}_a^{(0)} \longleftarrow  \bm{M}_{aa} +\bm{K}_{ao}\bm{K}_{oo}^{-1}\bm{M}_{oo}\bm{K}_{oo}^{-1} \bm{K}_{oa}$ \;
+  \BlankLine
+  $\bm{\omega}^{(0)} , \pmb{\Phi}_{a}^{(0)} \longleftarrow \bm{\phi}\left(\pmb{K}_a^{(0)},\pmb{M}_a^{(0)} \right)$\;
+    \BlankLine
+  $\pmb{T}_{oa}(\omega) \longleftarrow  -(\pmb{K}_{oo}^{-1}+\omega^2\pmb{K}_{oo}^{-1}\pmb{M}_{oo}\pmb{K}_{oo}^{-1})(\pmb{K}_{oa}-\omega^2\pmb{M}_{oa})$ \;
+  \BlankLine
+  $n_m \longleftarrow  6\times length(\bm{p})$ \;
+  \BlankLine
+  \For{$i \in [1,...,n_i]$}{
+    \BlankLine
+    \For{$j \in [1,...,n_m]$}{
+        \BlankLine
+    $\pmb{\Phi}_{oj}^{(i)} \longleftarrow\pmb{T}_{oa}(\omega_j^{(i-1)})\pmb{\Phi}_{aj}^{(i-1)}$}
+        \BlankLine
+    $\pmb{T}_{oa}^{(i)} \longleftarrow \pmb{\Phi}_o^{(i)}\left(\pmb{\Phi}_a^{(i-1)}\right)^{-1}$ \;
+    \BlankLine
+    $\pmb{T}^{(i)}  \longleftarrow [\pmb{I}_a \; \pmb{T}_{oa}^{(i)^\top}]^\top$ \;
+    \BlankLine
+    $\pmb{K}_a^{(i)}  \longleftarrow \pmb{T}^{(i)^\top}\pmb{K}\pmb{T}^{(i)}$ \;
+    \BlankLine
+    $\pmb{M}_a^{(i)}  \longleftarrow \pmb{T}^{(i)^\top}\pmb{M}\pmb{T}^{(i)}$ \;
+    \BlankLine
+    $\bm{\omega}^{(i)} , \pmb{\Phi}_{a}^{(i)} \longleftarrow \bm{\phi}\left(\pmb{K}_a^{(i)},\pmb{M}_a^{(i)}\right)$\;
+    \BlankLine 
+    \If{$||\pmb{\Phi}_{a}^{(i)} - \pmb{\Phi}_{a}^{(i-1)} || < \epsilon$ {\bf and} $||\bm{\omega}^{(i)} - \bm{\omega}^{(i-1)}|| < \epsilon$ }{
+          \BlankLine 
+      \bf{break}}
+    }
+  }
+\caption{Finite Element Linear Condensation\label{IR}}
+\label{alg:condensation}
+\end{algorithm}
+
+*** Nonlinear couplings
+
+\begin{algorithm}[h!]
+\DontPrintSemicolon
+%\KwData{$G=(X,U)$ such that $G^{tc}$ is an order.}
+%\KwResult{$G’=(X,V)$ with $V\subseteq U$ such that $G’^{tc}$ is an interval order.}
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\Input{Intrinsic modal shapes}
+\Output{Intrinsic nonlinear modal couplings $\bm{\Gamma}_1$ and $\bm{\Gamma}_2$}
+\Begin{
+ \BlankLine
+\texttt{f1 $\longleftarrow$ vmap(lambda u, v: tensordot($\mathcal{L}_1$(u), v, axes=(1, 1),
+      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate nodes} \;
+f2 $\longleftarrow$ vmap(f1, in\_axes=(0, None), out\_axes=0)  \;
+\bm{L}_1 $\longleftarrow$ f2($\bm \phi_1$, $\bm \psi_1$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
+$\bm{\Gamma}_{1}$ $\longleftarrow$  einsum(isn,jskn$\rightarrow$ijk, $\bm \phi_1$, $\bm{L}_1$) \;
+\BlankLine
+f3 $\longleftarrow$ vmap(lambda u, v: tensordot($\mathcal{L}_2$(u), v, axes=(1, 1),
+      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate nodes} \;
+f4 $\longleftarrow$ vmap(f3, in\_axes=(0, None), out\_axes=0)  \;
+\bm{L}_2 $\longleftarrow$ f4($\bm \phi_2$, $\bm \psi_2$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
+$\bm{\Gamma}_2$ $\longleftarrow$  einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\phi}_{m1}$, $\bm{L}_2$, $\Delta_s$) $ \;
+\BlankLine
+}
+    }
+\caption{Nonlinear Couplings implementation in JAX}
+\label{alg:couplings}
+\end{algorithm}
+
+
+\begin{algorithm}[h!]
+\DontPrintSemicolon
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\Input{FEM and eigenvalue solution: $\bm X, \bm K_a, \bm M_a, \bm{\Phi}_0, \bm \omega$}
+\Output{Intrinsic modal shapes}
+\Begin{
+ \BlankLine
+\texttt{$\bm X_m$ $\leftarrow$ matmul($X^{\top}$, $M_{avg}$)
+\Comment{Get mid-node coordinates} \;
+$\bm{\Phi}_1$ $\leftarrow$ $\bm{\Phi}_0$ \;
+$\bm{\Phi}_{1m}$ $\leftarrow$ tensordot($\bm{\Phi}_1$, $M_{avg}$, axes=(2, 0))
+\Comment{Velocity modes at mid-node locations}\;
+$\bm{\psi}_{1v}$ $\leftarrow$ matmul($\bm M_a$, $\bm{\Phi}_0$)
+\Comment{Momenta modes}\;
+$\bm{\psi}_{1}$ $\leftarrow$ reshape\_modes($\bm{\psi}_{1v}$, Nmodes, Nnodes) \Comment{Nmx6xNn}  \;
+$\bm{\Phi}_{2fv}$ $\leftarrow$ matmul($\bm K_a$, $\bm{\Phi}_0$)
+\Comment{Internal forces and moments associated to modal shapes (Nm$\times$6$\times$Nn)} \;
+$\bm{\Phi}_{2fv}$ $\leftarrow$ reshape\_modes($\bm{\Phi}_{2fv}$, Nmodes, Nnodes) \;
+$\bm{\Phi}_{2f}$ $\leftarrow$ tensordot($\bm{\Phi}_{2fv}$, $\bm M_{paths}$, axes=(2, 0)) \Comment{Sum of internal forces and moments (Nm$\times$6$\times$Nn)} \;
+$\bm X_3$ $\leftarrow$ coordinates\_difftensor($X$, $X_m$)
+\Comment{mid-node vector to every other node in the reduced model (3$\times$Nn$\times$Nn}) \;
+$\bm X_{3tilde}$ $\leftarrow$ -axis\_tilde($\bm X_3$)
+\Comment{Cross-product in matrix form (6$\times$6$\times$Nn$\times$Nn)} \;
+$\bm{\phi}_{2mn}$ $\leftarrow$ moment\_force($\bm{\phi}_{2v}$, $\bm X_{3tilde}$) \Comment{Moment distribution due to nodal forces (Nm$\times$6$\times$Nn$\times$Nn)} \;
+$\bm{\phi}_{2m}$ $\leftarrow$ moment\_contraction($\bm{\phi}_{2mn}$, $M_{paths}$) \Comment{Sum of internal moments due to forces (Nm$\times$6$\times$Nn$)} \;
+$\bm{\Phi}_2$ $\leftarrow$ $\bm{\Phi}_{2f}$ + $\bm{\phi}_{2m}$
+\Comment{Total value internal forces and moments}\;
+$E_{\phi}$ $\leftarrow$ ephi(E, $\bm \phi_{1m}$)
+\Comment{E times } \;
+$\bm \phi_{1d}$ $\leftarrow$  tensordot($\bm{\Phi}_1$, $\bm M_{diff}$, axes=(2, 0))
+\Comment{Velocity mode variation across nodes (Nm$\times$6$\times$Nn$)}\;
+$\bm{\psi}_2$ $\leftarrow$ - $\bm \phi_{1d} / \Delta_s + E_{\phi}$\;
+\BlankLine
+}
+    }
+\caption{Intrinsic modal shapes implementation in JAX}
+\label{alg:modes}
+\end{algorithm}
+
+
 ** COMMENT Time domain unsteady aerodynamics
 #+begin_export latex
 A linearised unsteady aerodynamic model is assumed in this work. It will be characterised as a linear dynamical system, in which the inputs \(\textbf{u}\) are the solid wall motions and the outputs \(\textbf{y}\) the resulting aerodynamic pressures/forces on the solid.  Linear time-invariant systems, can, in general, be expressed by either an internal description (a state-space model) or a external, or \emph{black-box}, description (an impulse response or a transfer function) \cite[Ch. 1]{palacios2023dynamics}. Internal descriptions explicitly introduce states to describe the dynamics and are amenable to time-domain solution methods. Unsteady aerodynamic forces for aeroelastic applications are typically given by the doublet-lattice method \cite{Albano1969} however, which is a transfer function given by discrete samplings in the frequency domain. 
@@ -1725,14 +1843,13 @@ Because the aeroelastic system is solved in modal space, the total number of mod
 ** Nonlinear aeroelastic system
 The full aeroelastic solution is described extending Eq.  \eqref{eq2:sol_qs} with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{v}_g$. Control states can also be included [[cite:&CEA2021a]], but they are not necessary for this work. For a set of reduced frequencies and a given Mach number, the DLM (or a higher fidelity aerodynamic method) yields the Generalised Aerodynamic Forces (GAFs). The current implementation uses Roger's rational function approximation to those GAFs, which results in the follower modal forces:
 
-#+begin_export latex
 \begin{equation}\label{eq3:eta_full}
 \begin{split}
 \bm{\eta}_a = \tfrac12\rho_\infty U_\infty^2 & \left(\vphantom{\sum_{p=1}^{N_p}} \pmb{\mathcal{A}}_0\bm{q}_0 +\frac{c}{2U_\infty}\pmb{\mathcal{A}}_1 \bm{q}_1 +\left(\frac{c}{2U_\infty}\right)^2 \pmb{\mathcal{A}}_2\dot{\bm{q}}_1   \right.  \\
 & \left. + \pmb{\mathcal{A}}_{g0}\bm{v}_g +\frac{c}{2U_\infty}\pmb{\mathcal{A}}_{g1} \dot{\bm{v}}_g +\left(\frac{c}{2U_\infty}\right)^2 \pmb{\mathcal{A}}_{g2}\ddot{\bm{v}}_g +  \sum_{p=1}^{N_p} \pmb{\lambda}_p  \right) 
 \end{split}
 \end{equation}
-#+end_export
+
 The coupling of the structure and aerodynamic equations combined with the aerodynamic lags gives the final ODE system: 
 
 \begin{equation}
@@ -1746,7 +1863,18 @@ The coupling of the structure and aerodynamic equations combined with the aerody
 \end{split}
 \end{equation}
 in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 diag(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$. \\
-Note that the structure of the formulation in modal space naturally leads to reduced order models and easily caters for vectorised operations. For instance, the contraction of $\bm \Gamma_2^T{\top}$ in the second equation of Eqs. \ref{eq2:sol_qs} is implemented as an Einstein summation in JAX as \texttt{einsum(ijk,ki->j, gamma2, tensordot(q2, q1, axes=0)}. This will be briefly discussed next. 
+Note that the structure of the formulation in modal space naturally leads to reduced order models and easily caters for vectorised operations. For instance, the contraction of $\bm \Gamma_2^T{\top}$ in the second equation of Eqs. \ref{eq2:sol_qs} is implemented as an Einstein summation in JAX as \texttt{einsum(ijk,ki->j, gamma2, tensordot(q2, q1, axes=0)}. This will be briefly discussed next.
+
+** Aircraft trim flight
+
+\begin{equation}
+\begin{split}
+\pmb F(\pmb{q}_{2}, \pmb{q}_{0}, \pmb{q}_{c}) &=  \pmb{\omega} \odot  \pmb{q}_{2}  - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \tfrac12\rho_\infty U_\infty^2  \left( \pmb{\mathcal{A}}_0\bm{q}_0 + \pmb{\mathcal{A}}_0\bm{q}_0 + \pmb{\mathcal{A}}_c\bm{q}_c + \bm{\eta}_g  \right) = \bm 0 \\
+\bm{q}_0 &= \bm{q}_2 / \pmb{\omega} \\
+\bm{q}_{2r} &= \bm 0
+\end{split}
+\end{equation}
+
 ** Computational implementation
 The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures and the computation of sensitivities via algorithmic differentiation (AD) has been implemented as a crucial part for design optimisation, both of which will be exemplified in future work.
 \\
@@ -1787,7 +1915,7 @@ Fig. [[classes_architecture]] shows a lower view of the abstractions, interfaces
 The cases presented are a demonstration of our solution approach to manage geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved.
 All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed.
 # The previous version of the code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. The main reason to show those previous results is to highlight the potential improvements in scientific software when paying attention to the implementation solely.
-** Structural verification of a representative configuration
+** COMMENT Structural verification of a representative configuration
 \label{sec:representative_aircraft}
 A representative FE model for aeroelastic analysis of a full aircraft without engines is used to demonstrate the capabilities of the current methodology on large finite-element models. The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs. Flexible tail and rear stabiliser are rigidly attached to the wing. Structural and aerodynamic models are shown in Fig. \ref{fig:SailPlane}. This is a good test case as it is not very complex yet representative of aircraft FE models and it is available open source.  
 #+begin_export latex
@@ -1990,7 +2118,7 @@ with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the no
 |----------+-----------------------------------+-------------|
 | Time [s] | 2.81, 3.21, 5.08, 7.33, 145.27    |        4920 |
 
-** Dynamic loads on an industrial configuration
+** COMMENT Dynamic loads on an industrial configuration
 The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
 Fig. \ref{fig8:xrf1-model} shows the full aeroelastic model split up into the structural, mass and aerodynamic components. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. 
 The aerodynamic model contains \(\sim 1,500\) aerodynamic panels.
