@@ -1,6 +1,4 @@
-#+TITLE: JAX-based Nonlinear Aeroelastic Simulation of Large Aircraft Models
-# A for Modern Software Architectures
-# #+TITLE: JAX-based Aeroelastic Framework for Nonlinear Analysis of Large Aircraft Models
+#+TITLE: JAX-based Aeroelastic Framework for Nonlinear Analysis of Large Aircraft Models
 # #A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
 #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
@@ -10,9 +8,6 @@
 #+LATEX_HEADER: \usepackage[margin=1in]{geometry}
 #+LATEX_HEADER: \usepackage{graphicx}
 #+LATEX_HEADER: \usepackage{amsmath,bm}
-# +LATEX_HEADER: \usepackage{algorithm}
-#+LATEX_HEADER: \usepackage{algpseudocode}
-#+LATEX_HEADER: \usepackage[ruled,vlined]{algorithm2e}
 #+LATEX_HEADER: \usepackage[version=4]{mhchem}
 #+LATEX_HEADER: \usepackage{siunitx}
 #+LATEX_HEADER: \usepackage{longtable,tabularx}
@@ -51,7 +46,7 @@
 This paper presents a new implementation for time-domain nonlinear aeroelastic simulations that has been built for performance and robustness.
 Leveraging on the numerical library JAX, a highly vectorised codebase is written that achieves two orders of magnitude accelerations compare to conventional implementations. This brings full-vehicle simulations to run close to if not in real-time, thus opening new possibilities for aircraft aeroelastic analysis which have traditionally been constrained to either linear, frequency domain solutions, or to their nonlinear counterparts but narrower in scope.
 Moreover, the approach seamlessly integrates with conventional aeroelastic load packages which facilitates the analysis of complex aircraft configurations.
-An extensive verification has been carried out on representative aircraft models and compared with MSC Nastran linear and nonlinear solutions. Furthermore, we demonstrate the suitability of the methodology to accurately reconstruct the full 3D solution. 
+An extensive verification has been carried out on representative aircraft models and compared with MSC Nastran linear and nonlinear solutions. Furthermore, we demonstrate the suitability of the methodology to accurately reconstruct the full 3D solution. The algorithmic differentiation capabilities in JAX have been tested using proof of concept nonlinear static and dynamic problems. 
 #+end_abstract
 
 * House keeping  :noexport: 
@@ -434,7 +429,7 @@ Read Nastran
 #+end_src
 
 #+NAME: WSP1_z
-#+begin_src python :results value file :exports no 
+#+begin_src python :results value file :exports (print export_blocks) 
   figname = f"figs/{name}.png"
   sol_wsp1 = solution.IntrinsicReader("./WSP5")
   x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
@@ -454,6 +449,57 @@ Read Nastran
   fig = uplotly.lines2d(t_wspl[0], u_wspl[0,:,-4, 2], fig,
                         dict(name="NASTRAN",
                              line=dict(color="red",
+                                       dash="dash")
+                             ))
+  #fig.update_xaxes(range=[0, 5])
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+#+RESULTS: WSP1_z
+[[file:]]
+
+#+NAME: wingSP_x
+#+begin_src python :results value file :exports (print export_blocks) 
+  figname = f"figs/{name}.png"
+  sol_wsp1 = solution.IntrinsicReader("./wingSP")
+  x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
+                                sol_wsp1.data.dynamicsystem_s1.ra,
+                                fixaxis2=dict(node=23, dim=0))
+
+  fig = uplotly.lines2d(x, y - y[0], None,
+                        dict(name="NMROM",
+                             line=dict(color="navy")
+                             ),
+                        dict())
+  fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 0], fig,
+                        dict(name="NASTRAN",
+                             line=dict(color="grey",
+                                       dash="dash")
+                             ))
+  #fig.update_xaxes(range=[0, 5])
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+#+NAME: wingSP_y
+#+begin_src python :results value file :exports (print export_blocks)
+  figname = f"figs/{name}.png"
+  sol_wsp1 = solution.IntrinsicReader("./wingSP")
+  x, y = putils.pickIntrinsic2D(sol_wsp1.data.dynamicsystem_s1.t,
+                                sol_wsp1.data.dynamicsystem_s1.ra,
+                                fixaxis2=dict(node=23, dim=1))
+
+  fig = uplotly.lines2d(x, y - y[0], None,
+                        dict(name="NMROM",
+                             line=dict(color="navy")
+                             ),
+                        dict())
+  fig = uplotly.lines2d(t_wsp[0], u_wsp[0,:,-4, 1], fig,
+                        dict(name="NASTRAN",
+                             line=dict(color="grey",
                                        dash="dash")
                              ))
   #fig.update_xaxes(range=[0, 5])
@@ -1316,248 +1362,89 @@ Read data from Nastran simulations
 
 #+end_src
 
-* COMMENT Paraview
-:PROPERTIES:
-:header-args:  :session (print pythonShell) :noweb yes :tangle ./results/paraview.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
-:END:
-
-#+begin_src python  :results none 
-  # bdfdef.vtk_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None)
-#+end_src
-
-* COMMENT Run UML diagrams 
-:PROPERTIES:
-:header-args: :mkdirp yes :eval no-export
-:END:
-
-#+Name: classes_architecture
-#+begin_src plantuml :file figs/classes_architecture.png :exports (print export_blocks)
-  abstract Driver {
-            +pre_simulation()
-            +run_cases()
-    }
-
-     class IntrinsicDriver {
-             #integration: IntrinsicIntegration
-             #simulation: Simulation
-             #systems: [System]
-             -__init__(config: Config)
-             #_set_case()
-             #_set_integration()
-             #_set_simulation()
-             #_set_systems()
-     }
-
-     class  XLoads {
-             +q: [jnp.ndarray]
-             +Rab: [jnp.ndarray]
-             +GAFs: [jnp.ndarray]
-             -__init__(config.systems.loads,
-            q, Rab, GAFs)
-	       +interpolation()
-             +followerF()
-             +deadF()
-             +gravityF()
-             +modalAero()
-             }
-
-     /'
-      ' abstract class Integration {
-      '         +run()
-      ' }
-      '/
-
-     class IntrinsicIntegration {
-                     + <math>phi_1, phi_2, psi_1, psi_2</math>
-                     + <math>Gamma_1, Gamma_2 </math>
-                     -__init__(X, Ka, Ma)		
-                     +run()
-                     #compute_modalshapes()
-                     #compute_modalcouplings()
-     }
-
-     abstract class Simulation {
-                     +systems: [System]
-                     #workflow: dict[str:str]
-                     -__init__(config.simulation,
-                    systems, config.simulation)
-                     +trigger()
-                     #run_systems()
-                     #post_run()
-             }
-
-     /'
-      ' package Simulations {
-      '         class SerialSimulation {
-      '         }
-      '         class ParallelSimulation {
-      '         }
-      '         class SingleSimulation {
-      '         }
-      '         class CoupledSimulation {
-      '         }
-      ' }
-      '/
-
-     class SerialSimulation {
-     }
-     class ParallelSimulation {
-     }
-     class SingleSimulation {
-     }
-     class CoupledSimulation {
-     }
-
-     abstract class System {
-             +set_ic(q0)
-             +solve() -> sol
-             +build_solution() -> qs
-     }
-
-     class IntrinsicSystem {
-            -__init__(name[str], settings:config.Dsystem,
-                      fem: config.Dfem,
-                      sol: solution.IntrinsicSolution)						
-            -dq: callable
-            -solver: callable
-            +sol: obj
-            #set_states()
-              #set_xloading()					
-            #set_generator() -> dq
-            #set_solver() -> solver
-
-     }
-     class StaticSystem {
-     }
-     class DynamicSystem {
-     }
-
-     class ControlSystem {
-     }
-
-     class MultibodySystem {
-     }
-
-        /'
-         ' Simulation <|-- SerialSimulation
-         ' Simulation <|-- ParallelSimulation
-         ' Simulation <|-- SingleSimulation
-         ' Simulation <|-- CoupledSimulation
-         '/
-     /'
-      ' abstract class Optimisation {
-      '       +save_grads()
-      '       +assemble()
-      ' }
-      '/
-
-     abstract class Sollibs {
-           +name()
-           +pull_name()
-     }
-      enum dq {
-  - dq_{label}
-  }
-
-  /'
-   '     enum loads {
-   ' - eta_{label}
-   ' }
-   '/
-      enum args {
-  - arg_{label}
-  }
-
-     'Simulation <|-- Simulations
-     Simulation <|-- SingleSimulation
-     SingleSimulation -- SerialSimulation 
-     SerialSimulation -- ParallelSimulation
-     ParallelSimulation -- CoupledSimulation					
-     'Driver "1" -- "1" Integration : composition
-     'Driver "1" -- "1" Simulation : composition'
-     IntrinsicIntegration  -* IntrinsicDriver
-     Driver <|-- IntrinsicDriver
-     /'
-      ' IntrinsicDriver  *-- Optimisation						
-      '/
-     IntrinsicDriver  *-- Simulation
-     IntrinsicDriver  *- System
-     System ..> Simulation
-     'Integration <|-- IntrinsicIntegration
-     System  <|-- IntrinsicSystem
-     System  *- Sollibs
-     IntrinsicSystem <|-- StaticSystem
-     StaticSystem -- DynamicSystem
-     DynamicSystem -- ControlSystem
-     IntrinsicSystem o- XLoads
-     ControlSystem -- MultibodySystem
-     /'
-      ' loads --* XLoads
-      '/
-     dq *-- IntrinsicSystem
-     dq . args
-#+end_src
-
-#+Name: components_architecture
-#+begin_src plantuml :file figs/components_architecture.png :exports (print export_blocks)
-  skinparam linetype ortho
-  [Driver] as d
-  [Config] as c
-  [Simulation] as si
-  [Solution] as so
-  [Systems] as sy
-  c -r[dotted]-> d
-  d -d-> so
-  d -u-> si
-  d -r-> sy
-  si ..> sy
-  so -u[dotted]-> sy
-#+end_src
-
-
 * Introduction
-The ever-growing need for performance and operating costs reduction, together with the current push for sustainability in aviation, are driving new aircraft designs outside the conventional envelop. A particular feature are very high aspect ratio wings to minimise induced drag, which when combined with advancements in lighter materials to reduced vehicle weight, can significantly increase wing flexibility.  
-In this scenario, aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines.
-In this more nonlinear landscape, the overall aerodynamic performance needs to be calculated around a flight shape with large deformations cite:&GRAY2021; the input for efficient control laws account for the steady state and nonlinear couplings cite:&Artola2021; and the loads ultimately sizing the wings are atmospheric disturbances computed in the time-domain cite:&CESNIK2014a.
-This is also the case for more radical configurations that may or may not exhibit high flexibility but whose aeroelastic behaviour is more uncertain.
-A more holistic approach to the design also increases the complexity of the processes exponentially, and the trade-offs and cost-benefit analysis may not be possible until robust computational tools are in-place to simulate the different assumptions.
- Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations cite:&Kier2017, as it considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitly expensive computational times.
-Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above.
-Those previous considerations set the goals for the current effort: 1) to be able to perform geometrically nonlinear aeroelastic analysis, 2) to work with generic FE models in a non-intrusive manner, and 3) to achieve a computational efficiency that is equivalent to present linear methods (if not faster).
-Grounded on previous developments where the first two points where demonstrated cite:&PALACIOS2019, cite:&CEA2021, cite:&CEA2023 we tackle the third point herein with a new implementation that achieves remarkable computational performance.
-The numerical library JAX cite:&jax2018github was leveraged to produce highly vectorised, automatically differentiated routines that are managed by a modular, object-oriented approach in Python. The power of JAX for scientific computation has been proved recently in fluid dynamics cite:&BEZGIN2023 and solid mechanics cite:&XUE2023 applications. We add to those an aeroelastic solution to enhance already built models for linear loads analysis. This aligns with current efforts to build robust methods that incorporate nonlinear effects to complex 3-D FEMs, via stick models cite:&RISO2023 or other modal-based methods cite:&DRACHINSKY2022.
-\\
 Our proposed method has two main inputs for the analysis: a linear (arbitrarily complex) FE model, and aerodynamic influence coefficient matrices that provide the mapping between FE states and the corresponding aerodynamic forces (either in modal or in physical coordinates). The latter are obtained herein from the Doublet Lattice Method (DLM) and a rational function approximation (RFA) cite:&ROGER1975 to transform to the time domain. We have also presented a more efficient data-driven approach that circumvents the additional states added by the RFA in cite:&PALACIOS2023b and the approach would also be suitable for more accurate Computational Fluids Aerodynamics (CFD). Using the 3D FE model, a skeleton-like substructure along the main load paths is derived, on which modal shapes and nonlinear couplings are evaluated in intrinsic variables (velocities and strains). They conform a basis of a Galerkin-projection of the geometrically-nonlinear 1D domain after which the projected equations are solved in time-domain. Advantages of the approach are its direct and accurate map between the 3D and 1D domains, as it only requires of a modal condensation that is already available in many industrial aeroelastic models to link the structural model to the aerodynamic loading.
 This is unlike stick models which need of various post-processing steps to build the equivalent stiffness and mass models.
 Furthermore, we show how the full 3D solution using the nonlinear 1D solution is computed to a good accuracy by reconstructing the cross-sectional elements and applying a Radial Basis Function (RBF) interpolation to the remaining nodes in the domain.
 A well established formulation effectively applied to industrial-scale aeroelastic models and now combined with a highly vectorised implementation in JAX results in an extremely efficient nonlinear aeroelastic solver. The overall procedure has been implemented in what we have named as \emph{Nonlinear Modal Reduced Order Model} (NMROM). 
 \\
-The structure of the rest of the paper is as follows. Sec. [[Theory and implementation]] presents a summary of the mathematical description that conforms the backbone behind the computational implementation of \texttt{FEM$_4$INAS} (Finite-Element-Models for Intrinsic Nonlinear Aeroelastic Simulations), the high performance software for aeroelasticity we have built. Sec. [[Results]] shows the verification cases that cover the static and dynamic structural response of of a simplified aircraft model, and the aeroelastic response to gusts of a full aircraft configuration. The improvements in performance are highlighted in all of the examples. 
+The structure of the rest of the paper is as follows. Sec. [[Theory and implementation]] presents a summary of the mathematical description that conforms the backbone behind the computational implementation of \texttt{FEM$_4$INAS} (Finite-Element-Models for Intrinsic Nonlinear Aeroelastic Simulations), the high performance software for aeroelasticity we have built. Sec. [[Examples]] shows the verification cases that cover the static and dynamic structural response of of a simplified aircraft model, and the aeroelastic response to gusts of a full aircraft configuration. The improvements in performance are highlighted in all of the examples. 
 Lastly, sec. [[Conclusions]] summarises the the achievements and further developments planned for future work.
 
 * Theory and implementation
 In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelasticity modelling. For further details, see cite:&CEA2021, cite:&CEA2023.
+A major contribution with respect to our previous works is a new computational implementation that achieves accelerations of over 2 orders of magnitude compared to standard implementations[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. Furthermore, a highly modular, flexible architecture based on software design patterns has been put in place cite:&CEA2024.
+The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. 
 Next we described the main formulation that leads to a geometrically nonlinear enhancement of generic aircraft models and its integration into an aeroelastic framework, along with some implementation details.
-** Nonlinear aeroelastic system
-We start with a global FE model of the airframe. It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements.
-With those characteristics a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes $\pmb \Phi_0$ and frequencies $\pmb \omega$.
+** Airframe idealisation
+An illustration of the overall solution process is presented in Fig. [[workflow]].  
+We start with a global FE model of the airframe. It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements. With those characteristics  a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$.
+A database of Aerodynamic Influence Coefficient matrices (AICs) is also needed as input; this may be given in a CFD-based ROM cite:&RIPEPI2018a, in time-domain panel method, as in the Unsteady Vortex Lattice (UVLM) cite:&Maraniello2019, or in frequency domain, as in the Doublet Lattice  (DLM), in which case a RFA in used to amend the data for time-domain simulations. 
+The modal-based aerodynamics and the condensed matrices of the structure are input into a our analysis framework that builds the nonlinear dynamics of the condensed model without having to call back the stiffness and mass matrices. To achieve this a formulation based on velocities and strains in the material frame of reference is employed. 
+\\
+After the state of the condensed model has been solved for, the full 3D state can be reconstructed: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model. We demonstrate in this work that this process yields accurate results on representative aircraft structures when compared to simulations with the full FEM, thus paving the way for a more detailed, multidisciplinary analysis: first with the addition of CFD as the aerodynamic solver, and second with the transfer of the full deformed state back to the original FE solver to study other phenomena such as buckling. 
 
-The dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written with material velocities and stresses as state variables.
+#+NAME: workflow
+#+CAPTION: Workflow of the solution process
+#+ATTR_LATEX: :width 1.\textwidth 
+[[./figs/workflow2.pdf]]
 
-A modal expansion of these variables is a key step in seamlessly mapping the global FEM into the nonlinear description.
+*** Dynamic condensation of linear FE models
+\label{sec:dynamic_condensation}
+Model order reduction techniques aim to increase computational efficiency by reducing the size of the problem while maintaining its fundamental characteristics. Regarding industrial applications in the field of aeroelasticity, ROMs are very important, even when the majority of the analysis is linear, due to the need for fast simulations and the very large models that can surpass the millions of DoF. In aircraft loads analysis, trim and stability studies, it is common practice condensing the (linear) full-FE models into the major load paths of the aircraft, to reduce the total number of DoF to a few hundreds. That is Step 2 in figure . Herein we not only use a condensation approach to reduce the size of the model, but also to represent a structure that can be modelled as a one-dimensional domain --making use of the slenderness of transport aircraft main components, where the span of wetted-surfaces and the fuselage length take predominance over the other dimensions.
+\\
+In order to obtain the condensed model, the degrees of freedom of the full model are divided into those on active (or master) nodes, located along the load path $\Gamma$, and those of the omitted (or slave) nodes. The displacement vector can therefore be reordered as, $\pmb{u}_n= \left(\pmb{u}_a^\top \;\pmb{u}_o^\top\right)^\top$, and similarly for the LNMs of the unloaded structure $\pmb{\Phi}=[\pmb{\Phi}_a^\top \; \pmb{\Phi}_o^\top]^\top$, so that the eigenvalue problem of $\bm{K}$ and $\bm{M}$ is arranged as,
+
+\begin{equation}
+\left( \begin{bmatrix}
+\bm{K}_{aa} & \bm{K}_{ao} \\ \bm{K}_{oa} & \bm{K}_{oo}
+\end{bmatrix} - \omega^2\begin{bmatrix}
+\bm{M}_{aa} & \bm{M}_{ao} \\ \bm{M}_{oa} & \bm{M}_{oo}
+\end{bmatrix}
+\right)
+\begin{pmatrix}
+\bm{\Phi}_a \\ \bm{\Phi}_o
+\end{pmatrix} = 0
+\end{equation}
+A linear dependency is now assumed between the omitted and the active degrees of freedom,
+
+\begin{equation}\label{eq2:Toa}
+\pmb{\Phi}_o =  \pmb{T}_{oa} \pmb{\Phi}_a
+\end{equation}
+with $\pmb{T}_{oa} \in \mathbb{R}^{o\times a}$ the transformation matrix between both sets.
+The quality of the transformation is determined by its accuracy in capturing a subset of interest of the full-system LNMs, which is linked to the spatial sampling that $\pmb{\Phi}_a$ introduces on the full domain.
+In general, the condensation is dependent on the frequencies and forms a nonlinear eigenvalue problem where each LNM,  with natural frequency, $\omega_j$, has one transformation matrix,
+
+\begin{equation}\label{eq2:transformation_exact}
+\pmb{T}_{oa}(\omega_j) = (\pmb{K}_{oo}-\omega^2_j \pmb{M}_{oo})^{-1}( \pmb{K}_{oa}- \omega_j^2 \pmb{M}_{oa}) \approx -(\pmb{K}_{oo}^{-1}+\omega^2_j\pmb{K}_{oo}^{-1}\pmb{M}_{oo}\pmb{K}_{oo}^{-1})(\pmb{K}_{oa}-\omega^2_j\pmb{M}_{oa})
+\end{equation}
+This is the so-called exact-condensation matrix, where we have also introduced Kidder's mode expansion cite:&Qu2010 as [[cite:&CEA2021b]]. The first-order approximation of this equation is attained by letting $\omega_j =0$, thereby removing inertia effects. This results in a static condensation, proposed by Guyan and Irons in 1965 [[cite:&Guyan1965]], still one of the most popular condensation methods today, also known as Guyan reduction. Note that when the mass model consists only of lumped masses on the active degrees of freedom, $\pmb{M}_{oo} = \pmb{M}_{oa} = \pmb{0}$, Guyan reduction is the exact condensation.
+
+*** Kinematics of aircraft main load-paths
+This process of enhancing the linear 3D model with geometric nonlinearities along the slender dimension relies on the main assumption that cross-sectional deformations of the solid body in the reference configuration are not coupled to the main dimension as moving through configurations in time. As a result, distributed internal stresses act only through the normal of the cross-sections in the undeformed configuration \cite{CEA2021a}.
+Applying the appropriate integration over the cross sectional reference area of the distributed traction forces, a Cosserat rod model is built, where the deformed state on the full domain is approximated by a deformable space curve $\mathcal{P}$ -- identified with the aircraft major load-paths. The primary variables  are the local inertial (linear and angular) velocities, grouped in the variable $\bm{x}_1(s, t)$, and internal force and moments combined in $\bm{x}_2(s, t)$. They are function of the 1D spatial dimension, $s$, and time, $t$. 
+Applied forces and moments per unit length, $\bm{f}_1$, come naturally as follower forces and moments respectively. The equations are well described in \cite[Ch. 8]{PALACIOS2023}.
+
+Constitutive properties are given by the compliance matrix, $\bm{\mathcal{C}}$, relating sectional forces and moments to strains and curvatures and the sectional mass matrix, $\bm{\mathcal{M}}$, linking velocities and momenta. Finding a good approximation to these matrices is a common challenge in formulations that aim to build nonlinear 1D models from full FE models. This work circumvents having to calculate explicit expressions of $\bm{\mathcal{C}}$ and $\bm{\mathcal{M}}$ by solving the equations in modal space and linking them to the modal shapes and their derivatives as first described in cite:&PALACIOS2012.
+
+\begin{subequations}\label{eq2:intrinsic_eqs}
+\begin{align}
+\mathcal{M}\dot{\pmb{x}}_1-\pmb{x}_2'-\pmb{\mathsf{E}}\bm{x}_2+ \lo_1(\pmb{x}_1)\mathcal{M}\pmb{x}_1 + \lo_2(\pmb{x}_2)\mathcal{C}\pmb{x}_2 & = \pmb{f}_1  \\
+\mathcal{C}\dot{\pmb{x}_2}-\pmb{x}_1' + \pmb{\mathsf{E}}^\top\pmb{x}_1- \lo_1^\top(\pmb{x}_1)\mathcal{C}\pmb{x}_2 & = \pmb{0}
+\end{align}
+\end{subequations}
+The linear operators, $\lo_1$, $\lo_2$, and the matrix $\pmb{\mathsf{E}}$ are defined as,
+\begin{equation}
+\lo_1 (\pmb{x}_1)  = \begin{bmatrix} \tilde{\pmb{\omega}} & \pmb{0} \\ \tilde{\pmb{\ve}} & \tilde{\pmb{\omega}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}
+\lo_2 (\pmb{x}_2)=  \begin{bmatrix} \pmb{0} & \tilde{\pmb{f}} \\ \tilde{\pmb{f}} & \tilde{\pmb{m}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}  \pmb{\mathsf{E}}= \lo_1 \begin{pmatrix} \begin{bmatrix} 1 \\ \bm 0_5 \end{bmatrix} \end{pmatrix}
+\end{equation}
+The above description is geometrically-exact with quadratic nonlinearities only. It easily allows 
+
 
 The intrinsic modes are introduced and the projection of the state variables is such  $\pmb{x}_1 = \pmb{\phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\phi}_2\pmb{q}_2$.
-A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes coming from the global FEM:
-
-1. Velocity modes, $\bm \phi_1 = \bm \phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \Phi_1 \bm q_1 = \bm \Phi_0 \dot{\bm q}_0$. In the discrete version $\bm \Phi_1 = \bm \Phi_0$.
-
-2. Momentum modes, $\bm \Psi_1 = \bm M_a \bm \Phi_0$. Note from this definition that for arbitrary distributed mass models the dynamic condensation technique will produce a fully-populated mass matrix, and the various couplings will be captured after the matrix multiplication, as opposed to simpler models that require a lumped mass values at the nodes. 
-
-3. Force/moment modes, $\bm \Phi_2 = \mathcal{S}(\bm K_a \bm \Phi_0)$, represent the internal stresses in the structure as the sum, $\mathcal{S}$, of equilibrium forces and moments produced by the modal deformations. Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$. Results are presented in the mid-point between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
-4. Strain modes, $\bm \Phi_2 = -\bm \Phi_{0d} + \pmb{E}^{\top}\bm \Phi_{0m}$, with $\bm \Phi_{0d}$ the approximate derivative along s: $\bm \Phi_{0d}^i = \frac{\bm \Phi_0^{i+1} - \bm \Phi_0^{i}}{\Delta s_i}$; and $\bm \Phi_{0m} = \frac{\bm \Phi_0^{i+1} + \bm \Phi_0^{i}}{2}$, the displacement modal shape in between nodes. 
 
 
-After the intrinsic modes have been computed, a dynamic system is obtained after a Galerkin projection of the equations of motion:
+and the equations of motion take the following form:
 
 \begin{equation}
 \label{eq2:sol_qs}
@@ -1569,55 +1456,92 @@ After the intrinsic modes have been computed, a dynamic system is obtained after
 
 where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product[fn:1: The double dot product represents a contraction of the last two indexes of the first tensor with the first two indexes of the second one; it however needs further specification as two alternative definitions can be adopted and here we opt for the following: \(\pmb{a} \pmb{:} \pmb{b} = a_{..ij} b_{ij..} \). This has implications on the definition of the transpose of \(\bm{\Gamma}_2 \) in the second equation since for high order tensors multiple transpose operators can be defined. Consistency is achieved by ensuring the dot product operation satisfies the following: \( \pmb{x} \cdot \left(\bm{\Gamma} \pmb{:} \left( \pmb{y} \otimes \pmb{z} \right)  \right) = \pmb{y} \cdot \left(\bm{\Gamma}^{\top} \pmb{:} \left(\pmb{z} \otimes \pmb{x} \right)  \right) \), which leads to the transpose of the third order tensor, \( \bm{\Gamma} = \Gamma^{ijk} \), as \( \bm{\Gamma}^{\top} = \Gamma^{jki} \).].
 The form of the equations in compact tensorial notation is in fact the way they have been implemented and vectorised. This description is geometrically-exact, with nonlinearities encapsulated in the modal couplings of the third-order tensors $\pmb{\Gamma}_{1}$ and $\pmb{\Gamma}_{2}$ (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation). $\pmb{\eta}$ is the modal projection of the external forcing terms. They are computed as integrals along the load-path 1D domain as an inner product: $\langle \pmb{u},\pmb{v}  \rangle = \int_\Gamma \pmb{u}^\top \pmb{v} ds$, for any $\pmb{u}\in\mathbb{R}^6$ and $\pmb{v}\in\mathbb{R}^6$:
-
+#+begin_export latex
 \begin{align}\label{eq2:gammas12}
 \Gamma_{1}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_1(\pmb{\phi}_{1j})\pmb{\psi}_{1k}\rangle, \nonumber \\
 \Gamma_{2}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_2(\pmb{\phi}_{2j})\pmb{\psi}_{2k}\rangle,  \\
 \eta_{i} & = \langle \pmb{\phi}_{1i}, \pmb{f}_1\rangle  \nonumber
 \end{align}
-
-
-\\
-After the state of the condensed model has been solved for, the full 3D state can be reconstructed: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model. We demonstrate in this work that this process yields accurate results on representative aircraft structures when compared to simulations with the full FEM, thus paving the way for a more detailed, multidisciplinary analysis: first with the addition of CFD as the aerodynamic solver, and second with the transfer of the full deformed state back to the original FE solver to study other phenomena such as buckling. 
-
-#+NAME: workflow
-#+CAPTION: Workflow of the solution process
-#+ATTR_LATEX: :width 1.\textwidth 
-[[./figs/workflow2.pdf]]
-
-** Aircraft trim flight
-
-\begin{equation}
-\begin{split}
-\pmb F(\pmb{q}_{2}, \pmb{q}_{0}, \pmb{q}_{c}) &=  \pmb{\omega} \odot  \pmb{q}_{2}  - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \tfrac12\rho_\infty U_\infty^2  \left( \pmb{\mathcal{A}}_0\bm{q}_0 + \pmb{\mathcal{A}}_0\bm{q}_0 + \pmb{\mathcal{A}}_c\bm{q}_c + \bm{\eta}_g  \right) = \bm 0 \\
-\bm{q}_0 &= \bm{q}_2 / \pmb{\omega} \\
-\bm{q}_{2r} &= \bm 0
-\end{split}
-\end{equation}
-
-** Computational implementation and benchmarks
-The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures and the computation of sensitivities via algorithmic differentiation (AD) has been implemented as a crucial part for design optimisation, both of which will be exemplified in future work.
-
-A major contribution with respect to our previous works is a new computational implementation that achieves accelerations of over 2 orders of magnitude compared to standard implementations[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. Furthermore, a highly modular, flexible architecture based on software design patterns has been put in place cite:&CEA2024.
-The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. 
-
-\\
-The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. This library is developed and maintained by Google research team. It combines XLA (accelerated linear algebra) and Autograd, the former being a compiler that optimises models for different hardware platforms, the latter is an Automatic Differentiation (AD) tool in Python. 
-Moreover, its extensible system of composable function transformations provides a set of important features for Computational Science as illustrated in Fig. \ref{fig:JAX-overview}. For instance, the vmap function allows for complex *vectorisation* operations and the pmap function for Single-Program Multiple-Data (SPMD) *parallelisation*. Both forward and reverse mode *automatic differentiation* are supported. Finally the *just-in-time compilation* (jit) relies on the XLA engine to compile and execute functions on CPUs but also on accelerators such as GPUs and TPUs, offering a versatile solution for seamlessly connecting the software to various types of hardware without requiring extra CUDA code, or a Domain Specific Language (DSL).
-
-#+begin_export latex
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.35\textwidth]{./figs/jaxlogo2.pdf}
-\caption{\label{fig:JAX-overview} JAX capabilities for modern scientific computing}
-\end{figure}
 #+end_export
-The new capabilities come at the expense of a higher restriction in the way the code is written. Compilation and transformations in JAX only work for functionally pure programs, which pushes the software to comply with a nonconventional functional paradigm. Some of these characteristics are *pure functions*, i.e. functions that have no side effects, *input/output* stream management needs to be placed outside the numerical algorithms, *inmutability* of arrays, and *function composition*, or the ability to create functions by chaining other callables.
-\\
-These very constraints allow to achieve the capabilities describe above via the many abstractions implemented internally in the library.
-# The challenge after the algorithms have been implemented appropriately is to manage a generic software. Thus a mixed approach has been employed for this whereby numerical algorithms are written using functional programming but the flow of execution is managed using an object oriented approach that focus on modularity and extensibility.
+where $\lo_1$ and $\lo_2$ are linear operators, $\pmb{\psi}_1 = \bm{\mathcal{M}}\pmb{\phi}_1$ and $\pmb{\psi}_2 = \bm{\mathcal{C}}\pmb{\phi}_2$ are also cast as momentum and strain mode shapes and approximated using the Linear Normal Modes of the FE model. In other words, each natural vibration mode can be uniquely expressed in terms of velocity, force/moment, momentum, or strain variables. While those would be redundant in a conventional linear vibration analysis, they will enable to identify all the coefficients in Eqs. \eqref{eq2:sol_qs}.
+*** Intrinsic modes
+
+Let $\pmb{\Phi}_{a}$ be the solution of the eigenvalue problem using the condensed matrices, $\pmb{M}_a$ and $\pmb{K}_a$, defined in Eq. \eqref{eq2:energy_condensed_matrices}. $\pmb{\Phi}_{a}$ includes the full set of modes in the condensed system written as displacement and linear rotations at the nodes along  $\Gamma$.
+
+Thus the discrete velocity mode is defined as $\pmb{\Phi}_{1j} = \pmb{\Phi}_{0j}$.
+
+The corresponding distribution of linear and rotational momenta at the master nodes can be  obtained using the condensed inertia matrix, $\pmb{\Psi}_{1j}  = \pmb{M}_a \pmb{\Phi}_{1j} = \pmb{M}_a \pmb{\Phi}_{0j}$, expressed in their components in the global frame of reference. The introduction of this momentum mode has allowed calculations to be performed on distributed mass models and the use of any type of condensation technique. Because the mass matrix is already calculated as an inte
+
+Each displacement mode also generates a corresponding internal stress state. This defines discrete force/moment modes, $\pmb{\Phi}_{2}$, which are obtained from the displacement modes and the condensed stiffness matrix using a summation-of-forces approach from aircraft load analysis, \cite[Ch. 18]{Wright2007}. If $N_n$ is the total number of nodes, the internal node forces are for each mode $j$ computed as $\bm{\mathfrak{f}}_{(j)}  = \pmb{K}_a\pmb{\Phi}_{0j}^{1-3}$, with $\bm{\mathfrak{f}}_{(j)} \in \mathbb{R}^{3N_n}$; and analogously the internal moments as $\bm{\mathfrak{m}}_{\mathfrak{f}(j)}  = \pmb{K}_a\pmb{\Phi}_{0j}^{4-6}$. Next, a function $\mathcal{S}(\bm{\mathfrak{h}},s_i)$ is defined so that it sums the  value of $\bm{\mathfrak{h}}$ at each node in the path from a free end to the node $s_i$ in the structure. $\pmb{\Phi}_{2}$ is calculated as
+%
+\begin{align}\label{eq:phi2}
+\pmb{\Phi}_{2j,i+\frac{1}{2}}&= \begin{bmatrix}\mathcal{S}(\bm{\mathfrak{f}}_{(j)},s_i)\\  \mathcal{S} \left( \bm{\mathfrak{m}}_{\mathfrak{f}(j)} + (\bm{r}_i-\bm{r}_{i+\frac{1}{2}}) \times \bm{\mathfrak{f}}_{(j)},s_i \right)
+\end{bmatrix} 
+\end{align}
+%
+where $\pmb{r}_i$ is the position vector of the nodes summed by $\mathcal{S}$, and $\bm{r}_{i+\frac{1}{2}}$ the mid position between nodes $s_i$ and $s_{i+1}$. The first term is the sum of forces due to modal displacements and the second one the sum of moments due to modal rotations and the cross product of the  position vector and the previous calculated force. This equation represents an equilibrium of internal forces and moments -- between node $i$ and $i+1$. Results are presented in the mid-point $i+\frac{1}{2}$ because more information cannot be extracted in terms of linear stresses from one node to the other.
 
 
+the strain modes $\pmb{\psi}_{2}$ are obtained from spatial derivatives of the displacement modes along $\Gamma$, following Eq. \eqref{eq2:linear CPhi2}, and interpolated as piece-wise constant too,
+\begin{align}\label{eq2:psi2}
+\pmb{\psi}_{2j}(s) = -\frac{\pmb{\phi}_{1j}(s_{i+1})-\pmb{\phi}_{1j}(s_{i})}{\Delta s_{i}}+ \pmb{E}^\top\frac{\pmb{\phi}_{1j}(s_{i+1})+\pmb{\phi}_{1j}(s_{i})}{2} 
+\end{align}
+
+
+
+
+\begin{algorithm}[h!]
+\DontPrintSemicolon
+%\KwData{$G=(X,U)$ such that $G^{tc}$ is an order.}
+%\KwResult{$G’=(X,V)$ with $V\subseteq U$ such that $G’^{tc}$ is an interval order.}
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\Input{Full FE matrices, $\bm{K}$ and $\bm{M}$; master points, $\bm{p}$; \\
+           algorithm to calculate the eigenvalue problem, $\bm{\phi}$; split function, $\bm{S}$}
+\Output{Condensed FE matrices, $\bm{K}_a$ and $\bm{M}_a$}
+\BlankLine
+\Begin{
+  \BlankLine
+    $\bm{K}_{aa}, \bm{K}_{ao}, \bm{K}_{oa}, \bm{K}_{oo} \longleftarrow \bm{S}(\bm{K},\bm{p})$ \;
+  \BlankLine
+      $\bm{M}_{aa}, \bm{M}_{ao}, \bm{M}_{oa}, \bm{M}_{oo} \longleftarrow \bm{S}(\bm{M},\bm{p})$ \;
+  \BlankLine
+  $\bm{K}_a^{(0)} \longleftarrow  \bm{K}_{aa} -\bm{K}_{ao}\bm{K}_{oo}^{-1} \bm{K}_{oa}$ \;
+  \BlankLine
+  $\bm{M}_a^{(0)} \longleftarrow  \bm{M}_{aa} +\bm{K}_{ao}\bm{K}_{oo}^{-1}\bm{M}_{oo}\bm{K}_{oo}^{-1} \bm{K}_{oa}$ \;
+  \BlankLine
+  $\bm{\omega}^{(0)} , \pmb{\Phi}_{a}^{(0)} \longleftarrow \bm{\phi}\left(\pmb{K}_a^{(0)},\pmb{M}_a^{(0)} \right)$\;
+    \BlankLine
+  $\pmb{T}_{oa}(\omega) \longleftarrow  -(\pmb{K}_{oo}^{-1}+\omega^2\pmb{K}_{oo}^{-1}\pmb{M}_{oo}\pmb{K}_{oo}^{-1})(\pmb{K}_{oa}-\omega^2\pmb{M}_{oa})$ \;
+  \BlankLine
+  $n_m \longleftarrow  6\times length(\bm{p})$ \;
+  \BlankLine
+  \For{$i \in [1,...,n_i]$}{
+    \BlankLine
+    \For{$j \in [1,...,n_m]$}{
+        \BlankLine
+    $\pmb{\Phi}_{oj}^{(i)} \longleftarrow\pmb{T}_{oa}(\omega_j^{(i-1)})\pmb{\Phi}_{aj}^{(i-1)}$}
+        \BlankLine
+    $\pmb{T}_{oa}^{(i)} \longleftarrow \pmb{\Phi}_o^{(i)}\left(\pmb{\Phi}_a^{(i-1)}\right)^{-1}$ \;
+    \BlankLine
+    $\pmb{T}^{(i)}  \longleftarrow [\pmb{I}_a \; \pmb{T}_{oa}^{(i)^\top}]^\top$ \;
+    \BlankLine
+    $\pmb{K}_a^{(i)}  \longleftarrow \pmb{T}^{(i)^\top}\pmb{K}\pmb{T}^{(i)}$ \;
+    \BlankLine
+    $\pmb{M}_a^{(i)}  \longleftarrow \pmb{T}^{(i)^\top}\pmb{M}\pmb{T}^{(i)}$ \;
+    \BlankLine
+    $\bm{\omega}^{(i)} , \pmb{\Phi}_{a}^{(i)} \longleftarrow \bm{\phi}\left(\pmb{K}_a^{(i)},\pmb{M}_a^{(i)}\right)$\;
+    \BlankLine 
+    \If{$||\pmb{\Phi}_{a}^{(i)} - \pmb{\Phi}_{a}^{(i-1)} || < \epsilon$ {\bf and} $||\bm{\omega}^{(i)} - \bm{\omega}^{(i-1)}|| < \epsilon$ }{
+          \BlankLine 
+      \bf{break}}
+    }
+  }
+\caption{Finite Element Linear Condensation\label{IR}}
+\label{alg:condensation}
+\end{algorithm}
+
+*** Nonlinear couplings
 
 \begin{algorithm}[h!]
 \DontPrintSemicolon
@@ -1689,52 +1613,473 @@ $\bm{\psi}_2$ $\leftarrow$ - $\bm \phi_{1d} / \Delta_s + E_{\phi}$\;
 \label{alg:modes}
 \end{algorithm}
 
+** Time domain unsteady aerodynamics
+#+begin_export latex
+A linearised unsteady aerodynamic model is assumed in this work. It will be characterised as a linear dynamical system, in which the inputs \(\textbf{u}\) are the solid wall motions and the outputs \(\textbf{y}\) the resulting aerodynamic pressures/forces on the solid.  Linear time-invariant systems, can, in general, be expressed by either an internal description (a state-space model) or a external, or \emph{black-box}, description (an impulse response or a transfer function) \cite[Ch. 1]{palacios2023dynamics}. Internal descriptions explicitly introduce states to describe the dynamics and are amenable to time-domain solution methods. Unsteady aerodynamic forces for aeroelastic applications are typically given by the doublet-lattice method \cite{Albano1969} however, which is a transfer function given by discrete samplings in the frequency domain. 
+
+%Each of those three representations has been adopted by a modelling approach in unsteady aerodynamics \cite{palacioscea2023}. The doublet-lattice method \cite{Albano1969} is a transfer function approach. The unsteady vortex lattice method \cite{Katz2001} is a state-space approach and system identification approaches from CFD often use impulse response methods \cite{Silva2017}. 
+
+%Apparent mass effects however introduce a dependency between the acceleration of the wall and the forces, which poses some well-known challenges for the direct application of LTI theories. For incompressible flows, that relation is in the form of a constant gain (an instantaneous response of the fluid to the wall acceleration), while for compressible flow, the non-circulatory (or impulsive) part of the lift is exponentially decreasing (due to  creation of acoustic waves) \cite{Leishman1988}. In the time scales of interest for conventional aeroelastic design, however, both situations correspond to non-stationary aerodynamic loads induced by the acceleration of the walls. This results in an LTI system with a double integrator, which needs special treatment. 
+
+We follow them the standard approach consisting in the an rational interpolation of the frequency-domain sampled, possibly augmented with a polynomial preconditioning to include apparent mass effects \cite{palacioscea2023}. Let  $\AIC(p)$ by the generalized aerodynamic forces (GAF) of the problem, obtained in the non-dimensional Laplace, \(p\). \(\AIC(p)\) is the MIMO transfer function between displacements (typically given in modal coordinates) and the resulting aerodynamic forces. The most common approximation is that of Roger \cite{Roger1977}
+\begin{equation}
+\label{eq:roger}
+ \AIC(p)\approx\AIC_0+p\AIC_1+p^2\AIC_2
+        +\sum_{j=3}^{N}\frac{p}{p+\gamma_j}\AIC_j
+\end{equation}
+
+The first three terms are known as aerodynamic stiffness, damping and inertia, respectively, and the terms in the expansion are known as aerodynamic lags, which describe an exponential decay response under step function. All matrices on the right hand-side of \eqref{eq:roger} are real. A generalisation of that problem (in fact of that of Eversman \cite{Eversman1991}, who used an expansion of the form \(\frac{1}{p+\gamma_j}\)) is the minimum-state method of Karpel \cite{Karpel1990}
+\begin{equation}
+\label{eq:MinState}
+ \AIC(p)\approx\AIC_0+p\AIC_1+p^2\AIC_2
+        +\textbf{C}\left(p\textbf{I}-\textbf{A}\right)^{-1}\textbf{B}
+\end{equation}
+where \(\textbf{A}\), \(\textbf{B}\), and \(\textbf{C}\) are the identified (real) system matrices of a stable LTI system without feedthrough. The constant (complex) matrices in either approximation are typically approximated using constrained optimisation algorithms \cite{Tifanny1988}, although new SVD-based driven strategies have been recently started to be explored \cite{Quero2019} are will be chosen here for its robustness. The Loewner matrix interpolation approach will be followed, which results in an expression such as \eqref{eq:MinState} from a set of frequency samples of the generalized aerodynamics forces in the frequencies of interest. Details of our implementation can be found in Refs. \cite{Simiriotis2023,palacioscea2023} 
 
 
-All the cases presented are part of a Test suite that has been built as a critical step for long term software management.
-They serve as a demonstration of the approach's ability to deal with geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved. Table \ref{table:benchmarks} introduces the cases that are discussed below with the improvements in performance from the new implementation.
+A similar approach is followed to include gust loads. The (dimensional) frequency-domain upwash, $\bar{w}_{g}$, on a panel $j$ is 
+%
+\begin{equation}
+\bar{w}_{gj}(\omega) = \left(\bm{n}_j \cdot {\bar{\bm{v}}_g}\right) e^{-i\omega(\bm{x}_j-\bm{x}_0)/U_\infty}
+\end{equation}
+where $\bm{n}_j $ is the normal to panel $j$, $\bm{v}_g(t)$ is the velocity vector of the gust (usually with non-zero components in the z-direction for a normal gust and in y-direction for a lateral gust), $\bm{x}_j$ are the spatial coordinates of the control point in panel $j$, and $\bm{x}_0$ the position of the gust origin. The normal of each panel could be updated as the structure deforms for a complete nonlinear analysis of the gust. However this would entail updating a complex panel geometry for a very short period of time and it is deemed a second order effect here, so no updating of $\bm{n} \cdot \bm{v}_g$ has been implemented so far. In particular, ''1-cos'' gust profiles are considered.
+
+The GAFs due to the gust $\textbf{v}_g/U_\infty$ can be then written as 
+\begin{equation}
+\AIC_g(p)=\AIC_{g0}+\textbf{C}_g\left(p\textbf{I}-\textbf{A}_g\right)^{-1}\textbf{B}_g
+\end{equation}
+
+
+%For gust response analysis the approach introduced in \cite{Kier2009} is followed, so a RFA on $\bar{\bm{Q}}_{HJ}$ is carried out allowing the definition of any upwash function and preventing the spiral nature of the gust problem when approximating directly $\bar{\bm{Q}}_{HJ} \bar{w}_{gj}$. The force in the frequency domain due to a spanwise homogeneous gust is
+%
+%\begin{equation}
+%\bar{\eta}_{gust}(\omega) = \frac12 \rho_\infty U_\infty^2  \bar{\bm{Q}}_{HJ}(\omega)\bar{w}_{gj}(\omega)
+%\end{equation}
+
+%
+%\begin{equation}
+%\bar{w}_{gj}(\omega) = \bar{w}_{ref}\cos \gamma_j e^{-i\omega(x_j-x_0)/U_\infty}
+%\end{equation}
+%with $\gamma_j$ being the dihedral of panel $j$. After application of the Fourier transform the gust upwash in the time domain is put as,
+%
+%\begin{equation}\label{eq3:gust_time}
+%w_{gj} = w_{ref}\frac{\mathit{b}(y_j)}{2U_\infty} \cos \gamma_j \left(1-\cos \left(\frac{\pi U_\infty}{H_g}\left(t-\frac{x_0-x_j}{U_\infty}\right)\right)\right)\delta_{tj}
+%\end{equation}
+%where $b(y)$ was introduced to change the gust intensity along the spanwise position, and for a standard $1-\cos$ is set to 1. $H_g$ is the gust gradient, which is half the gust length $L_g$, and the  Kronecker delta is defined as, 
+%\begin{equation}
+% \delta_{tj} =
+%    \begin{cases}
+%     1 & \text{if $\frac{x_0-x_j}{U_\infty}\ \leq t \leq \frac{x_0-x_j}{U_\infty}+\frac{U_\infty}{L_g}$}\\
+%      0 & \text{otherwise}
+%    \end{cases}       
+%\end{equation}
+%and $w_{ref}$ is defined according to regulations.
+% \begin{equation}\label{eq3:gust_scale}
+% w_{ref} = w_{g_0}\left(\frac{H}{106.17}\right)^{1/6}
+% \end{equation}
+% with $H$ given in meters. $w_{g_0}$ is also tabulated as a function of the altitude, although it will be used here as a scaling factor to clearly differentiate the boundaries between linear and nonlinear analysis.
+% Note that $\dot{\bm{w}}_g$ and $\ddot{\bm{w}}_g$ are easily calculated from Eq. \eqref{eq3:gust_time} and they will go directly to Eq. \eqref{eq3:intrinsic_full_aeroelastic} for the gust loads in the full-aeroelastic simulation.
+Because the aeroelastic system is solved in modal space, the total number of modes utilised in the solution depends on the maximum frequencies involved in the system dynamics.  One of them may be set by  the minimum gust gradient, $H$: $\omega_{max} = \pi U_{\infty}/2H_{min}$  so that the aerodynamics should be calculated up to at least a reduced frequency of $k_{max} = \pi c/H_{min}$.
+%A typical range of lengths for vertical gusts is 18 m to 214 m \cite{Wright2007}. Although for nonlinear computations a larger modal base is generally needed than in linear analysis, which will set higher frequencies than what the minimum gust length demands. 
+#+end_export
+** Nonlinear aeroelastic system
+The full aeroelastic solution is described extending Eq.  \eqref{eq2:sol_qs} with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{v}_g$. Control states can also be included [[cite:&CEA2021a]], but they are not necessary for this work. For a set of reduced frequencies and a given Mach number, the DLM (or a higher fidelity aerodynamic method) yields the Generalised Aerodynamic Forces (GAFs). The current implementation uses Roger's rational function approximation to those GAFs, which results in the follower modal forces:
+
+\begin{equation}\label{eq3:eta_full}
+\begin{split}
+\bm{\eta}_a = \tfrac12\rho_\infty U_\infty^2 & \left(\vphantom{\sum_{p=1}^{N_p}} \pmb{\mathcal{A}}_0\bm{q}_0 +\frac{c}{2U_\infty}\pmb{\mathcal{A}}_1 \bm{q}_1 +\left(\frac{c}{2U_\infty}\right)^2 \pmb{\mathcal{A}}_2\dot{\bm{q}}_1   \right.  \\
+& \left. + \pmb{\mathcal{A}}_{g0}\bm{v}_g +\frac{c}{2U_\infty}\pmb{\mathcal{A}}_{g1} \dot{\bm{v}}_g +\left(\frac{c}{2U_\infty}\right)^2 \pmb{\mathcal{A}}_{g2}\ddot{\bm{v}}_g +  \sum_{p=1}^{N_p} \pmb{\lambda}_p  \right) 
+\end{split}
+\end{equation}
+
+The coupling of the structure and aerodynamic equations combined with the aerodynamic lags gives the final ODE system: 
+
+\begin{equation}
+\label{eq2:sol_qs}
+\begin{split}
+\dot{\pmb{q}}_{1} &=  \hat{\pmb{\Omega}}  \pmb{q}_{2} - \hat{\pmb{\Gamma}}_{1} \pmb{:} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \hat{\pmb{\Gamma}}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \hat{\bm{\eta}}  \\
+\dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right) \\
+\dot{\bm{\lambda}}_{p} &= \hat{\bm{\mathcal{A}}}_{p+2}\pmb{q}_{1}
+                       + \hat{\bm{\mathcal{A}}}_{p+2}\dot{\pmb{v}}_g
+                       -\frac{2U_\infty\gamma_p}{c}\bm{\lambda}_{p}
+\end{split}
+\end{equation}
+in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$. \\
+Note that the structure of the formulation in modal space naturally leads to reduced order models and easily caters for vectorised operations. For instance, the contraction of $\bm \Gamma_2^T{\top}$ in the second equation of Eqs. \ref{eq2:sol_qs} is implemented as an Einstein summation in JAX as \texttt{einsum(ijk,ki->j, gamma2, tensordot(q2, q1, axes=0)}. This will be briefly discussed next.
+
+* Examples
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+The cases presented are a demonstration of our solution approach to manage geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved.
 All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed.
-The old code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. These results convey the potential improvements in scientific software when paying attention to the implementation solely. Besides of this, it is also worth remarking the very short times in the solutions, which is also largely due to a formulation in modal space that naturally leads to reduced order models and easily caters for vectorised operations.
-Six examples are presented, first three are static cases and the other three are dynamic cases with the last one being a time domain aeroelastic response to a gust.
-The model complexity is also augmenting starting with beams to then move to a representative aircraft of medium complexity, the so-called Sail Plane, and finally considering an industrial-scale aircraft, the XRF1 model. Note the longer dynamic simulation of the Sail Plane wing compared to the XRF1 gust response: despite i.e. more operations in the solution time step, driven the largest eigenvalue in the solution, was much smaller in the Sail Plane results 
-#+begin_src latex
-    \begin{table}[h!]
-      \begin{center}
-        \caption{Simulation times for cases part of the test suite}
-        \label{table:benchmarks}
-        \begin{tabular}{lrll}
-          \toprule
-          Model & Time [s] & Time (old) & Speed-up\\[0pt]
-          \midrule
-          ArgyrisCantilever (7 load-cases) & 7.8 & 9m:44s & $\times$74.9\\[0pt]
-          Simo45Beam (11 load cases) & 7.1 & 1m:45s & $\times$14.8\\[0pt]
-          SailPlane (6 load cases) & 8.1 & 56.3s & $\times$6.95\\[0pt]
-          ShellBeam (Dynamic, 20 sec. with 85 modes) & 34.3 & 6h:16m:53s & $\times$659.3\\[0pt]
-          SailPlaneWing (Dynamic, 15 sec. with 50 modes) & 10.88 & 2h:18min:35s & $\times$764.2\\[0pt]
-          XRF1-Gust (Dynamic Aeroelastic, 15 sec. with 70 modes) & 17.4 & 1h:38min:28s & $\times$339.5\\[0pt]
-          \bottomrule
-                &  &  & \\[0pt]
-        \end{tabular}
-      \end{center}
-    \end{table}
+# The previous version of the code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. The main reason to show those previous results is to highlight the potential improvements in scientific software when paying attention to the implementation solely.
+** COMMENT Structural verification of a representative configuration
+\label{sec:representative_aircraft}
+A representative FE model for aeroelastic analysis of a full aircraft without engines is used to demonstrate the capabilities of the current methodology on large finite-element models. The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs. Flexible tail and rear stabiliser are rigidly attached to the wing. Structural and aerodynamic models are shown in Fig. \ref{fig:SailPlane}. This is a good test case as it is not very complex yet representative of aircraft FE models and it is available open source.  
+#+begin_export latex
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.9\textwidth]{./figs/SailPlane2}
+\caption{Sail Plane structural and aerodynamic models}\label{fig:SailPlane}
+\end{figure}
+#+end_export
+*** Geometrically nonlinear static response
+The static equilibrium of the aircraft under prescribed loads is first studied with a NMROM built with the first 50 modes. Follower loads normal to the wing are applied at the tip of each wing. The response under loads of 200, 300, 400, 480 and 530 KN is shown in Fig. \ref{fig:sp_static}. Nonlinear static simulations on the original full model (before condensation) are also carried out in MSC Nastran and are included in the figure. The interpolation elements in Nastran are used to output the displacements at the condensation nodes for direct comparison with the NMROM results. To quantify the difference between both sets of results, tip displacements, in global coordinates, for the 530 KN load and the full model Nastran calculations are $u_x = -0.217$ m  $u_y = -1.348$ m, $u_z = 7.236$ m; while NMROM calculations yield $u_x = -0.219$ m  $u_y = -1.352$ m, $u_z = 7.249$ m. This represents an error of 0.19$\%$ for a 25.6$\%$ tip deformation of the wing semi-span, $b = 28.8$ m.
+#+begin_export latex
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.99\textwidth]{./figs/sp_static3}
+\caption{Aircraft static response under wing-tip follower loads}\label{fig:sp_static}
+\end{figure}
+#+end_export
+Geometric nonlinearities are better illustrated by representing a sectional view of the wing as in Fig. \ref{fig:sp_axial}. Deformations in the z-direction versus the metric $\sqrt{x^2+y^2}$ are shown in Fig. \ref{fig:sp_axial}(a) where MSC Nastran linear solutions are also introduced. This allows appreciating more clearly the shortening effect in nonlinear computations.
+On the other hand, the length of the main wing after reduction to the 1D domain is computed before and after deformations ($L_w = \int_{\Gamma_{w}} ds$). Because the resultant axial stiffness is much higher than bending or torsional stiffness, the structure is nearly inextensible. This effect, however, is not captured by linear approximations. Fig. \ref{fig:sp_axial}(b) shows the percentage change in the total length of the main wings with the driving set of forces. 
+# Linear computations fail to capture axial effects and the total length of the wing increases with the loading.
+
+#+begin_export latex
+\begin{figure}[h!]
+ \centering
+ \subfigure[Nonlinear shortening effects]{\includegraphics[width=0.53\textwidth]{./figs/sp_axial2}}
+\subfigure[Elongation of the main wing]{\includegraphics[width=0.46\textwidth]{./figs/sp_axial}}%\label{fig:sp_dis}
+\caption{Static geometrically-nonlinear effects on the aircraft main wing}\label{fig:sp_axial}
+\end{figure}
+#+end_export
+
+The tolerance in the Newton solver is set to $10^{-6}$ in all cases. A convergence analysis with the number of modes in the solution is presented in [[SPstatic_convergence]]. The error metric is defined as the L-2 norm divided by the total number of nodes (only the condenses ones in this case): $\epsilon = ||u_{NMROM} - u_{NASTRAN}||/NumNodes$.
+#+NAME: SPerror
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  import fem4inas.preprocessor.configuration as configuration
+  config = configuration.Config.from_file("SP1/config.yaml")
+  sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
+  sp_error = fn_spError(sol_sp, config, print_info=True)
+  fig, figname = fig_out(name)(fn_spPloterror)(sp_error)
+  figname
 #+end_src
 
-** COMMENT Software design
-\textit{"Supporting state-of-the-art AI research means balancing rapid prototyping and quick iteration with the ability to deploy experiments at a scale traditionally associated with production systems."}.
-Jax target inside DeepMind would also be desirable in a scientific research environment. It however entails a good amount of labour and expertise into the field of software design, whose payoffs are only realisable in the long term.    
-# To what extent this is a feasible target is somehow unknown due to current constraints, but nonetheless a sensible objective to have in consideration when developing new tools.
-Fig. [[components_architecture]] shows a high-level view of this first version of the software in terms of components. A Configuration component builds the necessary settings for the simulation, including geometric coordinates, load-paths information.
-The Configuration is injected into the Driver component that initialises the Simulation component, the Systems and the Solution component, after which it triggers the simulation. The Systems are run as managed by the Simulation component and encapsulate the various equations to be solved (time marching, nonlinear static equilibrium or stability for instance). The solution component acts as a memory-efficient container of the new data to be kept as the solution process advances, and it is responsible for loading (from a previous simulations) and writing solution data too. It is thus passed to every System. 
- 
-#+NAME: components_architecture
-#+CAPTION: Components architecture diagram
+#+NAME: SPstatic_convergence
+#+CAPTION: Modal convergence in the static solution of the Sail Plane
 #+ATTR_LATEX: :width 0.4\textwidth 
-#+RESULTS: components_architecture
-[[file:figs/components_architecture.png]]
+#+RESULTS: SPerror
+[[file:figs/SPerror.png]]
 
-Fig. [[classes_architecture]] shows a lower view of the abstractions, interfaces between classes and how they interact via their public methods. The inputs to the program may be given via a .yaml file or a python dictionary in memory. The starting point in the main file is the initialisation of the driver corresponding to the mathematical description to be solved (so far only the intrinsic modal is available, Eqs. \eqref{eq3:intrinsic_full_aeroelastic}). The intrinsic driver computes (or loads), as a pre-simulation step, the intrinsic modal shapes and nonlinear tensors from the linear stiffness and mass matrices and the nodal coordinates; then it runs the cases by triggering the simulation class. This class is responsible for managing how the systems are being run (in serial, in parallel, or even in a coupling process between systems). From the configuration settings, the intrinsic system loads the equations (dqs), the external loads in Eqs. \eqref{eq2:sol_qs}, such as point-forces, gravity or modal aerodynamic GAFs. Various libraries can be chosen to either solve the static equations or march in time if the solution is dynamic; importantly, the JAX-based Diffrax library has been integrated and supports ordinary, stochastic and controlled equations, with many solvers and multiple adjoint methods which could be used in an optimization framework. This initial layout of the software is expected to evolve and to be consolidated as the software matures. 
+The 3D structural response has been reconstructed using the approach in [[workflow]].
+The nodes connected by the interpolation elements (RBE3s) to the ASET solution are reconstructed first and subsequently a model with RBFs kernels is used to extrapolate to the rest of the nodes in the full FE.  Furthermore, the cross-sectional information from the 3D modal shapes could also be added if necessary.
+A very good agreement is found against the Nastran 400 solution. 
+Fig. [[SPstatic_3D]]  shows the overlap in the Nastran solution (in blue) and the NMROM (in red) for the 530 KN loading.
 
-* Results
+#+NAME: SPstatic_3D
+#+CAPTION: 3D 
+#+ATTR_LATEX: :width 0.8\textwidth 
+[[./figs/SP_3Dloading-front2.png]]
+[[./figs/SP_3Dloading-side.png]]
+
+The error metric of this 3D solution is also assessed in Fig. [[fig:SPerror3D]], for the solution with 50 modes and comparing with the previous error metric in the ASET model. The discrepancy metric is even smaller, which is explained because there are more nodes in the 3D model that d add to the . The important point is that there is no accuracy loss in the process of reconstructing the 3D solution.  
+
+#+NAME: SPerror3D
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sp_error1D = [sp_error[f'M4_L{i}'] for i in range(6)]
+  fig, figname = fig_out(name)(fn_spPloterror3D)(sp_error1D, sp_error3d)
+  figname
+#+end_src
+
+#+NAME: fig:SPerror3D
+#+CAPTION: 3D 
+#+ATTR_LATEX: :width 0.8\textwidth 
+#+RESULTS: SPerror3D
+[[file:figs/SPerror3D.png]]
+
+
+#+NAME: SP_times
+#+begin_src python  :results raw
+  dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
+  values = ["Time [s]"]
+  values += [', '.join([str(round(dfruns[f'SP{i+1}'].iloc[0], 2)) for i in range(5)])]
+  values += [1*60*60 + 22*60]
+  header = ["NMROM (modes: 5, 15, 30, 50, 100)"]
+  header += ["NASTRAN 400"]
+  # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
+  #                         index=TIMES_DICT.keys())
+
+  # df_ = results_df['shift_conm2sLM25']
+  # df_ = df_.rename(columns={"xlabel": "%Chord"})
+  tabulate([values], headers=header, tablefmt='orgtbl')
+#+end_src
+
+#+NAME: table:SP_times
+#+NAME: fig:SPerror3D
+#+CAPTION: Computational times Sail Plane static solution
+#+ATTR_LATEX: :width 0.7\textwidth :environment longtable :caption  
+#+RESULTS: SP_times
+|          | NMROM (modes: 5, 15, 30, 50, 100) | NASTRAN 400 |
+|----------+-----------------------------------+-------------|
+| Time [s] | 6.88, 6.98, 6.94, 7.42, 7.79      |        4920 |
+
+*** Large-amplitude nonlinear dynamics
+This test case demonstrates the accuracy of the NMROM approach for  dynamic geometrically-nonlinear calculations and was first introduced in [[cite:&CEA2021]]. The right wing of Fig. \ref{fig:SailPlane} is considered and dynamic nonlinear simulations are carried out  and compared to MSC Nastran linear and nonlinear analysis (SOL 109 and 400, respectively) on the full FE model. A force is applied at the wing tip with a triangular loading profile, followed by a sudden release of the applied force to heavily excite the wing. The force profile is \(f(a, b) =  a+\frac{1-a}{b}t \text{if \(t \leq b\) else 0.}\) and the force at the tip is $f_{tip} = [-2\times 10^5, 0., 6\times 10^5]f(0.05, 4)$.
+The dynamic response is presented in Fig. [[fig:WSP_x]], where results have been normalised with the wing semi-span (28.8 m.). As expected, linear analysis over predicts vertical displacements and does not capture displacements in the $x$ and $y$ directions. NMROMs were built with 5, 15, 30, 50 and 100 modes. A Runge-Kutta four is used to march the equation in time with time steps corresponding to the inverse of the largest eigenvalue in the NMROM, i.e.  
+
+#+NAME: WSP_x
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol_wsp= [solution.IntrinsicReader(f"./WSP{i}") for i in range(1,6)]
+  fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=0, labels=None, nast_load=0)
+  figname
+#+end_src
+
+#+NAME: fig:WSP_x
+#+CAPTION: Span-normalised tip $x-$displacements
+#+RESULTS: WSP_x
+[[file:figs/WSP_x.png]]
+
+#+NAME: WSP_y
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=1, labels=None, nast_load=0)
+  figname
+#+end_src
+
+#+CAPTION: Span-normalised tip $y-$displacements
+#+RESULTS: WSP_y
+[[file:figs/WSP_y.png]]
+
+#+NAME: WSP_z
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=2, labels=None, nast_load=0)
+  figname
+#+end_src
+
+#+CAPTION: Span-normalised tip $z-$displacements
+#+RESULTS: WSP_z
+[[file:figs/WSP_z.png]]
+
+#+CAPTION: Span-normalised tip $z-$displacements zoom-in
+#+NAME: WSP_zzoom
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=2, labels=None, nast_load=0,axes=[[3.85,4.15],[27.4, 27.65]])
+  figname
+#+end_src
+
+#+RESULTS: WSP_zzoom
+[[file:figs/WSP_zzoom.png]]
+
+
+As in the previous example, the 3D shape of the model is retrieved and compared against the full nonlinear dynamic solution as illustrated in Fig. [[wsp_3d]] (Nastran solution in yellow and NMROM with 50 modes in blue). 
+
+#+NAME: wsp_3d
+#+CAPTION: Wing Sail Plane 3D dynamic comparison
+#+ATTR_LATEX: :width 1\textwidth 
+[[./figs/WSP_3D-front.png]]
+
+Next we look at the error of the dynamic simulation with the same error metric employed above that now evolves in time. Integrator errors accumulate and discrepancies grow with time but still remain small. 
+#+NAME: WSP_error
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  wsp_error = fn_wspError(sol_wsp)
+  wsp_error_time = jnp.linspace(0,15,10001)
+  fig, figname = fig_out(name, update_layout=dict(showlegend=False, margin=dict(
+                                autoexpand=True,
+                                l=0,
+                                r=5,
+                                t=2,
+                                b=0)))(fn_wspPloterror3D)(wsp_error_time,wsp_error3d)
+  figname
+#+end_src
+
+#+CAPTION: L-2 norm per node differences between Nastran full FE and NMROM 
+#+RESULTS: WSP_error
+[[file:figs/WSP_error.png]]
+
+An impressive reduction of computational time is achieved in the new implementation as highlighted in Table [[table:WSP_times]].
+
+
+with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the nonlinear response of the full model in \textbf{Nastran took 1 hour 22 minutes.}
+
+
+#+NAME: WSP_times
+#+begin_src python  :results raw
+  dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
+  values = ["Time [s]"]
+  values += [', '.join([str(round(dfruns[f'WSP{i+1}'].iloc[0], 2)) for i in range(5)])]
+  values += [1*60*60 + 22*60]
+  header = ["NMROM (modes: 5, 15, 30, 50, 100)"]
+  header += ["NASTRAN 400"]
+  # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
+  #                         index=TIMES_DICT.keys())
+
+  # df_ = results_df['shift_conm2sLM25']
+  # df_ = df_.rename(columns={"xlabel": "%Chord"})
+  tabulate([values], headers=header, tablefmt='orgtbl')
+#+end_src
+
+#+NAME: table:WSP_times
+#+CAPTION: Computational times Sail Plane dynamic solution
+#+ATTR_LATEX: :width 0.7\textwidth :environment longtable :caption  
+#+RESULTS: WSP_times
+|          | NMROM (modes: 5, 15, 30, 50, 100) | NASTRAN 400 |
+|----------+-----------------------------------+-------------|
+| Time [s] | 2.81, 3.21, 5.08, 7.33, 145.27    |        4920 |
+
+** COMMENT Dynamic loads on an industrial configuration
+The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
+Fig. \ref{fig8:xrf1-model} shows the full aeroelastic model split up into the structural, mass and aerodynamic components. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. 
+The aerodynamic model contains \(\sim 1,500\) aerodynamic panels.
+
+#+begin_export latex
+\begin{figure}[th!]
+\centering
+\includegraphics[width=1.\textwidth]{./file:figs/xrf1-model.pdf}
+\caption{Modified XRF1 aeroelastic subcomponents}\label{fig8:xrf1-model}
+\end{figure}
+#+end_export
+A verification exercise is introduced first by applying two 1-cos gust shapes at a very low intensity, thus producing small deformations and a linear response. The flow Mach number is 0.81. A first gust is applied that we name as G1 of length 67 m and peak velocity 0.141 m/s, and a second gust, G2, of 165 m and peak velocity of 0.164 m/s.
+Fig. [[fig:GustXRF12_x]] shows the normalised wing-tip response with our NMROM that accurately reproduces the Nastran 146 solution based on the full FE model.
+
+#+NAME: GustXRF12_x
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol1= solution.IntrinsicReader("./XRF1")
+  sol2= solution.IntrinsicReader("./XRF2")
+  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6], dim=0, nast_scale=0.01, nast_load=[2,6])
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF12_x
+#+CAPTION: Wing-tip response to low intensity gust
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF12_x
+[[file:figs/GustXRF12_x.png]]
+
+#+NAME: GustXRF12_y
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=1, nast_scale=0.01, nast_load=[2,6])
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF12_y
+#+CAPTION: $y$ Wing-tip response to low intensity gust
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF12_y
+[[file:figs/GustXRF12_y.png]]
+
+#+NAME: GustXRF12_z
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=2, nast_scale=0.01, nast_load=[2,6])
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF12_z
+#+CAPTION: $z$ Wing-tip response to low intensity gust
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF12_z
+[[file:figs/GustXRF12_z.png]]
+
+Next we increase the gust intensity by a factor of 200 in order to show the effects of geometric nonlinearities that are only captured by the nonlinear solver. As seen in Fig. [[fig:GustXRF34_x]], there are major differences in the $x$ and $y$ components of the response due to follower and shortening effects, and a slight reduction in the $z$-component. These are well known geometrically nonlinear effects, the main contribution here is the ability to add them to an existing linear Nastran model with industrial features.   
+
+#+NAME: GustXRF34_x
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol1= solution.IntrinsicReader("./XRF3")
+  sol2= solution.IntrinsicReader("./XRF4")
+  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=0, nast_scale=2, nast_load=[2,6])
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF34_x
+#+CAPTION: Wing-tip response to high intensity gust, $x-$ component
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF34_x
+[[file:figs/GustXRF34_x.png]]
+
+#+NAME: GustXRF34_y
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=1, nast_scale=2, nast_load=[2,6])
+  figname
+#+end_src
+
+#+CAPTION: Wing-tip response to high intensity gust, $y-$ component
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF34_y
+[[file:figs/GustXRF34_y.png]]
+
+
+#+NAME: GustXRF34_z
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],
+                                              dim=2, nast_scale=2, nast_load=[2,6])
+  figname
+#+end_src
+
+#+CAPTION: Wing-tip response to high intensity gust, $z-$component
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF34_z
+[[file:figs/GustXRF34_z.png]]
+
+In previous examples the same Runge-Kutta 4 (RK4) time-marching scheme is used and now we explore the dynamic solution with other solvers to assess their accuracy and also their computational performance. Two explicit ODE solvers, RK4 and Dormand-Prince's 5/4 method, and two implicit, Euler first order and Kvaerno's 3/2 method, are compared. In order to justify the use of implicit solvers we reduce the time step from 0.005 to 0.02 seconds, at which point both explicit solvers diverge.
+
+#+NAME: GustXRF56_x
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol3= solution.IntrinsicReader("./XRF3")
+  sol5= solution.IntrinsicReader("./XRF5")
+  sol7= solution.IntrinsicReader("./XRF7")
+  sol8= solution.IntrinsicReader("./XRF8")
+  fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8,
+                                              labels=["l3","l5","l7","l8"],
+                                              dim=0)
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF56_x
+#+CAPTION: Comparison of solvers
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF56_x
+[[file:figs/GustXRF56_x.png]]
+
+#+NAME: GustXRF56_y
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8, labels=["l3","l5","l7","l8"],
+                                              dim=1)
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF56_y
+#+CAPTION: Comparison of solvers
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF56_y
+[[file:figs/GustXRF56_y.png]]
+
+#+NAME: GustXRF56_z
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8, labels=["l3","l5","l7","l8"],dim=2)
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF56_z
+#+CAPTION: Comparison of solvers
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustXRF56_z
+[[file:figs/GustXRF56_z.png]]
+
+The computational times of the different solvers are shown in Table [[table:XRF1_times]]. The implicit solvers have taken one order of magnitude more time to run despite the reduction in time step. Therefore the insight we get on this is that for moderately large frequency dynamics, the explicit solvers offer a much efficient solution. The turning point for using implicit solvers would be when the largest eigenvalue in Eqs. \ref{eq2:sol_qs} led to prohibitly small time steps. In terms of the Nastran solution, we are not showing the whole simulation time because that would include the time to sample the DLM aerodynamics which are input into the NMROM as a post-processing step. Instead, the increase in time when adding an extra gust subcase to an already existing analysis is shown, i.e. the difference between one simulation that only computes one gust response and another with two. It is remarkable that the explicit solvers are faster on the nonlinear solution than the linear solution on an industrial software. Besides our highly efficient implementation, the main reason for this might be the Nastran solution involves a frequency domain analysis and then an inverse Fourier transform to obtain the time-domain results. 
+
+#+NAME: XRF1_times
+#+begin_src python  :results raw
+  dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
+  values = ["Time [s]"]
+  values += [', '.join([str(round(dfruns[f'XRF{i}'].iloc[0], 2)) for i in [3,5,6,7,8]])]
+  values += [1*60*60 + 22*60]
+  header = ["NMROM [l3, l5, l6, l7, l8]" ]
+  header += ["$\Delta$ NASTRAN 146"]
+  # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
+  #                         index=TIMES_DICT.keys())
+
+  # df_ = results_df['shift_conm2sLM25']
+  # df_ = df_.rename(columns={"xlabel": "%Chord"})
+  tabulate([values], headers=header, tablefmt='orgtbl')
+#+end_src
+
+#+NAME: table:XRF1_times
+#+CAPTION: Computational times XRF1 gust solution.
+#+ATTR_LATEX: :width 0.7\textwidth :environment longtable :caption  
+#+RESULTS: XRF1_times
+|          | NMROM [l3, l5, l6, l7, l8]         | $\Delta$ NASTRAN 146 |
+|----------+------------------------------------+----------------------|
+| Time [s] | 22.49, 18.94, 18.8, 273.95, 847.89 |                 4920 |
 
 * Conclusions
 #+begin_comment
