@@ -1,11 +1,12 @@
-#+TITLE: JAX-based Nonlinear Aeroelastic Simulation of Large Aircraft Models
-# A for Modern Software Architectures
+#+TITLE: A Nonlinear Aeroelastic Framework for Modern Software Architectures
+# #+TITLE: JAX-based Nonlinear Aeroelastic Simulation of Large Aircraft Models
 # #+TITLE: JAX-based Aeroelastic Framework for Nonlinear Analysis of Large Aircraft Models
 # #A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
 #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
 :LATEX_PROPERTIES:
 #+OPTIONS: toc:nil
+#+OPTIONS: broken-links:mark
 #+LATEX_HEADER: \synctex=1
 #+LATEX_HEADER: \usepackage[margin=1in]{geometry}
 #+LATEX_HEADER: \usepackage{graphicx}
@@ -1514,7 +1515,6 @@ Read data from Nastran simulations
   so -u[dotted]-> sy
 #+end_src
 
-
 * Introduction
 The ever-growing need for performance and operating costs reduction, together with the current push for sustainability in aviation, are driving new aircraft designs outside the conventional envelop. A particular feature are very high aspect ratio wings to minimise induced drag, which when combined with advancements in lighter materials to reduced vehicle weight, can significantly increase wing flexibility.  
 In this scenario, aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines.
@@ -1539,25 +1539,25 @@ Lastly, sec. [[Conclusions]] summarises the the achievements and further develop
 In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelasticity modelling. For further details, see cite:&CEA2021, cite:&CEA2023.
 Next we described the main formulation that leads to a geometrically nonlinear enhancement of generic aircraft models and its integration into an aeroelastic framework, along with some implementation details.
 ** Nonlinear aeroelastic system
-We start with a global FE model of the airframe. It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements.
-With those characteristics a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes $\pmb \Phi_0$ and frequencies $\pmb \omega$.
+We start with a global FE model of the airframe as illustrated in Fig..
 
-The dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written with material velocities and stresses as state variables.
-
-A modal expansion of these variables is a key step in seamlessly mapping the global FEM into the nonlinear description.
-
-The intrinsic modes are introduced and the projection of the state variables is such  $\pmb{x}_1 = \pmb{\phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\phi}_2\pmb{q}_2$.
+#+NAME: workflow
+#+CAPTION: Workflow of the solution process
+#+ATTR_LATEX: :width 1.\textwidth 
+[[./figs/workflow2.pdf]]
+It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements.
+With those characteristics a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$. The dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written in material velocities, $\bm x_1$,  and stresses, $\bm x_2$, as state variables. A modal expansion of those is a key step in seamlessly mapping the global FEM into the nonlinear description. The intrinsic modes are introduced and the projection of the state variables is such  $\pmb{x}_1 = \pmb{\phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\phi}_2\pmb{q}_2$.
 A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes coming from the global FEM:
 
-1. Velocity modes, $\bm \phi_1 = \bm \phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \Phi_1 \bm q_1 = \bm \Phi_0 \dot{\bm q}_0$. In the discrete version $\bm \Phi_1 = \bm \Phi_0$.
+1. Velocity modes, $\bm \Phi_1 = \bm \Phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \Phi_1 \bm q_1 = \bm \Phi_0 \dot{\bm q}_0$.
 
 2. Momentum modes, $\bm \Psi_1 = \bm M_a \bm \Phi_0$. Note from this definition that for arbitrary distributed mass models the dynamic condensation technique will produce a fully-populated mass matrix, and the various couplings will be captured after the matrix multiplication, as opposed to simpler models that require a lumped mass values at the nodes. 
 
-3. Force/moment modes, $\bm \Phi_2 = \mathcal{S}(\bm K_a \bm \Phi_0)$, represent the internal stresses in the structure as the sum, $\mathcal{S}$, of equilibrium forces and moments produced by the modal deformations. Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$. Results are presented in the mid-point between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
-4. Strain modes, $\bm \Phi_2 = -\bm \Phi_{0d} + \pmb{E}^{\top}\bm \Phi_{0m}$, with $\bm \Phi_{0d}$ the approximate derivative along s: $\bm \Phi_{0d}^i = \frac{\bm \Phi_0^{i+1} - \bm \Phi_0^{i}}{\Delta s_i}$; and $\bm \Phi_{0m} = \frac{\bm \Phi_0^{i+1} + \bm \Phi_0^{i}}{2}$, the displacement modal shape in between nodes. 
+3. Force/moment modes, $\bm \Phi_2 = \mathcal{S}(\bm K_a \bm \Phi_0)$, represent the internal stresses in the structure as the sum, $\mathcal{S}$, of equilibrium forces and moments produced by the modal deformations. Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$. Results are presented in the mid-point, $\bm{r}_{\frac{1}{2}}$, between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
+   
+4. Strain modes, $\bm \Phi_2 = -\bm \Phi_{0d} + \pmb{E}^{\top}\bm \Phi_{0m}$, with $\bm \Phi_{0d}$ the approximate derivative along $s$: $\bm \Phi_{0d}^i = \frac{\bm \Phi_0^{i+1} - \bm \Phi_0^{i}}{\Delta s_i}$; and $\bm \Phi_{0m} = \frac{\bm \Phi_0^{i+1} + \bm \Phi_0^{i}}{2}$, the displacement modal shape in between nodes. $\pmb{E}^{\top}$ is the constant matrix defined below.
 
-
-After the intrinsic modes have been computed, a dynamic system is obtained after a Galerkin projection of the equations of motion:
+After the intrinsic modes have been computed, a dynamic system is obtained after a Galerkin projection of the equations of motion \cite[Ch. 8]{PALACIOS2023}:
 
 \begin{equation}
 \label{eq2:sol_qs}
@@ -1566,44 +1566,66 @@ After the intrinsic modes have been computed, a dynamic system is obtained after
 \dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right)
 \end{split}
 \end{equation}
-
 where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product[fn:1: The double dot product represents a contraction of the last two indexes of the first tensor with the first two indexes of the second one; it however needs further specification as two alternative definitions can be adopted and here we opt for the following: \(\pmb{a} \pmb{:} \pmb{b} = a_{..ij} b_{ij..} \). This has implications on the definition of the transpose of \(\bm{\Gamma}_2 \) in the second equation since for high order tensors multiple transpose operators can be defined. Consistency is achieved by ensuring the dot product operation satisfies the following: \( \pmb{x} \cdot \left(\bm{\Gamma} \pmb{:} \left( \pmb{y} \otimes \pmb{z} \right)  \right) = \pmb{y} \cdot \left(\bm{\Gamma}^{\top} \pmb{:} \left(\pmb{z} \otimes \pmb{x} \right)  \right) \), which leads to the transpose of the third order tensor, \( \bm{\Gamma} = \Gamma^{ijk} \), as \( \bm{\Gamma}^{\top} = \Gamma^{jki} \).].
-The form of the equations in compact tensorial notation is in fact the way they have been implemented and vectorised. This description is geometrically-exact, with nonlinearities encapsulated in the modal couplings of the third-order tensors $\pmb{\Gamma}_{1}$ and $\pmb{\Gamma}_{2}$ (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation). $\pmb{\eta}$ is the modal projection of the external forcing terms. They are computed as integrals along the load-path 1D domain as an inner product: $\langle \pmb{u},\pmb{v}  \rangle = \int_\Gamma \pmb{u}^\top \pmb{v} ds$, for any $\pmb{u}\in\mathbb{R}^6$ and $\pmb{v}\in\mathbb{R}^6$:
-
+The form of the equations in compact tensorial notation is in fact the way they have been implemented and vectorised. This description is geometrically-exact, with nonlinearities encapsulated in the modal couplings of the third-order tensors $\pmb{\Gamma}_{1}$ and $\pmb{\Gamma}_{2}$ (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation). $\pmb{\eta}$ is the modal projection of the external forcing terms. They are computed as integrals along the load-paths as an inner product: $\langle \pmb{u},\pmb{v}  \rangle = \int_\Gamma \pmb{u}^\top \pmb{v} ds$, for any $\pmb{u}\in\mathbb{R}^6$ and $\pmb{v}\in\mathbb{R}^6$: 
+# ?? messy in tensorial notation (computation is via vmap)
 \begin{align}\label{eq2:gammas12}
-\Gamma_{1}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_1(\pmb{\phi}_{1j})\pmb{\psi}_{1k}\rangle, \nonumber \\
-\Gamma_{2}^{ijk} & = \langle \pmb{\phi}_{1i}, \lo_2(\pmb{\phi}_{2j})\pmb{\psi}_{2k}\rangle,  \\
-\eta_{i} & = \langle \pmb{\phi}_{1i}, \pmb{f}_1\rangle  \nonumber
+\Gamma_{1}^{ijk} & = \langle \pmb{\Phi}_{1i}, \lo_1(\pmb{\Phi}_{1j})\pmb{\psi}_{1k}\rangle, \nonumber \\
+\Gamma_{2}^{ijk} & = \langle \pmb{\Phi}_{1i}, \lo_2(\pmb{\Phi}_{2j})\pmb{\psi}_{2k}\rangle,  \\
+\eta_{i} & = \langle \pmb{\Phi}_{1i}, \pmb{f}_1\rangle  \nonumber
 \end{align}
-
+The linear operators, $\lo_1$, $\lo_2$, and the matrix $\pmb{\mathsf{E}}$ are defined as,
+\begin{equation}
+\lo_1 (\pmb{x}_1)  = \begin{bmatrix} \tilde{\pmb{\omega}} & \pmb{0} \\ \tilde{\pmb{\ve}} & \tilde{\pmb{\omega}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}
+\lo_2 (\pmb{x}_2)=  \begin{bmatrix} \pmb{0} & \tilde{\pmb{f}} \\ \tilde{\pmb{f}} & \tilde{\pmb{m}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}  \pmb{\mathsf{E}}= \lo_1 \begin{pmatrix} \begin{bmatrix} 1 \\ \bm 0_5 \end{bmatrix} \end{pmatrix}
+\end{equation}
 
 \\
 After the state of the condensed model has been solved for, the full 3D state can be reconstructed: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model. We demonstrate in this work that this process yields accurate results on representative aircraft structures when compared to simulations with the full FEM, thus paving the way for a more detailed, multidisciplinary analysis: first with the addition of CFD as the aerodynamic solver, and second with the transfer of the full deformed state back to the original FE solver to study other phenomena such as buckling. 
+\\
+The full aeroelastic solution is described extending Eq. \eqref{eq2:sol_qs} with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{v}_g$. Control states can also be included [[cite:&CEA2021a]], but they are not necessary for this work. For a set of reduced frequencies and a given Mach number, the DLM (or a higher fidelity aerodynamic method) yields the Generalised Aerodynamic Forces (GAFs). The current implementation uses Roger's rational function approximation to those GAFs, which results in the follower modal forces:
 
-#+NAME: workflow
-#+CAPTION: Workflow of the solution process
-#+ATTR_LATEX: :width 1.\textwidth 
-[[./figs/workflow2.pdf]]
+\begin{equation}\label{eq3:eta_full}
+\begin{split}
+\bm{\eta}_a = \tfrac12\rho_\infty U_\infty^2 & \left(\vphantom{\sum_{p=1}^{N_p}} \pmb{\mathcal{A}}_0\bm{q}_0 +\frac{c}{2U_\infty}\pmb{\mathcal{A}}_1 \bm{q}_1 +\left(\frac{c}{2U_\infty}\right)^2 \pmb{\mathcal{A}}_2\dot{\bm{q}}_1   \right.  \\
+& \left. + \pmb{\mathcal{A}}_{g0}\bm{v}_g +\frac{c}{2U_\infty}\pmb{\mathcal{A}}_{g1} \dot{\bm{v}}_g +\left(\frac{c}{2U_\infty}\right)^2 \pmb{\mathcal{A}}_{g2}\ddot{\bm{v}}_g +  \sum_{p=1}^{N_p} \pmb{\lambda}_p  \right) 
+\end{split}
+\end{equation}
+The coupling of the structure and aerodynamic equations combined with the aerodynamic lags gives the final ODE system: 
+
+\begin{equation}
+\label{eq2:sol_qs}
+\begin{split}
+\dot{\pmb{q}}_{1} &=  \hat{\pmb{\Omega}}  \pmb{q}_{2} - \hat{\pmb{\Gamma}}_{1} \pmb{:} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \hat{\pmb{\Gamma}}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \hat{\bm{\eta}}  \\
+\dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right) \\
+\dot{\bm{\lambda}}_{p} &= \hat{\bm{\mathcal{A}}}_{p+2}\pmb{q}_{1}
+                       + \hat{\bm{\mathcal{A}}}_{p+2}\dot{\pmb{v}}_g
+                       -\frac{2U_\infty\gamma_p}{c}\bm{\lambda}_{p}
+\end{split}
+\end{equation}
+in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$. \\
 
 ** Aircraft trim flight
 
 \begin{equation}
 \begin{split}
-\pmb F(\pmb{q}_{2}, \pmb{q}_{0}, \pmb{q}_{c}) &=  \pmb{\omega} \odot  \pmb{q}_{2}  - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \tfrac12\rho_\infty U_\infty^2  \left( \pmb{\mathcal{A}}_0\bm{q}_0 + \pmb{\mathcal{A}}_0\bm{q}_0 + \pmb{\mathcal{A}}_c\bm{q}_c + \bm{\eta}_g  \right) = \bm 0 \\
-\bm{q}_0 &= \bm{q}_2 / \pmb{\omega} \\
-\bm{q}_{2r} &= \bm 0
+\pmb F(\pmb{q}_{2}, \pmb{q}_{0}, \pmb{q}_{c}) &=  \pmb{\omega} \odot  \pmb{q}_{2}  - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \tfrac12\rho_\infty U_\infty^2  \left( \pmb{\mathcal{A}}_0\bm{q}_0 + \pmb{\mathcal{A}}_{0r}\bm{q}_{0r} + \pmb{\mathcal{A}}_c\bm{q}_c \right) + \bm{\eta}_g  = \bm 0 \\
+\bm{q}_0 &= \bm{q}_2 \odot \pmb{\omega}^{-1} \\
+\bm A_r\bm{q}_{0r} &= \bm 0
 \end{split}
 \end{equation}
+
+The simplest case would be a trim where only two rigid-body DoF are allowed, the pitch $q_{0\alpha}$ and the plunge, $q_{0h}$; $q_{0h}$ is set to 0 and $q_{0\alpha}$ is part of the variables to be calculated along with a single tail elevator deflection, $q_c$ and the elastic strain modal DoF, $\bm q_{2}$. 
 
 ** Computational implementation and benchmarks
 The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures and the computation of sensitivities via algorithmic differentiation (AD) has been implemented as a crucial part for design optimisation, both of which will be exemplified in future work.
 
 A major contribution with respect to our previous works is a new computational implementation that achieves accelerations of over 2 orders of magnitude compared to standard implementations[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. Furthermore, a highly modular, flexible architecture based on software design patterns has been put in place cite:&CEA2024.
-The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. 
+A key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. 
 
 \\
 The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. This library is developed and maintained by Google research team. It combines XLA (accelerated linear algebra) and Autograd, the former being a compiler that optimises models for different hardware platforms, the latter is an Automatic Differentiation (AD) tool in Python. 
-Moreover, its extensible system of composable function transformations provides a set of important features for Computational Science as illustrated in Fig. \ref{fig:JAX-overview}. For instance, the vmap function allows for complex *vectorisation* operations and the pmap function for Single-Program Multiple-Data (SPMD) *parallelisation*. Both forward and reverse mode *automatic differentiation* are supported. Finally the *just-in-time compilation* (jit) relies on the XLA engine to compile and execute functions on CPUs but also on accelerators such as GPUs and TPUs, offering a versatile solution for seamlessly connecting the software to various types of hardware without requiring extra CUDA code, or a Domain Specific Language (DSL).
+Moreover, its extensible system of composable function transformations provides a set of important features for Computational Science as illustrated in Fig. \ref{fig:JAX-overview}. For instance, the vmap function allows for complex vectorisation operations and the pmap function for Single-Program Multiple-Data (SPMD) parallelisation. Both forward and reverse mode automatic differentiation are supported. Finally the just-in-time compilation (jit) relies on the XLA engine to compile and execute functions on CPUs but also on accelerators such as GPUs and TPUs, offering a versatile solution for seamlessly connecting the software to various types of hardware without requiring extra CUDA code, or a Domain Specific Language (DSL).
 
 #+begin_export latex
 \begin{figure}[htbp]
@@ -1612,12 +1634,50 @@ Moreover, its extensible system of composable function transformations provides 
 \caption{\label{fig:JAX-overview} JAX capabilities for modern scientific computing}
 \end{figure}
 #+end_export
-The new capabilities come at the expense of a higher restriction in the way the code is written. Compilation and transformations in JAX only work for functionally pure programs, which pushes the software to comply with a nonconventional functional paradigm. Some of these characteristics are *pure functions*, i.e. functions that have no side effects, *input/output* stream management needs to be placed outside the numerical algorithms, *inmutability* of arrays, and *function composition*, or the ability to create functions by chaining other callables.
-\\
-These very constraints allow to achieve the capabilities describe above via the many abstractions implemented internally in the library.
-# The challenge after the algorithms have been implemented appropriately is to manage a generic software. Thus a mixed approach has been employed for this whereby numerical algorithms are written using functional programming but the flow of execution is managed using an object oriented approach that focus on modularity and extensibility.
 
+An simplified version of the intrinsic modes calculation is given in \ref{alg:modes}.  
+\begin{algorithm}[h!]
+\DontPrintSemicolon
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\Input{FEM and eigenvalue solution: $\bm X, \bm K_a, \bm M_a, \bm{\Phi}_0, \bm \omega$}
+\Output{Intrinsic modal shapes}
+\Begin{
+\texttt{import jax.numpy as jnp \;
+ \BlankLine
+$\bm X_m$ $\leftarrow$ jnp.matmul($X^{\top}$, $M_{avg}$)
+\Comment{Get mid-node coordinates} \;
+$\bm{\Phi}_1$ $\leftarrow$ $\bm{\Phi}_0$ \;
+$\bm{\Phi}_{1m}$ $\leftarrow$ jnp.tensordot($\bm{\Phi}_1$, $M_{avg}$, axes=(2, 0))
+\Comment{Velocity modes at mid-node locations}\;
+$\bm{\psi}_{1v}$ $\leftarrow$ jnp.matmul($\bm M_a$, $\bm{\Phi}_0$)
+\Comment{Momenta modes}\;
+$\bm{\psi}_{1}$ $\leftarrow$ reshape\_modes($\bm{\psi}_{1v}$, Nmodes, Nnodes) \Comment{Nmx6xNn}  \;
+$\bm{\Phi}_{2fv}$ $\leftarrow$ jnp.matmul($\bm K_a$, $\bm{\Phi}_0$)
+\Comment{Internal forces and moments associated to modal shapes (Nm$\times$6$\times$Nn)} \;
+$\bm{\Phi}_{2fv}$ $\leftarrow$ reshape\_modes($\bm{\Phi}_{2fv}$, Nmodes, Nnodes) \;
+$\bm{\Phi}_{2f}$ $\leftarrow$ jnp.tensordot($\bm{\Phi}_{2fv}$, $\bm M_{paths}$, axes=(2, 0)) \Comment{Sum of internal forces and moments (Nm$\times$6$\times$Nn)} \;
+$\bm X_3$ $\leftarrow$ coordinates\_difftensor($X$, $X_m$)
+\Comment{mid-node vector to every other node in the reduced model (3$\times$Nn$\times$Nn}) \;
+$\bm X_{3tilde}$ $\leftarrow$ -axis\_tilde($\bm X_3$)
+\Comment{Cross-product in matrix form (6$\times$6$\times$Nn$\times$Nn)} \;
+$\bm{\phi}_{2mn}$ $\leftarrow$ moment\_force($\bm{\phi}_{2v}$, $\bm X_{3tilde}$) \Comment{Moment distribution due to nodal forces (Nm$\times$6$\times$Nn$\times$Nn)} \;
+$\bm{\phi}_{2m}$ $\leftarrow$ moment\_contraction($\bm{\phi}_{2mn}$, $M_{paths}$) \Comment{Sum of internal moments due to forces (Nm$\times$6$\times$Nn)} \;
+$\bm{\Phi}_2$ $\leftarrow$ $\bm{\Phi}_{2f}$ + $\bm{\phi}_{2m}$
+\Comment{Total value internal forces and moments}\;
+$E_{\phi}$ $\leftarrow$ ephi(E, $\bm \phi_{1m}$)
+\Comment{E times } \;
+$\bm \phi_{1d}$ $\leftarrow$  jnp.tensordot($\bm{\Phi}_1$, $\bm M_{diff}$, axes=(2, 0))
+\Comment{Velocity mode variation across nodes (Nm$\times$6$\times$Nn)}\;
+$\bm{\psi}_2$ $\leftarrow$ - $\bm \phi_{1d} / \Delta_s + E_{\phi}$\;
+\BlankLine
+}
+    }
+\caption{Intrinsic modal shapes implementation in JAX}
+\label{alg:modes}
+\end{algorithm}
 
+With the intrinsic modes computed, the algorithm to compute the nonlinear couplings in \ref{eq2:gammas12} is shown below:
 
 \begin{algorithm}[h!]
 \DontPrintSemicolon
@@ -1630,16 +1690,16 @@ These very constraints allow to achieve the capabilities describe above via the 
 \Begin{
  \BlankLine
 \texttt{f1 $\longleftarrow$ vmap(lambda u, v: tensordot($\mathcal{L}_1$(u), v, axes=(1, 1),
-      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate nodes} \;
+      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate through nodes} \;
 f2 $\longleftarrow$ vmap(f1, in\_axes=(0, None), out\_axes=0)  \;
-\bm{L}_1 $\longleftarrow$ f2($\bm \phi_1$, $\bm \psi_1$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
-$\bm{\Gamma}_{1}$ $\longleftarrow$  einsum(isn,jskn$\rightarrow$ijk, $\bm \phi_1$, $\bm{L}_1$) \;
+\bm{L}_1 $\longleftarrow$ f2($\bm \Phi_1$, $\bm \psi_1$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
+$\bm{\Gamma}_{1}$ $\longleftarrow$  einsum(isn,jskn$\rightarrow$ijk, $\bm \Phi_1$, $\bm{L}_1$) \;
 \BlankLine
 f3 $\longleftarrow$ vmap(lambda u, v: tensordot($\mathcal{L}_2$(u), v, axes=(1, 1),
       in\_axes=(1, 2), out\_axes=2))  \Comment{iterate nodes} \;
 f4 $\longleftarrow$ vmap(f3, in\_axes=(0, None), out\_axes=0)  \;
-\bm{L}_2 $\longleftarrow$ f4($\bm \phi_2$, $\bm \psi_2$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
-$\bm{\Gamma}_2$ $\longleftarrow$  einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\phi}_{m1}$, $\bm{L}_2$, $\Delta_s$) $ \;
+\bm{L}_2 $\longleftarrow$ f4($\bm \Phi_2$, $\bm \psi_2$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
+$\bm{\Gamma}_2$ $\longleftarrow$  einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\Phi}_{m1}$, $\bm{L}_2$, $\Delta_s$) $ \;
 \BlankLine
 }
     }
@@ -1647,49 +1707,8 @@ $\bm{\Gamma}_2$ $\longleftarrow$  einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\phi}_
 \label{alg:couplings}
 \end{algorithm}
 
-
-\begin{algorithm}[h!]
-\DontPrintSemicolon
-\SetKwInOut{Input}{input}
-\SetKwInOut{Output}{output}
-\Input{FEM and eigenvalue solution: $\bm X, \bm K_a, \bm M_a, \bm{\Phi}_0, \bm \omega$}
-\Output{Intrinsic modal shapes}
-\Begin{
-\texttt{import jax.numpy as jnp \;
- \BlankLine
-$\bm X_m$ $\leftarrow$ matmul($X^{\top}$, $M_{avg}$)
-\Comment{Get mid-node coordinates} \;
-$\bm{\Phi}_1$ $\leftarrow$ $\bm{\Phi}_0$ \;
-$\bm{\Phi}_{1m}$ $\leftarrow$ tensordot($\bm{\Phi}_1$, $M_{avg}$, axes=(2, 0))
-\Comment{Velocity modes at mid-node locations}\;
-$\bm{\psi}_{1v}$ $\leftarrow$ matmul($\bm M_a$, $\bm{\Phi}_0$)
-\Comment{Momenta modes}\;
-$\bm{\psi}_{1}$ $\leftarrow$ reshape\_modes($\bm{\psi}_{1v}$, Nmodes, Nnodes) \Comment{Nmx6xNn}  \;
-$\bm{\Phi}_{2fv}$ $\leftarrow$ matmul($\bm K_a$, $\bm{\Phi}_0$)
-\Comment{Internal forces and moments associated to modal shapes (Nm$\times$6$\times$Nn)} \;
-$\bm{\Phi}_{2fv}$ $\leftarrow$ reshape\_modes($\bm{\Phi}_{2fv}$, Nmodes, Nnodes) \;
-$\bm{\Phi}_{2f}$ $\leftarrow$ tensordot($\bm{\Phi}_{2fv}$, $\bm M_{paths}$, axes=(2, 0)) \Comment{Sum of internal forces and moments (Nm$\times$6$\times$Nn)} \;
-$\bm X_3$ $\leftarrow$ coordinates\_difftensor($X$, $X_m$)
-\Comment{mid-node vector to every other node in the reduced model (3$\times$Nn$\times$Nn}) \;
-$\bm X_{3tilde}$ $\leftarrow$ -axis\_tilde($\bm X_3$)
-\Comment{Cross-product in matrix form (6$\times$6$\times$Nn$\times$Nn)} \;
-$\bm{\phi}_{2mn}$ $\leftarrow$ moment\_force($\bm{\phi}_{2v}$, $\bm X_{3tilde}$) \Comment{Moment distribution due to nodal forces (Nm$\times$6$\times$Nn$\times$Nn)} \;
-$\bm{\phi}_{2m}$ $\leftarrow$ moment\_contraction($\bm{\phi}_{2mn}$, $M_{paths}$) \Comment{Sum of internal moments due to forces (Nm$\times$6$\times$Nn)} \;
-$\bm{\Phi}_2$ $\leftarrow$ $\bm{\Phi}_{2f}$ + $\bm{\phi}_{2m}$
-\Comment{Total value internal forces and moments}\;
-$E_{\phi}$ $\leftarrow$ ephi(E, $\bm \phi_{1m}$)
-\Comment{E times } \;
-$\bm \phi_{1d}$ $\leftarrow$  tensordot($\bm{\Phi}_1$, $\bm M_{diff}$, axes=(2, 0))
-\Comment{Velocity mode variation across nodes (Nm$\times$6$\times$Nn$)}\;
-$\bm{\psi}_2$ $\leftarrow$ - $\bm \phi_{1d} / \Delta_s + E_{\phi}$\;
-\BlankLine
-}
-    }
-\caption{Intrinsic modal shapes implementation in JAX}
-\label{alg:modes}
-\end{algorithm}
-
-
+The new capabilities come at the expense of a higher restriction in the way the code is written. Compilation and transformations in JAX only work for functionally pure programs, which pushes the software to comply with a nonconventional functional paradigm. Some of these characteristics are pure functions, i.e. functions that have no side effects, input/output stream management needs to be placed outside the numerical algorithms, inmutability of arrays, and function composition, or the ability to create functions by chaining other callables. These very constraints allow to achieve the capabilities describe above via the many abstractions implemented internally in the library. An example of this restrictions is the effectively impossibility of jit-compile conventional for loops. 
+# The challenge after the algorithms have been implemented appropriately is to manage a generic software. Thus a mixed approach has been employed for this whereby numerical algorithms are written using functional programming but the flow of execution is managed using an object oriented approach that focus on modularity and extensibility.
 
 All the cases presented are part of a Test suite that has been built as a critical step for long term software management.
 They serve as a demonstration of the approach's ability to deal with geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved. Table \ref{table:benchmarks} introduces the cases that are discussed below with the improvements in performance from the new implementation.
