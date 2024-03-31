@@ -1,4 +1,4 @@
-#+TITLE: JAX-based Aeroelastic Framework for Nonlinear Analysis of Large Aircraft Models
+#+TITLE: JAX-based Aeroelastic Simulation Engine for Differentiable Aircraft Dynamics
 # #A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
 #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
@@ -48,10 +48,12 @@
 :END:
 
 #+begin_abstract
-This paper presents a new implementation for time-domain nonlinear aeroelastic simulations that has been built for performance and robustness.
-Leveraging on the numerical library JAX, a highly vectorised codebase is written that achieves two orders of magnitude accelerations compare to conventional implementations. This brings full-vehicle simulations to run close to if not in real-time, thus opening new possibilities for aircraft aeroelastic analysis which have traditionally been constrained to either linear, frequency domain solutions, or to their nonlinear counterparts but narrower in scope.
-Moreover, the approach seamlessly integrates with conventional aeroelastic load packages which facilitates the analysis of complex aircraft configurations.
-An extensive verification has been carried out on representative aircraft models and compared with MSC Nastran linear and nonlinear solutions. Furthermore, we demonstrate the suitability of the methodology to accurately reconstruct the full 3D solution. The algorithmic differentiation capabilities in JAX have been tested using proof of concept nonlinear static and dynamic problems. 
+A novel methodology is presented in this paper for the structural and aeroelastic analysis of large engineering systems with slender components, such as aircraft.
+Leveraging on the numerical library JAX, a nonlinear formulation based on velocities and strains enables a highly vectorised codebase that is especially suitable for the integration of aerodynamic loads which naturally appear as follower forces. On top of that, JAX automatic differentiation capabilities lead to a differentiable software that can be embedded into broader multidisciplinary solutions. 
+
+Given a linear Finite-Element (FE) model of arbitrary complexity, a structural model order reduction, followed by a nonlinear description of the reduced model and the reconstruction of the full 3D dynamics are shown to be both highly accurate and efficient for representative aircraft models. An extensive verification has been carried out by comparison with MSC Nastran full-FE linear and nonlinear solutions.
+Furthermore the nonlinear gust response of an industrial configuration with over half a million degrees-of-freedom is computed, and it remarkably runs faster than its frequency-based, linear equivalent as implemented by commercial packages. Therefore this could be harnessed by aircraft loads departments to add geometrically nonlinear effects to their existing workflows at no extra computational effort.
+Finally, automatic differentiation on both static and dynamic problems is validated against finite-differences, which combined with a near real-time performance of the solvers, opens new possibilities for aeroelastic loads assessment and design optimisation.
 #+end_abstract
 # https://stackoverflow.com/questions/44414584/how-to-export-a-org-mode-table-to-latex-with-the-correct-placement-h
 * House keeping  :noexport: 
@@ -65,11 +67,11 @@ An extensive verification has been carried out on representative aircraft models
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inasdev")
+  (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "no-export") ;; yes, no, no-export 
+  (setq Veval_blocks "yes") ;; yes, no, no-export 
   (setq Veval_blocks_run "no-export")
   (setq pythonShell "py2")
   ;; export_blocks: code, results, both, none
@@ -116,6 +118,7 @@ An extensive verification has been carried out on representative aircraft models
   import jax.numpy as jnp
   import jax
   import pandas as pd
+  from plotly.subplots import make_subplots
   import numpy as np
   import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
   from fem4inas.preprocessor.inputs import Inputs
@@ -691,7 +694,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   run(inp, label=name)
 #+end_src
 
-*** COMMENT XRF7
+*** XRF7
 #+NAME: XRF7
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
@@ -715,7 +718,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
   run(inp, label=name)
 #+end_src
-*** COMMENT XRF8
+*** XRF8
 #+NAME: XRF8
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
@@ -903,6 +906,27 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
       fig.update_xaxes(range=[0, 4], title='time [s]')
       return fig
 
+  def plot_xrf1_wtips(sol1, sol2, labels=None, nast_scale=None, nast_load=None):
+
+      fig1 = xrf1_wingtip2(sol1, sol2, 0, labels,nast_scale, nast_load)
+      fig2 = xrf1_wingtip2(sol1, sol2, 1, labels,nast_scale, nast_load)
+      fig3 = xrf1_wingtip2(sol1, sol2, 2, labels,nast_scale, nast_load)
+      fig = make_subplots(rows=1, cols=2, horizontal_spacing=0.1)
+      for f1i in fig1.data:
+          fig.add_trace(f1i,
+                        row=1, col=1
+                        )
+      for f2i in fig2.data:
+          fig.add_trace(f2i,
+                        row=1, col=2
+                        )
+      fig.update_xaxes(fig1.layout.xaxis,row=1, col=1)
+      fig.update_yaxes(fig1.layout.yaxis,row=1, col=1)
+      fig.update_xaxes(fig2.layout.xaxis,row=1, col=2)
+      fig.update_yaxes(fig2.layout.yaxis,row=1, col=2)      
+      fig.update_layout(fig1.layout)
+      return fig
+
   @fig_background
   def xrf1_wingtip4(sol1, sol2, sol3, sol4, dim, labels=None,nast_scale=None, nast_load=None):
       scale = 100./33.977
@@ -1048,7 +1072,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
             if row.fe_order in list(range(20)):
               r_sp0.append(config.fem.X[index])  
               r_spni.append(u_sp[li, row.fe_order,:3] + config.fem.X[index])
-              #r_spnl.append(u_spl[li, row.fe_order,:3] + config.fem.X[index])
+              r_spnli.append(u_spl[li, row.fe_order,:3] + config.fem.X[index])
               r_spi.append(sol_sp[mi - 1].data.staticsystem_s1.ra[li,:,index])
             # print(f"nas = {r_spn}  ,  {r_sp}")
             # count += 1
@@ -1080,6 +1104,13 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
                                                  dash="dash")
                                        ),
                                   dict())
+            fig = uplotly.lines2d((rnl[li][:,0]**2 + rnl[li][:,1]**2)**0.5, rnl[li][:,2]-r0[:,2], fig,
+                                  dict(name=f"NASTRAN-101",
+                                       line=dict(color="grey",
+                                                 dash="solid")
+                                       ),
+                                  dict())
+
         else:
             fig = uplotly.lines2d((r[li][:,0]**2 + r[li][:,1]**2)**0.5, r[li][:,2]-r0[:,2], fig,
                                   dict(showlegend=False,
@@ -1093,6 +1124,12 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
                                                  dash="dash")
                                        ),
                                   dict())
+            fig = uplotly.lines2d((rnl[li][:,0]**2 + rnl[li][:,1]**2)**0.5, rnl[li][:,2]-r0[:,2], fig,
+                                  dict(showlegend=False,
+                                       line=dict(color="grey",
+                                                 dash="solid")
+                                       ),
+                                  dict())            
       fig.update_yaxes(title='Uz [m]')
       fig.update_xaxes(title='S [m]')
 
@@ -1128,9 +1165,9 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
                                      line=dict(color="black", dash="dot")
                                      ),
                                 dict())
-
-      fig.update_yaxes(type="log", tickformat= '.0e')
-      fig.update_layout(height=950)
+      fig.update_xaxes(tickfont = dict(size=13))
+      fig.update_yaxes(type="log", tickformat= '.0e',tickfont = dict(size=13))
+      fig.update_layout(height=650)
       return fig
 
   @fig_background
@@ -1157,6 +1194,30 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
                         showlegend=False,
                         xaxis_title='Loading [KN]',
                         yaxis_title='$\epsilon$')
+
+      return fig
+
+  @fig_background
+  def plot_spAD(rn, r0):
+
+      loads = [200, 250, 300, 400, 480, 530]
+      fig = None
+      x = list(range(1,7))
+      y = [rn[i-1][-1, 2] - r0[-1,2] for i in x]
+      fig = uplotly.lines2d(x, y, fig,
+                                  dict(#name="Error ASET",
+                                       #line=dict(color="red"),
+                                       #marker=dict(symbol="square")
+                                       ),
+                                  dict())
+
+
+      #fig.update_yaxes(type="log", tickformat= '.0e')
+      fig.update_layout(#height=700,
+                        showlegend=False,
+                        xaxis_title=r'$\Large{\tau}$',
+                        yaxis_title='Uz [m]'
+      )
 
       return fig
 
@@ -1400,15 +1461,19 @@ Read data from Nastran simulations
   SP_folder = examples_path / "SailPlane"
   #nastran_path = wingSP_folder / "NASTRAN/"
 
-  op2model = op2reader.NastranReader("/Users/ac5015/pCloud Drive/Imperial/Computations/FEM4INAS/Models/SailPlane/SP400/SailPlane_MakeMatc.op2",
-                                   "/Users/ac5015/pCloud Drive/Imperial/Computations/FEM4INAS/Models/SailPlane/SP400/SailPlane_MakeMatc.bdf",
-                                   static=True)
   op2model = op2reader.NastranReader(SP_folder / "NASTRAN/static400/run.op2",
                                      SP_folder / "NASTRAN/static400/run.bdf",
                                    static=True)
 
   op2model.readModel()
   t_sp, u_sp = op2model.displacements()
+
+  op2modell = op2reader.NastranReader(SP_folder / "NASTRAN/static400/run_linear.op2",
+                                     SP_folder / "NASTRAN/static400/run_linear.bdf",
+                                   static=True)
+
+  op2modell.readModel()
+  t_spl, u_spl = op2modell.displacements()
 
   ####### wingSP ###########
   wingSP_folder = examples_path / "wingSP"
@@ -1463,7 +1528,7 @@ After the state of the condensed model has been solved for, the full 3D state ca
 #+NAME: workflow
 #+CAPTION: Workflow of the solution process
 #+ATTR_LATEX: :width 1.\textwidth 
-[[./figs/workflow2.pdf]]
+[[./figs/workflowCPC.pdf]]
 
 *** Dynamic condensation of linear FE models
 \label{sec:dynamic_condensation}
@@ -1565,17 +1630,17 @@ A similar approach is followed to include gust loads. The (dimensional) frequenc
 \end{equation}
 where $\bm{n}_j $ is the normal to panel $j$, $\bm{v}_g(t)$ is the velocity vector of the gust (usually with non-zero components in the z-direction for a normal gust and in y-direction for a lateral gust), $\bm{x}_j$ are the spatial coordinates of the control point in panel $j$, and $\bm{x}_0$ the position of the gust origin. The normal of each panel could be updated as the structure deforms for a complete nonlinear analysis of the gust. However this would entail updating a complex panel geometry for a very short period of time and it is deemed a second order effect here, so no updating of $\bm{n} \cdot \bm{v}_g$ has been implemented so far. In particular, ''1-cos'' gust profiles are considered.
 
-The GAFs due to the gust $\textbf{v}_g/U_\infty$ can be then written as 
-\begin{equation}
-\AIC_g(p)=\AIC_{g0}+\textbf{C}_g\left(p\textbf{I}-\textbf{A}_g\right)^{-1}\textbf{B}_g
-\end{equation}
+# The GAFs due to the gust $\textbf{v}_g/U_\infty$ can be then written as 
+# \begin{equation}
+# \AIC_g(p)=\AIC_{g0}+\textbf{C}_g\left(p\textbf{I}-\textbf{A}_g\right)^{-1}\textbf{B}_g
+# \end{equation}
 
 
-For gust response analysis the approach introduced in \cite{Kier2009} is followed, so a RFA on $\bar{\bm{Q}}_{HJ}$ is carried out allowing the definition of any upwash function and preventing the spiral nature of the gust problem when approximating directly $\bar{\bm{Q}}_{HJ} \bar{w}_{gj}$. The force in the frequency domain due to a spanwise homogeneous gust is
+# For gust response analysis the approach introduced in \cite{Kier2009} is followed, so a RFA on $\bar{\bm{Q}}_{HJ}$ is carried out allowing the definition of any upwash function and preventing the spiral nature of the gust problem when approximating directly $\bar{\bm{Q}}_{HJ} \bar{w}_{gj}$. The force in the frequency domain due to a spanwise homogeneous gust is
 
-\begin{equation}
-\bar{\eta}_{gust}(\omega) = \frac12 \rho_\infty U_\infty^2  \bar{\bm{Q}}_{HJ}(\omega)\bar{w}_{gj}(\omega)
-\end{equation}
+# \begin{equation}
+# \bar{\eta}_{gust}(\omega) = \frac12 \rho_\infty U_\infty^2  \bar{\bm{Q}}_{HJ}(\omega)\bar{w}_{gj}(\omega)
+# \end{equation}
 
 The forces in nondimensional  time, $t_s = \frac{U_\infty t}{c/2}$, are obtained after applying the inverse Fourier transform to Roger's approximation, Eq. \eqref{eq3:rogers_approx}, and to the definition of the aerodynamic states, Eq. \eqref{eq3:rogers_approx_poles}. The final expression for the aerodynamic modal forces and states in time domain are,
 
@@ -1612,8 +1677,8 @@ The coupling of the structure and aerodynamic equations combined with the aerody
 \end{split}
 \end{equation}
 in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$. \\
-Note that the structure of the formulation in modal space naturally leads to reduced order models and easily caters for vectorised operations. For instance, the contraction of $\bm \Gamma_2^T{\top}$ in the second equation of Eqs. \ref{eq2:sol_qs} is implemented as an Einstein summation in JAX as \texttt{einsum(ijk,ki->j, gamma2, tensordot(q2, q1, axes=0)}. This will be briefly discussed next.
 
+\newpage
 * Examples
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
@@ -1623,16 +1688,28 @@ All computations are carried out on a single core of the same CPU, an i7-6700 wi
 # The previous version of the code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. The main reason to show those previous results is to highlight the potential improvements in scientific software when paying attention to the implementation solely.
 ** Structural verification of a representative configuration
 \label{sec:representative_aircraft}
-A representative FE model for aeroelastic analysis of a full aircraft without engines is used to demonstrate the capabilities of the current methodology on large finite-element models. The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs. Flexible tail and rear stabiliser are rigidly attached to the wing. Structural and aerodynamic models are shown in Fig. \ref{fig:SailPlane}. This is a good test case as it is not very complex yet representative of aircraft FE models and it is available open source.  
-#+begin_export latex
-\begin{figure}[h!]
-\centering
-\includegraphics[width=0.9\textwidth]{./figs/SailPlane2}
-\caption{Sail Plane structural and aerodynamic models}\label{fig:SailPlane}
-\end{figure}
-#+end_export
+A representative FE model for aeroelastic analysis of a full aircraft without engines is used to demonstrate the capabilities of the current methodology on large finite-element models. The 
+The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs with composite materials employed in the construction. Flexible tail and rear stabiliser are rigidly attached to the wing. Structural and aerodynamic models are shown in Fig. [[fig:SailPlane2]]. This aircraft was first shown in [[cite:&CEA2021a]] is a good test case as it is not very complex yet representative of aircraft FE models and it is available open source.  
+
+#+NAME: fig:SailPlane2
+#+CAPTION: Sail Plane structural and aerodynamic models
+#+ATTR_LATEX: :width 0.9\textwidth 
+[[file:figs/SailPlane2.pdf]]
+
+A Guyan reduction is employed in the reduction process and Fig. [[fig:modes]] illustrates the accuracy of the condensed model by comparing the 3D model shapes. No differences can be appreciated for the first few modes so we show higher frequency modes: a high order bending mode () and a torsional mode (). This very good preservation of the full model leads to an excellent accuracy in the static and dynamic results presented below. It is important to remark this aircraft model is very conventional and does not showcase high-aspect ratio wings. While this modelling strategy would not be suitable for every engineering structure, as long as there is a dominant dimension and deformations in the other two remain small (as is the case in high level descriptions of aircraft, bridges or wind turbines) it has been found to produce very good approximations when compared with full dimensional solutions.
+
+#+NAME: fig:modes
+#+CAPTION: Full VS reduced order models modal shapes Sail Plane wing  
+#+ATTR_LATEX: :width 0.6\textwidth 
+[[file:figs/SPM19af2.pdf]]
+
+#+NAME: fig:modes2
+#+CAPTION: Full VS reduced order models modal shapes Sail Plane wing 
+#+ATTR_LATEX: :width 0.6\textwidth 
+[[file:figs/SPM7af2.pdf]]
+
 *** Geometrically nonlinear static response
-The static equilibrium of the aircraft under prescribed loads is first studied with follower loads normal to the wing applied at the tip of each wing. The response for an increasing load stepping of 200, 300, 400, 480 and 530 KN is computed. Nonlinear static simulations on the original full model (before condensation) are also carried out in MSC Nastran and are included. The interpolation elements in Nastran are used to output the displacements at the condensation nodes for direct comparison with the NMROM results. To quantify the difference between both sets of results, tip displacements, in global coordinates, for the 530 KN load and the full model Nastran calculations are $u_x = -0.217$ m  $u_y = -1.348$ m, $u_z = 7.236$ m; while NMROM calculations yield $u_x = -0.219$ m  $u_y = -1.352$ m, $u_z = 7.249$ m. This represents an error of 0.19$\%$ for a 25.6$\%$ tip deformation of the wing semi-span, $b = 28.8$ m.
+The static equilibrium of the aircraft under prescribed loads is first studied with follower loads normal to the wing applied at the tip of each wing. The response for an increasing load stepping of 200, 300, 400, 480 and 530 KN is computed. Nonlinear static simulations on the original full model (before condensation) are also carried out in MSC Nastran and are included. The interpolation elements in Nastran are used to output the displacements at the condensation nodes for direct comparison with the NMROM results.
 Geometric nonlinearities are better illustrated by representing a sectional view of the wing as in Fig. [[fig:SPWingsection]], where deformations in the z-direction versus the metric $S = \sqrt{x^2+y^2}$ are shown. MSC Nastran linear solutions are also included to appreciate more clearly the shortening and follower force effects in the nonlinear computations.
 
 #+NAME: SPWingsection
@@ -1651,12 +1728,14 @@ Geometric nonlinearities are better illustrated by representing a sectional view
 #+RESULTS: SPWingsection
 [[file:figs/SPWingsection.png]]
 
-The tolerance in the Newton solver was set to $10^{-6}$ in all cases. A convergence analysis with the number of modes in the solution is presented in [[SPstatic_convergence]].
+The tolerance in the Newton solver was set to $10^{-6}$ in all cases.
+A convergence analysis with the number of modes in the solution is presented in [[SPstatic_convergence]].
 5, 15, 30, 50, 100 modes are used to build the corresponding NMROMs.
-The error metric is defined as the L-2 norm divided by the total number of nodes (only the condenses ones in this case): $\epsilon = ||u_{NMROM} - u_{NASTRAN}||/NumNodes$.
+The error metric is defined as the L-2 norm divided by the total number of nodes (only the condenses ones in this case): $\epsilon = ||u_{NMROM} - u_{NASTRAN}||/NumNodes$. It can be seen the solution with 50 modes already achieves a very good solution even for the largest load which produces a 25.6$\%$ tip deformation of the wing semi-span, $b = 28.8$ m. The displacement difference at the tip in this case is less than 0.2$\%$.
+
 #+NAME: SPerror
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  import fem4inas.preprocessor.configuration as configuration
+
   config = configuration.Config.from_file("SP1/config.yaml")
   sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
   sp_error = fn_spError(sol_sp, config, print_info=True)
@@ -1666,7 +1745,7 @@ The error metric is defined as the L-2 norm divided by the total number of nodes
 
 #+NAME: SPstatic_convergence
 #+CAPTION: Modal convergence in the static solution of the Sail Plane
-#+ATTR_LATEX: :width 0.4\textwidth 
+#+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: SPerror
 [[file:figs/SPerror.png]]
 
@@ -1686,17 +1765,18 @@ The error metric of this 3D solution is also assessed in Fig. [[fig:SPerror3D]],
 #+NAME: SPerror3D
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   sp_error1D = [sp_error[f'M4_L{i}'] for i in range(6)]
-  fig, figname = fig_out(name)(fn_spPloterror3D)(sp_error1D, sp_error3d)
+  # fig, figname = fig_out(name)(fn_spPloterror3D)(sp_error1D, sp_error3d)
+  fig, figname = fig_out(name)(fn_spPloterror3D)(None, sp_error3d)
   figname
 #+end_src
 
 #+NAME: fig:SPerror3D
 #+CAPTION: 3D discrepancy comparison between full FE and NMROM solutions
-#+ATTR_LATEX: :width 0.8\textwidth 
+#+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: SPerror3D
 [[file:figs/SPerror3D.png]]
 
-Next we compare the computational times for the various solutions presented in this section in Table [[table:SP_times]]. 
+Next we compare the computational times for the various solutions presented in this section in Table [[table:SP_times]]. The 
 #+NAME: SP_times
 #+begin_src python  :results raw
   dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
@@ -1722,22 +1802,45 @@ Next we compare the computational times for the various solutions presented in t
 | Time [s] | 6.88, 6.98, 6.94, 7.42, 7.79      |        4920 |
 
 
-In order to validate the AD a whereby the load stepping shown above becomes a pseudo-time interpolation load where the variable $\tau$ controls the amount of loading and we look at the variation of the tip displacement as a function of this $\tau$.
-Table [[table:SP_AD]] shows a very good agreement with a finite differences with an epsilon of $10^{-3}$. 
+With the examples herein and in previous works we sought to introduce a versatile solution that accounts for geometric nonlinearities in a very efficient manner and only needs modal shapes and linear FE matrices from a generic FE solver as inputs. One of the goals that were set for this work was to achieve an equally flexible strategy in the automatic calculation of derivatives across the various solvers in the codebase. This is demonstrated across first for the static solution above. The validation example for the static solvers is cast as follows: the load stepping shown above becomes a pseudo-time interpolation load such that a variable $\tau$ controls the amount of loading and we look at the variation of the wing-tip displacement as a function of this $\tau$. If \(f(\tau=[1, 2, 3, 4, 5, 6]) = [200, 250, 300, 400, 480, 530]\) KN, with a linear interpolation between points,  we look at the derivative of the z-component of the tip of the wing displacements at \(\tau= 1.5, 3.5, 5.5 \) as show in Fig. . 
+#+NAME: SP_AD
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_spAD)(r_sp, r_sp0)
+  figname
+#+end_src
+
+#+RESULTS: SP_AD
+[[file:figs/SP_AD.png]]
+
+
+Table [[table:SP_AD]] shows a very good agreement against finite-differences (FD) with an epsilon of $10^{-3}$. Note how the derivative at each of the marked points corresponds approximately the slope in graph at those very points. And the biggest slope occurs precisely in between \(tau\) of 4 and 5 when the prescribed loading changes from 300 to 400.
+
 #+NAME: table:SP_AD
-#+CAPTION: Computational times Sail Plane static solution
+#+CAPTION: Sail Plane differentiation in static problem
 #+ATTR_LATEX: :width 0.7\textwidth :environment longtable :caption  
-| $\tau$ | $f(\tau)$   | $f'(\tau)$ [AD]   | $f'(\tau)$ [FD]   |
-|--------+-------------+-------------------+-------------------|
-|    1.5 | 2.81 m      |             0.700 |             0.700 |
-|    3.5 | 4.527 m     |             1.344 |             1.344 |
-|    5.5 | 6.538 m     |             0.623 |             0.623 |
+| $\tau$ | $f(\tau)$ [m] | $f'(\tau)$ (AD) | $f'(\tau)$ (FD) |
+|--------+---------------+-----------------+-----------------|
+|    1.5 |          2.81 |           0.700 |           0.700 |
+|    3.5 |         4.527 |           1.344 |           1.344 |
+|    5.5 |         6.538 |           0.623 |           0.623 |
 
+\newpage
 *** Large-amplitude nonlinear dynamics
-This test case demonstrates the accuracy of the NMROM approach for  dynamic geometrically-nonlinear calculations and was first introduced in [[cite:&CEA2021]]. The right wing of Fig. \ref{fig:SailPlane} is considered and dynamic nonlinear simulations are carried out  and compared to MSC Nastran linear and nonlinear analysis (SOL 109 and 400, respectively) on the full FE model. First 
+This test case demonstrates the accuracy of the NMROM approach for  dynamic geometrically-nonlinear calculations and was first introduced in [[cite:&CEA2021]]. The right wing of Fig. \ref{fig:SailPlane} is considered and dynamic nonlinear simulations are carried out  and compared to MSC Nastran linear and nonlinear analysis (SOL 109 and 400, respectively) on the full FE model.
+
+and the force at the tip is \(f_{tip} = \alpha \times \textup{\pmb{f}}_{max} = \alpha [-2\times 10^5, 0., 6\times 10^5]f(0.05, 4)\).
 
 
-A force is applied at the wing tip with a triangular loading profile, followed by a sudden release of the applied force to heavily excite the wing. The force profile is \(f(a, b) =  a+\frac{1-a}{b}t \text{if \(t \leq b\) else 0.}\) and the force at the tip is $f_{tip} = [-2\times 10^5, 0., 6\times 10^5]f(0.05, 4)$.
+A force is applied at the wing tip with a triangular loading profile, followed by a sudden release of the applied force to heavily excite the wing. The force profile is given in Fig. [[fig:ramping_load]]
+
+
+#+NAME: fig:ramping_load
+#+CAPTION: Ramping load profile
+#+ATTR_LATEX: :width 0.6\textwidth 
+[[./figs/ramping_load.pdf]]
+
+
+
 The dynamic response is presented in Fig. [[fig:WSP_x]], where results have been normalised with the wing semi-span (28.8 m.). As expected, linear analysis over predicts vertical displacements and does not capture displacements in the $x$ and $y$ directions. NMROMs were built with 5, 15, 30, 50 and 100 modes. A Runge-Kutta four is used to march the equation in time with time steps corresponding to the inverse of the largest eigenvalue in the NMROM, i.e.  
 
 #+NAME: WSP_x
@@ -1750,7 +1853,7 @@ The dynamic response is presented in Fig. [[fig:WSP_x]], where results have been
 #+NAME: fig:WSP_x
 #+CAPTION: Span-normalised tip $x-$displacements
 #+RESULTS: WSP_x
-[[file:figs/WSP_x.png]]
+[[file:]]
 
 #+NAME: WSP_y
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -1804,14 +1907,16 @@ Next we look at the error of the dynamic simulation with the same error metric e
   figname
 #+end_src
 
-#+CAPTION: L-2 norm per node differences between Nastran full FE and NMROM 
+#+NAME: WSP_error
+#+CAPTION: L-2 norm per node differences between Nastran full FE and NMROM
+#+ATTR_LATEX: :width 0.7\textwidth 
 #+RESULTS: WSP_error
-[[file:figs/WSP_error.png]]
+[[file:]]
 
 An impressive reduction of computational time is achieved in the new implementation as highlighted in Table [[table:WSP_times]].
 
 
-with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the nonlinear response of the full model in \textbf{Nastran took 1 hour 22 minutes.}
+with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the nonlinear response of the full model in Nastran took 1 hour 22 minutes.
 
 
 #+NAME: WSP_times
@@ -1838,16 +1943,17 @@ with a small time step of 0.001 seconds takes \textbf{10.9 seconds} while the no
 |----------+-----------------------------------+-------------|
 | Time [s] | 2.81, 3.21, 5.08, 7.33, 145.27    |        4920 |
 
-
+We move now to one of the main highlights of this work, i.e. the ability to compute gradients via automatic differentiation in geometrically nonlinear dynamic problems. The maximum root loads occurring in a wing subjected to dynamic loads is a good test case as it can be a critical metric in sizing the aircraft wings, especially high-aspect ratio ones.   Thus we look at the variation of the maximum z-component of the vertical internal forces as a function of \(\alpha\) in the loading profile of Fig. [[fig:ramping_load]]. Effectively, the slope of the loading increases with \(\alpha\). Table [[table:AD_WSP]] shows the derivatives computed using FD with $\epsilon=10^{-4}$ and AD in reverse-mode on the example with 50 modes resolution. In this case the FD needed tweaking of $\epsilon$ while application of AD was straight forward with no need for checkpoints and took around three times the speed of a single calculation.
 
 #+NAME: table:AD_WSP
-#+CAPTION: AD comparison
+#+CAPTION: Sail Plane differentiation in dynamic problem
 #+ATTR_LATEX: :width 0.7\textwidth :environment longtable :caption  :align center
-| $\alpha$ | $f(\alpha)$          | $f'(\alpha)$ [AD]     | $f'(\alpha)$ [FD]     |
+| $\alpha$ | $f(\alpha)$ [KN/m]   | $f'(\alpha)$ (AD)     | $f'(\alpha)$ (FD)     |
 |----------+----------------------+-----------------------+-----------------------|
 |      0.5 | $1723.2 \times 10^3$ | $3587.71 \times 10^3$ | $3587.77 \times 10^3$ |
 |      1.0 | $3624.4 \times 10^3$ | $3735.26 \times 10^3$ | $3735.11 \times 10^3$ |
 |      1.5 | $5608.3 \times 10^3$ | $3957.81 \times 10^3$ | $3958.31 \times 10^3$ |
+
 
 ** Dynamic loads on an industrial configuration
 The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
@@ -1857,12 +1963,24 @@ The aerodynamic model contains \(\sim 1,500\) aerodynamic panels.
 #+begin_export latex
 \begin{figure}[th!]
 \centering
-\includegraphics[width=1.\textwidth]{./file:figs/xrf1-model.pdf}
+\includegraphics[width=1.\textwidth]{./figs/xrf1-model.pdf}
 \caption{Modified XRF1 aeroelastic subcomponents}\label{fig8:xrf1-model}
 \end{figure}
 #+end_export
 A verification exercise is introduced first by applying two 1-cos gust shapes at a very low intensity, thus producing small deformations and a linear response. The flow Mach number is 0.81. A first gust is applied that we name as G1 of length 67 m and peak velocity 0.141 m/s, and a second gust, G2, of 165 m and peak velocity of 0.164 m/s.
 Fig. [[fig:GustXRF12_x]] shows the normalised wing-tip response with our NMROM that accurately reproduces the Nastran 146 solution based on the full FE model.
+
+plot_xrf1_wtips(sol1, sol2, labels=None, nast_scale=None, nast_load=None)
+#+NAME: GustXRF1try
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol1= solution.IntrinsicReader("./XRF1")
+  sol2= solution.IntrinsicReader("./XRF2")
+  fig= plot_xrf1_wtips(sol1, sol2, labels=[2,6], nast_scale=0.01, nast_load=[2,6])
+  name
+#+end_src
+
+#+RESULTS: GustXRF1try
+[[file:GustXRF1try]]
 
 #+NAME: GustXRF12_x
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))

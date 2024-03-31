@@ -1,4 +1,4 @@
-#+TITLE: A Nonlinear Aeroelastic Framework for Modern Software Architectures
+#+TITLE: A Nonlinear Approach for Flexible Aircraft in Modern Hardware Architectures
 # #+TITLE: JAX-based Nonlinear Aeroelastic Simulation of Large Aircraft Models
 # #+TITLE: JAX-based Aeroelastic Framework for Nonlinear Analysis of Large Aircraft Models
 # #A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
@@ -49,10 +49,11 @@
 :END:
 
 #+begin_abstract
-This paper presents a new implementation for time-domain nonlinear aeroelastic simulations that has been built for performance and robustness.
-Leveraging on the numerical library JAX, a highly vectorised codebase is written that achieves two orders of magnitude accelerations compare to conventional implementations. This brings full-vehicle simulations to run close to if not in real-time, thus opening new possibilities for aircraft aeroelastic analysis which have traditionally been constrained to either linear, frequency domain solutions, or to their nonlinear counterparts but narrower in scope.
-Moreover, the approach seamlessly integrates with conventional aeroelastic load packages which facilitates the analysis of complex aircraft configurations.
-An extensive verification has been carried out on representative aircraft models and compared with MSC Nastran linear and nonlinear solutions. Furthermore, we demonstrate the suitability of the methodology to accurately reconstruct the full 3D solution. 
+This paper presents a new implementation for time-domain nonlinear aeroelastic simulations built for performance and that is suitable for modern hardware architectures such as GPUs.
+The numerical library JAX and a novel description of the aircraft dynamics are brought together into a highly vectorised codebase that achieves two orders of magnitude accelerations compare to conventional implementations. This brings full-vehicle simulations to run close to if not in real-time, thus opening new possibilities for aircraft aeroelastic analysis which have traditionally been constrained to either linear, frequency domain solutions, or to their nonlinear counterparts but narrower in scope. Moreover, the approach seamlessly integrates with conventional aeroelastic load packages which facilitates the analysis of complex aircraft configurations.
+
+A large test suite of problems has been built for the validation and maintainability of the code, which includes static and dynamic, structural and aeroelastic examples. A summary is presented herein along side a computational benchmark on the CPUs and GPUs.
+The nonlinear trim and gust response of an industrial configuration are studied and used to illustrate the capabilities of the proposed approach. Verification against MSC Nastran is shown first for small deformations, to then highlight the main differences between linear and nonlinear analysis for very high loading scenarios that induce large displacements.
 #+end_abstract
 
 * House keeping  :noexport: 
@@ -71,7 +72,7 @@ An extensive verification has been carried out on representative aircraft models
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
   (setq Veval_blocks "yes") ;; yes, no, no-export 
-  (setq Veval_blocks_run "no-export")
+  (setq Veval_blocks_run "no")
   (setq pythonShell "py1org")
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
@@ -1544,7 +1545,7 @@ We start with a global FE model of the airframe as illustrated in Fig..
 #+NAME: workflow
 #+CAPTION: Workflow of the solution process
 #+ATTR_LATEX: :width 1.\textwidth 
-[[./figs/workflow2.pdf]]
+[[./figs/workflowAIAA2.pdf]]
 It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements.
 With those characteristics a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$. The dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written in material velocities, $\bm x_1$,  and stresses, $\bm x_2$, as state variables. A modal expansion of those is a key step in seamlessly mapping the global FEM into the nonlinear description. The intrinsic modes are introduced and the projection of the state variables is such  $\pmb{x}_1 = \pmb{\phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\phi}_2\pmb{q}_2$.
 A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes coming from the global FEM:
