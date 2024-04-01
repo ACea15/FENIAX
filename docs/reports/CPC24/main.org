@@ -71,7 +71,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "yes") ;; yes, no, no-export 
+  (setq Veval_blocks "no-export") ;; yes, no, no-export 
   (setq Veval_blocks_run "no-export")
   (setq pythonShell "py2")
   ;; export_blocks: code, results, both, none
@@ -782,6 +782,10 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 :END:
 ** Helper functions
 
+#+begin_comment
+https://plotly.com/python/subplots/
+#+end_comment
+
 #+begin_src python :results none  :var name=(org-element-property :name (org-element-context))
 
   def fig_out(name, figformat="png", update_layout=None):
@@ -906,25 +910,50 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
       fig.update_xaxes(range=[0, 4], title='time [s]')
       return fig
 
-  def plot_xrf1_wtips(sol1, sol2, labels=None, nast_scale=None, nast_load=None):
+  def subplots_xrf1wtips(sol1, sol2, labels=None, nast_scale=None, nast_load=None):
 
       fig1 = xrf1_wingtip2(sol1, sol2, 0, labels,nast_scale, nast_load)
       fig2 = xrf1_wingtip2(sol1, sol2, 1, labels,nast_scale, nast_load)
       fig3 = xrf1_wingtip2(sol1, sol2, 2, labels,nast_scale, nast_load)
-      fig = make_subplots(rows=1, cols=2, horizontal_spacing=0.1)
-      for f1i in fig1.data:
-          fig.add_trace(f1i,
+      fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.1, vertical_spacing=0.1,
+                          specs=[[{"colspan": 2}, None],
+                                 [{}, {}]])
+      for i, f3i in enumerate(fig3.data):
+          fig.add_trace(f3i,
                         row=1, col=1
                         )
-      for f2i in fig2.data:
-          fig.add_trace(f2i,
-                        row=1, col=2
+      for i, f1i in enumerate(fig1.data):
+          f1inew = f1i
+          f1inew.showlegend = False          
+          fig.add_trace(f1inew,
+                        row=2, col=1
                         )
-      fig.update_xaxes(fig1.layout.xaxis,row=1, col=1)
-      fig.update_yaxes(fig1.layout.yaxis,row=1, col=1)
-      fig.update_xaxes(fig2.layout.xaxis,row=1, col=2)
-      fig.update_yaxes(fig2.layout.yaxis,row=1, col=2)      
-      fig.update_layout(fig1.layout)
+      for i, f2i in enumerate(fig2.data):
+          f2inew = f2i
+          f2inew.showlegend = False          
+          fig.add_trace(f2inew,
+                        row=2, col=2
+                        )
+
+      fig.update_xaxes(fig1.layout.xaxis,row=2, col=1)
+      fig.update_yaxes(fig1.layout.yaxis,row=2, col=1)
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=2)
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=2)
+      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1)
+      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1)
+      fig.update_layout(plot_bgcolor='white',
+                        yaxis=dict(zerolinecolor='lightgrey'),
+                        showlegend=True, #showlegend,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=2,
+                            b=0
+                            ))
+      #fig.update_layout(showlegend=False,row=2, col=1)
+      # fig.update_layout(showlegend=False,row=2, col=2)
+      #fig.update_layout(fig1.layout)
       return fig
 
   @fig_background
@@ -1014,6 +1043,52 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
       return fig
 
+  def subplots_wsp(sol_list, labels=None, nast_load=None, axes=None):
+
+      fig1 = wsp_wingtip(sol_list, 0, labels, nast_load, axes)
+      fig2 = wsp_wingtip(sol_list, 1, labels, nast_load, axes)
+      fig3 = wsp_wingtip(sol_list, 2, labels, nast_load, axes)
+      fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.1, vertical_spacing=0.1,
+                          specs=[[{"colspan": 2}, None],
+                                 [{}, {}]])
+      for i, f3i in enumerate(fig3.data):
+          fig.add_trace(f3i,
+                        row=1, col=1
+                        )
+      for i, f1i in enumerate(fig1.data):
+          f1inew = f1i
+          f1inew.showlegend = False          
+          fig.add_trace(f1inew,
+                        row=2, col=1
+                        )
+      for i, f2i in enumerate(fig2.data):
+          f2inew = f2i
+          f2inew.showlegend = False          
+          fig.add_trace(f2inew,
+                        row=2, col=2
+                        )
+
+      fig.update_xaxes(fig1.layout.xaxis,row=2, col=1)
+      fig.update_yaxes(fig1.layout.yaxis,row=2, col=1)
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=2)
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=2)
+      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1)
+      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1)
+      fig.update_layout(plot_bgcolor='white',
+                        yaxis=dict(zerolinecolor='lightgrey'),
+                        showlegend=True, #showlegend,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=2,
+                            b=0
+                            ))
+      #fig.update_layout(showlegend=False,row=2, col=1)
+      # fig.update_layout(showlegend=False,row=2, col=2)
+      #fig.update_layout(fig1.layout)
+      return fig
+  
   def fn_spErrorold(sol_list, config, print_info=True):
 
     sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
@@ -1843,6 +1918,18 @@ A force is applied at the wing tip with a triangular loading profile, followed b
 
 The dynamic response is presented in Fig. [[fig:WSP_x]], where results have been normalised with the wing semi-span (28.8 m.). As expected, linear analysis over predicts vertical displacements and does not capture displacements in the $x$ and $y$ directions. NMROMs were built with 5, 15, 30, 50 and 100 modes. A Runge-Kutta four is used to march the equation in time with time steps corresponding to the inverse of the largest eigenvalue in the NMROM, i.e.  
 
+#+NAME: WSPsubplots
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol_wsp= [solution.IntrinsicReader(f"./WSP{i}") for i in range(1,6)]
+  # fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=0, labels=None, nast_load=0)
+  fig = subplots_wsp(sol_wsp, labels=None, nast_load=0)
+  #figname
+#+end_src
+
+#+RESULTS: WSPsubplots
+[[file:]]
+
+
 #+NAME: WSP_x
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   sol_wsp= [solution.IntrinsicReader(f"./WSP{i}") for i in range(1,6)]
@@ -1853,7 +1940,7 @@ The dynamic response is presented in Fig. [[fig:WSP_x]], where results have been
 #+NAME: fig:WSP_x
 #+CAPTION: Span-normalised tip $x-$displacements
 #+RESULTS: WSP_x
-[[file:]]
+[[file:figs/WSP_x.png]]
 
 #+NAME: WSP_y
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -1975,7 +2062,7 @@ plot_xrf1_wtips(sol1, sol2, labels=None, nast_scale=None, nast_load=None)
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   sol1= solution.IntrinsicReader("./XRF1")
   sol2= solution.IntrinsicReader("./XRF2")
-  fig= plot_xrf1_wtips(sol1, sol2, labels=[2,6], nast_scale=0.01, nast_load=[2,6])
+  fig= subplots_xrf1wtips(sol1, sol2, labels=[2,6], nast_scale=0.01, nast_load=[2,6])
   name
 #+end_src
 
