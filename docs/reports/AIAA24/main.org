@@ -1537,7 +1537,7 @@ The structure of the rest of the paper is as follows. Sec. [[Theory and implemen
 Lastly, sec. [[Conclusions]] summarises the the achievements and further developments planned for future work.
 
 * Theory and implementation
-In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelasticity modelling. For further details, see cite:&CEA2021, cite:&CEA2023.
+In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelasticity modelling as continuation of the work in cite:&CEA2021, cite:&CEA2023.
 Next we described the main formulation that leads to a geometrically nonlinear enhancement of generic aircraft models and its integration into an aeroelastic framework, along with some implementation details.
 ** Nonlinear aeroelastic system
 We start with a global FE model of the airframe as illustrated in Fig..
@@ -1547,12 +1547,12 @@ We start with a global FE model of the airframe as illustrated in Fig..
 #+ATTR_LATEX: :width 1.\textwidth 
 [[./figs/workflowAIAA2.pdf]]
 It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements.
-With those characteristics a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$. The dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written in material velocities, $\bm x_1$,  and stresses, $\bm x_2$, as state variables. A modal expansion of those is a key step in seamlessly mapping the global FEM into the nonlinear description. The intrinsic modes are introduced and the projection of the state variables is such  $\pmb{x}_1 = \pmb{\phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\phi}_2\pmb{q}_2$.
+With those characteristics a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$. The dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written in material velocities, $\bm x_1$,  and stresses, $\bm x_2$, as state variables. A modal expansion of those is a key step in seamlessly mapping the global FEM into the nonlinear description. The intrinsic modes are introduced and the projection of the state variables is such  $\pmb{x}_1 = \pmb{\Phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\Phi}_2\pmb{q}_2$.
 A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes coming from the global FEM:
 
 1. Velocity modes, $\bm \Phi_1 = \bm \Phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \Phi_1 \bm q_1 = \bm \Phi_0 \dot{\bm q}_0$.
 
-2. Momentum modes, $\bm \Psi_1 = \bm M_a \bm \Phi_0$. Note from this definition that for arbitrary distributed mass models the dynamic condensation technique will produce a fully-populated mass matrix, and the various couplings will be captured after the matrix multiplication, as opposed to simpler models that require a lumped mass values at the nodes. 
+2. Momentum modes, $\bm \Psi_1 = \bm M_a \bm \Phi_0$. Note from this definition that for arbitrary distributed mass models, the dynamic condensation technique will produce a fully-populated mass matrix, and the various couplings will be captured after the matrix multiplication, as opposed to simpler models that require a lumped mass values at the nodes. 
 
 3. Force/moment modes, $\bm \Phi_2 = \mathcal{S}(\bm K_a \bm \Phi_0)$, represent the internal stresses in the structure as the sum, $\mathcal{S}$, of equilibrium forces and moments produced by the modal deformations. Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$. Results are presented in the mid-point, $\bm{r}_{\frac{1}{2}}$, between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
    
@@ -1581,10 +1581,7 @@ The linear operators, $\lo_1$, $\lo_2$, and the matrix $\pmb{\mathsf{E}}$ are de
 \lo_2 (\pmb{x}_2)=  \begin{bmatrix} \pmb{0} & \tilde{\pmb{f}} \\ \tilde{\pmb{f}} & \tilde{\pmb{m}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}  \pmb{\mathsf{E}}= \lo_1 \begin{pmatrix} \begin{bmatrix} 1 \\ \bm 0_5 \end{bmatrix} \end{pmatrix}
 \end{equation}
 
-\\
-After the state of the condensed model has been solved for, the full 3D state can be reconstructed: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model. We demonstrate in this work that this process yields accurate results on representative aircraft structures when compared to simulations with the full FEM, thus paving the way for a more detailed, multidisciplinary analysis: first with the addition of CFD as the aerodynamic solver, and second with the transfer of the full deformed state back to the original FE solver to study other phenomena such as buckling. 
-\\
-The full aeroelastic solution is described extending Eq. \eqref{eq2:sol_qs} with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{v}_g$. Control states can also be included [[cite:&CEA2021a]], but they are not necessary for this work. For a set of reduced frequencies and a given Mach number, the DLM (or a higher fidelity aerodynamic method) yields the Generalised Aerodynamic Forces (GAFs). The current implementation uses Roger's rational function approximation to those GAFs, which results in the follower modal forces:
+The full aeroelastic solution is attained extending Eq. \eqref{eq2:sol_qs} with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{v}_g$. Control states can also be included [[cite:&CEA2021a]], but they are not necessary for this work. For a set of reduced frequencies and a given Mach number, the DLM (or a higher fidelity aerodynamic method) yields the Generalised Aerodynamic Forces (GAFs). The current implementation uses Roger's rational function approximation to those GAFs, which results in the follower modal forces:
 
 \begin{equation}\label{eq3:eta_full}
 \begin{split}
@@ -1604,10 +1601,13 @@ The coupling of the structure and aerodynamic equations combined with the aerody
                        -\frac{2U_\infty\gamma_p}{c}\bm{\lambda}_{p}
 \end{split}
 \end{equation}
-in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$. \\
-
+in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$.
+The aerodynamic matrices $\hat{\bm{\mathcal{A}}}_{p+2}$ have also been scaled accordingly.
+\\
+Once the nonlinear solution of the condensed model is computed, the corresponding full 3D state is calculated via a two postprocessing steps: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model.
+This paves the way for a broader multidisciplinary analysis where CFD-based aerodynamic loading could be used for the calculation of the nonlinear static equilibrium, and also with the transfer of the full deformed state back to the original FE solver to study other phenomena such as buckling. 
 ** Aircraft trim flight
-
+A very important part in the calculation of dynamic loads is including the rigid body DoF in the analysis and thus having the aircraft in a state of equilibrium between lift, gravity and control devices forces, i.e. trimmed. This implies a solution to the following nonlinear system of equations: 
 \begin{equation}
 \begin{split}
 \pmb F(\pmb{q}_{2}, \pmb{q}_{0}, \pmb{q}_{c}) &=  \pmb{\omega} \odot  \pmb{q}_{2}  - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \tfrac12\rho_\infty U_\infty^2  \left( \pmb{\mathcal{A}}_0\bm{q}_0 + \pmb{\mathcal{A}}_{0r}\bm{q}_{0r} + \pmb{\mathcal{A}}_c\bm{q}_c \right) + \bm{\eta}_g  = \bm 0 \\
@@ -1616,15 +1616,9 @@ in this system the aerodynamic added-mass effect has been moved to the left hand
 \end{split}
 \end{equation}
 
-The simplest case would be a trim where only two rigid-body DoF are allowed, the pitch $q_{0\alpha}$ and the plunge, $q_{0h}$; $q_{0h}$ is set to 0 and $q_{0\alpha}$ is part of the variables to be calculated along with a single tail elevator deflection, $q_c$ and the elastic strain modal DoF, $\bm q_{2}$. 
-
+The simplest case would be a trim where only two rigid-body DoF are allowed, the pitch $q_{0\alpha}$ and the plunge, $q_{0h}$; $q_{0h}$ is set to 0 and $q_{0\alpha}$ is part of the variables to be calculated along with a single tail elevator deflection, $q_c$ and the elastic strain modal DoF, $\bm q_{2}$. A somewhat more advanced trim would also allow a forward direction of flight and include thrust as another control state variable. However for this a good estimate of the aerodynamic drag forces would be required, which is not the case for the DLM.  
 ** Computational implementation and benchmarks
-The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures and the computation of sensitivities via algorithmic differentiation (AD) has been implemented as a crucial part for design optimisation, both of which will be exemplified in future work.
-
-A major contribution with respect to our previous works is a new computational implementation that achieves accelerations of over 2 orders of magnitude compared to standard implementations[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. Furthermore, a highly modular, flexible architecture based on software design patterns has been put in place cite:&CEA2024.
-A key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. 
-
-\\
+The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures as will be demonstrated herein, and the computation of sensitivities via algorithmic differentiation (AD) across solvers has been implemented in [].
 The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. This library is developed and maintained by Google research team. It combines XLA (accelerated linear algebra) and Autograd, the former being a compiler that optimises models for different hardware platforms, the latter is an Automatic Differentiation (AD) tool in Python. 
 Moreover, its extensible system of composable function transformations provides a set of important features for Computational Science as illustrated in Fig. \ref{fig:JAX-overview}. For instance, the vmap function allows for complex vectorisation operations and the pmap function for Single-Program Multiple-Data (SPMD) parallelisation. Both forward and reverse mode automatic differentiation are supported. Finally the just-in-time compilation (jit) relies on the XLA engine to compile and execute functions on CPUs but also on accelerators such as GPUs and TPUs, offering a versatile solution for seamlessly connecting the software to various types of hardware without requiring extra CUDA code, or a Domain Specific Language (DSL).
 
@@ -1635,8 +1629,10 @@ Moreover, its extensible system of composable function transformations provides 
 \caption{\label{fig:JAX-overview} JAX capabilities for modern scientific computing}
 \end{figure}
 #+end_export
+Let us look at the tensor structure of the main components in the solution process which is illustrated in Fig. in the sequential order they are computed with a discretization that comprises $N_n$ number of condensed nodes, $N_m$ modes used in the reduced order model and $N_t$ time steps in the solution (if the problem is static, $N_t$ represents a ramping load stepping scheme): the intrinsic modes, $\Phi \in \mathbb{R}^{N_m \times 6 \times N_n}$ are computed from the eigenvalue solution and the coordinates $\bm X_a \in \mathbb{R}^{3 \times N_n}$ of the active nodes
+The nonlinear couplings, $\Gamma \in \mathbb{R}^{N_m \times N_m \times N_m}$ are calculated next, from which the system in Eq. \ref{eq2:sol_qs} is assembled and solved to yield the solution states $\bm q \in \mathbb{R}^{N_s \times N_t}$. Local velocities and internal forces,  $\bm X_{0,1,2} \in \mathbb{R}^{N_t \times 6 \times N_n}$ are computed as a product of the corresponding instrinsic modes and states, and their integration leads to the position tensor with similar structure.  
 
-An simplified version of the intrinsic modes calculation is given in \ref{alg:modes}.  
+An simplified version of the intrinsic modes algorithm is given in \ref{alg:modes}.  
 \begin{algorithm}[h!]
 \DontPrintSemicolon
 \SetKwInOut{Input}{input}
@@ -1646,8 +1642,11 @@ An simplified version of the intrinsic modes calculation is given in \ref{alg:mo
 \Begin{
 \texttt{import jax.numpy as jnp \;
  \BlankLine
-$\bm X_m$ $\leftarrow$ jnp.matmul($X^{\top}$, $M_{avg}$)
+$\bm X_m$ $\leftarrow$ jnp.matmul($X_a^{\top}$, $M_{avg}$)
 \Comment{Get mid-node coordinates} \;
+$\bm X_d$ $\leftarrow$ jnp.matmul($X_a$, $M_{diff}$)
+\Comment{vector difference between contigous nodes} \;
+$\Delta_s$ = jnp.linalg.norm($X_d$, axis=0) \;
 $\bm{\Phi}_1$ $\leftarrow$ $\bm{\Phi}_0$ \;
 $\bm{\Phi}_{1m}$ $\leftarrow$ jnp.tensordot($\bm{\Phi}_1$, $M_{avg}$, axes=(2, 0))
 \Comment{Velocity modes at mid-node locations}\;
@@ -1678,6 +1677,28 @@ $\bm{\psi}_2$ $\leftarrow$ - $\bm \phi_{1d} / \Delta_s + E_{\phi}$\;
 \label{alg:modes}
 \end{algorithm}
 
+The various functions in the algorithm make heavy use of JAX $\texttt{vmap}$ function to vectorise the contraction and expansion operations. For instance, to yield the internal moments associated to each node due to the internal forces, the function \(\texttt{moment\_force}\) is cast as follows:
+
+\begin{algorithm}[h!]
+% Set Function Names
+\SetKwFunction{FSum}{moment\_force}
+ 
+% Write Function with word ``Function''
+  \SetKwProg{Fn}{Function}{:}{}
+  \Fn{\FSum {$\bm{\phi}_{2v}$, $\bm X_{3tilde}$}}{
+\texttt{f1 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot(u, v, axes=(1,1),
+      in\_axes=(None, 2), out\_axes=2))  \;
+f2 $\longleftarrow$ vmap(f1, in\_axes=(2, 3), out\_axes=3)  \;
+f3 $\longleftarrow$ f2($\bm{\phi}_{2v}$, $\bm X_{3tilde}$)   \Comment{Nm$\times$6$\times$Nn$\times$Nn} \;
+\BlankLine
+}
+        \KwRet f3\;
+  }
+\caption{Internal moments due to internal forces}
+\label{alg:internalmoments}
+\end{algorithm}
+
+The function created by $\texttt{vmap}$ loops the inputs through the axes specified in $\texttt{in\_axes}$, piping the resulting vector to the function given to $\texttt{vmap}$ as the first argument, and the outputs are saved across the axes given in $\texttt{out\_axes}$. 
 With the intrinsic modes computed, the algorithm to compute the nonlinear couplings in \ref{eq2:gammas12} is shown below:
 
 \begin{algorithm}[h!]
@@ -1686,21 +1707,21 @@ With the intrinsic modes computed, the algorithm to compute the nonlinear coupli
 %\KwResult{$G’=(X,V)$ with $V\subseteq U$ such that $G’^{tc}$ is an interval order.}
 \SetKwInOut{Input}{input}
 \SetKwInOut{Output}{output}
-\Input{Intrinsic modal shapes}
+\Input{Intrinsic modal shapes calculation}
 \Output{Intrinsic nonlinear modal couplings $\bm{\Gamma}_1$ and $\bm{\Gamma}_2$}
 \Begin{
  \BlankLine
-\texttt{f1 $\longleftarrow$ vmap(lambda u, v: tensordot($\mathcal{L}_1$(u), v, axes=(1, 1),
+\texttt{f1 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot($\mathcal{L}_1$(u), v, axes=(1, 1),
       in\_axes=(1, 2), out\_axes=2))  \Comment{iterate through nodes} \;
 f2 $\longleftarrow$ vmap(f1, in\_axes=(0, None), out\_axes=0)  \;
 \bm{L}_1 $\longleftarrow$ f2($\bm \Phi_1$, $\bm \psi_1$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
-$\bm{\Gamma}_{1}$ $\longleftarrow$  einsum(isn,jskn$\rightarrow$ijk, $\bm \Phi_1$, $\bm{L}_1$) \;
+$\bm{\Gamma}_{1}$ $\longleftarrow$  jnp.einsum(isn,jskn$\rightarrow$ijk, $\bm \Phi_1$, $\bm{L}_1$) \;
 \BlankLine
-f3 $\longleftarrow$ vmap(lambda u, v: tensordot($\mathcal{L}_2$(u), v, axes=(1, 1),
+f3 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot($\mathcal{L}_2$(u), v, axes=(1, 1),
       in\_axes=(1, 2), out\_axes=2))  \Comment{iterate nodes} \;
 f4 $\longleftarrow$ vmap(f3, in\_axes=(0, None), out\_axes=0)  \;
 \bm{L}_2 $\longleftarrow$ f4($\bm \Phi_2$, $\bm \psi_2$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
-$\bm{\Gamma}_2$ $\longleftarrow$  einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\Phi}_{m1}$, $\bm{L}_2$, $\Delta_s$) $ \;
+$\bm{\Gamma}_2$ $\longleftarrow$  jnp.einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\Phi}_{m1}$, $\bm{L}_2$, $\Delta_s$) $ \;
 \BlankLine
 }
     }
@@ -1708,15 +1729,18 @@ $\bm{\Gamma}_2$ $\longleftarrow$  einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\Phi}_
 \label{alg:couplings}
 \end{algorithm}
 
-The new capabilities come at the expense of a higher restriction in the way the code is written. Compilation and transformations in JAX only work for functionally pure programs, which pushes the software to comply with a nonconventional functional paradigm. Some of these characteristics are pure functions, i.e. functions that have no side effects, input/output stream management needs to be placed outside the numerical algorithms, inmutability of arrays, and function composition, or the ability to create functions by chaining other callables. These very constraints allow to achieve the capabilities describe above via the many abstractions implemented internally in the library. An example of this restrictions is the effectively impossibility of jit-compile conventional for loops. 
+The new capabilities come at the expense of a higher restriction in the way the code is written. Compilation and transformations in JAX only work for functionally pure programs, which pushes the software to comply with a nonconventional functional paradigm. Some of these characteristics are pure functions, i.e. functions that have no side effects, input/output stream management needs to be placed outside the numerical algorithms, inmutability of arrays. These very constraints allow to achieve the capabilities describe above via the many abstractions implemented internally in the library. An example of this restrictions is the effectively impossibility of jit-compile conventional for loops. 
+[example of jax scan for]
 # The challenge after the algorithms have been implemented appropriately is to manage a generic software. Thus a mixed approach has been employed for this whereby numerical algorithms are written using functional programming but the flow of execution is managed using an object oriented approach that focus on modularity and extensibility.
-
+\\
 All the cases presented are part of a Test suite that has been built as a critical step for long term software management.
 They serve as a demonstration of the approach's ability to deal with geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved. Table \ref{table:benchmarks} introduces the cases that are discussed below with the improvements in performance from the new implementation.
 All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed.
 The old code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. These results convey the potential improvements in scientific software when paying attention to the implementation solely. Besides of this, it is also worth remarking the very short times in the solutions, which is also largely due to a formulation in modal space that naturally leads to reduced order models and easily caters for vectorised operations.
+[Table needs updating with GPUs performance and Nastran times]
 Six examples are presented, first three are static cases and the other three are dynamic cases with the last one being a time domain aeroelastic response to a gust.
-The model complexity is also augmenting starting with beams to then move to a representative aircraft of medium complexity, the so-called Sail Plane, and finally considering an industrial-scale aircraft, the XRF1 model. Note the longer dynamic simulation of the Sail Plane wing compared to the XRF1 gust response: despite i.e. more operations in the solution time step, driven the largest eigenvalue in the solution, was much smaller in the Sail Plane results 
+The model complexity is also augmenting starting with beam model to then move to a representative aircraft of medium complexity, the so-called Sail Plane, and finally considering an industrial-scale aircraft, the XRF1 model.
+Note the longer dynamic simulation of the Sail Plane wing compared to the XRF1 gust response: despite i.e. more operations in the solution time step, driven the largest eigenvalue in the solution, was much smaller in the Sail Plane results 
 #+begin_src latex
     \begin{table}[h!]
       \begin{center}
