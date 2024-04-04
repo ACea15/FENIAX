@@ -1,4 +1,5 @@
-#+TITLE: A Nonlinear Approach for Flexible Aircraft in Modern Hardware Architectures
+#+TITLE: Geometrically Nonlinear Analysis of Flexible Aircraft on Modern Hardware Architectures
+# #+TITLE: A Nonlinear Approach for Flexible Aircraft in Modern Hardware Architectures
 # #+TITLE: JAX-based Nonlinear Aeroelastic Simulation of Large Aircraft Models
 # #+TITLE: JAX-based Aeroelastic Framework for Nonlinear Analysis of Large Aircraft Models
 # #A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
@@ -51,9 +52,8 @@
 #+begin_abstract
 This paper presents a new implementation for time-domain nonlinear aeroelastic simulations built for performance and that is suitable for modern hardware architectures such as GPUs.
 The numerical library JAX and a novel description of the aircraft dynamics are brought together into a highly vectorised codebase that achieves two orders of magnitude accelerations compare to conventional implementations. This brings full-vehicle simulations to run close to if not in real-time, thus opening new possibilities for aircraft aeroelastic analysis which have traditionally been constrained to either linear, frequency domain solutions, or to their nonlinear counterparts but narrower in scope. Moreover, the approach seamlessly integrates with conventional aeroelastic load packages which facilitates the analysis of complex aircraft configurations.
-
 A large test suite of problems has been built for the validation and maintainability of the code, which includes static and dynamic, structural and aeroelastic examples. A summary is presented herein along side a computational benchmark on the CPUs and GPUs.
-The nonlinear trim and gust response of an industrial configuration are studied and used to illustrate the capabilities of the proposed approach. Verification against MSC Nastran is shown first for small deformations, to then highlight the main differences between linear and nonlinear analysis for very high loading scenarios that induce large displacements.
+The nonlinear trim and gust response of an industrial configuration are studied and illustrate the capabilities of the proposed approach. Verification against MSC Nastran is shown first for small deformations, to then highlight the main differences between linear and nonlinear analysis for very high loading scenarios that induce large displacements.
 #+end_abstract
 
 * House keeping  :noexport: 
@@ -1629,10 +1629,17 @@ Moreover, its extensible system of composable function transformations provides 
 \caption{\label{fig:JAX-overview} JAX capabilities for modern scientific computing}
 \end{figure}
 #+end_export
-Let us look at the tensor structure of the main components in the solution process which is illustrated in Fig. in the sequential order they are computed with a discretization that comprises $N_n$ number of condensed nodes, $N_m$ modes used in the reduced order model and $N_t$ time steps in the solution (if the problem is static, $N_t$ represents a ramping load stepping scheme): the intrinsic modes, $\Phi \in \mathbb{R}^{N_m \times 6 \times N_n}$ are computed from the eigenvalue solution and the coordinates $\bm X_a \in \mathbb{R}^{3 \times N_n}$ of the active nodes
-The nonlinear couplings, $\Gamma \in \mathbb{R}^{N_m \times N_m \times N_m}$ are calculated next, from which the system in Eq. \ref{eq2:sol_qs} is assembled and solved to yield the solution states $\bm q \in \mathbb{R}^{N_s \times N_t}$. Local velocities and internal forces,  $\bm X_{0,1,2} \in \mathbb{R}^{N_t \times 6 \times N_n}$ are computed as a product of the corresponding instrinsic modes and states, and their integration leads to the position tensor with similar structure.  
+The tensor structure of the main components in the solution process is illustrated in Fig. [[fig:tensors]] in the sequential order they are computed. The discretization of the problem comprises $N_n$ number of condensed nodes, $N_m$ modes used in the reduced order model and $N_t$ time steps in the solution (if the problem is static, $N_t$ represents a ramping load stepping scheme). The intrinsic modes, $\Phi, \Psi  \in \mathbb{R}^{N_m \times 6 \times N_n}$ are computed from the eigenvalue solution and the coordinates $\bm X_a \in \mathbb{R}^{3 \times N_n}$ of the active nodes. 
+The nonlinear couplings, $\Gamma \in \mathbb{R}^{N_m \times N_m \times N_m}$ are calculated next, from which the system in Eq. \ref{eq2:sol_qs} is assembled and solved to yield the solution states $\bm q \in \mathbb{R}^{N_s \times N_t}$. Local velocities and internal forces,  $\bm X_{1,2} \in \mathbb{R}^{N_t \times 6 \times N_n}$ are computed as a product of the corresponding instrinsic modes and states, and their integration leads to the position tensor with similar structure.
 
-An simplified version of the intrinsic modes algorithm is given in \ref{alg:modes}.  
+#+NAME: fig:tensors
+#+CAPTION: Main data components in the sequencial solution process
+#+ATTR_LATEX: :width 1\textwidth 
+[[file:figs/tensors.pdf]]
+
+An simplified version of the intrinsic modes algorithm is given in [[alg:modes]].  
+
+#+NAME: alg:modes
 \begin{algorithm}[h!]
 \DontPrintSemicolon
 \SetKwInOut{Input}{input}
@@ -1674,11 +1681,11 @@ $\bm{\psi}_2$ $\leftarrow$ - $\bm \phi_{1d} / \Delta_s + E_{\phi}$\;
 }
     }
 \caption{Intrinsic modal shapes implementation in JAX}
-\label{alg:modes}
 \end{algorithm}
 
-The various functions in the algorithm make heavy use of JAX $\texttt{vmap}$ function to vectorise the contraction and expansion operations. For instance, to yield the internal moments associated to each node due to the internal forces, the function \(\texttt{moment\_force}\) is cast as follows:
+The various functions in the algorithm make heavy use of JAX $\texttt{vmap}$ function to vectorise the contraction and expansion operations. For instance, to yield the internal moments associated to each node due to the internal forces, the function \(\texttt{moment\_force}\) is cast in [[alg:internalmoments]]:
 
+#+NAME: alg:internalmoments
 \begin{algorithm}[h!]
 % Set Function Names
 \SetKwFunction{FSum}{moment\_force}
@@ -1695,7 +1702,6 @@ f3 $\longleftarrow$ f2($\bm{\phi}_{2v}$, $\bm X_{3tilde}$)   \Comment{Nm$\times$
         \KwRet f3\;
   }
 \caption{Internal moments due to internal forces}
-\label{alg:internalmoments}
 \end{algorithm}
 
 The function created by $\texttt{vmap}$ loops the inputs through the axes specified in $\texttt{in\_axes}$, piping the resulting vector to the function given to $\texttt{vmap}$ as the first argument, and the outputs are saved across the axes given in $\texttt{out\_axes}$. 
@@ -1735,7 +1741,7 @@ The new capabilities come at the expense of a higher restriction in the way the 
 \\
 All the cases presented are part of a Test suite that has been built as a critical step for long term software management.
 They serve as a demonstration of the approach's ability to deal with geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved. Table \ref{table:benchmarks} introduces the cases that are discussed below with the improvements in performance from the new implementation.
-All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed.
+All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed. [update with GPUs]
 The old code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. These results convey the potential improvements in scientific software when paying attention to the implementation solely. Besides of this, it is also worth remarking the very short times in the solutions, which is also largely due to a formulation in modal space that naturally leads to reduced order models and easily caters for vectorised operations.
 [Table needs updating with GPUs performance and Nastran times]
 Six examples are presented, first three are static cases and the other three are dynamic cases with the last one being a time domain aeroelastic response to a gust.
