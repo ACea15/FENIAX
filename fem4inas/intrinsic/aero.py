@@ -21,7 +21,7 @@ class ModalAero(ABC):
     @abstractmethod
     def save_sol():
         ...
-        
+
 @Registry.register("AeroRoger")
 class AeroRoger(ModalAero):
 
