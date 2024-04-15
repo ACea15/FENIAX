@@ -19,7 +19,7 @@ import jax
 import fem4inas.systems.sollibs.diffrax as diffrax
 import fem4inas.systems.intrinsicSys as isys
 
-from jax.config import config; config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 import equinox
 
@@ -226,14 +226,14 @@ inp.fem.connectivity = dict(FuselageFront=['RWingInner',
                             Fin=None
                             )
 
-inp.fem.folder = pathlib.Path('/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/')
+inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.num_modes = 50
 inp.driver.typeof = "intrinsic"
 
 #inp.driver.sol_path = pathlib.Path(
 #    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    '/home/ac5015/programs/FEM4INAS/examples/SailPlane/resultsAD')
+    './resultsAD')
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
 inp.system.solution = "static"

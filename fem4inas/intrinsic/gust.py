@@ -4,6 +4,7 @@ import jax
 from fem4inas.intrinsic.utils import Registry
 import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
 import fem4inas.preprocessor.solution as solution
+from functools import partial
 
 class Shapes:
 
@@ -32,21 +33,25 @@ def _get_spanshape(shape):
     shape_span = getattr(Shapes, shape)
     return shape_span
 
+#@partial(jax.jit, static_argnames=['min_collocationpoints', 'max_collocationpoints'])
+#@jax.jit
 def _get_gustRogerMc(gust_intensity,
                      dihedral,
                      gust_shift,
                      gust_step,
                      simulation_time,
-                     collocation_points,
                      gust_length,
-                     u_inf):
+                     u_inf,
+                     min_collocationpoints,
+                     max_collocationpoints
+                     ):
 
     #
     gust_totaltime = gust_length / u_inf
-    xgust = jnp.arange(jnp.min(collocation_points[:,0]),
-                            jnp.max(collocation_points[:,0]) +
-                            gust_length + gust_step,
-                            gust_step)
+    xgust = jnp.arange(min_collocationpoints, #jnp.min(collocation_points[:,0]),
+                       max_collocationpoints +  #jnp.max(collocation_points[:,0]) +
+                       gust_length + gust_step,
+                       gust_step)
     time_discretization = (gust_shift + xgust) / u_inf
     if time_discretization[-1] < simulation_time[-1]:
         time = jnp.hstack([time_discretization,
@@ -59,9 +64,10 @@ def _get_gustRogerMc(gust_intensity,
                            time[0] - 1e-6,
                            time])
     ntime = len(time)
-    npanels = len(collocation_points)
-    return gust_totaltime, xgust, time, ntime, npanels
+    #npanels = len(collocation_points)
+    return gust_totaltime, xgust, time, ntime
 
+@partial(jax.jit, static_argnames=['fshape_span'])
 def _downwashRogerMc(u_inf,
                      gust_length,
                      gust_intensity,
@@ -104,6 +110,7 @@ def _downwashRogerMc(u_inf,
                                    normals)
     return gust, gust_dot, gust_ddot
 
+@jax.jit
 def _getGAFs(D0hat,  # NbxNm
              D1hat,         
              D2hat,         
@@ -157,19 +164,22 @@ class GustRogerMc(Gust):
         self.gust_shift = self.settings.aero.gust.shift
         # simulation_time = self.settings.t
         self.collocation_points = self.settings.aero.gust.collocation_points
+        self.npanels = len(self.collocation_points)
         self.dihedral = self.settings.aero.gust.panels_dihedral
         self.gust_length = self.settings.aero.gust.length
         self.gust_intensity = self.settings.aero.gust.intensity
         #
         (self.gust_totaltime, self.xgust, self.time,
-         self.ntime, self.npanels) = _get_gustRogerMc(self.gust_intensity,
-                                                      self.dihedral,
-                                                      self.gust_shift,
-                                                      self.gust_step,
-                                                      self.settings.t,
-                                                      self.collocation_points,
-                                                      self.gust_length,
-                                                      self.u_inf)
+         self.ntime) = _get_gustRogerMc(self.gust_intensity,
+                                        self.dihedral,
+                                        self.gust_shift,
+                                        self.gust_step,
+                                        self.settings.t,
+                                        self.gust_length,
+                                        self.u_inf,
+                                        jnp.min(self.collocation_points[:,0]),
+                                        jnp.max(self.collocation_points[:,0])
+                                                                          )
 
         self.fshape_span = _get_spanshape(self.settings.aero.gust.shape)
 

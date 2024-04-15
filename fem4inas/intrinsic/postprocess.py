@@ -221,7 +221,64 @@ def integrate_X3_t(carry, x):
     carry = jnp.concatenate([Cab, Cab0_x, ra_reshaped], axis=0)
     return carry, y
 
-def integrate_strains_t(ra_0n, Cab_0n, X3, fem, X_xdelta, C0ab):
+@partial(jax.jit, static_argnames=['config'])
+def integrate_strains_t(ra_0n, Cab_0n, X3, X_xdelta, C0ab, config):
+
+    # ds = sol.data.modes.X_xdelta
+    # C0ab = sol.data.modes.C0ab  # 3x3xNn
+    ds = X_xdelta
+    tn, _, num_nodes = X3.shape
+    # TODO: make as fori loop (or not cause it is not back differentiated)
+    Cab = jnp.zeros((tn, 3, 3, num_nodes))
+    ra = jnp.zeros((tn, 3, num_nodes))
+    comp_nodes = jnp.array(config.fem.component_nodes[config.fem.component_names[0]])[1:]
+    numcomp_nodes = len(comp_nodes)
+    Cab0_init = C0ab[:, :, 0]
+    init = jnp.concatenate([Cab_0n.transpose((1,2,0)),
+                            jnp.broadcast_to(Cab0_init, (tn, 3, 3)).transpose(1, 2, 0),
+                            ra_0n.reshape((tn, 3, 1)).T], axis=0)
+    ds_i = ds[comp_nodes]
+    ds_i = jnp.broadcast_to(ds_i, (tn, 3, numcomp_nodes)).T.reshape((numcomp_nodes, 3, 1, tn))
+    strains_i = X3[:, :3, comp_nodes].T.reshape((numcomp_nodes, 3, 1, tn))
+    kappas_i = X3[:, 3:, comp_nodes].T.reshape((numcomp_nodes, 3, 1, tn))
+    C0ab_i = C0ab[:, :, comp_nodes].transpose((2, 0, 1))
+    C0ab_i = jnp.broadcast_to(C0ab_i, (tn, numcomp_nodes, 3, 3)).transpose(1, 2, 3, 0)
+    xs = jnp.concatenate([C0ab_i, strains_i, kappas_i, ds_i], axis=2)
+    last_carry, Cra = jax.lax.scan(integrate_X3_t, init, xs)  # Ncnx4x3xNt
+    ra = ra.at[:, :, 0].set(ra_0n)
+    Cab = Cab.at[:, :, :, 0].set(Cab_0n)
+    ra = ra.at[:, :, comp_nodes].set(Cra[:, 3].transpose((2, 1, 0)))
+    Cab = Cab.at[:, :, :, comp_nodes].set(Cra[:, :3].transpose((3, 1, 2, 0)))
+
+    for ci in config.fem.component_names[1:]:
+
+        comp_father = config.fem.component_father[ci]
+        comp_nodes = jnp.array(config.fem.component_nodes[ci])
+        numcomp_nodes = len(comp_nodes)
+        if comp_father is None:
+            node_father = 0
+        else:
+            node_father = config.fem.component_nodes[comp_father][-1]
+        Cab_init = Cab[:, :, :, node_father]
+        Cab0_init = C0ab[:, :, node_father]
+        ra_init = ra[:, :, node_father]
+        init = jnp.concatenate([Cab_init.transpose((1,2,0)),
+                                jnp.broadcast_to(Cab0_init, (tn, 3, 3)).transpose(1, 2, 0),
+                                ra_init.reshape((tn, 3, 1)).T], axis=0)
+        ds_i = ds[comp_nodes]
+        ds_i = jnp.broadcast_to(ds_i, (tn, 3, numcomp_nodes)).T.reshape((numcomp_nodes, 3, 1, tn))
+        strains_i = X3[:, :3, comp_nodes].T.reshape((numcomp_nodes, 3, 1, tn))
+        kappas_i = X3[:, 3:, comp_nodes].T.reshape((numcomp_nodes, 3, 1, tn))
+        C0ab_i = C0ab[:, :, comp_nodes].transpose((2, 0, 1))
+        C0ab_i = jnp.broadcast_to(C0ab_i, (tn, numcomp_nodes, 3, 3)).transpose(1, 2, 3, 0)
+        xs = jnp.concatenate([C0ab_i, strains_i, kappas_i, ds_i], axis=2)
+        last_carry, Cra = jax.lax.scan(integrate_X3_t, init, xs)  # Ncnx4x3xNt
+        ra = ra.at[:, :, comp_nodes].set(Cra[:, 3].transpose((2, 1, 0)))
+        Cab = Cab.at[:, :, :, comp_nodes].set(Cra[:, :3].transpose((3, 1, 2, 0)))
+
+    return Cab, ra
+
+def integrate_strains_told(ra_0n, Cab_0n, X3, fem, X_xdelta, C0ab):
 
     # ds = sol.data.modes.X_xdelta
     # C0ab = sol.data.modes.C0ab  # 3x3xNn
@@ -276,4 +333,4 @@ def integrate_strains_t(ra_0n, Cab_0n, X3, fem, X_xdelta, C0ab):
         Cab = Cab.at[:, :, :, comp_nodes].set(Cra[:, :3].transpose((3, 1, 2, 0)))
 
     return Cab, ra
-        
+

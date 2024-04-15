@@ -22,7 +22,7 @@ import fem4inas.preprocessor.configuration as configuration  # import Config, du
 from fem4inas.preprocessor.inputs import Inputs
 import pathlib
 
-from jax.config import config; config.update("jax_enable_x64", True)
+jax.config.update("jax_enable_x64", True)
 
 import equinox
 
@@ -114,12 +114,14 @@ def main_20g11(alpha,
     # X2, X3, ra, Cab = recover_staticfields(q, tn, X, q2_index,
     #                                        phi2l, psi2l, X_xdelta, C0ab, config.fem)
     tn = len(q)
-    X1, X2, X3, ra, Cab = isys.recover_fields(q1,q2,
-                                              tn, X,
-                                              phi1l, phi2l,
-                                              psi2l, X_xdelta,
-                                              C0ab, config.fem)
-
+    # X1, X2, X3, ra, Cab = isys.recover_fields(q1,q2,
+    #                                           tn, X,
+    #                                           phi1l, phi2l,
+    #                                           psi2l, X_xdelta,
+    #                                           C0ab, config.fem)
+    X2, X3, ra, Cab = isys.recover_staticfields(q2, tn, X,
+                                           phi2l, psi2l, X_xdelta, C0ab, config.fem)
+    X1 = jnp.zeros_like(X2)
     objective = f_obj(X1=X1, X2=X2, X3=X3, ra=ra, Cab=Cab, **obj_args)
     return objective
 
@@ -170,9 +172,12 @@ F1, F1p  =fprime(1.,
                Ka=config.fem.Ka,
                Ma=config.fem.Ma,
                config=config,
-               f_obj=objectives.OBJ_X2,
-               obj_args=dict(node=1,
-                             component=2))
+               # f_obj=objectives.OBJ_X2,
+               # obj_args=dict(node=1,
+               #              component=2),
+               f_obj=objectives.OBJ_ra,
+                 obj_args=dict(node=23,
+                               component=2))
 
 F2, F2p  =fprime(0.5,
                #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),

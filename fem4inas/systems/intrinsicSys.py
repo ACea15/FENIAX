@@ -7,6 +7,7 @@ import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
 import fem4inas.preprocessor.solution as solution
 import fem4inas.intrinsic.initcond as initcond
 import fem4inas.intrinsic.args as libargs
+from functools import partial
 
 import jax.numpy as jnp
 import jax
@@ -24,8 +25,9 @@ def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
                               t_loads)
     return qs
 
+@partial(jax.jit, static_argnames=['config', 'tn'])
 def recover_fields(q1, q2, tn, X,
-                   phi1l, phi2l, psi2l, X_xdelta, C0ab, fem):
+                   phi1l, phi2l, psi2l, X_xdelta, C0ab, config):
 
     ra0 = jnp.broadcast_to(X[0], (tn, 3))
     Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
@@ -39,9 +41,10 @@ def recover_fields(q1, q2, tn, X,
     Cab, ra = postprocess.integrate_strains_t(ra0,
                                               Cab0,
                                               X3,
-                                              fem,
+                                              #fem,
                                               X_xdelta,
-                                              C0ab
+                                              C0ab,
+                                              config
                                               )
 
     return X1, X2, X3, ra, Cab

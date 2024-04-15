@@ -11,6 +11,7 @@ import pyNastran.op4.op4 as op4
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
+# WARNING: eigs need to be input as they are implicit in the aero matrices
 inp.fem.eig_type = "input_memory"
 inp.fem.eigenvals = jnp.load("./FEM/Dreal50.npy")
 inp.fem.eigenvecs = jnp.load("./FEM/Vreal50.npy").T

@@ -40,16 +40,24 @@ class Dfiles(DataContainer):
 @dataclass(frozen=True, kw_only=True)
 class DGust(DataContainer):
     intensity: float
+    u_inf: float
+    simulation_time: jnp.array
     
 @dataclass(frozen=True, kw_only=True)
 class DGustMc(DGust):
+    u_inf: float = dfield("", default=None)
+    simulation_time: jnp.array = dfield("", default=None)
     intensity: float = dfield("", default=None)
     step: float = dfield("", default=None)
     length: float = dfield("", default=None)
-    shift: float = dfield("", default=None)
+    shift: float = dfield("", default=0.)
     panels_dihedral: str | jnp.ndarray = dfield("", default=None)
     collocation_points: str | jnp.ndarray = dfield("", default=None)
     shape: str = dfield("", default="const")
+    totaltime: float = dfield("", init=False)
+    x: jnp.array = dfield("", init=False)
+    time: jnp.array = dfield("", init=False)
+    ntime: int = dfield("", init=False)
     
     def __post_init__(self):
 
@@ -59,7 +67,59 @@ class DGustMc(DGust):
         if isinstance(self.collocation_points, (str, pathlib.Path)):
             object.__setattr__(self, "collocation_points",
                                jnp.load(self.collocation_points))
-    
+        gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(self.intensity,
+                                                                          self.panels_dihedral,
+                                                                          self.shift,
+                                                                          self.step,
+                                                                          self.simulation_time,
+                                                                          self.length,
+                                                                          self.u_inf,
+                                                                          jnp.min(self.collocation_points[:,0]),
+                                                                          jnp.max(self.collocation_points[:,0])
+                                                                          )
+        object.__setattr__(self, "totaltime",
+                           gust_totaltime)
+        object.__setattr__(self, "x",
+                           xgust)
+        object.__setattr__(self, "time",
+                           time)
+        object.__setattr__(self, "ntime",
+                           ntime)        
+        #del self.simulation_time
+        
+    def _set_gustDiscretization(self,
+                                gust_intensity,
+                                dihedral,
+                                gust_shift,
+                                gust_step,
+                                simulation_time,
+                                gust_length,
+                                u_inf,
+                                min_collocationpoints,
+                                max_collocationpoints
+                                ):
+
+        #
+        gust_totaltime = gust_length / u_inf
+        xgust = jnp.arange(min_collocationpoints, #jnp.min(collocation_points[:,0]),
+                           max_collocationpoints +  #jnp.max(collocation_points[:,0]) +
+                           gust_length + gust_step,
+                           gust_step)
+        time_discretization = (gust_shift + xgust) / u_inf
+        if time_discretization[-1] < simulation_time[-1]:
+            time = jnp.hstack([time_discretization,
+                                    time_discretization[-1] + 1e-6,
+                                    simulation_time[-1]])
+        else:
+            time = time_discretization
+        if time[0] != 0.:
+            time = jnp.hstack([0.,
+                               time[0] - 1e-6,
+                               time])
+        ntime = len(time)
+        #npanels = len(collocation_points)
+        return gust_totaltime, xgust, time, ntime
+
 @dataclass(frozen=True, kw_only=True)
 class DController(DataContainer):
     intensity: float
@@ -71,6 +131,7 @@ class Daero(DataContainer):
     rho_inf: float = dfield("", default=None)
     q_inf: float = dfield("", init=False)
     c_ref: float = dfield("", default=None)
+    time: jnp.array = dfield("", default=None)    
     qalpha: jnp.ndarray = dfield("", default=None)
     qx: jnp.ndarray = dfield("", default=None)
     #
@@ -105,7 +166,8 @@ class Daero(DataContainer):
         if self.gust is not None:
             gust_class = globals()[f"DGust{self.gust_profile.capitalize()}"]
             object.__setattr__(self, 'gust',
-                               initialise_Dclass(self.gust, gust_class))
+                               initialise_Dclass(self.gust, gust_class, u_inf=self.u_inf,
+                                                 simulation_time=self.time))
         if self.controller_name is not None:
             controller_class = globals()[f"DController{self.controller_name.upper()}"]
             controller_obj = initialise_Dclass(self.controller_settings, controller_class)
@@ -543,7 +605,7 @@ class Dsystem(DataContainer):
                                                              Dxloads))
         if self.aero is not None:
             object.__setattr__(self, 'aero', initialise_Dclass(self.aero,
-                                                               Daero))
+                                                               Daero, time=self.t))
         #self.xloads = initialise_Dclass(self.xloads, Dxloads)
         libsettings_class = globals()[f"D{self.solver_library}{self.solver_function.capitalize()}"]
         object.__setattr__(self,
