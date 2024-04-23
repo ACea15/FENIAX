@@ -1,0 +1,5 @@
+TITLE = "Reduced Structural Grid"
+VARIABLES = "x" "y" "z" "id" "familynum" "forcenode" "displnode" "body"
+ZONE T="Structural nodes" I=2 , J=1, K=1, F=POINT
+0.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 2 1 1 1 1
+1.000000000000000e+00 0.000000000000000e+00 0.000000000000000e+00 1 1 1 1 1
