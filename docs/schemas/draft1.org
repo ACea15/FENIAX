@@ -640,13 +640,13 @@ derivatives
 - options
 
 * System based solutions 
-| Type        | Target | Gravity    | BC1        | ModalAero | SteadyAero   | UnsteadyAero | Point loads | q0 approx | Nonlinearities         | residualised |
-|-------------+--------+------------+------------+-----------+--------------+--------------+-------------+-----------+------------------------+--------------|
-| 1 static    | Level  | False: "g" | Clamped    | None      | None         | None         | None        | via q2    | All -> ""              | None -> ""   |
-| 2 Dynamic   | TRIM   | True: "G"  | Free       | Rogers    | qalpha       | gust         | follower    | via q1    | Linear sys -> "l"      | True -> "r"  |
-| 3 Stability |        |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           | Linear sys+disp -> "L" |              |
-| 4 Multibody |        |            |            |           |              |              |             |           |                        |              |
-| 5 Control   |        |            |            |           |              |              |             |           |                        |              |
+| Type        | Target | Gravity    | BC1        | ModalAero | SteadyAero   | UnsteadyAero | Point loads | q0 approx | Rigid-body           | Nonlinearities         | residualised |
+|-------------+--------+------------+------------+-----------+--------------+--------------+-------------+-----------+----------------------+------------------------+--------------|
+| 1 static    | Level  | False: "g" | Clamped    | None      | None         | None         | None        | via q2    | 1-quaternion+strains | All -> ""              | None -> ""   |
+| 2 Dynamic   | TRIM   | True: "G"  | Free       | Rogers    | qalpha       | gust         | follower    | via q1    | All-quaternions      | Linear sys -> "l"      | True -> "r"  |
+| 3 Stability |        |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
+| 4 Multibody |        |            |            |           |              |              |             |           |                      |                        |              |
+| 5 Control   |        |            |            |           |              |              |             |           |                      |                        |              |
 
 | Sol name |                                                 | label                 | Imp |
 |----------+-------------------------------------------------+-----------------------+-----|

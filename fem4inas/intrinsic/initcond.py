@@ -26,7 +26,8 @@ def init_X2(modes, X2i: jnp.ndarray,
     return q2
 
 
-mapper = dict(velocity=init_X1,
+
+mapper = dict(velocity=init_X1, # given a velocity field, and phi1, output q10s
               force=init_X2,
               displacement=None) #Placeholder
 

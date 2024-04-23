@@ -196,6 +196,30 @@ def coordinate_transform(u1: jnp.ndarray,
     fuv = f(u1, v1)
     return fuv
 
+@partial(jit, static_argnames=["num_nx", "num_ny"])
+#@jit
+def reshape_field(phi: jnp.ndarray,
+                  num_nx: int,
+                  num_ny: int):
+    """Reshapes vectors in the input matrix to form a 3rd-order tensor 
+
+    Each vector is made into a 6xNn matrix
+
+    Parameters
+    ----------
+    _phi : jnp.ndarray
+        Matrix as in the output of eigenvector analysis (6NnxNm)
+    num_modes : int
+        Number of modes
+    num_nodes : int
+        Number of nodes
+
+
+    """
+    
+    phi = jnp.reshape(phi, (num_ny, 6, num_nx), order="C")
+    return phi.T
+
 def label_generator(label_table: list):
 
     prime_numbers = [2, 3, 5, 7, 11, 13,

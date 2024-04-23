@@ -24,7 +24,7 @@ inp.systems.sett.s1.solver_library = "diffrax"
 inp.systems.sett.s1.solver_function = "newton_raphson"
 inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                            atol=1e-6,
-                                           max_steps=50,
+                                           max_steps=100,
                                            norm="linalg_norm",
                                            kappa=0.01)
 
@@ -34,14 +34,20 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 #                                             tolerance=1e-9)
 #inp.systems.sett.s1.label = 'dq_00101'
 inp.systems.sett.s1.xloads.dead_forces = True
+inp.systems.sett.s1.xloads.gravity_forces = True
 inp.systems.sett.s1.xloads.dead_points = [[9, 2], [18, 2]]
 inp.systems.sett.s1.xloads.x = [0, 1, 2]
 inp.systems.sett.s1.xloads.dead_interpolation = [[0, 0.85 / 2, 0.85],
                                                  [0, 1.35 / 2, 1.35]
                                                  ]
-inp.systems.sett.s1.t = [1, 2]
+inp.systems.sett.s1.t = jnp.linspace(0,2,21)
 
 config = configuration.Config(inp)
+
+# config.systems.mapper['s1'].xloads.build_gravity(config.fem.Ma, config.fem.Mfe_order)
+
+# config.systems.mapper['s1'].xloads.build_point_dead(config.fem.num_nodes)
+# config.systems.mapper['s1'].xloads.force_dead
 
 sol = fem4inas.fem4inas_main.main(input_obj=config)
 

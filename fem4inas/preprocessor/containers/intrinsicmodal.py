@@ -7,7 +7,7 @@ import pandas as pd
 from fem4inas.preprocessor.utils import dfield, initialise_Dclass, load_jnp
 from fem4inas.preprocessor.containers.data_container import DataContainer
 import fem4inas.intrinsic.geometry as geometry
-from fem4inas.intrinsic.functions import coordinate_transform, label_generator
+from fem4inas.intrinsic.functions import coordinate_transform, label_generator, reshape_field
 import jax
 from enum import Enum
 import math
@@ -167,11 +167,13 @@ class Dxloads(DataContainer):
         [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]",
         default=None,
     )
-
+    
     gravity: float = dfield("gravity force [m/s]",
                             default=9.807)
     gravity_vect: jnp.ndarray = dfield("gravity vector",
                                        default=jnp.array([0, 0, -1]))
+    # gravity_steps: int = dfield("steps in which gravity is applied in trim simulation",
+    #                                    default=1) manage by t
     # label: str = dfield("""Description of the loading type:
     # '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
     #                     init=False)
@@ -211,6 +213,31 @@ class Dxloads(DataContainer):
                 force_dead = force_dead.at[li, dim, fnode].set(
                     self.dead_interpolation[fi][li])
         object.__setattr__(self, "force_dead", force_dead)
+        #return self.force_dead
+
+    def build_gravity(self, Ma, Mfe_order):
+
+        num_nodes = Mfe_order.shape[1] // 6
+        num_nodes_out = Mfe_order.shape[0] // 6
+        if self.x is not None and len(self.x) > 1:
+            len_x = len(self.x)
+        else:
+            len_x = 2
+        # force_gravity = jnp.zeros((2, 6, num_nodes))
+        gravity = self.gravity * self.gravity_vect
+        gravity_field = jnp.hstack([jnp.hstack([gravity, 0., 0., 0.])] * num_nodes)
+        _force_gravity = jnp.matmul(Mfe_order, gravity_field)
+        gravity_interpol = jnp.vstack([xi * _force_gravity for xi in
+                                      jnp.linspace(0, 1, len_x)]).T
+        force_gravity = reshape_field(gravity_interpol, len_x, num_nodes_out)  # Becomes  (len_x, 6, Nn)
+        # num_forces = len(self.dead_interpolation)
+        # for li in range(num_interpol_points):
+        #     for fi in range(num_forces):
+        #         fnode = self.dead_points[fi][0]
+        #         dim = self.dead_points[fi][1]
+        #         force_dead = force_dead.at[li, dim, fnode].set(
+        #             self.dead_interpolation[fi][li])
+        object.__setattr__(self, "force_gravity", force_gravity)
         #return self.force_dead
 
 # @dataclass(frozen=True)
@@ -463,6 +490,11 @@ class Dsystem(DataContainer):
         proportional gain to q2 or  integration of velocities q1
         can be used to obtain this.""", default=2,
         options=[2, 1])
+    rb_treatment: int = dfield(
+        """Rigid-body treatment: 1 to use the first node quaternion to track the body
+        dynamics (integration of strains thereafter; 2 to use quaternions at every node.)""",
+        default=1,
+        options=[1, 2])    
     nonlinear: bool = dfield(
         """whether to include the nonlinear terms in the eqs. (Gammas)
         and in the integration""", default=1,
@@ -490,9 +522,11 @@ class Dsystem(DataContainer):
         if self.t is not None:
             object.__setattr__(self, "t1",
                                self.t[-1])
-
-            object.__setattr__(self, "dt", self.t[1] - self.t[0])
-            object.__setattr__(self, "tn", len(self.t))
+            if (len_t := len(self.t)) < 2:
+                object.__setattr__(self, "dt", 0.)
+            else:
+                object.__setattr__(self, "dt", self.t[1] - self.t[0])
+            object.__setattr__(self, "tn", len_t)
         else:
             if self.dt is not None and self.tn is not None:
                 object.__setattr__(self, "t1",
@@ -521,7 +555,7 @@ class Dsystem(DataContainer):
         if self.label is None:
             self.build_label()
             
-    def build_states(self, num_modes):
+    def build_states(self, num_modes, num_nodes):
 
         tracker = StateTrack()
         # TODO: keep upgrading/ add residualise
@@ -535,13 +569,18 @@ class Dsystem(DataContainer):
                 tracker.update(ql=self.aero.num_poles * num_modes)
             if self.q0treatment == 1:
                 tracker.update(q0=num_modes)
+            if self.bc1.lower() is not "clamped":
+                if self.rb_treatment == 1:
+                    tracker.update(qr=4)
+                elif self.rb_treatment == 2:
+                    tracker.update(qr=4*num_nodes)
         # if self.solution == "static":
         #     state_dict.update(m, kwargs)
         object.__setattr__(self, "states", tracker.states
                            )
         object.__setattr__(self, "num_states", tracker.num_states
                            )
-        
+
     def build_label(self):
         # WARNING: order dependent for the label
         lmap = dict()

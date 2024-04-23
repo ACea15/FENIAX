@@ -33,16 +33,26 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             self.q0 = jnp.zeros(self.settings.num_states)
             if self.settings.init_states is not None:
                 for k, v in self.settings.init_states.items():
-                    if callable(v[0]):
-                        init_f = v[0]
+                    if type(v[0]) == "str" and v[0].lower == "prescribed":
+                        qi0 = jnp.array(v[1])
+                        assert len(qi0) == len(self.settings.states[k]), f"error prescribed {k} length"
                     else:
-                        init_f = getattr(initcond.Container, v[0])
-                    x = init_f(*v[1], fem=self.fem) #6xNn inputs to approx.
-                    # function to calculate qs
-                    init_x = initcond.mapper[self.settings.init_mapper[k]]
-                    sol_lstsq = init_x(self.sol.data.modes, x)
-                    qi0 = sol_lstsq[0] # TODO: save to sol
+                        if callable(v[0]):
+                            init_f = v[0]
+                        else:
+                            init_f = getattr(initcond.Container, v[0])
+                        x = init_f(*v[1], fem=self.fem) #6xNn inputs to approx (e.g. a velocity field).
+                        # function to calculate qs
+                        init_x = initcond.mapper[self.settings.init_mapper[k]]
+                        sol_lstsq = init_x(self.sol.data.modes, x)
+                        qi0 = sol_lstsq[0] # TODO: save to sol
                     self.q0 = self.q0.at[self.settings.states[k]].set(qi0)
+            if 'qr' in list(self.settings.states.keys()):
+                if (self.settings.init_states is None or
+                    'qr' not in self.settings.init_states.keys()): # set rotational quaternions
+                    # if they have not been set before
+                    jnp.hstack([jnp.array([1., 0., 0., 0.])] *
+                               (len(self.settings.states['qr']) // 4))
         else:
             self.q0 = q0
 
@@ -53,6 +63,9 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         if self.settings.xloads.dead_forces:
             self.settings.xloads.build_point_dead(
                 self.fem.num_nodes)
+        if self.settings.xloads.gravity_forces:
+            self.settings.xloads.build_gravity(self.fem.Ma,
+                                               self.fem.Mfe_order)
         if self.settings.aero is not None:
             import fem4inas.intrinsic.aero as aero            
             approx = self.settings.aero.approx.capitalize()
@@ -72,7 +85,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
                 gustobj.set_solution(self.sol, self.settings.name)
 
     def set_states(self):
-        self.settings.build_states(self.fem.num_modes)
+        self.settings.build_states(self.fem.num_modes, self.fem.num_nodes)
 
     def set_solver(self):
 

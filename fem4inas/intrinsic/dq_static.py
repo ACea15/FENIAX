@@ -48,6 +48,31 @@ def dq_10g121(q, *args):
     F = _dq_10g121(q)
     return F
 
+def dq_10G121(q, *args):
+    """Structural static with dead point forces and gravity."""
+    
+    (gamma2, omega, phi1l, psi2l,
+     x, force_dead, force_gravity,
+     X_xdelta,
+     C0ab,
+     component_names, num_nodes,
+     component_nodes, component_father, t) = args[0]
+    #@jax.jit
+    def _dq_10g121(q2):
+        X3t = postprocess.compute_strains_t(psi2l, q2)
+        Rab = postprocess.integrate_strainsCab(
+            jnp.eye(3), X3t,
+            X_xdelta, C0ab,
+            component_names,
+            num_nodes,
+            component_nodes,
+            component_father)
+        F = omega * q2 - common.contraction_gamma2(gamma2, q2)
+        F += xloads.eta_pointdead(t, phi1l, x, force_dead + force_gravity, Rab)
+        return F
+    F = _dq_10g121(q)
+    return F
+
 
 def dq_10g15(q, *args):
     """Manoeuvre under qalpha."""
@@ -63,9 +88,15 @@ def dq_10g15(q, *args):
 
 def dq_10g150(q, *args):
     """Static trim"""
-    
-    (gamma2, omega,
-     qalpha, A0, B0) = args[0]
+
+    (gamma2, omega, phi1l, psi2l,
+     x, force_dead,
+     X_xdelta,
+     C0ab,
+     component_names, num_nodes,
+     component_nodes, component_father, t,
+     A0, B0, states) = args[0]
+
     qalpha = q[states['qalpha']]
     qplunged = q[states['qplunged']]
     qh = q[states['qh']]
@@ -75,4 +106,5 @@ def dq_10g150(q, *args):
     F = omega * q2 - common.contraction_gamma2(gamma2, q2)
     F += xloads.eta_steadyaero(q0, A0)
     F += xloads.eta_control(qe, B0)
+    
     return F
