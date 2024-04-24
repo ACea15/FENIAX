@@ -60,11 +60,11 @@ class DGustMc(DGust):
         if isinstance(self.collocation_points, (str, pathlib.Path)):
             object.__setattr__(self, "collocation_points",
                                jnp.load(self.collocation_points))
-    
+
 @dataclass(frozen=True, kw_only=True)
 class DController(DataContainer):
     intensity: float
-    
+
 @dataclass(frozen=True)
 class Daero(DataContainer):
 
@@ -238,7 +238,6 @@ class Dxloads(DataContainer):
         #         force_dead = force_dead.at[li, dim, fnode].set(
         #             self.dead_interpolation[fi][li])
         object.__setattr__(self, "force_gravity", force_gravity)
-        #return self.force_dead
 
 # @dataclass(frozen=True)
 # class Dgeometry:

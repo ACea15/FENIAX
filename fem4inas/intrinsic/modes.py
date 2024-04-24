@@ -293,19 +293,22 @@ def scale(phi1: jnp.ndarray,
     alpha2 = couplings.f_alpha2(phi2l, psi2l, X_xdelta)
     num_modes = len(alpha1)
     # Broadcasting in division
-    phi1 /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
-    psi1 /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
-    phi1l /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
-    phi1ml /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
-    psi1l /= jnp.sqrt(alpha1.diagonal()).reshape(num_modes, 1, 1)
-    phi2 /= jnp.sqrt(alpha2.diagonal()).reshape(num_modes, 1, 1)
-    phi2l /= jnp.sqrt(alpha2.diagonal()).reshape(num_modes, 1, 1)
-    psi2l /= jnp.sqrt(alpha2.diagonal()).reshape(num_modes, 1, 1)
+    alpha1_diagonal = alpha1.diagonal()
+    alpha2_diagonal = alpha2.diagonal()
+    # filter for rigid-body modes
+    alpha2d_filtered = jnp.where(alpha2_diagonal>1e-4, alpha2_diagonal, 1.)
+    phi1 /= jnp.sqrt(alpha1_diagonal).reshape(num_modes, 1, 1)
+    psi1 /= jnp.sqrt(alpha1_diagonal).reshape(num_modes, 1, 1)
+    phi1l /= jnp.sqrt(alpha1_diagonal).reshape(num_modes, 1, 1)
+    phi1ml /= jnp.sqrt(alpha1_diagonal).reshape(num_modes, 1, 1)
+    psi1l /= jnp.sqrt(alpha1_diagonal).reshape(num_modes, 1, 1)
+    phi2 /= jnp.sqrt(alpha2d_filtered).reshape(num_modes, 1, 1)
+    phi2l /= jnp.sqrt(alpha2d_filtered).reshape(num_modes, 1, 1)
+    psi2l /= jnp.sqrt(alpha2d_filtered).reshape(num_modes, 1, 1)
 
     return (phi1, psi1, phi2,
             phi1l, phi1ml, psi1l, phi2l, psi2l,
             omega, X_xdelta, C0ab, C06ab)
-
 
 def check_alphas(phi1, psi1,
                  phi2l, psi2l,
@@ -315,11 +318,19 @@ def check_alphas(phi1, psi1,
 
     alpha1 = couplings.f_alpha1(phi1, psi1)
     alpha2 = couplings.f_alpha2(phi2l, psi2l, X_xdelta)
+    alpha2_diagonal = alpha2.diagonal()
+    # filter for rigid-body modes
+    alpha2d_filtered = jnp.where(jnp.abs(alpha2_diagonal) > 1e-4,
+                                 alpha2_diagonal, 1.)
+    alpha2_new = jnp.fill_diagonal(alpha2,
+                                   alpha2d_filtered,
+                                   inplace=False)
     num_modes = len(alpha1)
-    assert jnp.allclose(alpha1, jnp.eye(num_modes),
+    Inm = jnp.eye(num_modes)
+    assert jnp.allclose(alpha1, Inm,
                         **tolerance), \
         f"Alpha1 not equal to Identity: Alpha1: {alpha1}"
-    assert jnp.allclose(alpha2, jnp.eye(num_modes),
+    assert jnp.allclose(alpha2_new, Inm,
                         **tolerance), \
         f"Alpha2 not equal to Identity: Alpha2: {alpha2}"
     return alpha1, alpha2

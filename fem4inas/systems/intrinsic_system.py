@@ -122,7 +122,26 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             self.q0 = jnp.zeros(self.fem.num_modes)
         else:
             self.q0 = q0
-            
+
+    def set_xloading(self):
+        if self.settings.xloads.follower_forces:
+            self.settings.xloads.build_point_follower(
+                self.fem.num_nodes, self.sol.data.modes.C06ab)
+        if self.settings.xloads.dead_forces:
+            self.settings.xloads.build_point_dead(
+                self.fem.num_nodes)
+        if self.settings.xloads.gravity_forces:
+            self.settings.xloads.build_gravity(self.fem.Ma,
+                                               self.fem.Mfe_order)
+        if self.settings.aero is not None:
+            import fem4inas.intrinsic.aero as aero            
+            approx = self.settings.aero.approx.capitalize()
+            aeroobj = aero.Registry.create_instance(f"Aero{approx}",
+                                                    self.settings,
+                                                    self.sol)
+            aeroobj.get_matrices()
+            aeroobj.save_sol()
+
     def set_system(self):
 
         label = self.settings.label
@@ -200,6 +219,35 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             self.sol.save_container('StaticSystem', label="_"+self.name)
 
 class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
+
+    def set_xloading(self):
+        if self.settings.xloads.follower_forces:
+            self.settings.xloads.build_point_follower(
+                self.fem.num_nodes, self.sol.data.modes.C06ab)
+        if self.settings.xloads.dead_forces:
+            self.settings.xloads.build_point_dead(
+                self.fem.num_nodes)
+        if self.settings.xloads.gravity_forces:
+            self.settings.xloads.build_gravity(self.fem.Ma,
+                                               self.fem.Mfe_order,
+                                               )
+        if self.settings.aero is not None:
+            import fem4inas.intrinsic.aero as aero            
+            approx = self.settings.aero.approx.capitalize()
+            aeroobj = aero.Registry.create_instance(f"Aero{approx}",
+                                                    self.settings,
+                                                    self.sol)
+            aeroobj.get_matrices()
+            aeroobj.save_sol()
+            if self.settings.aero.gust is not None:
+                import fem4inas.intrinsic.gust as gust
+                profile = self.settings.aero.gust_profile.capitalize()
+                gustobj = gust.Registry.create_instance(f"Gust{approx}{profile}",
+                                                        self.settings,
+                                                        self.sol)
+                gustobj.calculate_normals()
+                gustobj.calculate_downwash()
+                gustobj.set_solution(self.sol, self.settings.name)
 
     def set_system(self):
         
