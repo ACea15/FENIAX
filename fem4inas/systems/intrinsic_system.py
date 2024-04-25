@@ -51,8 +51,9 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
                 if (self.settings.init_states is None or
                     'qr' not in self.settings.init_states.keys()): # set rotational quaternions
                     # if they have not been set before
-                    jnp.hstack([jnp.array([1., 0., 0., 0.])] *
-                               (len(self.settings.states['qr']) // 4))
+                    qr0 = jnp.hstack([jnp.array([1., 0., 0., 0.])] *
+                                     (len(self.settings.states['qr']) // 4))
+                    self.q0 = self.q0.at[self.settings.states['qr']].set(qr0)
         else:
             self.q0 = q0
 
