@@ -46,6 +46,32 @@ def velocity_ra():
 def strains_ra():
     ...
 
+def integrate_node0(X1, dt, ra_n0, Rab_n0):
+
+    v_average = (X1[: -1, :3] + X1[1:, :3]) / 2
+    theta_average = (X1[:-1,3:6] + X1[1:,3:6]) / 2 * dt
+    theta_norm = jnp.linalg.norm(theta_average, axis=1)
+    theta = jnp.hstack([theta_average,
+                        theta_norm.reshape((theta_norm.shape[0], 1)),
+                        v_average])
+    init = jnp.vstack([Rab_n0, ra_n0])
+    def integrate(carry, x):
+
+        thetai_average = x[:3]
+        thetai_norm = x[3]
+        vi_average = x[4:]
+        Rab0 = carry[:3]
+        ra0 = carry[3]
+        Rab1 = Rab0 @ H0(thetai_norm, thetai_average)
+        ra1 = ra0 + Rab0 @ H1(thetai_norm, thetai_average, dt) @ vi_average
+        out = jnp.vstack([Rab1, ra1])
+        return out, out
+
+    last_carry, y = jax.lax.scan(integrate, init, theta)
+    Rab = jnp.vstack([Rab_n0.reshape((1,3,3)), y[:, :3]])
+    ra = jnp.vstack([ra_n0, y[:,3]])
+    return Rab, ra
+
 def integrate_X3Cab(carry, x):
 
     Cab0_x = x[:, :3]
@@ -275,4 +301,3 @@ def integrate_strains_t(ra_0n, Cab_0n, X3, sol, fem):
         Cab = Cab.at[:, :, :, comp_nodes].set(Cra[:, :3].transpose((3, 1, 2, 0)))
 
     return Cab, ra
-        

@@ -69,6 +69,19 @@ config =  configuration.Config(inp)
 sol = fem4inas.fem4inas_main.main(input_obj=config)
 #time2 = time.time()
 
+import fem4inas.plotools.uplotly as uplotly
+import fem4inas.plotools.utils as putils
+
+x, y = putils.pickIntrinsic2D(sol.dynamicsystem_s1.t,
+                              sol.dynamicsystem_s1.ra,
+                              fixaxis2=dict(node=-1, dim=0))
+fig=None
+fig = uplotly.lines2d(x,y, fig,
+                      dict(name="NMROM",
+                           line=dict(color="navy")
+                           ))
+fig.show()
+
 # from functools import partial
 # import jax
 # @partial(jax.jit, static_argnums=1)

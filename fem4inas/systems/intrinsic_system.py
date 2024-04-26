@@ -307,15 +307,24 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
         # q1 = qs[self.settings.q1_index, :]
         # q2 = qs[self.settings.q2_index, :]
-        tn = len(self.qs)
-        ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
-        Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
         X1 = postprocess.compute_velocities(self.sol.data.modes.phi1l,
                                             self.qs[:, self.settings.states['q1']])
         X2 = postprocess.compute_internalforces(self.sol.data.modes.phi2l,
                                                 self.qs[:, self.settings.states['q2']])
         X3 = postprocess.compute_strains(self.sol.data.modes.psi2l,
-                                         self.qs[:, self.settings.states['q2']])
+                                         self.qs[:, self.settings.states['q2']])        
+        if self.settings.bc1.lower() == "clamped":
+            tn = len(self.qs)
+            ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
+            Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
+        else:
+            if self.settings.rb_treatment == 1:
+                ra_n0 = self.fem.X[0]
+                Rab_n0 = jnp.eye(3)
+                Cab0, ra0 = postprocess.integrate_node0(X1[:, :, 0],
+                                                        self.settings.dt,
+                                                        ra_n0,
+                                                        Rab_n0)
         Cab, ra = postprocess.integrate_strains_t(ra0,
                                                   Cab0,
                                                   X3,

@@ -568,7 +568,7 @@ class Dsystem(DataContainer):
                 tracker.update(ql=self.aero.num_poles * num_modes)
             if self.q0treatment == 1:
                 tracker.update(q0=num_modes)
-            if self.bc1.lower() is not "clamped":
+            if self.bc1.lower() != "clamped":
                 if self.rb_treatment == 1:
                     tracker.update(qr=4)
                 elif self.rb_treatment == 2:
