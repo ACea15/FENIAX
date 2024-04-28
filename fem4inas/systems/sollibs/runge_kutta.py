@@ -2,7 +2,7 @@ import jax.numpy as jnp
 from functools import partial
 import jax
 
-@partial(jax.jit, static_argnames=['f'])
+#@partial(jax.jit, static_argnames=['f'])
 def rk4(ys, dt, N, f, args):
 
     @jax.jit
@@ -13,8 +13,11 @@ def rk4(ys, dt, N, f, args):
         k1 = f(t, ys0, args)
         #jax.debug.print("k1: {}", k1)        
         k2 = f(t + 0.5 * h, ys0 + 0.5 * k1 * h, args)
+        #jax.debug.print("k2: {}", k2)        
         k3 = f(t + 0.5 * h, ys0 + 0.5 * k2 * h, args)
+        #jax.debug.print("k3: {}", k3)        
         k4 = f(t + h, ys0 + k3 * h, args)
+        #jax.debug.print("k4: {}", k4)        
         ysi = ys0 + 1./6 * (k1 + 2 * k2 + 2 * k3 + k4) * h
         ys = ys.at[i].set(ysi)
         #jax.debug.breakpoint()

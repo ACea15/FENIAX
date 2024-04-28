@@ -206,8 +206,9 @@ def shapes(X: jnp.ndarray,
     C06ab = make_C6(C0ab)  # shape=(6x6xNn)
     #eigenvals, eigenvecs = compute_eigs(Ka, Ma, num_modes)
     #eigenvals, eigenvecs = compute_eigs_scpy(Ka, Ma, num_modes)
-    #eigenvals, eigenvecs = compute_eigs_load(num_modes)    
-    omega = jnp.sqrt(eigenvals)
+    #eigenvals, eigenvecs = compute_eigs_load(num_modes)
+    # TODO: make this dependant on config rigid modes
+    omega = jnp.where(eigenvals < 1e-2, 0., jnp.sqrt(eigenvals))
     # reorder to the grid coordinate in X and add 0s of clamped DoF
     _phi1 = jnp.matmul(config.fem.Mfe_order, eigenvecs, precision=precision)
     phi1 = reshape_modes(_phi1, num_modes, num_nodes)  # Becomes  (Nm, 6, Nn)

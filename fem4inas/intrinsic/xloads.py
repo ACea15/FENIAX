@@ -181,9 +181,9 @@ def eta_manoeuvre(qalpha: jnp.ndarray,
     return eta
 
 @jax.jit
-def eta_control(qh, B0hat: jnp.ndarray):
+def eta_controls(qx, B0hat: jnp.ndarray):
 
-    eta = B0hat @ qh
+    eta = B0hat @ qx
     return eta
 
 @jax.jit

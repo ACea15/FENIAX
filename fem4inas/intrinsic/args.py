@@ -29,6 +29,33 @@ def catter2library(fun: callable):
         return args_new
     return wrapper 
 
+
+@catter2library
+def arg_10G1(sol: solution.IntrinsicSolution,
+             system: intrinsicmodal.Dsystem,
+             fem: intrinsicmodal.Dfem,
+             t: float,
+             *args, **kwargs):
+
+    phi1l = sol.data.modes.phi1l
+    psi2l = sol.data.modes.psi2l 
+    gamma2 = sol.data.couplings.gamma2
+    omega = sol.data.modes.omega
+    x = system.xloads.x
+    force_gravity = system.xloads.force_gravity
+    X_xdelta = sol.data.modes.X_xdelta
+    C0ab = sol.data.modes.C0ab
+    num_nodes = fem.num_nodes
+    component_nodes = fem.component_nodes_int
+    component_names = fem.component_names_int
+    component_father = fem.component_father_int
+    return (gamma2, omega, phi1l, psi2l,
+            x, force_gravity,
+            X_xdelta,
+            C0ab,
+            component_names, num_nodes,
+            component_nodes, component_father, t)
+
 @catter2library
 def arg_10g11(sol: solution.IntrinsicSolution,
               system: intrinsicmodal.Dsystem,
@@ -167,6 +194,21 @@ def arg_20g121(sol: solution.IntrinsicSolution,
             component_nodes, component_father)
 
 @catter2library
+def arg_20g22(sol: solution.IntrinsicSolution,
+               system: intrinsicmodal.Dsystem,
+               *args, **kwargs):
+
+    phi1 = sol.data.modes.phi1l
+    gamma1 = sol.data.couplings.gamma1
+    gamma2 = sol.data.couplings.gamma2
+    omega = sol.data.modes.omega
+    x = system.xloads.x
+    force_follower = system.xloads.force_follower    
+    states = system.states
+    return (gamma1, gamma2, omega, phi1,
+            x, force_follower, states)
+
+@catter2library
 def arg_20G2(sol: solution.IntrinsicSolution,
              system: intrinsicmodal.Dsystem,
              fem: intrinsicmodal.Dfem,
@@ -188,6 +230,34 @@ def arg_20G2(sol: solution.IntrinsicSolution,
     component_father = fem.component_father_int
     return (gamma1, gamma2, omega, phi1l, psi2l,
             force_gravity,
+            states,
+            X_xdelta,
+            C0ab,
+            component_names, num_nodes,
+            component_nodes, component_father)
+
+@catter2library
+def arg_20g242(sol: solution.IntrinsicSolution,
+               system: intrinsicmodal.Dsystem,
+               fem: intrinsicmodal.Dfem,
+               *args, **kwargs):
+
+    phi1l = sol.data.modes.phi1l
+    psi2l = sol.data.modes.psi2l
+    gamma1 = sol.data.couplings.gamma1
+    gamma2 = sol.data.couplings.gamma2
+    omega = sol.data.modes.omega
+    x = system.xloads.x
+    states = system.states
+    force_dead = system.xloads.force_dead
+    X_xdelta = sol.data.modes.X_xdelta
+    C0ab = sol.data.modes.C0ab
+    num_nodes = fem.num_nodes
+    component_nodes = fem.component_nodes_int
+    component_names = fem.component_names_int
+    component_father = fem.component_father_int
+    return (gamma1, gamma2, omega, phi1l, psi2l,
+            x, force_dead,
             states,
             X_xdelta,
             C0ab,

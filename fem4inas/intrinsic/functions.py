@@ -239,3 +239,31 @@ def label_generator(label_table: list):
     label += str(prod)
     label += letters
     return label
+
+def center_mass(Ma, ra):
+
+    # ra Ntx3xNn
+    num_t, _, num_nodes = ra.shape
+    # ra_new = 
+    gravity_field = jnp.hstack([jnp.hstack([0, 0., -1., 0., 0., 0.])] * num_nodes)
+    force_field = Ma @ gravity_field
+    node_index = jnp.arange(0, num_nodes * 6, 6)
+    force_index = np.hstack([[i, i+1, i+2] for i in node_index])
+    moment_index = np.hstack([[i + 3, i + 4, i + 5] for i in node_index])
+    forces0 = force_field[force_index].reshape((len(force_index) // 3, 3)) # nodesx3
+    moments0 = force_field[moment_index].reshape((len(force_index) // 3, 3)) # nodesx3
+    forces = forces0.T
+    moments = moments0.T
+    forces = forces.reshape((1, 3, len(force_index) // 3))
+    moments = moments.reshape((1, 3, len(force_index) // 3))
+    # import pdb; pdb.set_trace()
+    force_moment = jnp.cross(forces, ra, axis=1)
+    sum_moments = jnp.sum(force_moment, axis=2) + jnp.sum(moments, axis=2) #Ntx3
+    sum_forces = jnp.sum(forces, axis=2) # 1x3
+    uf = sum_forces / jnp.linalg.norm(sum_forces[0])    
+    R0 = jnp.cross(sum_moments, uf) / jnp.linalg.norm(sum_forces[0]) # Ntx3
+    uf_dot_rai = jnp.tensordot(uf, ra, axes=(1,1)) # NtxNn
+    uf_sum = jnp.sum(uf_dot_rai[0], axis=1) # Nt
+    alpha = uf_sum / num_nodes
+    R = R0 + alpha.reshape((len(alpha), 1)) * uf
+    return R

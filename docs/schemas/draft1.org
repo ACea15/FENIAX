@@ -643,14 +643,14 @@ derivatives
 | Type        | Target | Gravity    | BC1        | ModalAero | SteadyAero   | UnsteadyAero | Point loads | q0 approx | Rigid-body           | Nonlinearities         | residualised |
 |-------------+--------+------------+------------+-----------+--------------+--------------+-------------+-----------+----------------------+------------------------+--------------|
 | 1 static    | Level  | False: "g" | Clamped    | None      | None         | None         | None        | via q2    | 1-quaternion+strains | All -> ""              | None -> ""   |
-| 2 Dynamic   | TRIM   | True: "G"  | Free       | Rogers    | qalpha       | gust         | follower    | via q1    | All-quaternions      | Linear sys -> "l"      | True -> "r"  |
-| 3 Stability |        |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
+| 2 Dynamic   | TRIM1  | True: "G"  | Free       | Rogers    | qalpha       | gust         | follower    | via q1    | All-quaternions      | Linear sys -> "l"      | True -> "r"  |
+| 3 Stability | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
 | 4 Multibody |        |            |            |           |              |              |             |           |                      |                        |              |
 | 5 Control   |        |            |            |           |              |              |             |           |                      |                        |              |
 
 | Sol name |                                                 | label                 | Imp |
 |----------+-------------------------------------------------+-----------------------+-----|
-| 10G1     | Structural static under Gravity                 | [1,0,'G']             | N   |
+| 10G1     | Structural static under Gravity                 | [1,0,'G']             | Y   |
 | 10g11    | Structural static with follower point forces    | [1,0,'g',0,0,0,0,1]   | Y   |
 | 10g121   | Structural static with dead point forces        | [1,0,'g',0,0,0,0,2]   | Y   |
 | 10g1331  | Structural static with follower+dead forces     | [1,0,'g',0,0,0,0,3]   | N   |
@@ -658,14 +658,16 @@ derivatives
 | 10G15    | Manoeuvre under qalpha and Gravity              | [1,0,'G',0,1,1]       | N   |
 | 10g75    | Manoeuvre under qalpha and controls             | [1,0,'g',0,1,2]       | N   |
 | 10G75    | Manoeuvre under qalpha+controls+Gravity         | [1,0,'G',0,1,2]       | N   |
-| 20g1     | Clamped Structural dynamics, free vibrations    | [2,0,'g']             | N   |
-| 20G2     | Free Structural dynamic with gravity forces     | [2,0,'G',1]           | N   |
+| 20g1     | Clamped Structural dynamics, free vibrations    | [2,0,'g']             | Y   |
+| 20G2     | Free Structural dynamic with gravity forces     | [2,0,'G',1]           | Y   |
 | 20g11    | Structural dynamic follower point forces        | [2,0,'g',0,0,0,0,1]   | Y   |
 | 20g121   | Structural dynamic dead point forces            | [2,0,'g',0,0,0,0,2]   | Y   |
-| 20g22    | Free Structural dynamic follower point forces   | [2,0,'g',1,0,0,0,1]   | N   |
-| 20g242   | Free Structural dynamic dead point forces       | [2,0,'g',1,0,0,0,2]   | N   |
-| 11G150   | Static trimmed State (elevator input)           | [1,1,'G',1,1,2]       | N   |
-| 11G750   | Static trimmed State (elevator and qalpha)      | [1,1,'G',1,1,3]       | N   |
+| 20g22    | Free Structural dynamic follower point forces   | [2,0,'g',1,0,0,0,1]   | Y   |
+| 20g242   | Free Structural dynamic dead point forces       | [2,0,'g',1,0,0,0,2]   | Y   |
+| 11G2     | Static trimmed State (elevator-qalpha,          | [1,1,'G',1]           | N   |
+|          |                       no gravity updating)      |                       |     |
+| 12G2     | Static trimmed State (elevator-qalpha,          | [1,2,'G',1]           | N   |
+|          |                       gravity updating)         |                       |     |
 | 21G150   | Dynamic trimmed State                           | [2,1,'G',1,1,2]       | N   |
 | 20g21    | Gust response                                   | [2,0,'g',0,1,0,1]     | Y   |
 | 20g273   | Gust response, q0 obtained via integrator q1    | [2,0,'g',0,1,0,1,0,1] | Y   |
@@ -677,12 +679,12 @@ derivatives
 
 #+begin_src python :session py1 :results output
   import fem4inas.intrinsic.functions as functions
-  label = functions.label_generator([2,0,'G',0,0,0,0,0,0])
+  label = functions.label_generator([1,2,'G',1])
   print(label)
 #+end_src
 
 #+RESULTS:
-: 20G1
+: 12G2
 
 
 
