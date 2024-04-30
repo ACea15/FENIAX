@@ -10,9 +10,9 @@ import fem4inas.fem4inas_main
 import jax.numpy as jnp
 import scipy.linalg
 
-# Ka = jnp.load('./FEMshell50/Ka.npy')
-# Ma = jnp.load('./FEMshell50/Ma.npy')
-# w, v = scipy.linalg.eigh(Ka, Ma)
+Ka = jnp.load('./FEMshell50/Ka.npy')
+Ma = jnp.load('./FEMshell50/Ma.npy')
+w, v = scipy.linalg.eigh(Ka, Ma)
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"

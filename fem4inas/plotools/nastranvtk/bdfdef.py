@@ -66,14 +66,20 @@ class DefBdf:
     def update_bdf(self, nposition, nid):
         for i, ni in enumerate(nid):
             self.mbdf.Node(ni).set_position(self.mbdf, nposition[i])
-            
-    def plot_vtk(self, file_path,size_cards=8):
-        path = pathlib.Path(file_path)
-        path_folder = path.parent
+
+    def save_vtkpath(self, file_path):
+        
+        self.path_bdf4vtk = pathlib.Path(file_path)
+        path_folder = self.path_bdf4vtk.parent
         path_folder.mkdir(parents=True, exist_ok=True)
-        path_vtk = path.with_suffix(".vtk")
-        self.mbdf.write_bdf(path, size=size_cards)
-        bdf2vtk.run(str(path), None, str(path_vtk), False, fileformat="ascii")
+
+    def plot_vtk(self, label="", size_cards=8):
+
+        path = self.path_bdf4vtk.parent / self.path_bdf4vtk.stem
+        path_bdf = f"{path}_{label}.bdf"
+        path_vtk = f"{path}_{label}.vtk"
+        self.mbdf.write_bdf(path_bdf, size=size_cards)
+        bdf2vtk.run(path_bdf, None, path_vtk, False, fileformat="ascii")
         
 if (__name__ == "__main__"):
     vtk_fromop2("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf",
