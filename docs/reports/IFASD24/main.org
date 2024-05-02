@@ -1,0 +1,742 @@
+#+TITLE: Differentiable Aircraft Nonlinear Dynamics on Modern Hardware Architectures
+# #+TITLE: A Nonlinear Approach for Flexible Aircraft in Modern Hardware Architectures
+# #+TITLE: JAX-based Nonlinear Aeroelastic Simulation of Large Aircraft Models
+# #+TITLE: JAX-based Aeroelastic Framework for Nonlinear Analysis of Large Aircraft Models
+# #A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
+#+AUTHOR: Alvaro Cea and Rafael Palacios
+#+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
+:LATEX_PROPERTIES:
+#+OPTIONS: toc:nil
+#+OPTIONS: broken-links:mark
+#+LATEX_HEADER: \synctex=1
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{graphicx}
+#+LATEX_HEADER: \usepackage{amsmath,bm}
+# +LATEX_HEADER: \usepackage{algorithm}
+#+LATEX_HEADER: \usepackage{algpseudocode}
+#+LATEX_HEADER: \usepackage[ruled,vlined]{algorithm2e}
+#+LATEX_HEADER: \usepackage[version=4]{mhchem}
+#+LATEX_HEADER: \usepackage{siunitx}
+#+LATEX_HEADER: \usepackage{longtable,tabularx}
+#+LATEX_HEADER: \usepackage{booktabs}
+#+LATEX_HEADER: \usepackage{tabularx,longtable,multirow,subfigure,caption}
+#+LATEX_HEADER: \setlength\LTleft{0pt} 
+#+LATEX_HEADER: \usepackage{mathrsfs}
+#+LATEX_HEADER: \usepackage{amsfonts}
+#+LATEX_HEADER: \usepackage{enumitem}
+#+LATEX_HEADER: \usepackage{mathalpha}
+#+LATEX_HEADER: \renewcommand{\figurename}{\bf \small Figure}
+#+LATEX_HEADER: \renewcommand{\tablename}{\bf \small Table}
+#+LATEX_HEADER: \newcommand{\de}{\delta}
+#+LATEX_HEADER: \newcommand{\ve}{\text{v}}
+#+LATEX_HEADER: \newcommand{\lo}{\mathcal{L}}
+#+LATEX_HEADER: \newcommand{\vt}{\overline{\delta\bm{\theta}}}
+#+LATEX_HEADER: \newcommand{\vu}{\overline{\delta\bm{u}}}
+#+LATEX_HEADER: \newcommand{\e}{\bm{\mathfrak{e}}}
+#+LATEX_HEADER: \newcommand{\E}{\bm{\mathbb{E}}}
+#+LATEX_HEADER: \newcommand{\T}{\bm{\mathcal{T}}}
+#+LATEX_HEADER: \newcommand{\fra}{(\mathtt{1})}
+#+LATEX_HEADER: \newcommand{\frb}{(\mathtt{2})}
+#+LATEX_HEADER: \newcommand{\fri}{(\mathfrak{i})}
+#+LATEX_HEADER: \newcommand{\bs}[1]{\boldsymbol{#1}}
+#+LATEX_HEADER: \newcommand{\rhoinf}{\rho}	
+#+LATEX_HEADER: \newcommand{\Vinf}{U}
+#+LATEX_HEADER: \newcommand{\Cl}[1]{c_{l_{#1}}}
+#+LATEX_HEADER: \newcommand{\barCl}[1]{\bar{c}_{l_{#1}}}
+#+LATEX_HEADER: \newcommand{\Cm}[1]{c_{m_{#1}}}
+#+LATEX_HEADER: \newcommand{\barCm}[1]{\bar{c}_{m_{#1}}}
+#+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
+
+:END:
+
+#+begin_abstract
+#+end_abstract
+
+* House keeping  :noexport: 
+#+begin_src elisp :results none :tangle no :exports none
+  (add-to-list 'org-structure-template-alist
+  '("sp" . "src python :session (print pythonShell)"))
+  (add-to-list 'org-structure-template-alist
+  '("se" . "src elisp"))
+  (setq org-confirm-babel-evaluate nil)
+  (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+  (setq org-latex-pdf-process
+    '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
+  ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+  (pyvenv-workon "fem4inas")
+  (require 'org-tempo)
+  ;; Veval_blocks -> eval blocks of latex
+  ;; Veval_blocks_run -> eval blocks to obtain results
+  (setq Veval_blocks "yes") ;; yes, no, no-export 
+  (setq Veval_blocks_run "no")
+  (setq pythonShell "py1org")
+  ;; export_blocks: code, results, both, none
+  (setq export_blocks  "results")  
+#+end_src
+
+* Load modules :noexport: 
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
+#+begin_src python  :results none 
+  import plotly.express as px
+  import pyNastran.op4.op4 as op4
+  import matplotlib.pyplot as plt
+  import pdb
+  import datetime
+  import os
+  import shutil
+  REMOVE_RESULTS = False
+  #   for root, dirs, files in os.walk('/path/to/folder'):
+  #       for f in files:
+  #           os.unlink(os.path.join(root, f))
+  #       for d in dirs:
+  #           shutil.rmtree(os.path.join(root, d))
+  # 
+  if os.getcwd().split('/')[-1] != 'results':
+      if not os.path.isdir("./figs"):
+          os.mkdir("./figs")
+      if REMOVE_RESULTS:
+          if os.path.isdir("./results"):
+              shutil.rmtree("./results")
+      if not os.path.isdir("./results"):
+          print("***** creating results folder ******")
+          os.mkdir("./results")
+      os.chdir("./results")
+#+end_src
+
+#+NAME: PYTHONMODULES
+#+begin_src python  :results none  :tangle ./results/run.py
+  import pathlib
+  import plotly.express as px
+  import pickle
+  import jax.numpy as jnp
+  import jax
+  import pandas as pd
+  import numpy as np
+  import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+  from fem4inas.preprocessor.inputs import Inputs
+  import fem4inas.fem4inas_main
+  import fem4inas.plotools.uplotly as uplotly
+  import fem4inas.plotools.utils as putils
+  import fem4inas.preprocessor.solution as solution
+  import fem4inas.unastran.op2reader as op2reader
+  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  from tabulate import tabulate
+
+#+end_src
+
+* Run models :noexport:  
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
+:END:
+
+#+begin_src python :results none
+
+  import time
+
+  TIMES_DICT = dict()
+  SOL = dict()
+  CONFIG = dict()
+
+  def run(input1, **kwargs):
+      jax.clear_caches()
+      label = kwargs.get('label', 'default')
+      t1 = time.time()
+      config =  configuration.Config(input1)
+      sol = fem4inas.fem4inas_main.main(input_obj=config)
+      t2 = time.time()
+      TIMES_DICT[label] = t2 - t1      
+      SOL[label] = sol
+      CONFIG[label] = config
+
+  def save_times():
+      pd_times = pd.DataFrame(dict(times=TIMES_DICT.values()),
+                              index=TIMES_DICT.keys())
+      pd_times.to_csv("./run_times.csv")
+
+#+end_src
+
+* Plotting :noexport: 
+:PROPERTIES:
+:header-args:  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
+:END:
+** Helper functions
+
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context))
+
+  def fig_out(name, figformat="png", update_layout=None):
+      def inner_decorator(func):
+          def inner(*args, **kwargs):
+              fig = func(*args, **kwargs)
+              if update_layout is not None:
+                  fig.update_layout(**update_layout)
+              fig.show()
+              figname = f"figs/{name}.{figformat}"
+              fig.write_image(f"../{figname}")
+              return fig, figname
+          return inner
+      return inner_decorator
+
+
+  def fig_background(func):
+
+      def inner(*args, **kwargs):
+          fig = func(*args, **kwargs)
+          # if fig.data[0].showlegend is None:
+          #     showlegend = True
+          # else:
+          #     showlegend = fig.data[0].showlegend
+
+          fig.update_xaxes(
+                         titlefont=dict(size=16),
+                         tickfont = dict(size=16),
+                         mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+              #zeroline=True,
+          #zerolinewidth=2,
+              #zerolinecolor='LightPink',
+                         gridcolor='lightgrey')
+          fig.update_yaxes(tickfont = dict(size=16),
+                         titlefont=dict(size=16),
+                         zeroline=True,
+                         mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+                         gridcolor='lightgrey')
+          fig.update_layout(plot_bgcolor='white',
+                            yaxis=dict(zerolinecolor='lightgrey'),
+                            showlegend=True, #showlegend,
+                            margin=dict(
+                                autoexpand=True,
+                                l=0,
+                                r=0,
+                                t=2,
+                                b=0
+                            ))
+          return fig
+      return inner
+
+  @fig_background
+  def xrf1_wingtip(sol, dim, nast_scale=None, nast_load=None):
+      scale = 100./33.977
+      fig=None
+      x, y = putils.pickIntrinsic2D(sol.data.dynamicsystem_s1.t,
+                                    sol.data.dynamicsystem_s1.ra,
+                                    fixaxis2=dict(node=150, dim=dim))
+
+      fig = uplotly.lines2d(x[1:], (y[:-1]-y[0])*scale, fig,
+                            dict(name="NMROM",
+                                 line=dict(color="navy")
+                                 ))
+      if nast_scale is not None:
+          offset = 0. #u111m[nast_load,0,-1, dim]
+          fig = uplotly.lines2d(t111m[nast_load], (u111m[nast_load,:,-1, dim] -
+                                                   offset) * nast_scale*scale, fig,
+                                dict(name="NASTRAN",
+                                     line=dict(color="grey",
+                                               dash="dot")
+                                     ))
+      dim_dict = {0:'x', 1:'y', 2:'z'}
+      fig.update_yaxes(title='$\hat{u}'+f'_{dim_dict[dim]}$')
+      fig.update_xaxes(range=[0, 4], title='time [s]')
+      #fig.update_yaxes(range=[-0.1, 0.2])
+      fig.update_layout(yaxis=dict(zerolinecolor='black'))      
+      return fig
+
+  @fig_background
+  def xrf1_wingtip2(sol1, sol2, dim, labels=None,nast_scale=None, nast_load=None):
+      scale = 100./33.977
+      fig=None
+      x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
+                                    sol1.data.dynamicsystem_s1.ra,
+                                    fixaxis2=dict(node=150, dim=dim))
+      x2, y2 = putils.pickIntrinsic2D(sol2.data.dynamicsystem_s1.t,
+                                    sol2.data.dynamicsystem_s1.ra,
+                                    fixaxis2=dict(node=150, dim=dim))
+
+      fig = uplotly.lines2d(x1[:], (y1[:]-y1[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[0]}",
+                                 line=dict(color="navy")
+                                 ))
+      fig = uplotly.lines2d(x2[1:], (y2[:-1]-y2[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[1]}",
+                                 line=dict(color="blue")
+                                 ))
+
+      if nast_scale is not None:
+          offset = 0. #u111m[nast_load[0],0,-1, dim]
+          fig = uplotly.lines2d(t111m[nast_load[0]], (u111m[nast_load[0],:,-1, dim] - offset)*nast_scale*scale, fig,
+                                dict(name=f"NASTRAN-{labels[0]}",
+                                     line=dict(color="black",
+                                               dash="dash",
+                                               width=1.5)
+                                     ))
+          offset2 = 0. #u111m[nast_load[1],0,-1, dim]
+          fig = uplotly.lines2d(t111m[nast_load[1]], (u111m[nast_load[1],:,-1, dim] - offset2)*nast_scale*scale, fig,
+                                dict(name=f"NASTRAN-{labels[1]}",
+                                     line=dict(color="grey",
+                                               dash="dot",
+                                               width=1.5)
+                                     ))
+      dim_dict = {0:'x', 1:'y', 2:'z'}
+      fig.update_yaxes(title='$\hat{u}' + f'_{dim_dict[dim]}$')
+      fig.update_xaxes(range=[0, 4], title='time [s]')
+      return fig
+
+  @fig_background
+  def xrf1_wingtip4(sol1, sol2, sol3, sol4, dim, labels=None,nast_scale=None, nast_load=None):
+      scale = 100./33.977
+      fig=None
+      x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
+                                      sol1.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+      x2, y2 = putils.pickIntrinsic2D(sol2.data.dynamicsystem_s1.t,
+                                      sol2.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+      x3, y3 = putils.pickIntrinsic2D(sol3.data.dynamicsystem_s1.t,
+                                      sol3.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+      x4, y4 = putils.pickIntrinsic2D(sol4.data.dynamicsystem_s1.t,
+                                      sol4.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+
+      fig = uplotly.lines2d(x1[1:], (y1[:-1]-y1[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[0]}",
+                                 line=dict(color="orange",
+                                           dash="solid")
+                                 ))
+      fig = uplotly.lines2d(x2[:], (y2[:]-y2[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[1]}",
+                                 line=dict(color="blue", dash="dot")
+                                 ))
+      fig = uplotly.lines2d(x3[:], (y3[:]-y3[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[2]}",
+                                 line=dict(color="red")
+                                 ))
+      fig = uplotly.lines2d(x4[:], (y4[:]-y4[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[3]}",
+                                 line=dict(color="grey", dash="dash")
+                                 ))
+
+      dim_dict = {0:'x', 1:'y', 2:'z'}
+      fig.update_yaxes(title='$\hat{u}' + f'_{dim_dict[dim]}$')
+      fig.update_xaxes(range=[0, 4], title='time [s]')
+      return fig
+
+  @fig_background
+  def wsp_wingtip(sol_list, dim, labels=None, nast_load=None, axes=None):
+      scale = 100./28.8
+      fig = None
+      colors=["darkgrey", "darkgreen",
+              "blue", "magenta", "orange", "black"]
+      dash = ['dash', 'dot', 'dashdot']
+      modes = [5, 15, 30, 50, 100]
+      for i, si in enumerate(sol_list):
+          x, y = putils.pickIntrinsic2D(si.data.dynamicsystem_s1.t,
+                                        si.data.dynamicsystem_s1.ra,
+                                        fixaxis2=dict(node=23, dim=dim))
+          if i != len(sol_list) - 1:
+            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
+                                  dict(name=f"NMROM {modes[i]} modes",
+                                       line=dict(color=colors[i],
+                                                 dash=dash[i % 3])
+                                       ),
+                                  dict())
+          else:
+            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
+                                  dict(name=f"NMROM {modes[i]} modes",
+                                       line=dict(color=colors[i])
+                                       ),
+                                  dict())              
+      if nast_load is not None:
+          fig = uplotly.lines2d(t_wsp[nast_load], u_wsp[nast_load,:,-4, dim]* scale, fig,
+                                dict(name="NASTRAN-400",
+                                     line=dict(color="black",
+                                               dash="dash")
+                                     ))
+          fig = uplotly.lines2d(t_wspl[nast_load], u_wspl[nast_load,:,-4, dim]* scale, fig,
+                                dict(name="NASTRAN-109",
+                                     line=dict(color="red",
+                                               #dash="dash"
+                                               )
+                                     ))
+      dim_dict = {0:'x', 1:'y', 2:'z'}
+      if axes is None:
+          fig.update_yaxes(title='$\hat{u}_%s$'%dim_dict[dim])
+          fig.update_xaxes(range=[0, 15], title='time [s]')
+      else:
+          fig.update_yaxes(range=axes[1], title='$\hat{u}_%s$'%dim_dict[dim])
+          fig.update_xaxes(range=axes[0], title='time [s]')
+
+      return fig
+
+  def fn_spErrorold(sol_list, config, print_info=True):
+
+    sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
+    err = {f"M{i}_L{j}": 0. for i in range(1,6) for j in range(6)}
+    for li in range(6): # loads
+      for mi in range(1,6):  # modes
+        count = 0  
+        for index, row in config.fem.df_grid.iterrows():
+          r_spn = u_sp[li, row.fe_order,:3] + config.fem.X[index]
+          r_sp = sol_sp[mi - 1].data.staticsystem_s1.ra[li,:,index]
+          err[f"M{mi}_L{li}"] += jnp.linalg.norm(r_spn - r_sp) #/ jnp.linalg.norm(r_spn)
+          # print(f"nas = {r_spn}  ,  {r_sp}")
+          count += 1
+        err[f"M{mi}_L{li}"] /= count
+        if print_info:
+            print(f"**** LOAD: {li}, NumModes: {mi} ****")
+            print(err[f"M{mi}_L{li}"])
+    return err
+
+  def fn_spError(sol_list, config, print_info=True):
+
+      sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
+      err = {f"M{i}_L{j}": 0. for i in range(1,6) for j in range(6)}
+      for li in range(6): # loads
+        for mi in range(1,6):  # modes
+          count = 0
+          r_spn = []
+          r_sp = []
+          for index, row in config.fem.df_grid.iterrows():
+            r_spn.append(u_sp[li, row.fe_order,:3] + config.fem.X[index])
+            r_sp.append(sol_sp[mi - 1].data.staticsystem_s1.ra[li,:,index])
+            # print(f"nas = {r_spn}  ,  {r_sp}")
+            # count += 1
+          r_spn = jnp.array(r_spn)
+          r_sp = jnp.array(r_sp)        
+          err[f"M{mi}_L{li}"] += jnp.linalg.norm(r_spn - r_sp) #/ jnp.linalg.norm(r_spn)
+          err[f"M{mi}_L{li}"] /= len(r_sp)
+          if print_info:
+              print(f"**** LOAD: {li}, NumModes: {mi} ****")
+              print(err[f"M{mi}_L{li}"])
+      return err
+
+  @fig_background
+  def fn_spPloterror(error):
+
+      loads = [200, 250, 300, 400, 480, 530]
+      num_modes = [5, 15, 30, 50, 100]
+      e250 = jnp.array([error[f'M{i}_L1'] for i in range(1,6)])
+      e400 = jnp.array([error[f'M{i}_L3'] for i in range(1,6)])
+      e530 = jnp.array([error[f'M{i}_L5'] for i in range(1,6)])
+      fig = None
+      fig = uplotly.lines2d(num_modes, e250 , fig,
+                                dict(name="Error, F = 250 KN",
+                                     line=dict(color="red")
+                                     ),
+                                dict())
+      fig = uplotly.lines2d(num_modes, e400, fig,
+                                dict(name="Error, F = 400 KN",
+                                     line=dict(color="green", dash="dash")
+                                     ),
+                                dict())
+      fig = uplotly.lines2d(num_modes, e530, fig,
+                                dict(name="Error, F = 530 KN",
+                                     line=dict(color="black", dash="dot")
+                                     ),
+                                dict())
+
+      fig.update_yaxes(type="log", tickformat= '.0e')
+      fig.update_layout(height=950)
+      return fig
+
+  @fig_background
+  def fn_spPloterror3D(error, error3d):
+
+      loads = [200, 250, 300, 400, 480, 530]
+      fig = None
+      if error is not None:
+        fig = uplotly.lines2d(loads, error, fig,
+                                  dict(name="Error ASET",
+                                       line=dict(color="red"),
+                                       marker=dict(symbol="square")
+                                       ),
+                                  dict())
+
+      fig = uplotly.lines2d(loads, error3d, fig,
+                                dict(name="Error full 3D",
+                                     line=dict(color="green")
+                                     ),
+                                dict())
+
+      fig.update_yaxes(type="log", tickformat= '.0e')
+      fig.update_layout(height=700,
+                        showlegend=False,
+                        xaxis_title='Loading [KN]',
+                        yaxis_title='Error')
+
+      return fig
+
+  def fn_wspError(sol_list):
+      error_dict = dict()
+      for i, si in enumerate(sol_list):
+          for di in range(3):
+              x, y = putils.pickIntrinsic2D(si.data.dynamicsystem_s1.t,
+                                            si.data.dynamicsystem_s1.ra,
+                                            fixaxis2=dict(node=23, dim=di))
+              yinterp = jnp.interp(t_wsp, x, y)
+              ynastran = u_wsp[0,:,-4, di] + y[0]
+              n = 10000
+              error = jnp.linalg.norm((yinterp[1,:n] - ynastran[:n]) / ynastran[:n]) / len(ynastran[:n])
+              label = f"M{i}x{di}"
+              error_dict[label] = error
+
+      return error_dict
+
+  @fig_background
+  def fn_wspPloterror(error):
+
+      loads = [200, 250, 300, 400, 480, 530]
+      num_modes = [5, 15, 30, 50, 100]
+      ex1 = [error[f'M{i}x0'] for i in range(5)]
+      ex2 = [error[f'M{i}x1'] for i in range(5)]
+      ex3 = [error[f'M{i}x2'] for i in range(5)]
+      fig = None
+      fig = uplotly.lines2d(num_modes, ex1, fig,
+                                dict(name="Error - x1",
+                                     line=dict(color="red")
+                                     ),
+                                dict())
+      fig = uplotly.lines2d(num_modes, ex2, fig,
+                                dict(name="Error - x2",
+                                     line=dict(color="green")
+                                     ),
+                                dict())
+      fig = uplotly.lines2d(num_modes, ex3, fig,
+                                dict(name="Error - x3",
+                                     line=dict(color="black")
+                                     ),
+                                dict())
+
+      fig.update_yaxes(type="log", tickformat= '.0e')
+      return fig
+
+  @fig_background
+  def fn_wspPloterror3D(time, error):
+
+      fig = None
+      fig = uplotly.lines2d(time, error, fig,
+                                dict(name="Error",
+                                     line=dict(color="blue")
+                                     ),
+                                dict())
+
+      fig.update_yaxes(type="log", tickformat= '.0e')
+      fig.update_layout(
+                        height=950,
+                        xaxis_title='Time [s]',
+                        yaxis_title='Error')
+      return fig
+
+#+end_src
+
+**** COMMENT Plot alphas
+#+begin_src python :results none :tangle ./results/plot_XRF1.py
+  import numpy as np
+  directory = fem4inas.PATH / "../Models/XRF1-2/Results_modes/"
+  nmodes = 70
+  #q = np.load("%s/q_%s.npy"%(directory, nmodes))
+  omega = np.load("%s/../Results_modes/Omega_%s.npy"%(directory, nmodes))
+  alpha1 = np.load("%s/../Results_modes/alpha1_%s.npy"%(directory, nmodes))
+  alpha2 = np.load("%s/../Results_modes/alpha2_%s.npy"%(directory, nmodes))
+  gamma1 = np.load("%s/../Results_modes/gamma1_%s.npy"%(directory, nmodes))
+  gamma2 = np.load("%s/../Results_modes/gamma2_%s.npy"%(directory, nmodes))
+#+end_src
+
+#+NAME: XRF1Plot_alpha1old
+#+begin_src python :results value file :exports (print export_blocks) :tangle ./results/plot_XRF1.py
+  figname = f"figs/{name}.png"
+  fig = px.imshow(np.abs(alpha1-np.eye(70)),
+                  labels=dict(color="Absolute values"),
+                  color_continuous_scale="Blues"
+                  )
+  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+  fig.update_xaxes(title='Mode',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                   titlefont=dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  #fig.update_traces(colorbar_tickfont=dict(size=26))
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+
+#+NAME: XRF1Plot_alpha1
+#+begin_src python :results value file :exports (print export_blocks) :tangle ./results/plot_XRF1.py
+
+  figname = f"figs/{name}.png"
+  sol_x1 = solution.IntrinsicReader("./Gust3")
+  fig = px.imshow(np.abs(sol_x1.data.couplings.alpha1-np.eye(70)),
+                  labels=dict(color="Absolute values"),
+                  color_continuous_scale="Blues"
+                  )
+  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+  fig.update_xaxes(title='Mode',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                   titlefont=dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+#+NAME: XRF1Plot_alpha2old
+#+begin_src python :results value file :exports (print export_blocks) :tangle ./results/plot_XRF1.py
+  figname = f"figs/{name}.png"
+  fig = px.imshow(np.abs(alpha2-np.eye(70)),
+                  labels=dict(color="Absolute values"),
+                  color_continuous_scale="Blues"
+                  )
+  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+  fig.update_xaxes(title='Mode',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                   titlefont=dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+
+
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+#+NAME: XRF1Plot_alpha2
+#+begin_src python :results value file :exports (print export_blocks) :tangle ./results/plot_XRF1.py
+  #px.colors.named_colorscales()
+  figname = f"figs/{name}.png"
+  fig = px.imshow(np.abs(sol_x1.data.couplings.alpha2-np.eye(70)),
+                  labels=dict(color="Absolute values"),
+                  color_continuous_scale="Blues"
+                  )
+  fig.update_layout(coloraxis_colorbar=dict(tickfont=dict(size=16)),margin=dict(
+        autoexpand=True,
+        l=0,
+        r=0,
+        t=0,
+        b=0
+    ))
+  fig.update_xaxes(title='Mode',
+                   titlefont=dict(size=16),
+                   tickfont = dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+  fig.update_yaxes(title='Mode', tickfont = dict(size=16),
+                   titlefont=dict(size=16)
+                   # mirror=True,
+                   # ticks='outside',
+                   # showline=True,
+                   # linecolor='black',
+                   # gridcolor='lightgrey'
+                   )
+
+  fig.write_image(f"../{figname}")
+  fig.show()
+  figname
+#+end_src
+
+* Introduction
+* Theory and implementation
+* Results
+#+NAME: WSP_times
+#+begin_src python  :results raw
+  dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
+  values = ["Time [s]"]
+  values += [', '.join([str(round(dfruns[f'WSP{i+1}'].iloc[0], 2)) for i in range(5)])]
+  values += [1*60*60 + 22*60]
+  values += [33.6]
+  header = ["Architecture"]
+  header += ["Simulation time"]
+  header += ["NASTRAN 109"]
+  # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
+  #                         index=TIMES_DICT.keys())
+
+  # df_ = results_df['shift_conm2sLM25']
+  # df_ = df_.rename(columns={"xlabel": "%Chord"})
+  tabulate([values], headers=header, tablefmt='orgtbl')
+#+end_src
+
+time steps = 0.001, 0.0028, 0.0061
+| Architecture            | 50 modes   | 100 modes   | 150 modes  | 200 modes | 250 modes   | 300          |
+|-------------------------+------------+-------------+------------+-----------+-------------+--------------|
+| CPU HPC (time [s]/ err) | 7/1.3e-1   | 9.3/5.7e-2  | 34/2.2e-2  | 79/2e-3   | 474/5.3e-4  | 1869/2.54e-5 |
+| GPU HPC                 | 9.9/1.3e-1 | 10.4/5.7e-2 | 14/2.2e-2  | 22/2e-3   | 38/5.3e-4   | 120/2.54e-5  |
+|-------------------------+------------+-------------+------------+-----------+-------------+--------------|
+| CPU HPC (time [s]/ err) | 42/2.1e-2  | 184/1.2e-2  | 287/5.6e-3 | 421/2e-3  | 893/2.7e-4  | 1869/2.54e-5 |
+| GPU HPC                 | 58/2.1e-2  | 65/1.2e-2   | 67/5.6e-3  | 76/7.2e-4 | 94/2.7e-4   | 111/2.54e-5  |
+|                         |            |             |            |           |             |              |
+
+
+* Conclusions
+
+bibliographystyle:plain
+# bibliography:/home/acea/Documents/Engineering.bib
+bibliography:~/Documents/Engineering.bib
+
