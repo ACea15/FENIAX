@@ -1,3 +1,6 @@
+#+TITLE: Differentiable Aeroelastic Framework Suitable for Industrial-Scale Nonlinear Loads on Modern Hardware Architectures
+# A Nonlinear Aeroelastic Framework Suitable For Industrial-Scale Computation Of Dynamic Loads On Modern Hardware Architectures
+# #+TITLE: A nonlinear aeroelastic framework suitable for industrial-scale computation of dynamic loads
 #+TITLE: Differentiable Aircraft Nonlinear Dynamics on Modern Hardware Architectures
 # #+TITLE: A Nonlinear Approach for Flexible Aircraft in Modern Hardware Architectures
 # #+TITLE: JAX-based Nonlinear Aeroelastic Simulation of Large Aircraft Models
