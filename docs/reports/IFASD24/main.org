@@ -1,11 +1,5 @@
-#+TITLE: Differentiable Aeroelastic Framework Suitable for Industrial-Scale Nonlinear Loads on Modern Hardware Architectures
+#+TITLE: Differentiable Aeroelastic Framework Suitable for Industrial-Scale Nonlinear Loads on Accelerators
 # A Nonlinear Aeroelastic Framework Suitable For Industrial-Scale Computation Of Dynamic Loads On Modern Hardware Architectures
-# #+TITLE: A nonlinear aeroelastic framework suitable for industrial-scale computation of dynamic loads
-#+TITLE: Differentiable Aircraft Nonlinear Dynamics on Modern Hardware Architectures
-# #+TITLE: A Nonlinear Approach for Flexible Aircraft in Modern Hardware Architectures
-# #+TITLE: JAX-based Nonlinear Aeroelastic Simulation of Large Aircraft Models
-# #+TITLE: JAX-based Aeroelastic Framework for Nonlinear Analysis of Large Aircraft Models
-# #A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
 #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
 :LATEX_PROPERTIES:
@@ -742,12 +736,278 @@
 #+end_src
 
 * Introduction
+The ever-growing need for performance and operating costs reduction, together with the current push for sustainability in aviation, are driving new aircraft designs outside the conventional envelop. A particular feature are very high aspect ratio wings to minimise induced drag, which when combined with advancements in lighter materials to reduced vehicle weight, can significantly increase wing flexibility.    
+In such a scenario, aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines.
+As highlighted in [[cite:&LIVNE2018]], formulations that include nonlinear effects should be developed that not only enhance current modelling techniques  but that also allow rapid data turnaround for the industry. Real-time, hardware-in-the-loop flight simulators would also benefit of actively controlled, deformable airplane models. This leads to a more nonlinear landscape, where the overall aerodynamic performance needs to be calculated around a flight shape with large deformations cite:&GRAY2021; the input for efficient control laws account for the steady state and nonlinear couplings cite:&Artola2021; and the loads ultimately sizing the wings are atmospheric disturbances computed in the time-domain cite:&CESNIK2014a.
+This is also the case for more radical configurations that may or may not exhibit high flexibility but whose aeroelastic behaviour is more uncertain.
+A more holistic approach to the design also increases the complexity of the processes exponentially, and the trade-offs and cost-benefit analysis may not be possible until robust computational tools are in-place to simulate the different assumptions.
+ Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations cite:&Kier2017, as it considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitively expensive computational times. 
+Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above.
+Those previous considerations set the goals for the current effort: 1) to be able to perform geometrically nonlinear aeroelastic analysis, 2) to work with generic FEMs in a non-intrusive manner, and 3) to achieve a computational efficiency that is equivalent to present linear methods (if not faster).
+Grounded on previous developments where the first two points were demonstrated cite:&PALACIOS2019, cite:&CEA2021b, cite:&CEA2023 we tackle the third point herein with a new implementation that achieves remarkable computational performance.
+The numerical library JAX cite:&jax2018github was leveraged to produce highly vectorised, automatically differentiated routines that are managed by a modular, object-oriented approach in Python. The power of JAX for scientific computation has been proved recently in fluid dynamics cite:&BEZGIN2023 and solid mechanics cite:&XUE2023 applications. We add to those a nonlinear solution that enhances linear aeroelastic models built for industrial loads analysis. This aligns with current efforts to build robust methods that incorporate nonlinear effects to complex 3-D FEMs, via stick models cite:&RISO2023 or other modal-based methods cite:&DRACHINSKY2022.
+\\
+Our proposed method has two main inputs for the analysis: a linear (arbitrarily complex) FE model, and frequency-dependent aerodynamic influence coefficient matrices that provide the mapping between FE states and the corresponding aerodynamic forces (either in modal or in physical coordinates). The latter are obtained herein from the Doublet Lattice Method (DLM) and a rational function approximation (RFA)[[    [[cite:&Roger1977]] to transform to the time domain. We have also presented a more efficient data-driven approach that circumvents the lag selection process of the RFA in cite:&PALACIOS2023b and which would also be suitable for more accurate Computational Fluids Aerodynamics (CFD). Using the 3D FE model, a skeleton-like substructure along the main load paths is derived, on which modal shapes and nonlinear couplings are evaluated in intrinsic variables (velocities and strains). They conform a basis of a Galerkin-projection of the geometrically-nonlinear 1D domain after which the projected equations are solved in time-domain. Advantages of the approach are its direct and accurate map between the 3D and 1D domains, as it only requires of a modal condensation that is already available in many industrial aeroelastic models to link the structural model to the aerodynamic loading.
+This is unlike stick models which need of various post-processing steps to build the equivalent stiffness and mass models.
+Furthermore, we show how the full 3D solution using the nonlinear 1D solution is computed to a good accuracy by reconstructing the cross-sectional elements and applying a Radial Basis Function (RBF) interpolation to the remaining nodes in the domain.
+A well established formulation effectively applied to industrial-scale aeroelastic models and now combined with a highly vectorised implementation in JAX results in an extremely efficient nonlinear aeroelastic solver. The overall procedure has been implemented in what we have named as \emph{Nonlinear Modal Reduced Order Model} (NMROM). 
+\\
+The structure of the rest of the paper is as follows. Sec. [[Theory and implementation]] presents a summary of the mathematical description that conforms the backbone behind the computational implementation of \texttt{FEM$_4$INAS} (Finite-Element-Models for Intrinsic Nonlinear Aeroelastic Simulations), the high performance software for aeroelasticity we have built. Sec. [[Results]] shows the verification cases that cover the static and dynamic structural response of a simplified aircraft model, and the aeroelastic response to gusts of a full aircraft configuration. The improvements in performance are highlighted in all of the examples. 
+Lastly, sec. [[Conclusions]] summarises the the achievements and further developments planned for future work.
+
 * Theory and implementation
+In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelastic modelling as continuation of the work in [[cite:&CEA2021b;&CEA2023]]. A summary of the main formulation and its integration into an aeroelastic framework are presented next, along with some implementation details. 
+** Nonlinear aeroelastic system
+We start with a global FE model of the airframe as illustrated in Fig. [[workflow]].
+
+#+NAME: workflow
+#+CAPTION: Workflow of the solution process
+#+ATTR_LATEX: :width 1.\textwidth 
+[[./figs/workflowAIAA3.pdf]]
+It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements.
+With those characteristics a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$ (Step 1 in Fig. [[workflow]]). The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$ (Step 2, however, $\pmb \Phi_0$ is defined on the master nodes and the figure shows the full reconstructed modal shapes). The dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written in material velocities, $\bm x_1$,  and stresses, $\bm x_2$, as state variables. A modal expansion of those is a key step in seamlessly mapping the global FEM into the nonlinear description. The intrinsic modes are introduced and the projection of the state variables is such  $\pmb{x}_1 = \pmb{\Phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\Phi}_2\pmb{q}_2$.
+A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes coming from the global FEM:
+
+1. Velocity modes, $\bm \Phi_1 = \bm \Phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \Phi_1 \bm q_1 = \bm \Phi_0 \dot{\bm q}_0$.
+
+2. Momentum modes, $\bm \Psi_1 = \bm M_a \bm \Phi_0$. Note from this definition that, for arbitrary distributed mass models, the dynamic condensation technique will produce a fully-populated mass matrix, and the various couplings will be captured after the matrix multiplication. 
+
+3. Force/moment modes, $\bm \Phi_2 = \mathcal{S}(\bm K_a \bm \Phi_0)$, represent the internal stress resultants in the structure as the sum, $\mathcal{S}$, along the main load-paths of equilibrium forces and moments produced by the modal deformations.
+   # Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$.
+   Results are presented in the mid-point between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
+   
+4. Strain modes, $\bm \Psi_2 = -\bm \Phi_{0d} + \pmb{E}^{\top}\bm \Phi_{0m}$, with $\bm \Phi_{0d}$ the approximate derivative along $s$: $\bm \Phi_{0d}^i = \frac{\bm \Phi_0^{i+1} - \bm \Phi_0^{i}}{\Delta s_i}$; and $\bm \Phi_{0m} = \frac{\bm \Phi_0^{i+1} + \bm \Phi_0^{i}}{2}$, the displacement modal shape in between nodes. $\pmb{E}^{\top}$ is a constant matrix.
+Details in Algorithm [[alg:modes]] below. After the intrinsic modes have been computed, a dynamic system is obtained after a Galerkin projection of the equations of motion \cite[Ch. 8]{PALACIOS2023}:
+
+\begin{equation}
+\label{eq2:sol_qs}
+\begin{split}
+\dot{\pmb{q}}_{1} &=  \pmb{\omega} \odot  \pmb{q}_{2} - \pmb{\Gamma}_{1} \pmb{:} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \bm{\eta}  \\
+\dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right)
+\end{split}
+\end{equation}
+where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product[fn:1: The double dot product represents a contraction of the last two indexes of the first tensor with the first two indexes of the second one; it however needs further specification as two alternative definitions can be adopted and here we opt for the following: \(\pmb{a} \pmb{:} \pmb{b} = a_{..ij} b_{ij..} \). This has implications on the definition of the transpose of \(\bm{\Gamma}_2 \) in the second equation since for high order tensors multiple transpose operators can be defined. Consistency is achieved by ensuring the dot product operation satisfies the following: \( \pmb{x} \cdot \left(\bm{\Gamma} \pmb{:} \left( \pmb{y} \otimes \pmb{z} \right)  \right) = \pmb{y} \cdot \left(\bm{\Gamma}^{\top} \pmb{:} \left(\pmb{z} \otimes \pmb{x} \right)  \right) \), which leads to the transpose of the third order tensor, \( \bm{\Gamma} = \Gamma^{ijk} \), as \( \bm{\Gamma}^{\top} = \Gamma^{jki} \).].
+The form of the equations in compact tensorial notation is in fact the way they have been implemented and vectorised. This description is geometrically-exact, with nonlinearities encapsulated in the modal couplings of the third-order tensors $\pmb{\Gamma}_{1}$ and $\pmb{\Gamma}_{2}$ (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation). $\pmb{\eta}$ is the modal projection of the external forcing terms. They are computed as integrals along the load-paths as an inner product: $\langle \pmb{u},\pmb{v}  \rangle = \int_\Gamma \pmb{u}^\top \pmb{v} ds$, for any $\pmb{u}\in\mathbb{R}^6$ and $\pmb{v}\in\mathbb{R}^6$: 
+# ?? messy in tensorial notation (computation is via vmap)
+\begin{align}\label{eq2:gammas12}
+\Gamma_{1}^{ijk} & = \langle \pmb{\Phi}_{1i}, \lo_1(\pmb{\Phi}_{1j})\pmb{\Psi}_{1k}\rangle, \nonumber \\
+\Gamma_{2}^{ijk} & = \langle \pmb{\Phi}_{1i}, \lo_2(\pmb{\Phi}_{2j})\pmb{\Psi}_{2k}\rangle,  \\
+\eta_{i} & = \langle \pmb{\Phi}_{1i}, \pmb{f}_1\rangle  \nonumber
+\end{align}
+with $\lo_1$ and $\lo_2$ linear operators. The solution of Eqs. \ref{eq2:sol_qs} correspond to Step 3 in Fig. [[workflow]], and can be extended to form the full aeroelastic system with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{v}_g$. Control states can also be included [[cite:&CEA2021a]], but they are not necessary for this work. For a set of reduced frequencies and a given Mach number, the DLM (or a higher fidelity aerodynamic method) yields the Generalised Aerodynamic Forces (GAFs). The current implementation uses Roger's rational function approximation to those GAFs [[cite:&Roger1977]], which results in the follower modal forces:
+
+# \begin{equation}
+# \lo_1 (\pmb{x}_1)  = \begin{bmatrix} \tilde{\pmb{\omega}} & \pmb{0} \\ \tilde{\pmb{\ve}} & \tilde{\pmb{\omega}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}
+# \lo_2 (\pmb{x}_2)=  \begin{bmatrix} \pmb{0} & \tilde{\pmb{f}} \\ \tilde{\pmb{f}} & \tilde{\pmb{m}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}  \pmb{\mathsf{E}}= \lo_1 \begin{pmatrix} \begin{bmatrix} 1 \\ \bm 0_5 \end{bmatrix} \end{pmatrix}
+# \end{equation}
+
+\begin{equation}\label{eq3:eta_full}
+\begin{split}
+\bm{\eta}_a = \tfrac12\rho_\infty U_\infty^2 & \left(\vphantom{\sum_{p=1}^{N_p}} \pmb{\mathcal{A}}_0\bm{q}_0 +\frac{c}{2U_\infty}\pmb{\mathcal{A}}_1 \bm{q}_1 +\left(\frac{c}{2U_\infty}\right)^2 \pmb{\mathcal{A}}_2\dot{\bm{q}}_1   \right.  \\
+& \left. + \pmb{\mathcal{A}}_{g0}\bm{v}_g +\frac{c}{2U_\infty}\pmb{\mathcal{A}}_{g1} \dot{\bm{v}}_g +\left(\frac{c}{2U_\infty}\right)^2 \pmb{\mathcal{A}}_{g2}\ddot{\bm{v}}_g +  \sum_{p=1}^{N_p} \pmb{\lambda}_p  \right) 
+\end{split}
+\end{equation}
+Where the $\pmb{\mathcal{A}}_is$ are real matrices, $c$ is the reference chord, $\tfrac12\rho_\infty U_\infty^2$, $\pmb{\lambda}_p$ the aerodynamic states and $N_p$ the number of lags. 
+The coupling of the structure and aerodynamic equations combined with the aerodynamic lags gives the final ODE system: 
+
+\begin{equation}
+\label{eq2:sol_qs}
+\begin{split}
+\dot{\pmb{q}}_{1} &=  \hat{\pmb{\Omega}}  \pmb{q}_{2} - \hat{\pmb{\Gamma}}_{1} \pmb{:} \left(\pmb{q}_{1} \otimes \pmb{q}_{1} \right) - \hat{\pmb{\Gamma}}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \hat{\bm{\eta}}  \\
+\dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right) \\
+\dot{\bm{\lambda}}_{p} &= Q_{\infty}\bm{\mathcal{A}}_{p+2}\pmb{q}_{1}
+                       + Q_{\infty}\bm{\mathcal{A}}_{p+2}\dot{\pmb{v}}_g
+                       -\frac{2U_\infty\gamma_p}{c}\bm{\lambda}_{p}
+\end{split}
+\end{equation}
+in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$.
+The aerodynamic matrices $\hat{\bm{\mathcal{A}}}_{p+2}$ have also been scaled accordingly.
+\\
+Once the nonlinear solution of the condensed model is computed, the corresponding full 3D state is calculated via a two postprocessing steps: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model.
+This paves the way for a broader multidisciplinary analysis where CFD-based aerodynamic loading could be used for the calculation of the nonlinear static equilibrium, and also with the transfer of the full deformed state back to the original FE solver to study other phenomena such as local buckling. 
+** Aircraft trim flight
+A very important part in the calculation of dynamic loads is including the rigid body DoF in the analysis and thus having the aircraft in a state of equilibrium between lift, gravity and control devices forces, i.e. trimmed. This implies a solution to the following nonlinear system of equations: 
+\begin{equation}
+\begin{split}
+\pmb F(\pmb{q}_{2}, \pmb{q}_{0}, \pmb{q}_{c}) &=  \pmb{\omega} \odot  \pmb{q}_{2}  - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \tfrac12\rho_\infty U_\infty^2  \left( \pmb{\mathcal{A}}_0\bm{q}_0 + \pmb{\mathcal{A}}_{0r}\bm{q}_{0r} + \pmb{\mathcal{A}}_c\bm{q}_c \right) + \bm{\eta}_g  = \bm 0 \\
+\bm{q}_0 &= \bm{q}_2 \odot \pmb{\omega}^{-1} \\
+\bm A_r\bm{q}_{0r} &= \bm 0
+\end{split}
+\end{equation}
+
+The simplest case would be a trim where only two rigid-body DoF are allowed, the pitch $q_{0\alpha}$ and the plunge, $q_{0h}$; $q_{0h}$ is set to 0 and $q_{0\alpha}$ is part of the variables to be calculated along with a single tail elevator deflection, $q_c$ and the elastic strain modal DoF, $\bm q_{2}$. A somewhat more advanced trim would also allow a forward direction of flight and include thrust as another control state variable. However for this a good estimate of the aerodynamic drag forces would be required, which is not the case for the DLM.  
+** Computational implementation and benchmarks
+The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor[fn:2:Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures as will be demonstrated herein, and the computation of sensitivities via algorithmic differentiation (AD) across solvers has been implemented in [].
+The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. It combines XLA (accelerated linear algebra) and Autograd, the former being a compiler that optimises models for different hardware platforms, the latter is an Automatic Differentiation (AD) tool in Python. 
+Moreover, its extensible system of composable function transformations provides a set of important features for Computational Science as illustrated in Fig. \ref{fig:JAX-overview}. For instance, the $\texttt{vmap}$ function allows for complex vectorisation operations and the $\texttt{pmap}$ function for Single-Program Multiple-Data (SPMD) parallelisation. Both forward and reverse mode automatic differentiation are supported. Finally the just-in-time compilation ($\texttt{jit}$) relies on the XLA engine to compile and execute functions on CPUs but also on accelerators such as GPUs and TPUs, offering a versatile solution for seamlessly connecting the software to various types of hardware without requiring extra CUDA code, or a Domain Specific Language (DSL).
+
+#+begin_export latex
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.35\textwidth]{./figs/jaxlogo2.pdf}
+\caption{\label{fig:JAX-overview} JAX capabilities for modern scientific computing}
+\end{figure}
+#+end_export
+The tensor structure of the main components in the solution process is illustrated in Fig. [[fig:tensors]] in the sequential order they are computed. The discretization of the problem comprises $N_n$ number of condensed nodes, $N_m$ modes used in the reduced order model and $N_t$ time steps in the solution (if the problem is static, $N_t$ represents a ramping load stepping scheme). The intrinsic modes, $\Phi, \Psi  \in \mathbb{R}^{N_m \times 6 \times N_n}$ are computed from the eigenvalue solution and the coordinates $\bm X_a \in \mathbb{R}^{3 \times N_n}$ of the active nodes. 
+The nonlinear couplings, $\bm{\Gamma} \in \mathbb{R}^{N_m \times N_m \times N_m}$ are calculated next, from which the system in Eq. \ref{eq2:sol_qs} is assembled and solved to yield the solution states $\bm q \in \mathbb{R}^{N_s \times N_t}$. Local velocities and internal forces,  $\bm X_{1,2} \in \mathbb{R}^{N_t \times 6 \times N_n}$ are computed as a product of the corresponding intrinsic modes and states, and their integration leads to the position tensor with similar structure.
+
+#+NAME: fig:tensors
+#+CAPTION: Main data components in the sequential solution process together with their associated time and space complexities
+#+ATTR_LATEX: :width 1\textwidth 
+[[file:figs/tensors2.pdf]]
+
+A simplified version of the intrinsic modes evaluation is given in Algorithm [[alg:modes]].
+
+#+NAME: alg:modes
+\begin{algorithm}[h!]
+\DontPrintSemicolon
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\Input{FEM and eigenvalue solution: $\bm X, \bm K_a, \bm M_a, \bm{\Phi}_0, \bm \omega$}
+\Output{Intrinsic modal shapes}
+\Begin{
+\texttt{import jax.numpy as jnp \;
+ \BlankLine
+$\bm X_m$ $\leftarrow$ jnp.matmul($X_a^{\top}$, $M_{avg}$)
+\Comment{Get mid-node coordinates} \;
+$\bm X_d$ $\leftarrow$ jnp.matmul($X_a$, $M_{diff}$)
+\Comment{vector difference between contigous nodes} \;
+$\Delta_s$ = jnp.linalg.norm($X_d$, axis=0) \;
+$\bm{\Phi}_1$ $\leftarrow$ $\bm{\Phi}_0$ \;
+$\bm{\Phi}_{1m}$ $\leftarrow$ jnp.tensordot($\bm{\Phi}_1$, $M_{avg}$, axes=(2, 0))
+\Comment{Velocity modes at mid-node locations}\;
+$\bm{\psi}_{1v}$ $\leftarrow$ jnp.matmul($\bm M_a$, $\bm{\Phi}_0$)
+\Comment{Momenta modes}\;
+$\bm{\psi}_{1}$ $\leftarrow$ reshape\_modes($\bm{\psi}_{1v}$, Nmodes, Nnodes) \Comment{Nmx6xNn}  \;
+$\bm{\Phi}_{2fv}$ $\leftarrow$ jnp.matmul($\bm K_a$, $\bm{\Phi}_0$)
+\Comment{Internal forces and moments associated to modal shapes (Nm$\times$6$\times$Nn)} \;
+$\bm{\Phi}_{2fv}$ $\leftarrow$ reshape\_modes($\bm{\Phi}_{2fv}$, Nmodes, Nnodes) \;
+$\bm{\Phi}_{2f}$ $\leftarrow$ jnp.tensordot($\bm{\Phi}_{2fv}$, $\bm M_{paths}$, axes=(2, 0)) \Comment{Sum of internal forces and moments (Nm$\times$6$\times$Nn)} \;
+$\bm X_3$ $\leftarrow$ coordinates\_difftensor($X$, $X_m$)
+\Comment{mid-node vector to every other node in the reduced model (3$\times$Nn$\times$Nn}) \;
+$\bm X_{3tilde}$ $\leftarrow$ -axis\_tilde($\bm X_3$)
+\Comment{Cross-product in matrix form (6$\times$6$\times$Nn$\times$Nn)} \;
+$\bm{\phi}_{2mn}$ $\leftarrow$ moment\_force($\bm{\phi}_{2v}$, $\bm X_{3tilde}$) \Comment{Moment distribution due to nodal forces (Nm$\times$6$\times$Nn$\times$Nn)} \;
+$\bm{\phi}_{2m}$ $\leftarrow$ moment\_contraction($\bm{\phi}_{2mn}$, $M_{paths}$) \Comment{Sum of internal moments due to forces (Nm$\times$6$\times$Nn)} \;
+$\bm{\Phi}_2$ $\leftarrow$ $\bm{\Phi}_{2f}$ + $\bm{\phi}_{2m}$
+\Comment{Total value internal forces and moments}\;
+$E_{\phi}$ $\leftarrow$ ephi(E, $\bm \phi_{1m}$)
+\Comment{E times } \;
+$\bm \phi_{1d}$ $\leftarrow$  jnp.tensordot($\bm{\Phi}_1$, $\bm M_{diff}$, axes=(2, 0))
+\Comment{Velocity mode variation across nodes (Nm$\times$6$\times$Nn)}\;
+$\bm{\psi}_2$ $\leftarrow$ - $\bm \phi_{1d} / \Delta_s + E_{\phi}$\;
+\BlankLine
+}
+    }
+\caption{JAX-based computation of intrinsic modal shapes}
+\end{algorithm}
+
+The various functions in the algorithm make heavy use of JAX $\texttt{vmap}$ function to vectorise the contraction and expansion operations. For instance, to yield the internal moments associated to each node due to the internal forces, the function \(\texttt{moment\_force}\) is cast in Algorithm [[alg:internalmoments]]:
+
+#+NAME: alg:internalmoments
+\begin{algorithm}[h!]
+% Set Function Names
+\SetKwFunction{FSum}{moment\_force}
+ 
+% Write Function with word ``Function''
+  \SetKwProg{Fn}{Function}{:}{}
+  \Fn{\FSum {$\bm{\phi}_{2v}$, $\bm X_{3tilde}$}}{
+\texttt{f1 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot(u, v, axes=(1,1),
+      in\_axes=(None, 2), out\_axes=2))  \;
+f2 $\longleftarrow$ vmap(f1, in\_axes=(2, 3), out\_axes=3)  \;
+f3 $\longleftarrow$ f2($\bm{\phi}_{2v}$, $\bm X_{3tilde}$)   \Comment{Nm$\times$6$\times$Nn$\times$Nn} \;
+\BlankLine
+}
+        \KwRet f3\;
+  }
+\caption{Internal moments due to internal forces}
+\end{algorithm}
+
+The function created by $\texttt{vmap}$ loops the inputs through the axes specified in $\texttt{in\_axes}$, piping the resulting vector to the function given to $\texttt{vmap}$ as the first argument, and the outputs are saved across the axes given in $\texttt{out\_axes}$. 
+With the intrinsic modes computed, the algorithm to compute the nonlinear couplings in \ref{eq2:gammas12} is shown below:
+
+\begin{algorithm}[h!]
+\DontPrintSemicolon
+%\KwData{$G=(X,U)$ such that $G^{tc}$ is an order.}
+%\KwResult{$G’=(X,V)$ with $V\subseteq U$ such that $G’^{tc}$ is an interval order.}
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\Input{Intrinsic modal shapes calculation}
+\Output{Intrinsic nonlinear modal couplings $\bm{\Gamma}_1$ and $\bm{\Gamma}_2$}
+\Begin{
+ \BlankLine
+\texttt{f1 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot($\mathcal{L}_1$(u), v, axes=(1, 1),
+      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate through nodes} \;
+f2 $\longleftarrow$ vmap(f1, in\_axes=(0, None), out\_axes=0)  \;
+\bm{L}_1 $\longleftarrow$ f2($\bm \Phi_1$, $\bm \psi_1$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
+$\bm{\Gamma}_{1}$ $\longleftarrow$  jnp.einsum(isn,jskn$\rightarrow$ijk, $\bm \Phi_1$, $\bm{L}_1$) \;
+\BlankLine
+f3 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot($\mathcal{L}_2$(u), v, axes=(1, 1),
+      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate nodes} \;
+f4 $\longleftarrow$ vmap(f3, in\_axes=(0, None), out\_axes=0)  \;
+\bm{L}_2 $\longleftarrow$ f4($\bm \Phi_2$, $\bm \psi_2$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
+$\bm{\Gamma}_2$ $\longleftarrow$  jnp.einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\Phi}_{m1}$, $\bm{L}_2$, $\Delta_s$) $ \;
+\BlankLine
+}
+    }
+\caption{Nonlinear Couplings implementation in JAX}
+\label{alg:couplings}
+\end{algorithm}
+
+The new capabilities come at the expense of a higher restriction in the way the code is written. Compilation and transformations in JAX only work for functionally pure programs, which pushes the software to comply with a nonconventional functional paradigm. Some of these characteristics are pure functions, i.e. functions that have no side effects, input/output stream management needs to be placed outside the numerical algorithms, inmutability of arrays. These very constraints allow to achieve the capabilities describe above via the many abstractions implemented internally in the library. An example of this restrictions is the effectively impossibility of jit-compile conventional for loops. 
+[example of jax scan for]
+# The challenge after the algorithms have been implemented appropriately is to manage a generic software. Thus a mixed approach has been employed for this whereby numerical algorithms are written using functional programming but the flow of execution is managed using an object oriented approach that focus on modularity and extensibility.
+\\
+All the cases presented are part of a Test suite that has been built as a critical step for long term software management.
+They serve as a demonstration of the approach's ability to deal with geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved. Table \ref{table:benchmarks} introduces the cases that are discussed below with the improvements in performance from the new implementation.
+All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed. [update with GPUs]
+The previous version of the code based on Python made heavy use of for-loops instead of vectorised operations. These results highlight the advantages of writing scientific software with attention to the various optimization techniques available. Besides of this, it is also worth remarking the very short times in the solutions, which is also largely due to a formulation in modal space that naturally leads to reduced order models and easily caters for vectorised operations.
+Six examples are presented, first three are static cases and the other three are dynamic cases with the last one being a time domain aeroelastic response to a gust.
+The model complexity is also augmenting starting with beam model to then move to a representative aircraft of medium complexity, the so-called Sail Plane, and finally considering an industrial-scale aircraft, the XRF1 model.
+Note the longer dynamic simulation of the Sail Plane wing compared to the XRF1 gust response: despite i.e. more operations in the solution time step, driven the largest eigenvalue in the solution, was much smaller in the Sail Plane results 
+#+begin_src latex
+    \begin{table}[h!]
+      \begin{center}
+        \caption{Simulation times for cases part of the test suite}
+        \label{table:benchmarks}
+        \begin{tabular}{lrll}
+          \toprule
+          Model & Time [s] & Time (old) & Speed-up\\[0pt]
+          \midrule
+          ArgyrisCantilever (7 load-cases) & 7.8 & 9m:44s & $\times$74.9\\[0pt]
+          Simo45Beam (11 load cases) & 7.1 & 1m:45s & $\times$14.8\\[0pt]
+          SailPlane (6 load cases) & 8.1 & 56.3s & $\times$6.95\\[0pt]
+          ShellBeam (Dynamic, 20 sec. with 85 modes) & 34.3 & 6h:16m:53s & $\times$659.3\\[0pt]
+          SailPlaneWing (Dynamic, 15 sec. with 50 modes) & 10.88 & 2h:18min:35s & $\times$764.2\\[0pt]
+          XRF1-Gust (Dynamic Aeroelastic, 15 sec. with 70 modes) & 17.4 & 1h:38min:28s & $\times$339.5\\[0pt]
+          \bottomrule
+                &  &  & \\[0pt]
+        \end{tabular}
+      \end{center}
+    \end{table}
+#+end_src
+
+** COMMENT Software design
+\textit{"Supporting state-of-the-art AI research means balancing rapid prototyping and quick iteration with the ability to deploy experiments at a scale traditionally associated with production systems."}.
+Jax target inside DeepMind would also be desirable in a scientific research environment. It however entails a good amount of labour and expertise into the field of software design, whose payoffs are only realisable in the long term.    
+# To what extent this is a feasible target is somehow unknown due to current constraints, but nonetheless a sensible objective to have in consideration when developing new tools.
+Fig. [[components_architecture]] shows a high-level view of this first version of the software in terms of components. A Configuration component builds the necessary settings for the simulation, including geometric coordinates, load-paths information.
+The Configuration is injected into the Driver component that initialises the Simulation component, the Systems and the Solution component, after which it triggers the simulation. The Systems are run as managed by the Simulation component and encapsulate the various equations to be solved (time marching, nonlinear static equilibrium or stability for instance). The solution component acts as a memory-efficient container of the new data to be kept as the solution process advances, and it is responsible for loading (from a previous simulations) and writing solution data too. It is thus passed to every System. 
+ 
+#+NAME: components_architecture
+#+CAPTION: Components architecture diagram
+#+ATTR_LATEX: :width 0.4\textwidth 
+#+RESULTS: components_architecture
+[[file:figs/components_architecture.png]]
+
+Fig. [[classes_architecture]] shows a lower view of the abstractions, interfaces between classes and how they interact via their public methods. The inputs to the program may be given via a .yaml file or a python dictionary in memory. The starting point in the main file is the initialisation of the driver corresponding to the mathematical description to be solved (so far only the intrinsic modal is available, Eqs. \eqref{eq3:intrinsic_full_aeroelastic}). The intrinsic driver computes (or loads), as a pre-simulation step, the intrinsic modal shapes and nonlinear tensors from the linear stiffness and mass matrices and the nodal coordinates; then it runs the cases by triggering the simulation class. This class is responsible for managing how the systems are being run (in serial, in parallel, or even in a coupling process between systems). From the configuration settings, the intrinsic system loads the equations (dqs), the external loads in Eqs. \eqref{eq2:sol_qs}, such as point-forces, gravity or modal aerodynamic GAFs. Various libraries can be chosen to either solve the static equations or march in time if the solution is dynamic; importantly, the JAX-based Diffrax library has been integrated and supports ordinary, stochastic and controlled equations, with many solvers and multiple adjoint methods which could be used in an optimization framework. This initial layout of the software is expected to evolve and to be consolidated as the software matures. 
+
 * Results
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
 
+** Canonical case: very flexible unsupported structure 
 #+NAME: WSP_times
 #+begin_src python  :results raw
   dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
@@ -823,6 +1083,563 @@ time steps = 0.001, 0.0028, 0.0061
 
 #+RESULTS: FFBerror2
 [[file:figs/FFBerror2.png]]
+
+** Representative case: structural verification
+\label{sec:representative_aircraft}
+A representative FE model for aeroelastic analysis of a full aircraft without engines is used to demonstrate the capabilities of the current methodology on large finite-element models.
+The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs with composite materials employed in the construction. Flexible tail and rear stabiliser are rigidly attached to the wing. Structural and aerodynamic models are shown in Fig. [[fig:SailPlane2]]. This aircraft was first shown in [[cite:&CEA2021a]] is a good test case as it is not very complex yet representative of aircraft FE models and it is available open source.  
+
+#+NAME: fig:SailPlane2
+#+CAPTION: Representative plane structural and aerodynamic models
+#+ATTR_LATEX: :width 0.7\textwidth 
+[[file:figs/SailPlaneRef.png]]
+
+A Guyan reduction is employed in the reduction process and Fig. [[fig:modes]] illustrates the accuracy of the condensed model by comparing the 3D model shapes. No differences can be appreciated for the first few modes (the lowest frequency corresponding to a bending mode agrees in both models at $\omega_1=4.995$ rads/s) so we show higher frequency modes: a high order bending mode ($\omega_{10}=60.887/60.896$ rads/s in full versus reduced models) and a torsional mode ($\omega_{20}=107.967/107.969$ rads/s). This very good preservation of the full model leads to an excellent accuracy in the static and dynamic results presented below. It is important to remark this aircraft model is very conventional and does not showcase high-aspect ratio wings. Therefore while this modelling strategy would not be suitable for every engineering structure, as long as there is a dominant dimension and deformations in the other two remain small (as is the case in high level descriptions of aircraft, bridges or wind turbines) it has been found to produce very good approximations when compared with full dimensional solutions.
+
+#+NAME: fig:modes
+#+CAPTION: Full VS reduced order models modal shape 
+#+ATTR_LATEX: :width 0.6\textwidth 
+[[file:figs/SPM19af2.pdf]]
+
+#+NAME: fig:modes2
+#+CAPTION: Full VS reduced order models modal shape 
+#+ATTR_LATEX: :width 0.6\textwidth 
+[[file:figs/SPM7af2.pdf]]
+*** Geometrically nonlinear static response
+The static equilibrium of the aircraft under prescribed loads is first studied with follower loads normal to the wing applied at the tip of each wing. The response for an increasing load stepping of 200, 300, 400, 480 and 530 KN is computed. Nonlinear static simulations on the original full model (before condensation) are also carried out in MSC Nastran and are included. The interpolation elements in Nastran are used to output the displacements at the condensation nodes for direct comparison with the NMROM results.
+Geometric nonlinearities are better illustrated by representing a sectional view of the wing as in Fig. [[fig:SPWingsection]], where deformations in the z-direction versus the metric $S = \sqrt{x^2+y^2}$ are shown. MSC Nastran linear solutions (Solution 101) are also included to appreciate more clearly the shortening and follower force effects in the nonlinear computations.
+
+#+NAME: SPWingsection
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  import fem4inas.preprocessor.configuration as configuration
+  config = configuration.Config.from_file("SP1/config.yaml")
+  sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
+  r_sp0, r_sp, r_spn, r_spnl = fn_spWingsection(sol_sp, config)
+  fig, figname = fig_out(name)(plot_spWingsection)(r_sp0, r_sp, r_spn, r_spnl)
+  figname
+#+end_src
+
+#+NAME: fig:SPWingsection
+#+CAPTION: Static geometrically-nonlinear effects on the aircraft main wing 
+#+ATTR_LATEX: :width 0.5\textwidth 
+#+RESULTS: SPWingsection
+[[file:figs/SPWingsection.png]]
+
+The tolerance in the Newton solver was set to $10^{-6}$ in all cases.
+A convergence analysis with the number of modes in the solution is presented in [[SPstatic_convergence]].
+5, 15, 30, 50, 100 modes are used to build the corresponding NMROMs.
+The error metric is defined as the L-2 norm divided by the total number of nodes (only the condenses ones in this case): $\epsilon = ||u_{NMROM} - u_{NASTRAN}||/NumNodes$. It can be seen the solution with 50 modes already achieves a very good solution even for the largest load which produces a 25.6$\%$ tip deformation of the wing semi-span, $b = 28.8$ m. The displacement difference at the tip in this case is less than 0.2$\%$.
+
+#+NAME: SPerror
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+
+  config = configuration.Config.from_file("SP1/config.yaml")
+  sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
+  sp_error = fn_spError(sol_sp, config, print_info=True)
+  fig, figname = fig_out(name)(fn_spPloterror)(sp_error)
+  figname
+#+end_src
+
+#+NAME: SPstatic_convergence
+#+CAPTION: Modal convergence static solution of representative aircraft
+#+ATTR_LATEX: :width 0.45\textwidth 
+#+RESULTS: SPerror
+[[file:figs/SPerror.png]]
+
+The 3D structural response has been reconstructed using the approach in [[workflow]].
+The nodes connected by the interpolation elements (RBE3s) to the ASET solution are reconstructed first and subsequently a model with RBFs kernels is used to extrapolate to the rest of the nodes in the full FE.
+A very good agreement is found against the Nastran 400 solution. 
+Fig. [[SPstatic_3D]]  shows the overlap in the Nastran solution (in blue) and the NMROM (in red) for the 530 KN loading.
+
+#+NAME: SPstatic_3D
+#+CAPTION: Static 3D Solution for a solution with 50 modes and 530 KN loading (Full NASTRAN solution in red versus the NMROM in blue). 
+#+ATTR_LATEX: :width 0.7\textwidth 
+[[./figs/SP_3Dloading-front2.png]]
+[[./figs/SP_3Dloading-side.png]]
+The error metric of this 3D solution is also assessed in Fig. [[fig:SPerror3D]], for the solution with 50 modes. The discrepancy metric is of the same order than the previously shown at the reduction points. This conveys an important point, that there is no significant accuracy loss in the process of reconstructing the 3D solution.
+
+#+NAME: SPerror3D
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sp_error1D = [sp_error[f'M4_L{i}'] for i in range(6)]
+  # fig, figname = fig_out(name)(fn_spPloterror3D)(sp_error1D, sp_error3d)
+  fig, figname = fig_out(name)(fn_spPloterror3D)(None, sp_error3d)
+  figname
+#+end_src
+
+#+NAME: fig:SPerror3D
+#+CAPTION: 3D discrepancy comparison between full FE and NMROM solutions
+#+ATTR_LATEX: :width 0.4\textwidth 
+#+RESULTS: SPerror3D
+[[file:figs/SPerror3D.png]]
+
+Next we compare the computational times for the various solutions presented in this section in Table [[table:SP_times]]. Computations of the six load steps in Fig. [[fig:SPWingsection]] are included in the assessment. A near 50 times speed-up is achieved with our solvers compared to Nastran nonlinear solution, which is one of the main strengths of the proposed method. It does not come at a surprise the static linear solution in Nastran is the fastest of the results, given its simplicity that only entails solving a linear, very sparse system of equations.
+#+NAME: SP_times
+#+begin_src python  :results raw
+  dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
+  values = ["Time [s]"]
+  values += [', '.join([str(round(dfruns[f'SP{i+1}'].iloc[0], 2)) for i in range(5)])]
+  values += [5*60 + 45]
+  values += [1.02]
+  header = ["NMROM (modes: 5, 15, 30, 50, 100)"]
+  header += ["NASTRAN 400"]
+  header += ["NASTRAN 101"]
+  # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
+  #                         index=TIMES_DICT.keys())
+
+  # df_ = results_df['shift_conm2sLM25']
+  # df_ = df_.rename(columns={"xlabel": "%Chord"})
+  tabulate([values], headers=header, tablefmt='orgtbl')
+#+end_src
+
+#+NAME: table:SP_times
+#+CAPTION: Computational times static solution
+#+ATTR_LATEX: :center t  
+#+RESULTS: SP_times
+|          | NMROM (modes: 5, 15, 30, 50, 100) | NASTRAN 400 | NASTRAN 101 |
+|----------+-----------------------------------+-------------+-------------|
+| Time [s] | 6.7, 6.63, 6.79, 7.06, 9.55       |         345 |        1.02 |
+
+With the examples herein and in previous works we sought to introduce a versatile solution that accounts for geometric nonlinearities in a very efficient manner and only needs modal shapes and linear FE matrices from a generic FE solver as inputs. Another of the goals set for this work was to achieve an equally flexible strategy in the automatic calculation of derivatives across the various solvers in the code. The AD for the static solvers is first verified as follows: the load stepping shown above becomes a pseudo-time interpolation load such that a variable $\tau$ controls the amount of loading and we look at the variation of the wing-tip displacement as a function of this $\tau$. If \(f(\tau=[1, 2, 3, 4, 5, 6]) = [200, 250, 300, 400, 480, 530]\) KN, with a linear interpolation between points, the derivative of the z-component of the tip of the wing displacements is computed at \(\tau= 1.5, 3.5, 5.5 \), as show in Fig. [[fig:sp_ad]] with red points. 
+#+NAME: SP_AD
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_spAD)(r_sp, r_sp0)
+  #figname
+#+end_src
+#+NAME: fig:sp_ad
+#+CAPTION: Static tip displacement with pseudo-time stepping load
+#+ATTR_LATEX: :width 0.5\textwidth 
+file:figs/sp_ad.pdf
+Table [[table:SP_AD]] shows a very good agreement against finite-differences (FD) with an epsilon of $10^{-3}$. Note how the derivative at each of the marked points corresponds approximately the slope in graph at those very points. And the biggest slope occurs precisely in between \(tau\) of 4 and 5 when the prescribed loading undergoes the biggest change from 300 to 400 KN.
+
+#+NAME: table:SP_AD
+#+CAPTION: AD verification in static problem
+#+ATTR_LATEX: :center t
+| $\tau$ | $f(\tau)$ [m] | $f'(\tau)$ (AD) | $f'(\tau)$ (FD) |
+|--------+---------------+-----------------+-----------------|
+|    1.5 |          2.81 |           0.700 |           0.700 |
+|    3.5 |         4.527 |           1.344 |           1.344 |
+|    5.5 |         6.538 |           0.623 |           0.623 |
+
+\newpage
+*** Large-amplitude nonlinear dynamics
+This test case demonstrates the accuracy of the NMROM approach for  dynamic geometrically-nonlinear calculations and was first introduced in [[cite:&CEA2021b]]. The right wing of Fig. [[fig:SailPlane2]] is considered and dynamic nonlinear simulations are carried out and compared to MSC Nastran linear and nonlinear analysis (SOL 109 and 400, respectively) on the full FE model.
+A force is applied at the wing tip with a triangular loading profile, followed by a sudden release of the applied force to heavily excite the wing. The force profile is given in Fig. [[fig:ramping_load]]. The applied force is then \(f_{tip} = \alpha \times \textup{\pmb{f}}_{max} f(0.05, 4) = [-2\times 10^5, 0., 6\times 10^5]f(0.05, 4)\) where $\alpha$ has been set to $1$.
+
+#+NAME: fig:ramping_load
+#+CAPTION: Ramping load profile for dynamic simulation of representative wing 
+#+ATTR_LATEX: :width 0.6\textwidth 
+[[./figs/ramping_load.pdf]]
+The dynamic response is presented in Fig. [[fig:wsp_3d]], where results have been normalised with the wing semi-span (28.8 m.). As expected, linear analysis over-predicts vertical displacements and does not capture displacements in the $x$ and $y$ directions. NMROMs were built with 5, 15, 30, 50 and 100 modes. A Runge-Kutta four is used to march the equation in time with time steps corresponding to the inverse of the largest eigenvalue in the NMROM, i.e. $dt = [27.34, 6.62, 2.49, 1.27, 0.575] \times 10^{-3}$ s. 
+
+#+NAME: WSPsubplots
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol_wsp= [solution.IntrinsicReader(f"./WSP{i}") for i in range(1,6)]
+  # fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=0, labels=None, nast_load=0)
+  #fig = subplots_wsp(sol_wsp, labels=None, nast_load=0)
+  #figname
+  fig, figname = fig_out(name)(subplots_wtips)(wsp_wingtip, sol_wsp, labels=None, nast_load=0)
+  figname
+
+#+end_src
+
+#+NAME: fig:wsp_3d
+#+ATTR_LATEX: :width 1\textwidth 
+#+CAPTION: Span-normalised wing-tip displacements
+#+RESULTS: WSPsubplots
+[[file:figs/WSPsubplots.png]]
+
+# #+NAME: WSP_x
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   sol_wsp= [solution.IntrinsicReader(f"./WSP{i}") for i in range(1,6)]
+#   fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=0, labels=None, nast_load=0)
+#   figname
+# #+end_src
+
+# #+NAME: fig:WSP_x
+# #+CAPTION: Span-normalised tip $x-$displacements
+# #+RESULTS: WSP_x
+# [[file:figs/WSP_x.png]]
+
+# #+NAME: WSP_y
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=1, labels=None, nast_load=0)
+#   figname
+# #+end_src
+
+# #+CAPTION: Span-normalised tip $y-$displacements
+# #+RESULTS: WSP_y
+# [[file:]]
+
+# #+NAME: WSP_z
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=2, labels=None, nast_load=0)
+#   figname
+# #+end_src
+
+# #+CAPTION: Span-normalised tip $z-$displacements
+# #+RESULTS: WSP_z
+# [[file:figs/WSP_z.png]]
+
+#+NAME: WSP_zzoom
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=2, labels=None, nast_load=0,axes=[[3.85,4.15],[27.4, 27.65]])
+  figname
+#+end_src
+
+# #+NAME: fig:WSP_zzoom
+# #+CAPTION: Convergence of dynamic simulation: zoom into the maximum displacement point 
+# #+ATTR_LATEX: :width 0.5\textwidth 
+# #+RESULTS: WSP_zzoom
+# [[file:figs/WSP_zzoom.png]]
+
+As in the previous example, the 3D shape of the model is retrieved and compared against the full nonlinear dynamic solution as illustrated in Fig. [[wsp_3d]] (Nastran solution in yellow and NMROM with 50 modes in blue). The times at positive and negative peaks are displayed. Even though a wing of such characteristics would never undergo this level of deformations, these results further support the viability of the methodology to solve highly geometrically nonlinear dynamics, on complex models and with minimal computational effort. 
+#+NAME: wsp_3d
+#+CAPTION: Wing 3D dynamic response comparison
+#+ATTR_LATEX: :width 1\textwidth 
+[[./figs/WSP_3D-front.png]]
+
+Next we look at the differences of the dynamic simulations with the same metric employed above that now evolves in time. Integrator errors accumulate and discrepancies grow with time but still remain small. In fact the differences between Nastran and our dynamic solvers are comparable to the static example with the highest load (around the $5\times 10^{-5}$ mark), both cases inducing over 25\% percent deformations of the wing semi-span.
+#+NAME: WSP_error
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  wsp_error = fn_wspError(sol_wsp)
+  wsp_error_time = jnp.linspace(0,15,10001)
+  fig, figname = fig_out(name, update_layout=dict(showlegend=False, margin=dict(
+                                autoexpand=True,
+                                l=0,
+                                r=5,
+                                t=2,
+                                b=0)))(fn_wspPloterror3D)(wsp_error_time,wsp_error3d)
+  figname
+#+end_src
+
+#+NAME: WSP_error
+#+CAPTION: L-2 norm per node differences between Nastran full FE solution and NMROM with 50 modes
+#+ATTR_LATEX: :width 0.7\textwidth 
+#+RESULTS: WSP_error
+[[file:figs/WSP_error.png]]
+
+An impressive reduction of computational time is achieved by our solvers as highlighted in Table [[table:WSP_times]]. The nonlinear response of the full model in Nastran took 1 hour 22 minutes, which is over two orders of magnitude slower than the NMROM with 50 modes resolution, which proved very accurate. The significant increase in computational effort when moving from a solution with 50 modes to 100 modes is due to various factors: vectorised operations are limited and the quadratic nonlinearities ultimately lead to O($N_m^3$) algorithms; the time-step needs to be decreased for the Runge-Kutta integration to remain stable; the additional overheads that come with saving and moving larger tensors, from the modal shapes, the cubic modal couplings, to the system states (note times shown account for all the steps from start to end of the simulation, including saving all the data for postprocessing).
+
+#+NAME: WSP_times
+#+begin_src python  :results raw
+  dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
+  values = ["Time [s]"]
+  values += [', '.join([str(round(dfruns[f'WSP{i+1}'].iloc[0], 2)) for i in range(5)])]
+  values += [1*60*60 + 22*60]
+  values += [33.6]
+  header = ["NMROM (modes: 5, 15, 30, 50, 100)"]
+  header += ["NASTRAN 400"]
+  header += ["NASTRAN 109"]
+  # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
+  #                         index=TIMES_DICT.keys())
+
+  # df_ = results_df['shift_conm2sLM25']
+  # df_ = df_.rename(columns={"xlabel": "%Chord"})
+  tabulate([values], headers=header, tablefmt='orgtbl')
+#+end_src
+
+#+NAME: table:WSP_times
+#+CAPTION: Computational times representative wing dynamic solution
+#+ATTR_LATEX: :center t
+#+RESULTS: WSP_times
+|          | NMROM (modes: 5, 15, 30, 50, 100) | NASTRAN 400 | NASTRAN 109 |
+|----------+-----------------------------------+-------------+-------------|
+| Time [s] | 2.79, 2.92, 4.85, 7.14, 155.3     |        4920 |        33.6 |
+
+We move now to one of the main highlights of this work, i.e. the ability to compute gradients via automatic differentiation in geometrically nonlinear dynamic problems. The maximum root loads occurring in a wing subjected to dynamic loads is a good test case as it can be a critical metric in sizing the aircraft wings, especially high-aspect ratio ones. Thus we look at the variation of the maximum z-component of the vertical internal forces as a function of \(\alpha\) in the loading profile of Fig. [[fig:ramping_load]]. Effectively, the slope of the loading increases with \(\alpha\). Table [[table:AD_WSP]] shows the derivatives computed using FD with $\epsilon=10^{-4}$ and AD in reverse-mode on the example with 50 modes resolution. In this case the FD needed tweaking of $\epsilon$ while application of AD was straight forward with no need for checkpoints and took around three times the speed of a single calculation. 
+
+#+NAME: table:AD_WSP
+#+CAPTION: Automatic differentiation in dynamic problem
+#+ATTR_LATEX: :center t
+| $\alpha$ | $f(\alpha)$ [KN/m]   | $f'(\alpha)$ (AD)     | $f'(\alpha)$ (FD)     |
+|----------+----------------------+-----------------------+-----------------------|
+|      0.5 | $1723.2 \times 10^3$ | $3587.71 \times 10^3$ | $3587.77 \times 10^3$ |
+|      1.0 | $3624.4 \times 10^3$ | $3735.26 \times 10^3$ | $3735.11 \times 10^3$ |
+|      1.5 | $5608.3 \times 10^3$ | $3957.81 \times 10^3$ | $3958.31 \times 10^3$ |
+
+** Industrial-level case: full-aicraft gust response
+The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
+Fig. [[fig:xrf1_modalshapes]] shows the reference FE model with three modal shapes. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. The aerodynamic model contains \(\sim 1,500\) aerodynamic panels. The simulations are carried out with a modal resolution of 70 modes and a time step in the Runge-Kutta solver of 0.005. 
+
+#+NAME: fig:xrf1_modalshapes
+#+CAPTION: Modified XRF1 reference configuration with characteristic modal shapes
+#+ATTR_LATEX: :width 0.8\textwidth 
+[[file:figs/xrf1_modalshapes.pdf]]
+
+To verify the accuracy of the reduction method we show now a comparison of some of the most relevant natural frequencies in Table \ref{table8:xrf1-frequencies} (normalized with the lowest frequency). It is common practice in this industrial aeroelastic models to represent the mass model as lumped masses along the load axis (provided by the mass department which thoroughly tracks the multiple components and combines them into sectional lumped points with inertia). As explained above, this makes the Guyan reduction match an exact condensation and explains the accuracy of the results. 
+\begin{table}[h!]
+\begin{center}
+\caption{Normalised natural frequencies of the modified XRF1 clamped model}
+\label{table8:xrf1-frequencies}
+\begin{tabular}{c c c c}
+\toprule
+%\hline
+\textbf{Mode Type}  & $ \pmb{\omega_{full}}$  &$ \pmb{\omega_{condensation}}$ & \textbf{Error} (\%) \\
+First out-of-plane wing bending (1) &1.0              &1.0        &    0.0001   \\ 
+First out-of-plane wing bending (2) &1.04948    &1.04949  &    0.0004   \\ 
+First fuselage bending  (3)  &1.4285     &1.4288       &    0.025     \\ 
+Fuselage lateral bending + wing out-of-plane bending (4) &1.5093      &1.5099       &    0.038     \\ 
+Wing and pylon lateral roll bending (5)&2.1449      &2.1449       &    0.0007   \\ 
+%&2.23018    &2.23018   &    0.0002   \\ 
+%&2.316        &2.315            &    0.07     \\ 
+%&2.4107      &2.4102        &    0.035    \\ 
+%&2.45487   &2.45495  &    0.007    \\ 
+%&2.506       &2.5052         &    0.06     \\
+\vdots &  &        &       \\
+First in-plane wing bending (13) &   3.156  &  3.155  &0.03  \\
+Second in-plane wing bending (14) & 3.25655&  3.2566  &  0.0016  \\
+\vdots &  &        &       \\
+First wing torsion (28)   & 7.675 & 7.676&  0.01   \\
+Second wing torsion (29) &   7.7368 & 7.7366   &0.002 \\
+%\hline
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+While the previous results where purely structural, now the dynamic response to an atmospheric disturbance or gust is computed. This aeroelastic analysis is a requirement for certification purposes and it is one of the main drivers in sizing the wings of high aspect ratio wings. Furthermore, the previous examples showed the advantage of our approach in terms of computational speed, but other than that results could be obtained with commercial software. The geometrically nonlinear aeroelastic response, however, it is not currently available in commercial solutions that are bounded to linear analysis in the frequency domain. Other research codes feature those additional physics, yet are limited to simple models. Thus the added value in the proposed approach comes at the intersection between the nonlinear physics arising from large integrated displacements, computational efficiency and the ability to enhance the models already built for industrial use.
+\newpage
+A verification exercise is introduced first by applying two 1-cos gust shapes at a very low intensity, thus producing small deformations and a linear response. The flow Mach number is 0.81. A first gust is applied that we name as G1 of length 67 m and peak velocity 0.141 m/s, and a second gust, G2, of 165 m and peak velocity of 0.164 m/s.
+Fig. [[fig:GustXRF12]] shows the normalised wing-tip response with our NMROM that accurately reproduces the Nastran 146 solution based on the full FE model.
+
+#+NAME: GustXRF12
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol1= solution.IntrinsicReader("./XRF1")
+  sol2= solution.IntrinsicReader("./XRF2")
+  fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip2,sol1, sol2, labels=[1,2], nast_scale=0.01, nast_load=[2,6])
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF12
+#+CAPTION: Wing-tip response to low intensity gust
+#+ATTR_LATEX: :width 0.8\textwidth :placement [!h]
+#+RESULTS: GustXRF12
+[[file:figs/GustXRF12.png]]
+
+# #+NAME: GustXRF12_x
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   sol1= solution.IntrinsicReader("./XRF1")
+#   sol2= solution.IntrinsicReader("./XRF2")
+#   fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6], dim=0, nast_scale=0.01, nast_load=[2,6])
+#   figname
+# #+end_src
+
+# #+NAME: fig:GustXRF12_x
+# #+CAPTION: Wing-tip response to low intensity gust
+# #+ATTR_LATEX: :width 0.6\textwidth 
+# #+RESULTS: GustXRF12_x
+# [[file:figs/GustXRF12_x.png]]
+
+# #+NAME: GustXRF12_y
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=1, nast_scale=0.01, nast_load=[2,6])
+#   figname
+# #+end_src
+
+# #+NAME: fig:GustXRF12_y
+# #+CAPTION: $y$ Wing-tip response to low intensity gust
+# #+ATTR_LATEX: :width 0.6\textwidth 
+# #+RESULTS: GustXRF12_y
+# [[file:figs/GustXRF12_y.png]]
+
+# #+NAME: GustXRF12_z
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=2, nast_scale=0.01, nast_load=[2,6])
+#   figname
+# #+end_src
+
+# #+NAME: fig:GustXRF12_z
+# #+CAPTION: $z$ Wing-tip response to low intensity gust
+# #+ATTR_LATEX: :width 0.6\textwidth 
+# #+RESULTS: GustXRF12_z
+# [[file:figs/GustXRF12_z.png]]
+
+Next we increase the gust intensity by a factor of 200 in order to show the effects of geometric nonlinearities that are only captured by the nonlinear solver. As seen in Fig. [[fig:GustXRF34]], there are major differences in the $x$ and $y$ components of the response due to follower and shortening effects, and a slight reduction in the $z$-component. These are well known geometrically nonlinear effects that are added to the analysis with no significant overhead.
+
+#+NAME: GustXRF34
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol1= solution.IntrinsicReader("./XRF3")
+  sol2= solution.IntrinsicReader("./XRF4")
+  fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip2, sol1, sol2, labels=[1,2], nast_scale=2., nast_load=[1,2])
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF34
+#+CAPTION: Wing-tip response to high intensity gust
+#+ATTR_LATEX: :width 0.8\textwidth 
+#+RESULTS: GustXRF34
+[[file:figs/GustXRF34.png]]
+
+# #+NAME: GustXRF34_x
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   sol1= solution.IntrinsicReader("./XRF3")
+#   sol2= solution.IntrinsicReader("./XRF4")
+#   fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=0, nast_scale=2, nast_load=[2,6])
+#   figname
+# #+end_src
+
+# #+NAME: fig:GustXRF34_x
+# #+CAPTION: Wing-tip response to high intensity gust, $x-$ component
+# #+ATTR_LATEX: :width 0.6\textwidth 
+# #+RESULTS: GustXRF34_x
+# [[file:figs/GustXRF34_x.png]]
+
+# #+NAME: GustXRF34_y
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],dim=1, nast_scale=2, nast_load=[2,6])
+#   figname
+# #+end_src
+
+# #+CAPTION: Wing-tip response to high intensity gust, $y-$ component
+# #+ATTR_LATEX: :width 0.6\textwidth 
+# #+RESULTS: GustXRF34_y
+# [[file:figs/GustXRF34_y.png]]
+
+# #+NAME: GustXRF34_z
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   fig, figname = fig_out(name)(xrf1_wingtip2)(sol1, sol2, labels=[2,6],
+#                                               dim=2, nast_scale=2, nast_load=[2,6])
+#   figname
+# #+end_src
+
+# #+CAPTION: Wing-tip response to high intensity gust, $z-$component
+# #+ATTR_LATEX: :width 0.6\textwidth 
+# #+RESULTS: GustXRF34_z
+# [[file:figs/GustXRF34_z.png]]
+
+Snapshots of the 3D response are reconstructed for the G1 gust using the method verified above at the time points where tip displacement are maximum and minimum, i.e. 0.54 and 0.84 seconds. The front and side views together with the aircraft reference configuration are shown in Fig. [[fig:xrf1gust3D]]. 
+#+NAME: fig:xrf1gust3D
+#+CAPTION: 3D XRF1 Nonlinear gust response 
+#+ATTR_LATEX: :width 0.8\textwidth 
+[[file:figs/xrf1gust3D.pdf]]
+
+In previous examples the same Runge-Kutta 4 (RK4) time-marching scheme is used and now we explore the dynamic solution with other solvers to assess their accuracy and also their computational performance. Two explicit ODE solvers, RK4 and Dormand-Prince's 5/4 method (labelled S1 and S2), and two implicit, Euler first order and Kvaerno's 3/2 method ((labelled S3 and S4)), are compared in Fig. [[fig:GustXRF3578]] . In order to justify the use of implicit solvers we reduce the time step from 0.005 to 0.02 seconds, at which point both explicit solvers diverge. Kvaerno's implicit solver remain stable and accurate despite the larger time step while the Euler implicit method is stable but do not yield accurate results.
+
+#+NAME: GustXRF3578
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  sol3= solution.IntrinsicReader("./XRF3")
+  sol5= solution.IntrinsicReader("./XRF5")
+  sol7= solution.IntrinsicReader("./XRF7")
+  sol8= solution.IntrinsicReader("./XRF8")
+
+  fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip4, sol1=sol3, sol2=sol5, sol3=sol7, sol4=sol8,
+                                              labels=["S1","S2","S3","S4"])
+  figname
+#+end_src
+
+#+NAME: fig:GustXRF3578
+#+CAPTION: Wing-tip response to high intensity gust using implicit solvers
+#+ATTR_LATEX: :width 0.8\textwidth 
+#+RESULTS: GustXRF3578
+[[file:figs/GustXRF3578.png]]
+
+
+# #+NAME: GustXRF56_x
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   sol3= solution.IntrinsicReader("./XRF3")
+#   sol5= solution.IntrinsicReader("./XRF5")
+#   sol7= solution.IntrinsicReader("./XRF7")
+#   sol8= solution.IntrinsicReader("./XRF8")
+#   fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8,
+#                                               labels=["l3","l5","l7","l8"],
+#                                               dim=0)
+#   figname
+# #+end_src
+
+# #+NAME: fig:GustXRF56_x
+# #+CAPTION: Comparison of solvers
+# #+ATTR_LATEX: :width 0.6\textwidth 
+# #+RESULTS: GustXRF56_x
+# [[file:]]
+
+# #+NAME: GustXRF56_y
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8, labels=["l3","l5","l7","l8"],
+#                                               dim=1)
+#   figname
+# #+end_src
+
+# #+NAME: fig:GustXRF56_y
+# #+CAPTION: Comparison of solvers
+# #+ATTR_LATEX: :width 0.6\textwidth 
+# #+RESULTS: GustXRF56_y
+# [[file:figs/GustXRF56_y.png]]
+
+# #+NAME: GustXRF56_z
+# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+#   fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8, labels=["l3","l5","l7","l8"],dim=2)
+#   figname
+# #+end_src
+
+# #+NAME: fig:GustXRF56_z
+# #+CAPTION: Comparison of solvers
+# #+ATTR_LATEX: :width 0.6\textwidth 
+# #+RESULTS: GustXRF56_z
+# [[file:figs/GustXRF56_z.png]]
+
+The computational times of the different solvers are shown in Table [[table:XRF1_times]]. The implicit solvers have taken one order of magnitude more time to run despite the reduction in time step. Therefore the main take away this is that for moderately large frequency dynamics, the explicit solvers offer a much efficient solution. The turning point for using implicit solvers would be when the largest eigenvalue in Eqs. \ref{eq2:sol_qs} led to prohibitly small time steps. In terms of the Nastran solution, we are not showing the whole simulation time because that would include the time to sample the DLM aerodynamics which are input into the NMROM as a post-processing step. Instead, the increase in time when adding an extra gust subcase to an already existing analysis is shown, i.e. the difference between one simulation that only computes one gust response and another with two. It is remarkable that the explicit solvers are faster on the nonlinear solution than the linear solution by a commercial software. Besides our highly efficient implementation, the main reason for this might be the Nastran solution involves first a frequency domain analysis and then an inverse Fourier transform to obtain the time-domain results.
+
+#+NAME: XRF1_times
+#+begin_src python  :results raw
+  dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
+  values = ["Time [s]"]
+  values += [', '.join([str(round(dfruns[f'XRF{i}'].iloc[0], 2)) for i in [3,5,7,8]])]
+  values += [0*60*60 + 1*60 + 21]
+  header = ["NMROM [S1, S2, S3, S4]" ]
+  header += ["$\Delta$ NASTRAN 146"]
+  # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
+  #                         index=TIMES_DICT.keys())
+
+  # df_ = results_df['shift_conm2sLM25']
+  # df_ = df_.rename(columns={"xlabel": "%Chord"})
+  tabulate([values], headers=header, tablefmt='orgtbl')
+#+end_src
+
+#+CAPTION: Computational times XRF1 gust solution.
+#+NAME: table:XRF1_times
+#+ATTR_LATEX:  :center t :placement [h]
+#+RESULTS: XRF1_times
+|          | NMROM [S1, S2, S3, S4]       | $\Delta$ NASTRAN 146 |
+|----------+------------------------------+----------------------|
+| Time [s] | 22.49, 18.94, 273.95, 847.89 |                   81 |
+
+Similarly to the examples above, we now verify the AD implementation for the nonlinear aeroelastic response to the gust $G1$. The sensitivity of the six components of the wing root loads are computed with respect to the gust parameters $w_g$ and $L_g$, and the flow parameters $u_{\inf}$ and $\rho_{\inf}$. The results are presented in [[table:XRF1_AD]]. A very good agreement with the finite differences is found with $\epsilon=10^{-4}$, except for $u_{\inf}$ which was found to be rather unstable and giving negative values, which is not very sensible. This is a common problem about using finite differences to approximate derivatives and another argument in favour of AD techniques. Reducing to $\epsilon=5\times 10^{-2}$ produces more stable results which are the ones shown in the comparison.
+
+#+CAPTION: AD verification for the response to gust
+#+NAME: table:XRF1_AD
+\begin{table} [h!]
+\begin{center}
+\begin{tabular}{lllll}
+\toprule
+ & $w_g$ & $L_g$ & $u_{\inf}$ & $\rho_{\inf}$ \\
+\midrule
+$f_1$ (AD) & 12.180 & -0.690 & 6.666 & 477.208 \\
+$f_1$ (FD)  & 12.180 & -0.690  & 6.190  & 477.198  \\
+$\Delta$ \% & -1.1941E-5 & -2.8929E-3 & -7.1417E+0 & -2.1560E-3 \\
+\hline
+$f_2 (AD)$ & 19.088 & -1.015 & 6.122 & 712.485 \\
+$f_2 (FD)$ & 19.088 & -1.015 & 7.045 & 712.514  \\
+$\Delta$ \% & -8.0605E-5  & 1.6081E-2  & 1.5074E+1  & 4.1813E-3  \\
+\hline
+$f_3 (AD)$ & 65.574 & 18.764 & 8.218 & 1464.910 \\
+$f_3 (FD)$ & 65.574  & 18.764  & 7.813 & 1464.909  \\
+$\Delta$ \% & 5.1097E-6  & -5.0153E-5  & -4.9240E+0  & -1.0196E-4  \\
+\hline
+$f_4 (AD)$ & 126.648 & 6.961 & 21.598 & 2883.370 \\
+$f_4 (FD)$ & 126.648  & 6.961 & 19.736  & 2883.371  \\
+$\Delta$ \% & 6.2554E-6  & -2.2226E-3  & -8.6195E+0  & 5.2262E-5  \\
+\hline
+$f_5 (AD)$ & 330.759 & 84.098 & 85.224 & 5931.723 \\
+$f_5 (FD)$ & 330.759 & 84.099  & 97.188  & 5930.027  \\
+$\Delta$ \% & -1.3673E-5  & 2.0601E-3  & 1.4038E+1  & -2.8595E-2  \\
+\hline
+$f_6$ (AD) & 252.128 & 24.212 & 48.423 & 7179.735 \\
+$f_6$ (FD) & 252.128  & 24.211  & 14.980  & 7180.023  \\
+$\Delta$ \% & 4.4897E-5  & -5.4566E-3  & -6.9065E+1  & 4.0120E-3  \\
+\bottomrule
+\end{tabular}
+\end{center}
+  \end{table}
 
 
 * Conclusions
