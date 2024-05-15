@@ -71,7 +71,7 @@
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
   (setq Veval_blocks "yes") ;; yes, no, no-export 
-  (setq Veval_blocks_run "no")
+  (setq Veval_blocks_run "no-export")
   (setq pythonShell "py1org")
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
@@ -181,7 +181,6 @@
               return fig, figname
           return inner
       return inner_decorator
-
 
   def fig_background(func):
 
@@ -537,6 +536,43 @@
                         yaxis_title='Error')
       return fig
 
+  @fig_background
+  def plot_ffb_times(modes, y1, y2, label1, label2):
+
+      fig = None
+      fig = uplotly.lines2d(modes, y1, fig,
+                                dict(name=label1,
+                                     line=dict(color="blue")
+                                     ),
+                                dict())
+
+      fig = uplotly.lines2d(modes, y2, fig,
+                            dict(name=label2,
+                                 line=dict(color="red")
+                                 ),
+                            dict())          
+      fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
+      fig.update_layout(
+                        #height=800,
+                        xaxis_title='Num. modes',
+                        yaxis_title='Computational times [s]')
+      return fig
+
+  @fig_background
+  def plot_ffb_error(modes, y1, label1):
+
+      fig = None
+      fig = uplotly.lines2d(modes, y1, fig,
+                                dict(name=label1,
+                                     line=dict(color="blue")
+                                     ),
+                                dict())
+      fig.update_yaxes(type="log", tickformat= '.0e')
+      fig.update_layout(
+                        #height=950,
+                        xaxis_title='Num. modes',
+                        yaxis_title='Cg error')
+      return fig
 #+end_src
 
 **** COMMENT Plot alphas
@@ -708,6 +744,10 @@
 * Introduction
 * Theory and implementation
 * Results
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
 #+NAME: WSP_times
 #+begin_src python  :results raw
   dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
@@ -726,15 +766,63 @@
   tabulate([values], headers=header, tablefmt='orgtbl')
 #+end_src
 
+#+RESULTS: WSP_times
+
 time steps = 0.001, 0.0028, 0.0061
-| Architecture            | 50 modes   | 100 modes   | 150 modes  | 200 modes | 250 modes   | 300          |
-|-------------------------+------------+-------------+------------+-----------+-------------+--------------|
-| CPU HPC (time [s]/ err) | 7/1.3e-1   | 9.3/5.7e-2  | 34/2.2e-2  | 79/2e-3   | 474/5.3e-4  | 1869/2.54e-5 |
-| GPU HPC                 | 9.9/1.3e-1 | 10.4/5.7e-2 | 14/2.2e-2  | 22/2e-3   | 38/5.3e-4   | 120/2.54e-5  |
-|-------------------------+------------+-------------+------------+-----------+-------------+--------------|
-| CPU HPC (time [s]/ err) | 42/2.1e-2  | 184/1.2e-2  | 287/5.6e-3 | 421/2e-3  | 893/2.7e-4  | 1869/2.54e-5 |
-| GPU HPC                 | 58/2.1e-2  | 65/1.2e-2   | 67/5.6e-3  | 76/7.2e-4 | 94/2.7e-4   | 111/2.54e-5  |
-|                         |            |             |            |           |             |              |
+
+| Architecture            | 50 modes   | 100 modes   | 150 modes  | 200 modes  | 250 modes  | 300          |
+|-------------------------+------------+-------------+------------+------------+------------+--------------|
+| CPU HPC (time [s]/ err) | 7/1.3e-1   | 9.3/5.7e-2  | 34/2.2e-2  | 79/2e-3    | 474/5.3e-4 | 1869/2.54e-5 |
+| GPU HPC                 | 9.9/1.3e-1 | 10.4/5.7e-2 | 14/2.2e-2  | 22/2e-3    | 38/5.3e-4  | 120/2.54e-5  |
+|-------------------------+------------+-------------+------------+------------+------------+--------------|
+| CPU HPC (time [s]/ err) | 42/2.1e-2  | 184/1.2e-2  | 287/5.6e-3 | 421/7.2e-4 | 893/2.7e-4 | 1869/2.54e-5 |
+| GPU HPC                 | 58/2.1e-2  | 65/1.2e-2   | 67/5.6e-3  | 76/7.2e-4  | 94/2.7e-4  | 111/2.54e-5  |
+|-------------------------+------------+-------------+------------+------------+------------+--------------|
+
+
+#+NAME: FFBtimes1
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  modes = [50,100,150,200,250,300]
+  err1 = [1.3e-1, 5.7e-2, 2.2e-2, 2e-3, 5.3e-4, 2.54e-5]
+  err2 = [2.1e-2, 1.2e-2, 5.6e-3, 7.2e-4, 2.7e-4, 2.54e-5]
+  gpu_times1 = [9.9, 10.4, 14, 22, 38, 111]
+  cpu_times1 = [7, 9.3, 34, 79, 474, 1869]
+  gpu_times2 = [58, 65, 67, 76, 94, 111]
+  cpu_times2 = [42, 184, 287, 421, 893, 1869]
+  fig, figname = fig_out(name)(plot_ffb_times)(modes, gpu_times1, cpu_times1, "GPU", "CPU")
+  figname
+#+end_src
+
+#+RESULTS: FFBtimes1
+[[file:figs/FFBtimes1.png]]
+
+#+NAME: FFBtimes2
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_ffb_times)(modes, gpu_times2, cpu_times2, "GPU", "CPU")
+  figname
+#+end_src
+
+#+RESULTS: FFBtimes2
+[[file:figs/FFBtimes2.png]]
+
+
+#+NAME: FFBerror1
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_ffb_error)(modes, err1, 'L2-norm Error')
+  figname
+#+end_src
+
+#+RESULTS: FFBerror1
+[[file:figs/FFBerror1.png]]
+
+#+NAME: FFBerror2
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_ffb_error)(modes, err2, 'L2-norm Error')
+  figname
+#+end_src
+
+#+RESULTS: FFBerror2
+[[file:figs/FFBerror2.png]]
 
 
 * Conclusions
