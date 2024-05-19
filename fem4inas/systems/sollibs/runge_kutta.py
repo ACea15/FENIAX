@@ -2,8 +2,8 @@ import jax.numpy as jnp
 from functools import partial
 import jax
 
-@partial(jax.jit, static_argnames=['f'])
-def rk42(ys, dt, N, f, args):
+#@partial(jax.jit, static_argnames=['f'])
+def rk4old(ys, dt, N, f, args):
 
     @jax.jit
     def step(i, ys):
@@ -74,7 +74,7 @@ def ode(F: callable,
     sol = _solver(q0, dt, tn, F, args)
     return sol
 
-def ode2(F: callable,
+def odeold(F: callable,
         args,
         sett,
         q0,

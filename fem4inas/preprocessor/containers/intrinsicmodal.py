@@ -10,6 +10,7 @@ import fem4inas.intrinsic.geometry as geometry
 from fem4inas.intrinsic.functions import coordinate_transform, label_generator
 import jax
 from enum import Enum
+import math
 
 @dataclass(frozen=True)
 class Dconst(DataContainer):
@@ -588,35 +589,51 @@ class Dsystem(DataContainer):
 
     def __post_init__(self):
 
-        if self.t is None:
-            if self.tn is None:
+        if self.t is not None:
+            object.__setattr__(self, "t1",
+                               self.t[-1])
+            if (len_t := len(self.t)) < 2:
+                object.__setattr__(self, "dt", 0.)
+            else:
+                object.__setattr__(self, "dt", self.t[1] - self.t[0])
+            object.__setattr__(self, "tn", len_t)
+            object.__setattr__(self, "t",
+                               jnp.array(self.t))            
+        else:
+            if self.dt is not None and self.tn is not None:
+                object.__setattr__(self, "t1",
+                                   self.t0 + (self.tn - 1) * self.dt)
+            elif self.tn is not None and self.t1 is not None:
+                object.__setattr__(self, "dt",
+                                   (self.t1 - self.t0) / (self.tn - 1))
+            elif self.t1 is not None and self.dt is not None:
                 object.__setattr__(self, "tn",
-                                   2)
+                                   math.ceil((self.t1 - self.t0) / self.dt + 1)
+                                   )
+                object.__setattr__(self, "t1",
+                                   self.t0 + (self.tn - 1) * self.dt)
             object.__setattr__(self, "t",
                                jnp.linspace(self.t0, self.t1, self.tn))
-        else:
-            object.__setattr__(self, "t",
-                               jnp.array(self.t)
-                               )
 
-        if self.dt is None:
-            object.__setattr__(self, "dt", self.t[1] - self.t[0])
         object.__setattr__(self, 'xloads', initialise_Dclass(self.xloads,
                                                              Dxloads))
         if self.aero is not None:
             object.__setattr__(self, 'aero', initialise_Dclass(self.aero,
                                                                Daero, time=self.t))
         #self.xloads = initialise_Dclass(self.xloads, Dxloads)
+        if self.solver_settings is None:
+            object.__setattr__(self, "solver_settings", dict())
+
         libsettings_class = globals()[f"D{self.solver_library}{self.solver_function.capitalize()}"]
         object.__setattr__(self,
                            'solver_settings',
                            initialise_Dclass(self.solver_settings,
                                              libsettings_class)
                            )
-        
+
         if self.label is None:
             self.build_label()
-            
+
     def build_states(self, num_modes):
 
         tracker = StateTrack()

@@ -83,7 +83,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
             for k, v in self._config.systems.mapper.items():
                 print(f"***** Initialising system {k} *****")
                 cls_sys = fem4inas.systems.factory(f"{v.solution}_intrinsic")
-                self.systems[k] = cls_sys(k, v, self._config.fem, self.sol)
+                self.systems[k] = cls_sys(k, v, self._config, self._config.fem, self.sol)
                 print(f"***** Initialised {v.solution}_intrinsic *****")
         self.num_systems = len(self.systems)
 

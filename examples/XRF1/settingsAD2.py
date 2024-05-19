@@ -22,6 +22,7 @@ import fem4inas.systems.intrinsicSys as isys
 import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
 from fem4inas.preprocessor.inputs import Inputs
 import pathlib
+import pandas as pd
 
 jax.config.update("jax_enable_x64", True)
 #jax.config.update("jax_debug_nans", True)
@@ -341,3 +342,44 @@ F42 = main_20g21((config.system.aero.gust.intensity,
                                component=jnp.arange(6))
                  )
 F4dp = (F42 - F11) / epsilon
+
+
+
+from decimal import Decimal
+
+delta1 = [(F1dp[i] - Fr[0][i]) / Fr[0][i] * 100 for i in range(6)]
+delta2 = [(F2dp[i] - Fr[1][i]) / Fr[1][i] * 100 for i in range(6)]
+delta3 = [(F3dp[i] - Fr[2][i]) / Fr[2][i] * 100 for i in range(6)]
+delta4 = [(F4dp[i] - Fr[3][i]) / Fr[3][i] * 100 for i in range(6)]
+
+# wg = [f"{Decimal(float(Fr[0][i])):.4E} / {Decimal(float(F1dp[i])):.4E} / {Decimal(float(delta1[i])):.4E}" for i in range(6)]
+# Lg = [f"{Decimal(float(Fr[1][i])):.4E} / {Decimal(float(F2dp[i])):.4E} / {Decimal(float(delta2[i])):.4E}" for i in range(6)]
+# uinf = [f"{Decimal(float(Fr[2][i])):.4E} / {Decimal(float(F3dp[i])):.4E} / {Decimal(float(delta3[i])):.4E}" for i in range(6)]
+# rhoinf = [f"{Decimal(float(Fr[3][i])):.4E} / {Decimal(float(F4dp[i])):.4E} / {Decimal(float(delta4[i])):.4E}" for i in range(6)]
+
+
+wg = [f"{float(Fr[0][i//2])*1e-3:.3f}" if i % 2 == 0 else f"{float(F1dp[i//2])*1e-3:.3f} [{Decimal(float(delta1[i//2])):.4E}]" for i in range(12)]
+Lg = [f"{float(Fr[1][i//2])*1e-3:.3f}" if i % 2 == 0 else f"{float(F2dp[i//2])*1e-3:.3f} [{Decimal(float(delta2[i//2])):.4E}]" for i in range(12)]
+uinf = [f"{float(Fr[2][i//2])*1e-3:.3f}" if i % 2 == 0 else f"{float(F3dp[i//2])*1e-3:.3f} [{Decimal(float(delta3[i//2])):.4E}]" for i in range(12)]
+rhoinf = [f"{float(Fr[3][i//2])*1e-3:.3f}" if i % 2 == 0 else f"{float(F4dp[i//2])*1e-3:.3f} [{Decimal(float(delta4[i//2])):.4E}]" for i in range(12)]
+
+
+# Lg = [f"{float(Fr[1][i])*1e-3:.3f} " for i in range(6)]
+# Lg += [f"{float(F2dp[i])*1e-3:.3f} ({Decimal(float(delta2[i])):.4E})" for i in range(6)]
+# uinf = [f"{float(Fr[2][i])*1e-3:.3f}" for i in range(6)]
+# uinf += [f"{float(F3dp[i])*1e-3:.3f} ({Decimal(float(delta3[i])):.4E})" for i in range(6)]
+# rhoinf = [f"{float(Fr[3][i])*1e-3:.3f}" for i in range(6)]
+# rhoinf += [f"{float(F4dp[i])*1e-3:.3f} ({Decimal(float(delta4[i])):.4E})" for i in range(6)]
+
+
+# [jnp.linalg.norm(Fr[i]-Ff[i]) / jnp.linalg.norm(Fr[i]) for i in range(4)]
+# deltaFD = [jnp.linalg.norm(Fr[i]-[F1dp, F2dp, F3dp, F4dp][i]) / jnp.linalg.norm(Fr[i]) for i in range(4)]
+
+dfd = {"wg":wg, "Lg":Lg, "$u_{\inf}$":uinf, "$\rho_{\inf}$":rhoinf}
+df = pd.DataFrame(dfd, index=['$f_1$ (AD)', '$f_1$ (FD) [\Delta \%]',
+                              '$f_2 (AD)$', '$f_2 (FD)$',
+                              '$f_3 (AD)$', '$f_3 (FD)$',
+                              '$f_4 (AD)$', '$f_4 (FD)$',
+                              '$f_5 (AD)$', '$f_5 (FD)$',
+                              '$f_6$ (AD)', '$f_6$ (FD)'])
+df.to_latex("latex_try.txt")

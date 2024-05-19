@@ -45,6 +45,7 @@ def dq_10g121(q, *args):
         F += xloads.eta_pointdead(t, phi1l, x, force_dead, Rab)
         return F
     F = _dq_10g121(q)
+    # jax.debug.breakpoint()
     return F
 
 def dq_10g15(q, *args):

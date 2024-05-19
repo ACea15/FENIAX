@@ -49,7 +49,8 @@ def recover_fields(q1, q2, tn, X,
 
     return X1, X2, X3, ra, Cab
 
-def recover_staticfields(q2, tn, X, phi2l, psi2l, X_xdelta, C0ab, fem):
+@partial(jax.jit, static_argnames=['config', 'tn'])
+def recover_staticfields(q2, tn, X, phi2l, psi2l, X_xdelta, C0ab, config):
 
     ra0 = jnp.broadcast_to(X[0], (tn, 3))
     Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
@@ -60,9 +61,10 @@ def recover_staticfields(q2, tn, X, phi2l, psi2l, X_xdelta, C0ab, fem):
     Cab, ra = postprocess.integrate_strains_t(ra0,
                                               Cab0,
                                               X3,
-                                              fem,
+                                              #fem,
                                               X_xdelta,
-                                              C0ab
+                                              C0ab,
+                                              config
                                               )
 
     return X2, X3, ra, Cab
@@ -73,11 +75,13 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
     def __init__(self,
                  name: str,
                  settings: intrinsicmodal.Dsystem,
+                 config,
                  fem: intrinsicmodal.Dfem,
                  sol: solution.IntrinsicSolution):
 
         self.name = name
         self.settings = settings
+        self.config = config
         self.fem = fem
         self.sol = sol
         #self._set_xloading()
@@ -234,7 +238,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
                                                self.sol.data.modes.psi2l,
                                                self.sol.data.modes.X_xdelta,
                                                self.sol.data.modes.C0ab,
-                                               self.fem)
+                                               self.config)
 
         # ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
         # Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
@@ -354,7 +358,7 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
                                              self.sol.data.modes.psi2l,
                                              self.sol.data.modes.X_xdelta,
                                              self.sol.data.modes.C0ab,
-                                             self.fem
+                                             self.config
                                              )
 
         # ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
