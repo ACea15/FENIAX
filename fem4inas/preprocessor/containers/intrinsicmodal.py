@@ -268,7 +268,8 @@ class Dfem(DataContainer):
                               default=None, yaml_save=False)
     eigenvecs: jnp.ndarray  = dfield("EigenVectors",
                               default=None, yaml_save=False)
-    
+    eig_cutoff: float = dfield("cut-off frequency such that eigenvalues smaller than this are set to 0",
+                               default=1e-2) # -jnp.inf?
     eig_names: list[str | pathlib.Path] = dfield("""name to load
     eigenvalues/vectors in folder""",
                                                  default=["eigenvals.npy",
@@ -517,6 +518,7 @@ class Dsystem(DataContainer):
                                         default=dict(q1="velocity", q2="force"))
 
     def __post_init__(self):
+
 
         if self.t is not None:
             object.__setattr__(self, "t1",

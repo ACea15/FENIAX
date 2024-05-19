@@ -18,6 +18,7 @@ class Test2PointDead:
                                 'Beam2': None}
         inp.fem.folder = file_path / "../../../examples/EbnerBeam/FEM"
         inp.fem.num_modes = 60
+        inp.fem.eig_cutoff = 1e-4
         inp.fem.eig_type = "inputs"
         inp.driver.typeof = "intrinsic"
         inp.driver.save_fem = False
