@@ -60,7 +60,7 @@
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "fem4inasdev")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -714,6 +714,44 @@ https://plotly.com/python/subplots/
       return inner
 
   @fig_background
+  def plot_ffb_times(modes, y1, y2, label1, label2):
+
+      fig = None
+      fig = uplotly.lines2d(modes, y1, fig,
+                                dict(name=label1,
+                                     line=dict(color="blue")
+                                     ),
+                                dict())
+
+      fig = uplotly.lines2d(modes, y2, fig,
+                            dict(name=label2,
+                                 line=dict(color="red")
+                                 ),
+                            dict())          
+      fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
+      fig.update_layout(
+                        #height=800,
+                        xaxis_title='Num. modes',
+                        yaxis_title='Computational times [s]')
+      return fig
+
+  @fig_background
+  def plot_ffb_error(modes, y1, label1):
+
+      fig = None
+      fig = uplotly.lines2d(modes, y1, fig,
+                                dict(name=label1,
+                                     line=dict(color="blue")
+                                     ),
+                                dict())
+      fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
+      fig.update_layout(
+                        #height=800,
+                        xaxis_title='Num. modes',
+                        yaxis_title='Cg error')
+      return fig
+
+  @fig_background
   def xrf1_wingtip2(sol1, sol2, dim, labels=None,nast_scale=None, nast_load=None):
       scale = 100./33.977
       fig=None
@@ -806,8 +844,8 @@ https://plotly.com/python/subplots/
       fig2 = fun(*args, dim=1, **kwargs)
       fig3 = fun(*args, dim=2, **kwargs)
       fig3.update_xaxes(title=None)
-      fig1.update_xaxes(title=None)
-      fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.135, vertical_spacing=0.05,
+      fig2.update_xaxes(title=None)
+      fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.135, vertical_spacing=0.1,
                           # specs=[[{"colspan": 2}, None],
                           #       [{}, {}]]
                           )
@@ -828,10 +866,10 @@ https://plotly.com/python/subplots/
                         row=3, col=1
                         )
 
-      fig.update_xaxes(fig1.layout.xaxis,row=2, col=1)
-      fig.update_yaxes(fig1.layout.yaxis,row=2, col=1)
-      fig.update_xaxes(fig2.layout.xaxis,row=3, col=1)
-      fig.update_yaxes(fig2.layout.yaxis,row=3, col=1)
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=1)
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=1)
+      fig.update_xaxes(fig1.layout.xaxis,row=3, col=1)
+      fig.update_yaxes(fig1.layout.yaxis,row=3, col=1)
       fig.update_xaxes(fig3.layout.xaxis,row=1, col=1)
       fig.update_yaxes(fig3.layout.yaxis,row=1, col=1)
       fig.update_layout(plot_bgcolor='white',
@@ -938,13 +976,14 @@ https://plotly.com/python/subplots/
       return fig
 
   @fig_background
-  def wsp_wingtip(sol_list, dim, labels=None, nast_load=None, axes=None):
+  def wsp_wingtip(sol_list, dim, labels=None, nast_load=None, axes=None,
+                  modes = [5, 15, 30, 50, 100]):
       scale = 100./28.8
       fig = None
       colors=["red", "darkgreen",
-              "blue", "magenta", "steelblue"]
+              "steelblue", "magenta", "blue"]
       dash = ['dash', 'dot', 'dashdot']
-      modes = [5, 15, 30, 50, 100]
+
       for i, si in enumerate(sol_list):
           x, y = putils.pickIntrinsic2D(si.data.dynamicsystem_s1.t,
                                         si.data.dynamicsystem_s1.ra,
@@ -1148,7 +1187,7 @@ https://plotly.com/python/subplots/
                                   dict())            
       fig.update_yaxes(title=r'$\large u_z [m]$')
       fig.update_xaxes(title=r'$\large S [m]$', range=[6.81,36])
-      fig.update_layout(legend=dict(x=0.75, y=0.95))
+      fig.update_layout(legend=dict(x=0.65, y=0.95))
       # fig = uplotly.lines2d((rnl[:,0]**2 + rnl[:,1]**2)**0.5, rnl[:,2], fig,
       #                       dict(name=f"NASTRAN-101",
       #                            line=dict(color="grey",
@@ -1185,7 +1224,7 @@ https://plotly.com/python/subplots/
       fig.update_yaxes(title=r"$\Large \epsilon$",type="log", tickformat= '.0e',tickfont = dict(size=13), tickvals=[2e-2, 1e-2, 7e-3,5e-3,3e-3, 2e-3, 1e-3,7e-4, 5e-4,3e-4, 2e-4, 1e-4, 7e-5, 5e-5])
       #fig.update_layout(height=650)
       fig.update_layout(legend=dict(x=0.81, y=0.95))
-      
+
       return fig
 
   @fig_background
@@ -1208,10 +1247,11 @@ https://plotly.com/python/subplots/
                                 dict())
 
       fig.update_yaxes(type="log", tickformat= '.0e')
-      fig.update_layout(height=700,
-                        showlegend=False,
+      fig.update_layout(#height=700,
+                        # showlegend=False,
+                        #legend=dict(x=0.7, y=0.95),
                         xaxis_title='Loading [KN]',
-                        yaxis_title=r'$\large $\epsilon$')
+                        yaxis_title=r'$\large \epsilon$')
 
       return fig
 
@@ -1443,6 +1483,31 @@ The coupling of the structure and aerodynamic equations combined with the aerody
 in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$.
 The aerodynamic matrices $\hat{\bm{\mathcal{A}}}_{p+2}$ have also been scaled accordingly.
 \\
+
+In the second instance, the rotation and position in the inertial reference system are calculated by integration of strains along the domain, as in the Frenet-Serret formulas of differential geometry. Following definition of strains and curvatures, 
+\begin{equation}\label{eq2:urecover_s}
+\begin{split}
+\pmb{R}_{ab}^{\prime} &= \pmb{R}_{ab}\tilde{\pmb{k}} \\
+\pmb{r}_a'&=\pmb{R}_{ab}(\pmb{\gamma} + \pmb{e}_x)
+\end{split}
+\end{equation}
+Analytical solutions to Eq. \eqref{eq2:urecover_s} can be obtained when the strain is assumed constant between nodes and a piecewise constant integration is carried out, as is the case in the current implementation. If the beam path is discretized in n+1 points, strain and curvatures are defined in the mid-points of the spatial discretization (n in total). $\gamma_n$ and $\kappa_n$ are constant within the segment $s_{n-1} \leq s \leq s_n$, and the position and rotation matrix after integration are
+\begin{equation}
+\begin{split}
+\bm{R}_{ab}(s) &= \bm{R}_{ab}(s_{n-1})\pmb{\mathcal{H}}^0(\bm{k},s) \\
+\bm{r}_a(s) &= \bm{r}_a(s_{n-1}) + \bm{R}_{ab}(s_{n-1})\pmb{\mathcal{H}}^1(\bm{k}, s)\left(\bm{e}_x+\bm{\gamma}_n\right) 
+\end{split}
+\end{equation}
+
+Where the operators $\pmb{\mathcal{H}}^0(\bm{k}, s)$ and $\pmb{\mathcal{H}}^1(\bm{k}, s)$ are obtained from integration of the exponential function and defined  as in \citep{Palacios2010},
+\begin{equation}
+\begin{split}
+\pmb{\mathcal{H}}^0(\bm{k},s) &= e^{\Delta\tilde{\bm{k}}} =\pmb I + \frac{\sin(\Delta \phi)}{\Delta{ \phi}}\Delta \tilde{\pmb\Psi}+ \frac{1-\cos(\Delta \phi)}{\Delta \phi^2}\Delta \tilde{\pmb\Psi}\Delta \tilde{\pmb\Psi}  \\
+\pmb{\mathcal{H}}^1(\bm{k},s) &= \Delta s\left(\pmb I + \frac{1-\cos(\Delta \phi)}{\Delta \phi^2}\Delta \tilde{\pmb\Psi} + \frac{\Delta \phi -\sin(\Delta \phi)}{\Delta \phi^3}\Delta\tilde{\pmb\Psi}\Delta\tilde{\pmb\Psi} \right)  
+\end{split}
+\end{equation}
+with $\Delta s = s- s_{n-1}$, $\Delta \pmb{\Psi} = \bm{k} \Delta s$ and $\Delta \phi = ||\Delta \pmb{\Psi}||$. Note that when position and rotations are recovered from strain integration, there is still one point that is either clamped or needs to be tracked from integration of its local velocity
+\\
 Once the nonlinear solution of the condensed model is computed, the corresponding full 3D state is calculated via a two postprocessing steps: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model.
 This paves the way for a broader multidisciplinary analysis where CFD-based aerodynamic loading could be used for the calculation of the nonlinear static equilibrium, and also with the transfer of the full deformed state back to the original FE solver to study other phenomena such as local buckling. 
 ** Aircraft trim flight
@@ -1474,7 +1539,7 @@ The nonlinear couplings, $\bm{\Gamma} \in \mathbb{R}^{N_m \times N_m \times N_m}
 #+NAME: fig:tensors
 #+CAPTION: Main data components in the sequential solution process together with their associated time and space complexities
 #+ATTR_LATEX: :width 1\textwidth 
-[[file:figs_ext/tensors4.pdf]]
+[[file:figs_ext/tensors5.pdf]]
 
 A simplified version of the intrinsic modes evaluation is given in Algorithm [[alg:modes]].
 
@@ -1713,7 +1778,7 @@ The aircraft’s main wing is composed of wing surfaces, rear and front spars, w
 #+NAME: fig:SailPlane2
 #+CAPTION: Representative plane structural and aerodynamic models
 #+ATTR_LATEX: :width 0.7\textwidth 
-[[file:figs/SailPlaneRef.png]]
+[[file:figs_ext/SailPlaneRef.png]]
 
 A Guyan reduction is employed in the reduction process and Fig. [[fig:modes]] illustrates the accuracy of the condensed model by comparing the 3D model shapes. No differences can be appreciated for the first few modes (the lowest frequency corresponding to a bending mode agrees in both models at $\omega_1=4.995$ rads/s) so we show higher frequency modes: a high order bending mode ($\omega_{10}=60.887/60.896$ rads/s in full versus reduced models) and a torsional mode ($\omega_{20}=107.967/107.969$ rads/s). This very good preservation of the full model leads to an excellent accuracy in the static and dynamic results presented below. It is important to remark this aircraft model is very conventional and does not showcase high-aspect ratio wings. Therefore while this modelling strategy would not be suitable for every engineering structure, as long as there is a dominant dimension and deformations in the other two remain small (as is the case in high level descriptions of aircraft, bridges or wind turbines) it has been found to produce very good approximations when compared with full dimensional solutions.
 
@@ -1776,15 +1841,15 @@ Fig. [[SPstatic_3D]]  shows the overlap in the Nastran solution (in blue) and th
 #+NAME: SPstatic_3D
 #+CAPTION: Static 3D Solution for a solution with 50 modes and 530 KN loading (Full NASTRAN solution in red versus the NMROM in blue). 
 #+ATTR_LATEX: :width 0.7\textwidth 
-[[./figs/SP_3Dloading-front2.png]]
-[[./figs/SP_3Dloading-side.png]]
+[[./figs_ext/SP_3Dloading-front2.png]]
+[[./figs_ext/SP_3Dloading-side.png]]
 The error metric of this 3D solution is also assessed in Fig. [[fig:SPerror3D]], for the solution with 50 modes. The discrepancy metric is of the same order than the previously shown at the reduction points. This conveys an important point, that there is no significant accuracy loss in the process of reconstructing the 3D solution.
 
 #+NAME: SPerror3D
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   sp_error1D = [sp_error[f'M4_L{i}'] for i in range(6)]
   # fig, figname = fig_out(name)(fn_spPloterror3D)(sp_error1D, sp_error3d)
-  fig, figname = fig_out(name)(fn_spPloterror3D)(None, sp_error3d)
+  fig, figname = fig_out(name,update_layout=dict(showlegend=False))(fn_spPloterror3D)(None, sp_error3d)
   figname
 #+end_src
 
@@ -1855,13 +1920,13 @@ The dynamic response is presented in Fig. [[fig:wsp_3d]], where results have bee
 
 #+NAME: WSPsubplots
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  sol_wsp= [solution.IntrinsicReader(f"./WSP{i}") for i in range(1,6)]
+  sol_wsp= [solution.IntrinsicReader(f"./WSP{i}") for i in [1,2,4]] #range(1,6)]
   # fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=0, labels=None, nast_load=0)
   #fig = subplots_wsp(sol_wsp, labels=None, nast_load=0)
   #figname
-  fig, figname = fig_out(name)(subplots_wtips)(wsp_wingtip, sol_wsp, labels=None, nast_load=0)
+  fig, figname = fig_out(name, update_layout=dict(legend=dict(x=0.13, y=0.941,
+      font=dict(size= 10))))(subplots_wtips2)(wsp_wingtip, sol_wsp, labels=None, nast_load=0, modes=[5,15,50])
   figname
-
 #+end_src
 
 #+NAME: fig:wsp_3d
@@ -1905,7 +1970,7 @@ The dynamic response is presented in Fig. [[fig:wsp_3d]], where results have bee
 #+NAME: WSP_zzoom
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=2, labels=None, nast_load=0,axes=[[3.85,4.15],[27.4, 27.65]])
-  figname
+  #figname
 #+end_src
 
 # #+NAME: fig:WSP_zzoom
@@ -1918,7 +1983,7 @@ As in the previous example, the 3D shape of the model is retrieved and compared 
 #+NAME: wsp_3d
 #+CAPTION: Snapshots of wing 3D dynamic response comparing NMROM (yellow) and NLFEM3D (blue)
 #+ATTR_LATEX: :width 1\textwidth 
-[[./figs/WSP_3D-front.png]]
+[[./figs_ext/WSP_3D-front.png]]
 
 Next we look at the differences of the dynamic simulations with the same metric employed above that now evolves in time. Integrator errors accumulate and discrepancies grow with time but still remain small. In fact the differences between Nastran and our dynamic solvers are comparable to the static example with the highest load (around the $5\times 10^{-5}$ mark), both cases inducing over 25\% percent deformations of the wing semi-span.
 #+NAME: WSP_error
@@ -2083,7 +2148,7 @@ Next we increase the gust intensity by a factor of 200 in order to show the effe
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   sol1= solution.IntrinsicReader("./XRF3")
   sol2= solution.IntrinsicReader("./XRF4")
-  fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip2, sol1, sol2, labels=[1,2], nast_scale=2., nast_load=[1,2])
+  fig, figname = fig_out(name)(subplots_wtips2)(xrf1_wingtip2, sol1, sol2, labels=[1,2], nast_scale=2., nast_load=[2,6])
   figname
 #+end_src
 
@@ -2145,7 +2210,7 @@ In previous examples the same Runge-Kutta 4 (RK4) time-marching scheme is used a
   sol7= solution.IntrinsicReader("./XRF7")
   sol8= solution.IntrinsicReader("./XRF8")
 
-  fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip4, sol1=sol3, sol2=sol5, sol3=sol7, sol4=sol8,
+  fig, figname = fig_out(name)(subplots_wtips2)(xrf1_wingtip4, sol1=sol3, sol2=sol5, sol3=sol7, sol4=sol8,
                                               labels=["S1","S2","S3","S4"])
   figname
 #+end_src
