@@ -1,0 +1,369 @@
+#+TITLE: Aircraft Nonlinear Dynamic Loads at Large Scale Using an Accelerator-Based Distributed Solution 
+# #+TITLE: Parallelized Aeroelastic Solution for Large Scale Simulation of Nonlinear Dynamic Loads on Accelerators
+#+AUTHOR: Alvaro Cea and Rafael Palacios
+#+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
+:LATEX_PROPERTIES:
+#+OPTIONS: toc:nil
+#+OPTIONS: broken-links:mark
+#+LATEX_HEADER: \synctex=1
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{graphicx}
+#+LATEX_HEADER: \usepackage{amsmath,bm}
+# +LATEX_HEADER: \usepackage{algorithm}
+#+LATEX_HEADER: \usepackage{algpseudocode}
+#+LATEX_HEADER: \usepackage[ruled,vlined]{algorithm2e}
+#+LATEX_HEADER: \usepackage[version=4]{mhchem}
+#+LATEX_HEADER: \usepackage{siunitx}
+#+LATEX_HEADER: \usepackage{longtable,tabularx}
+#+LATEX_HEADER: \usepackage{booktabs}
+#+LATEX_HEADER: \usepackage{tabularx,longtable,multirow,subfigure,caption}
+#+LATEX_HEADER: \setlength\LTleft{0pt} 
+#+LATEX_HEADER: \usepackage{mathrsfs}
+#+LATEX_HEADER: \usepackage{amsfonts}
+#+LATEX_HEADER: \usepackage{enumitem}
+#+LATEX_HEADER: \usepackage{mathalpha}
+#+LATEX_HEADER: \renewcommand{\figurename}{\bf \small Figure}
+#+LATEX_HEADER: \renewcommand{\tablename}{\bf \small Table}
+#+LATEX_HEADER: \newcommand{\de}{\delta}
+#+LATEX_HEADER: \newcommand{\ve}{\text{v}}
+#+LATEX_HEADER: \newcommand{\lo}{\mathcal{L}}
+#+LATEX_HEADER: \newcommand{\vt}{\overline{\delta\bm{\theta}}}
+#+LATEX_HEADER: \newcommand{\vu}{\overline{\delta\bm{u}}}
+#+LATEX_HEADER: \newcommand{\e}{\bm{\mathfrak{e}}}
+#+LATEX_HEADER: \newcommand{\E}{\bm{\mathbb{E}}}
+#+LATEX_HEADER: \newcommand{\T}{\bm{\mathcal{T}}}
+#+LATEX_HEADER: \newcommand{\fra}{(\mathtt{1})}
+#+LATEX_HEADER: \newcommand{\frb}{(\mathtt{2})}
+#+LATEX_HEADER: \newcommand{\fri}{(\mathfrak{i})}
+#+LATEX_HEADER: \newcommand{\bs}[1]{\boldsymbol{#1}}
+#+LATEX_HEADER: \newcommand{\rhoinf}{\rho}	
+#+LATEX_HEADER: \newcommand{\Vinf}{U}
+#+LATEX_HEADER: \newcommand{\Cl}[1]{c_{l_{#1}}}
+#+LATEX_HEADER: \newcommand{\barCl}[1]{\bar{c}_{l_{#1}}}
+#+LATEX_HEADER: \newcommand{\Cm}[1]{c_{m_{#1}}}
+#+LATEX_HEADER: \newcommand{\barCm}[1]{\bar{c}_{m_{#1}}}
+#+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
+
+:END:
+
+
+* House keeping  :noexport: 
+#+begin_src elisp :results none :tangle no :exports none
+  (add-to-list 'org-structure-template-alist
+  '("sp" . "src python :session (print pythonShell)"))
+  (add-to-list 'org-structure-template-alist
+  '("se" . "src elisp"))
+  (setq org-confirm-babel-evaluate nil)
+  (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+  (setq org-latex-pdf-process
+    '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
+  ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+  (pyvenv-workon "fem4inas")
+  (require 'org-tempo)
+  ;; Veval_blocks -> eval blocks of latex
+  ;; Veval_blocks_run -> eval blocks to obtain results
+  (setq Veval_blocks "yes") ;; yes, no, no-export 
+  (setq Veval_blocks_run "no")
+  (setq pythonShell "py1org")
+  ;; export_blocks: code, results, both, none
+  (setq export_blocks  "results")  
+#+end_src
+
+* Load modules :noexport: 
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
+#+begin_src python  :results none 
+  import plotly.express as px
+  import pyNastran.op4.op4 as op4
+  import matplotlib.pyplot as plt
+  import pdb
+  import datetime
+  import os
+  import shutil
+  REMOVE_RESULTS = False
+  #   for root, dirs, files in os.walk('/path/to/folder'):
+  #       for f in files:
+  #           os.unlink(os.path.join(root, f))
+  #       for d in dirs:
+  #           shutil.rmtree(os.path.join(root, d))
+  # 
+  if os.getcwd().split('/')[-1] != 'results':
+      if not os.path.isdir("./figs"):
+          os.mkdir("./figs")
+      if REMOVE_RESULTS:
+          if os.path.isdir("./results"):
+              shutil.rmtree("./results")
+      if not os.path.isdir("./results"):
+          print("***** creating results folder ******")
+          os.mkdir("./results")
+      os.chdir("./results")
+#+end_src
+
+#+NAME: PYTHONMODULES
+#+begin_src python  :results none  :tangle ./results/run.py
+  import pathlib
+  import plotly.express as px
+  import pickle
+  import jax.numpy as jnp
+  import jax
+  import pandas as pd
+  import numpy as np
+  import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+  from fem4inas.preprocessor.inputs import Inputs
+  import fem4inas.fem4inas_main
+  import fem4inas.plotools.uplotly as uplotly
+  import fem4inas.plotools.utils as putils
+  import fem4inas.preprocessor.solution as solution
+  import fem4inas.unastran.op2reader as op2reader
+  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  from tabulate import tabulate
+
+#+end_src
+
+* Run models :noexport:  
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
+:END:
+
+#+begin_src python :results none
+
+  import time
+
+  TIMES_DICT = dict()
+  SOL = dict()
+  CONFIG = dict()
+
+  def run(input1, **kwargs):
+      jax.clear_caches()
+      label = kwargs.get('label', 'default')
+      t1 = time.time()
+      config =  configuration.Config(input1)
+      sol = fem4inas.fem4inas_main.main(input_obj=config)
+      t2 = time.time()
+      TIMES_DICT[label] = t2 - t1      
+      SOL[label] = sol
+      CONFIG[label] = config
+
+  def save_times():
+      pd_times = pd.DataFrame(dict(times=TIMES_DICT.values()),
+                              index=TIMES_DICT.keys())
+      pd_times.to_csv("./run_times.csv")
+
+#+end_src
+
+- Models run on this exercise:
+
+* Plotting :noexport: 
+:PROPERTIES:
+:header-args:  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
+:END:
+** Helper functions
+
+* COMMENT Run UML diagrams 
+:PROPERTIES:
+:header-args: :mkdirp yes :eval no-export
+:END:
+
+#+Name: classes_architecture
+#+begin_src plantuml :file figs/classes_architecture.png :exports (print export_blocks)
+  abstract Driver {
+            +pre_simulation()
+            +run_cases()
+    }
+
+     class IntrinsicDriver {
+             #integration: IntrinsicIntegration
+             #simulation: Simulation
+             #systems: [System]
+             -__init__(config: Config)
+             #_set_case()
+             #_set_integration()
+             #_set_simulation()
+             #_set_systems()
+     }
+
+     class  XLoads {
+             +q: [jnp.ndarray]
+             +Rab: [jnp.ndarray]
+             +GAFs: [jnp.ndarray]
+             -__init__(config.systems.loads,
+            q, Rab, GAFs)
+	       +interpolation()
+             +followerF()
+             +deadF()
+             +gravityF()
+             +modalAero()
+             }
+
+     /'
+      ' abstract class Integration {
+      '         +run()
+      ' }
+      '/
+
+     class IntrinsicIntegration {
+                     + <math>phi_1, phi_2, psi_1, psi_2</math>
+                     + <math>Gamma_1, Gamma_2 </math>
+                     -__init__(X, Ka, Ma)		
+                     +run()
+                     #compute_modalshapes()
+                     #compute_modalcouplings()
+     }
+
+     abstract class Simulation {
+                     +systems: [System]
+                     #workflow: dict[str:str]
+                     -__init__(config.simulation,
+                    systems, config.simulation)
+                     +trigger()
+                     #run_systems()
+                     #post_run()
+             }
+
+     /'
+      ' package Simulations {
+      '         class SerialSimulation {
+      '         }
+      '         class ParallelSimulation {
+      '         }
+      '         class SingleSimulation {
+      '         }
+      '         class CoupledSimulation {
+      '         }
+      ' }
+      '/
+
+     class SerialSimulation {
+     }
+     class ParallelSimulation {
+     }
+     class SingleSimulation {
+     }
+     class CoupledSimulation {
+     }
+
+     abstract class System {
+             +set_ic(q0)
+             +solve() -> sol
+             +build_solution() -> qs
+     }
+
+     class IntrinsicSystem {
+            -__init__(name[str], settings:config.Dsystem,
+                      fem: config.Dfem,
+                      sol: solution.IntrinsicSolution)						
+            -dq: callable
+            -solver: callable
+            +sol: obj
+            #set_states()
+              #set_xloading()					
+            #set_generator() -> dq
+            #set_solver() -> solver
+
+     }
+     class StaticSystem {
+     }
+     class DynamicSystem {
+     }
+
+     class ControlSystem {
+     }
+
+     class MultibodySystem {
+     }
+
+        /'
+         ' Simulation <|-- SerialSimulation
+         ' Simulation <|-- ParallelSimulation
+         ' Simulation <|-- SingleSimulation
+         ' Simulation <|-- CoupledSimulation
+         '/
+     /'
+      ' abstract class Optimisation {
+      '       +save_grads()
+      '       +assemble()
+      ' }
+      '/
+
+     abstract class Sollibs {
+           +name()
+           +pull_name()
+     }
+      enum dq {
+  - dq_{label}
+  }
+
+  /'
+   '     enum loads {
+   ' - eta_{label}
+   ' }
+   '/
+      enum args {
+  - arg_{label}
+  }
+
+     'Simulation <|-- Simulations
+     Simulation <|-- SingleSimulation
+     SingleSimulation -- SerialSimulation 
+     SerialSimulation -- ParallelSimulation
+     ParallelSimulation -- CoupledSimulation					
+     'Driver "1" -- "1" Integration : composition
+     'Driver "1" -- "1" Simulation : composition'
+     IntrinsicIntegration  -* IntrinsicDriver
+     Driver <|-- IntrinsicDriver
+     /'
+      ' IntrinsicDriver  *-- Optimisation						
+      '/
+     IntrinsicDriver  *-- Simulation
+     IntrinsicDriver  *- System
+     System ..> Simulation
+     'Integration <|-- IntrinsicIntegration
+     System  <|-- IntrinsicSystem
+     System  *- Sollibs
+     IntrinsicSystem <|-- StaticSystem
+     StaticSystem -- DynamicSystem
+     DynamicSystem -- ControlSystem
+     IntrinsicSystem o- XLoads
+     ControlSystem -- MultibodySystem
+     /'
+      ' loads --* XLoads
+      '/
+     dq *-- IntrinsicSystem
+     dq . args
+#+end_src
+
+#+Name: components_architecture
+#+begin_src plantuml :file figs/components_architecture.png :exports (print export_blocks)
+  skinparam linetype ortho
+  [Driver] as d
+  [Config] as c
+  [Simulation] as si
+  [Solution] as so
+  [Systems] as sy
+  c -r[dotted]-> d
+  d -d-> so
+  d -u-> si
+  d -r-> sy
+  si ..> sy
+  so -u[dotted]-> sy
+#+end_src
+
+* COMMENT Introduction
+* COMMENT Theory and implementation
+* COMMENT Results
+* COMMENT Conclusions
+* Abstract
+In this work we explore the latest advances on accelerator's parallelisation and how to integrate them into our solution process to enable large scale aeroelastic simulations under geometrically nonlinear assumptions.
+Specifically, we set out to characterise the dynamics of highly flexible aircraft in response to the very large envelopes of in-flight loads encountered in the certification process. 
+In our latest developments we have leveraged the numerical library JAX to build a new simulation environment for time-domain nonlinear aeroelastic analysis that achieves two orders of magnitude speed-ups with respect to standard implementations [[cite:&CEA2024]],  is suitable for modern hardware architectures such as GPUs [[cite:&ALVAROCEA2024]], and that is also capable of computing derivatives via algorithmic differentiation [[cite:&ALVAROCEA2024a]]. We want to go one step further by adding parallelisation and distributed computational capabilities to the codebase to tackle the very demanding task of calculating load envelopes while introducing new physics to account for the large displacements and rotations ultra-high-aspect-ratio wings undergo. 
+In this multi-process environment, a Single Program Multiple Data (SPMD) paradigm is employed with the main computation spanning as many devices as available in the cluster and performing collective operations to communicate between devices. 
+By addressing in one program a substantial part of scenarios during flight (manoeuvres and gust responses at different velocities and altitudes, and for a range of mass cases and configurations), we will be able to produce the critical loading characteristics of the aircraft at a fraction of time. Moreover, the  boundaries of these critical cases will be differentiated using the AD, providing gradients for optimization studies as well as additional insights to the designer.  
+A representative configuration of a high-aspect-ratio aircraft is going to be studied and verification against MSC Nastran will be shown for the linear cases. Afterwards an assessment of geometrically nonlinear effects for trim, manoeuvre and gust loads will be carried out.   
+This application of modern hardware architectures to aircraft nonlinear load analysis is novel and could potentially be introduced inside current industrial processes. 
+
+bibliographystyle:unsrt
+# bibliography:/home/acea/Documents/Engineering.bib
+bibliography:~/Documents/Engineering.bib
+
