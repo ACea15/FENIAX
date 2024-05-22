@@ -1,4 +1,6 @@
-#+TITLE: Differentiable Aeroelastic Framework Suitable for Industrial Nonlinear Loads on Accelerators
+# #+TITLE: Differentiable Aeroelastic Framework Suitable for Industrial Nonlinear Loads on Accelerators
+#+TITLE: Differentiable Aeroelastic Framework Suitable for Industrial Modelling of Nonlinear Loads on Accelerators
+
 # A Nonlinear Aeroelastic Framework Suitable For Industrial-Scale Computation Of Dynamic Loads On Modern Hardware Architectures
 #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
@@ -64,7 +66,8 @@
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "yes") ;; yes, no, no-export 
+  (setq Veval_blocks "yes") ;; yes, no, no-export
+  (setq Vpics "pdf") ;; yes, no, no-export   
   (setq Veval_blocks_run "no-export")
   (setq pythonShell "*py1*")
   ;; export_blocks: code, results, both, none
@@ -656,9 +659,9 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 https://plotly.com/python/subplots/
 #+end_comment
 
-#+begin_src python :results none  :var name=(org-element-property :name (org-element-context))
-
-  def fig_out(name, figformat="png", update_layout=None):
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+  # print(figfmt)
+  def fig_out(name, figformat=figfmt, update_layout=None):
       def inner_decorator(func):
           def inner(*args, **kwargs):
               fig = func(*args, **kwargs)
@@ -666,7 +669,7 @@ https://plotly.com/python/subplots/
                   fig.update_layout(**update_layout)
               fig.show()
               figname = f"figs/{name}.{figformat}"
-              fig.write_image(f"../{figname}", scale=3)
+              fig.write_image(f"../{figname}", scale=6)
               return fig, figname
           return inner
       return inner_decorator
@@ -682,8 +685,8 @@ https://plotly.com/python/subplots/
           #     showlegend = fig.data[0].showlegend
 
           fig.update_xaxes(
-                         titlefont=dict(size=15),
-                         tickfont = dict(size=15),
+                         titlefont=dict(size=20),
+                         tickfont = dict(size=20),
                          mirror=True,
                          ticks='outside',
                          showline=True,
@@ -692,8 +695,8 @@ https://plotly.com/python/subplots/
           #zerolinewidth=2,
               #zerolinecolor='LightPink',
                          gridcolor='lightgrey')
-          fig.update_yaxes(tickfont = dict(size=15),
-                         titlefont=dict(size=15),
+          fig.update_yaxes(tickfont = dict(size=20),
+                         titlefont=dict(size=20),
                          zeroline=True,
                          mirror=True,
                          ticks='outside',
@@ -729,8 +732,8 @@ https://plotly.com/python/subplots/
                                  ),
                             dict())          
       fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
-      fig.update_layout(
-                        #height=800,
+      fig.update_layout(legend=dict(x=0.7, y=0.95),
+                        height=650,
                         xaxis_title='Num. modes',
                         yaxis_title='Computational times [s]')
       return fig
@@ -745,7 +748,7 @@ https://plotly.com/python/subplots/
                                      ),
                                 dict())
       fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
-      fig.update_layout(
+      fig.update_layout(showlegend=False,
                         #height=800,
                         xaxis_title='Num. modes',
                         yaxis_title='Cg error')
@@ -866,12 +869,18 @@ https://plotly.com/python/subplots/
                         row=3, col=1
                         )
 
-      fig.update_xaxes(fig2.layout.xaxis,row=2, col=1)
-      fig.update_yaxes(fig2.layout.yaxis,row=2, col=1)
-      fig.update_xaxes(fig1.layout.xaxis,row=3, col=1)
-      fig.update_yaxes(fig1.layout.yaxis,row=3, col=1)
-      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1)
-      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1)
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig1.layout.xaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig1.layout.yaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
       fig.update_layout(plot_bgcolor='white',
                         yaxis=dict(zerolinecolor='lightgrey'),
                         showlegend=True, #showlegend,
@@ -972,7 +981,7 @@ https://plotly.com/python/subplots/
 
       dim_dict = {0:'x', 1:'y', 2:'z'}
       fig.update_yaxes(title=r'$\Large u_%s / l' % dim_dict[dim])
-      fig.update_xaxes(range=[0, 4], title='time [s]')
+      fig.update_xaxes(range=[0, 4], title='$\large time \; [s]$')
       return fig
 
   @fig_background
@@ -1016,10 +1025,10 @@ https://plotly.com/python/subplots/
       dim_dict = {0:'x', 1:'y', 2:'z'}
       if axes is None:
           fig.update_yaxes(title=r'$\Large u_%s / l$'%dim_dict[dim])
-          fig.update_xaxes(range=[0, 15], title='time [s]')
+          fig.update_xaxes(range=[0, 15], title='$\large time \; [s]$')
       else:
           fig.update_yaxes(range=axes[1], title=r'$\large u_%s / l$'%dim_dict[dim])
-          fig.update_xaxes(range=axes[0], title='time [s]')
+          fig.update_xaxes(range=axes[0], title='$\large time \; [s]$')
 
       return fig
 
@@ -1251,7 +1260,7 @@ https://plotly.com/python/subplots/
                         # showlegend=False,
                         #legend=dict(x=0.7, y=0.95),
                         xaxis_title='Loading [KN]',
-                        yaxis_title=r'$\large \epsilon$')
+                        yaxis_title=r'$\Large \epsilon$')
 
       return fig
 
@@ -1336,7 +1345,7 @@ https://plotly.com/python/subplots/
       fig.update_yaxes(type="log", tickformat= '.0e', nticks=7)
       fig.update_layout(
                         #height=700,
-                        xaxis_title=r'$\Large Time [s]$',
+                        xaxis_title=r'$\Large time [s]$',
                         yaxis_title=r'$\Large \epsilon$')
       return fig
 
@@ -1492,21 +1501,22 @@ In the second instance, the rotation and position in the inertial reference syst
 \end{split}
 \end{equation}
 Analytical solutions to Eq. \eqref{eq2:urecover_s} can be obtained when the strain is assumed constant between nodes and a piecewise constant integration is carried out, as is the case in the current implementation. If the beam path is discretized in n+1 points, strain and curvatures are defined in the mid-points of the spatial discretization (n in total). $\gamma_n$ and $\kappa_n$ are constant within the segment $s_{n-1} \leq s \leq s_n$, and the position and rotation matrix after integration are
-\begin{equation}
+\begin{equation}\label{eq:strain_integration}
 \begin{split}
 \bm{R}_{ab}(s) &= \bm{R}_{ab}(s_{n-1})\pmb{\mathcal{H}}^0(\bm{k},s) \\
 \bm{r}_a(s) &= \bm{r}_a(s_{n-1}) + \bm{R}_{ab}(s_{n-1})\pmb{\mathcal{H}}^1(\bm{k}, s)\left(\bm{e}_x+\bm{\gamma}_n\right) 
 \end{split}
 \end{equation}
-
-Where the operators $\pmb{\mathcal{H}}^0(\bm{k}, s)$ and $\pmb{\mathcal{H}}^1(\bm{k}, s)$ are obtained from integration of the exponential function and defined  as in \citep{Palacios2010},
-\begin{equation}
-\begin{split}
-\pmb{\mathcal{H}}^0(\bm{k},s) &= e^{\Delta\tilde{\bm{k}}} =\pmb I + \frac{\sin(\Delta \phi)}{\Delta{ \phi}}\Delta \tilde{\pmb\Psi}+ \frac{1-\cos(\Delta \phi)}{\Delta \phi^2}\Delta \tilde{\pmb\Psi}\Delta \tilde{\pmb\Psi}  \\
-\pmb{\mathcal{H}}^1(\bm{k},s) &= \Delta s\left(\pmb I + \frac{1-\cos(\Delta \phi)}{\Delta \phi^2}\Delta \tilde{\pmb\Psi} + \frac{\Delta \phi -\sin(\Delta \phi)}{\Delta \phi^3}\Delta\tilde{\pmb\Psi}\Delta\tilde{\pmb\Psi} \right)  
-\end{split}
-\end{equation}
-with $\Delta s = s- s_{n-1}$, $\Delta \pmb{\Psi} = \bm{k} \Delta s$ and $\Delta \phi = ||\Delta \pmb{\Psi}||$. Note that when position and rotations are recovered from strain integration, there is still one point that is either clamped or needs to be tracked from integration of its local velocity
+Where the operators $\pmb{\mathcal{H}}^0(\bm{k}, s)$ and $\pmb{\mathcal{H}}^1(\bm{k}, s)$ are obtained from integration of the exponential function as defined in \cite{Palacios2010}.
+# \begin{equation}
+# \begin{split}
+# \pmb{\mathcal{H}}^0(\bm{k},s) &= e^{\Delta\tilde{\bm{k}}} =\pmb I + \frac{\sin(\Delta \phi)}{\Delta{ \phi}}\Delta \tilde{\pmb\Psi}+ \frac{1-\cos(\Delta \phi)}{\Delta \phi^2}\Delta \tilde{\pmb\Psi}\Delta \tilde{\pmb\Psi}  \\
+# \pmb{\mathcal{H}}^1(\bm{k},s) &= \Delta s\left(\pmb I + \frac{1-\cos(\Delta \phi)}{\Delta \phi^2}\Delta \tilde{\pmb\Psi} + \frac{\Delta \phi -\sin(\Delta \phi)}{\Delta \phi^3}\Delta\tilde{\pmb\Psi}\Delta\tilde{\pmb\Psi} \right)  
+# \end{split}
+# \end{equation}
+# with $\Delta s = s- s_{n-1}$, $\Delta \pmb{\Psi} = \bm{k} \Delta s$ and $\Delta \phi = ||\Delta \pmb{\Psi}||$.
+Note that when position and rotations are recovered from strain integration, there is still one point that is either clamped or needs to be tracked from integration of its local velocity
+In the next section an optimized implementation of this algorithm is shown in JAX.
 \\
 Once the nonlinear solution of the condensed model is computed, the corresponding full 3D state is calculated via a two postprocessing steps: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model.
 This paves the way for a broader multidisciplinary analysis where CFD-based aerodynamic loading could be used for the calculation of the nonlinear static equilibrium, and also with the transfer of the full deformed state back to the original FE solver to study other phenomena such as local buckling. 
@@ -1521,7 +1531,7 @@ A very important part in the calculation of dynamic loads is including the rigid
 \end{equation}
 
 The simplest case would be a trim where only two rigid-body DoF are allowed, the pitch $q_{0\alpha}$ and the plunge, $q_{0h}$; $q_{0h}$ is set to 0 and $q_{0\alpha}$ is part of the variables to be calculated along with a single tail elevator deflection, $q_c$ and the elastic strain modal DoF, $\bm q_{2}$. A somewhat more advanced trim would also allow a forward direction of flight and include thrust as another control state variable. However for this a good estimate of the aerodynamic drag forces would be required, which is not the case for the DLM.  
-** Computational implementation and benchmarks
+** Computational implementation
 The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor[fn:2:Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures as will be demonstrated herein, and the computation of sensitivities via algorithmic differentiation (AD) across solvers has been implemented in [].
 The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. It combines XLA (accelerated linear algebra) and Autograd, the former being a compiler that optimises models for different hardware platforms, the latter is an Automatic Differentiation (AD) tool in Python. 
 Moreover, its extensible system of composable function transformations provides a set of important features for Computational Science as illustrated in Fig. \ref{fig:JAX-overview}. For instance, the $\texttt{vmap}$ function allows for complex vectorisation operations and the $\texttt{pmap}$ function for Single-Program Multiple-Data (SPMD) parallelisation. Both forward and reverse mode automatic differentiation are supported. Finally the just-in-time compilation ($\texttt{jit}$) relies on the XLA engine to compile and execute functions on CPUs but also on accelerators such as GPUs and TPUs, offering a versatile solution for seamlessly connecting the software to various types of hardware without requiring extra CUDA code, or a Domain Specific Language (DSL).
@@ -1533,22 +1543,22 @@ Moreover, its extensible system of composable function transformations provides 
 \caption{\label{fig:JAX-overview} JAX capabilities for modern scientific computing}
 \end{figure}
 #+end_export
-The tensor structure of the main components in the solution process is illustrated in Fig. [[fig:tensors]] in the sequential order they are computed. The discretization of the problem comprises $N_n$ number of condensed nodes, $N_m$ modes used in the reduced order model and $N_t$ time steps in the solution (if the problem is static, $N_t$ represents a ramping load stepping scheme). The intrinsic modes, $\Phi, \Psi  \in \mathbb{R}^{N_m \times 6 \times N_n}$ are computed from the eigenvalue solution and the coordinates $\bm X_a \in \mathbb{R}^{3 \times N_n}$ of the active nodes. 
-The nonlinear couplings, $\bm{\Gamma} \in \mathbb{R}^{N_m \times N_m \times N_m}$ are calculated next, from which the system in Eq. \ref{eq2:sol_qs} is assembled and solved to yield the solution states $\bm q \in \mathbb{R}^{N_s \times N_t}$. Local velocities and internal forces,  $\bm X_{1,2} \in \mathbb{R}^{N_t \times 6 \times N_n}$ are computed as a product of the corresponding intrinsic modes and states, and their integration leads to the position tensor with similar structure.
+The tensor structure of the main components in the solution process is illustrated in Fig. [[fig:tensors]] in the sequential order they are computed, together with the asymptotic time and space complexities. The discretization of the problem comprises $N_n$ number of condensed nodes, $N_m$ modes used in the reduced order model and $N_t$ time steps in the solution (if the problem is static, $N_t$ represents a ramping load stepping scheme). The intrinsic modes, $\Phi, \Psi  \in \mathbb{R}^{N_m \times 6 \times N_n}$ are computed from the eigenvalue solution and the coordinates $\bm X_a \in \mathbb{R}^{3 \times N_n}$ of the active nodes. 
+The nonlinear couplings, $\bm{\Gamma} \in \mathbb{R}^{N_m \times N_m \times N_m}$ are calculated next, from which the system in Eq. \ref{eq2:sol_qs} is assembled and solved to yield the solution states $\bm q \in \mathbb{R}^{N_t \times N_s}$. Local velocities, internal forces and strain fields  $\bm X_{1,2,3} \in \mathbb{R}^{N_t \times 6 \times N_n}$ are computed as a product of the corresponding intrinsic modes and states, and their integration leads to the position tensor, $r_a$ with similar structure. 
 
 #+NAME: fig:tensors
 #+CAPTION: Main data components in the sequential solution process together with their associated time and space complexities
 #+ATTR_LATEX: :width 1\textwidth 
 [[file:figs_ext/tensors5.pdf]]
 
-A simplified version of the intrinsic modes evaluation is given in Algorithm [[alg:modes]].
-
+A simplified version of the intrinsic modes evaluation is given in Algorithm [[alg:modes]] with input the FE nodes and matrices with the corresponding eigenvalue solution and a config object that encapsulates input matrices required for averaging or computing the differences between adjacent nodes, $M_{avg}$ and $M_{diff}$. Those are build from the connectivities in the load-paths. 
 #+NAME: alg:modes
 \begin{algorithm}[h!]
 \DontPrintSemicolon
 \SetKwInOut{Input}{input}
 \SetKwInOut{Output}{output}
-\Input{FEM and eigenvalue solution: $\bm X, \bm K_a, \bm M_a, \bm{\Phi}_0, \bm \omega$}
+\Input{FEM and eigenvalue solution: $\bm X_a, \bm K_a, \bm M_a, \bm{\Phi}_0, \bm \omega$,
+and $\bm{config}$ object}
 \Output{Intrinsic modal shapes}
 \Begin{
 \texttt{import jax.numpy as jnp \;
@@ -1563,7 +1573,7 @@ $\bm{\Phi}_{1m}$ $\leftarrow$ jnp.tensordot($\bm{\Phi}_1$, $M_{avg}$, axes=(2, 0
 \Comment{Velocity modes at mid-node locations}\;
 $\bm{\psi}_{1v}$ $\leftarrow$ jnp.matmul($\bm M_a$, $\bm{\Phi}_0$)
 \Comment{Momenta modes}\;
-$\bm{\psi}_{1}$ $\leftarrow$ reshape\_modes($\bm{\psi}_{1v}$, Nmodes, Nnodes) \Comment{Nmx6xNn}  \;
+$\bm{\psi}_{1}$ $\leftarrow$ reshape\_modes($\bm{\psi}_{1v}$, Nmodes, Nnodes) \Comment{Nm$\times$6$\times$Nn}  \;
 $\bm{\Phi}_{2fv}$ $\leftarrow$ jnp.matmul($\bm K_a$, $\bm{\Phi}_0$)
 \Comment{Internal forces and moments associated to modal shapes (Nm$\times$6$\times$Nn)} \;
 $\bm{\Phi}_{2fv}$ $\leftarrow$ reshape\_modes($\bm{\Phi}_{2fv}$, Nmodes, Nnodes) \;
@@ -1587,7 +1597,7 @@ $\bm{\psi}_2$ $\leftarrow$ - $\bm \phi_{1d} / \Delta_s + E_{\phi}$\;
 \caption{JAX-based computation of intrinsic modal shapes}
 \end{algorithm}
 
-The various functions in the algorithm make heavy use of JAX $\texttt{vmap}$ function to vectorise the contraction and expansion operations. For instance, to yield the internal moments associated to each node due to the internal forces, the function \(\texttt{moment\_force}\) is cast in Algorithm [[alg:internalmoments]]:
+The various functions in the algorithm make heavy use of JAX $\texttt{vmap}$ function to vectorise the contraction and expansion operations. For instance, the function \(\texttt{moment\_force}\) is cast in Algorithm [[alg:internalmoments]] and connects together two $\texttt{vmap}$ operations. The asymptotic time complexity of Algorithm [[alg:modes]] is driven by the calculation of the internal moments associated with internal forces since for each node a sum through the path-loads needs to be carried out (arguably a $O(nlog(n))$ or even $O(n)$ depending on the graph rather than $O(n^2)$ could be achieved with standard for-loops and additional variables to describe the graph since there is repetition in the process but this part is not performance critical and no further optimisation is deemed required). 
 
 #+NAME: alg:internalmoments
 \begin{algorithm}[h!]
@@ -1639,52 +1649,42 @@ $\bm{\Gamma}_2$ $\longleftarrow$  jnp.einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\P
 \label{alg:couplings}
 \end{algorithm}
 
+The integration of strains to obtain position and rotation fields as defined in Eq. \ref{eq:strain_integration} is a good example of a recursive operation whereby something more than vectorised operations needs to be introduced, as opposed to the Algorithms above. The function $\texttt{jax.lax.scan}$, which can be differentiated both in forward and backward modes, provides a fast solution for this operation where a previous computation in the loop has to be carried forward (in our case every new computed position and rotation matrix are passed to the next calculation). A greatly simplified version is shown in Algorithm \ref{alg:strain_integration} that has as inputs the position and rotation matrix of the first node (given as clamped or calculated via quaternion integration), the initial position of the nodes and the strain field, $X_3$. The $\texttt{scan}$ function iteration through the first axis of the input tensor $xs$ and also takes the initial carry state in the variable $init$. Such an abstraction usually imposes various concatenation and deconcatenation operations of the data in the process. 
+In the real algorithm an additional for-loop wraps this function to account for the various components in the aircraft (wings, fuselage, tail, etc.) that do not have contiguous nodes to perform the integration. This for-loop is unrolled in the $\texttt{jit}$ compilation but this is not problematic since a very small number of components made up the whole aircraft. 
+
 \begin{algorithm}[h!]
 \DontPrintSemicolon
-%\KwData{$G=(X,U)$ such that $G^{tc}$ is an order.}
-%\KwResult{$G’=(X,V)$ with $V\subseteq U$ such that $G’^{tc}$ is an interval order.}
 \SetKwInOut{Input}{input}
 \SetKwInOut{Output}{output}
-\Input{Intrinsic modal shapes calculation}
-\Output{Intrinsic nonlinear modal couplings $\bm{\Gamma}_1$ and $\bm{\Gamma}_2$}
+\Input{ra(0), Rab(0), Xa, X3}
+\Output{positional, ra, and rotation, Rab, tensor fields}
 \Begin{
  \BlankLine
-
-\SetKwFunction{FStrain}{integrate_strains}
- 
-% Write Function with word ``Function''
-  \SetKwProg{Fn}{Function}{:}{}
-  \Fn{\FStrain {carry, x}}{
-\texttt{
-fRab $\longleftarrow$ vmap(lambda Rab_i, H0_i: Rab_i @ H0_i)  \;
-fra $\longleftarrow$ vmap(lambda ra_i, Rab_i, H1_i, \gamma_i: ra_i + Rab_i @ H1_i @ ([1,0,0]  + \gamma_i))  \;
-strain = x[:, 3]  # 3xNt  \;
-kappa = x[:, 4]  # 3xNt  \;
-Ipsi = kappa * ds  # 3xNt \;
-Itheta = jnp.linalg.norm(Ipsi, axis=0) # Nt \;
-Rab_carry = carry[:3]  # 3x3xNt    \;
-ra_carry = carry[3]  # 3xNt \;
-Rab = fRab(Rab_carry, H0()) \;
-ra = fra(ra_carry, Rab_carry, H1(), strain) \;
-y = jnp.concatenate([Rab, ra_reshaped], axis=0) #4x3xNt \;
-carry = jnp.concatenate([Rab, ra_reshaped], axis=0) \;
+%
+\SetKwFunction{FStrain}{integrate\_strains}
+ \SetKwProg{Fn}{Function}{:}{}
+  \Fn{\FStrain {\texttt{carry, x}}}{
+\texttt{f\_Rab $\longleftarrow$ vmap(lambda Rab\_i, H0\_i: Rab\_i H0\_i)  \;
+f\_ra $\longleftarrow$ vmap(lambda ra\_i, Rab\_i, H1\_i, strain\_i: ra\_i +
+\parbox[t]{.38\linewidth}{Rab\_i H1\_i  ([1,0,0]  + strain\_i)})  \;
+%
+strain, kappa, ds $\longleftarrow$ deconcatenate(x)   \;
+Rab\_carry, ra\_carry $\longleftarrow$ deconcatenate(carry)   \;
+%
+Rab $\longleftarrow$ f\_Rab(Rab\_carry, H0(kappa, ds)) \;
+ra $\longleftarrow$ f\_ra(ra\_carry, Rab\_carry, H1(kappa, ds), strain) \;
+y $\longleftarrow$ concatenate([Rab, ra])  \;
+carry $\longleftarrow$ y
 \BlankLine
 }
         \KwRet carry, y \;
   }
 
-
-\texttt{f1 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot($\mathcal{L}_1$(u), v, axes=(1, 1),
-      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate through nodes} \;
-f2 $\longleftarrow$ vmap(f1, in\_axes=(0, None), out\_axes=0)  \;
-\bm{L}_1 $\longleftarrow$ f2($\bm \Phi_1$, $\bm \psi_1$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
-$\bm{\Gamma}_{1}$ $\longleftarrow$  jnp.einsum(isn,jskn$\rightarrow$ijk, $\bm \Phi_1$, $\bm{L}_1$) \;
-\BlankLine
-f3 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot($\mathcal{L}_2$(u), v, axes=(1, 1),
-      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate nodes} \;
-f4 $\longleftarrow$ vmap(f3, in\_axes=(0, None), out\_axes=0)  \;
-\bm{L}_2 $\longleftarrow$ f4($\bm \Phi_2$, $\bm \psi_2$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
-$\bm{\Gamma}_2$ $\longleftarrow$  jnp.einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\Phi}_{m1}$, $\bm{L}_2$, $\Delta_s$) $ \;
+\texttt{ds $\longleftarrow$ jnp.linalg.norm(Xa[1:]-Xa[:-1]) \;
+init $\longleftarrow$ concatenate([Rab0, ra0]) \;
+xs $\longleftarrow$ concatenate([X3, ds]) \;
+carry, y $\longleftarrow$ jax.lax.scan(integrate\_strains, init, xs) \;
+Rab, ra $\longleftarrow$ deconcatenate(y)
 \BlankLine
 }
     }
@@ -1789,11 +1789,8 @@ Because the applied load is a dead force we can track the position of the center
   gpu_times2 = [58, 65, 67, 76, 94, 111]
   cpu_times2 = [42, 184, 287, 421, 893, 1869]
   fig, figname = fig_out(name)(plot_ffb_times)(modes, gpu_times1, cpu_times1, "GPU", "CPU")
-  figname
+  #figname
 #+end_src
-
-#+RESULTS: FFBtimes1
-[[file:figs/FFBtimes1.png]]
 
 #+NAME: FFBtimes2
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -1801,6 +1798,9 @@ Because the applied load is a dead force we can track the position of the center
   figname
 #+end_src
 
+#+NAME: fig:FFBtimes2
+#+CAPTION: Performance comparison in free-flying structure
+#+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: FFBtimes2
 [[file:figs/FFBtimes2.png]]
 
@@ -1808,18 +1808,18 @@ Because the applied load is a dead force we can track the position of the center
 #+NAME: FFBerror1
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   fig, figname = fig_out(name)(plot_ffb_error)(modes, err1, 'L2-norm Error')
-  figname
+  # figname
 #+end_src
-
-#+RESULTS: FFBerror1
-[[file:figs/FFBerror1.png]]
 
 #+NAME: FFBerror2
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_ffb_error)(modes, err2, 'L2-norm Error')
+  fig, figname = fig_out(name, update_layout=dict(showlegend=False))(plot_ffb_error)(modes, err2, 'L2-norm Error')
   figname
 #+end_src
 
+#+NAME: fig:FFBerror2
+#+CAPTION: Error metric Cg position
+#+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: FFBerror2
 [[file:figs/FFBerror2.png]]
 
@@ -1950,7 +1950,7 @@ The AD for the static solvers is first verified as follows: the load stepping sh
 #+NAME: fig:sp_ad
 #+CAPTION: Static tip displacement with pseudo-time stepping load
 #+ATTR_LATEX: :width 0.5\textwidth 
-file:figs/sp_ad.pdf
+file:figs_ext/sp_ad.pdf
 Table [[table:SP_AD]] shows a very good agreement against finite-differences (FD) with an epsilon of $10^{-3}$. Note how the derivative at each of the marked points corresponds approximately the slope in graph at those very points. And the biggest slope occurs precisely in between \(tau\) of 4 and 5 when the prescribed loading undergoes the biggest change from 300 to 400 KN.
 
 #+NAME: table:SP_AD
@@ -2255,95 +2255,7 @@ Snapshots of the 3D response are reconstructed for the G1 gust using the method 
 #+ATTR_LATEX: :width 0.8\textwidth 
 [[file:figs_ext/xrf1gust3D2.pdf]]
 
-In previous examples the same Runge-Kutta 4 (RK4) time-marching scheme is used and now we explore the dynamic solution with other solvers to assess their accuracy and also their computational performance. Two explicit ODE solvers, RK4 and Dormand-Prince's 5/4 method (labelled S1 and S2), and two implicit, Euler first order and Kvaerno's 3/2 method ((labelled S3 and S4)), are compared in Fig. [[fig:GustXRF3578]] . In order to justify the use of implicit solvers we reduce the time step from 0.005 to 0.02 seconds, at which point both explicit solvers diverge. Kvaerno's implicit solver remain stable and accurate despite the larger time step while the Euler implicit method is stable but do not yield accurate results.
-
-#+NAME: GustXRF3578
-#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  sol3= solution.IntrinsicReader("./XRF3")
-  sol5= solution.IntrinsicReader("./XRF5")
-  sol7= solution.IntrinsicReader("./XRF7")
-  sol8= solution.IntrinsicReader("./XRF8")
-
-  fig, figname = fig_out(name)(subplots_wtips2)(xrf1_wingtip4, sol1=sol3, sol2=sol5, sol3=sol7, sol4=sol8,
-                                              labels=["S1","S2","S3","S4"])
-  figname
-#+end_src
-
-#+NAME: fig:GustXRF3578
-#+CAPTION: Wing-tip response to high intensity gust using implicit solvers
-#+ATTR_LATEX: :width 0.8\textwidth 
-#+RESULTS: GustXRF3578
-[[file:figs/GustXRF3578.png]]
-
-
-# #+NAME: GustXRF56_x
-# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-#   sol3= solution.IntrinsicReader("./XRF3")
-#   sol5= solution.IntrinsicReader("./XRF5")
-#   sol7= solution.IntrinsicReader("./XRF7")
-#   sol8= solution.IntrinsicReader("./XRF8")
-#   fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8,
-#                                               labels=["l3","l5","l7","l8"],
-#                                               dim=0)
-#   figname
-# #+end_src
-
-# #+NAME: fig:GustXRF56_x
-# #+CAPTION: Comparison of solvers
-# #+ATTR_LATEX: :width 0.6\textwidth 
-# #+RESULTS: GustXRF56_x
-# [[file:]]
-
-# #+NAME: GustXRF56_y
-# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-#   fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8, labels=["l3","l5","l7","l8"],
-#                                               dim=1)
-#   figname
-# #+end_src
-
-# #+NAME: fig:GustXRF56_y
-# #+CAPTION: Comparison of solvers
-# #+ATTR_LATEX: :width 0.6\textwidth 
-# #+RESULTS: GustXRF56_y
-# [[file:figs/GustXRF56_y.png]]
-
-# #+NAME: GustXRF56_z
-# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-#   fig, figname = fig_out(name)(xrf1_wingtip4)(sol3, sol5, sol7, sol8, labels=["l3","l5","l7","l8"],dim=2)
-#   figname
-# #+end_src
-
-# #+NAME: fig:GustXRF56_z
-# #+CAPTION: Comparison of solvers
-# #+ATTR_LATEX: :width 0.6\textwidth 
-# #+RESULTS: GustXRF56_z
-# [[file:figs/GustXRF56_z.png]]
-
-The computational times of the different solvers are shown in Table [[table:XRF1_times]]. The implicit solvers have taken one order of magnitude more time to run despite the reduction in time step. Therefore the main take away this is that for moderately large frequency dynamics, the explicit solvers offer a much efficient solution. The turning point for using implicit solvers would be when the largest eigenvalue in Eqs. \ref{eq2:sol_qs} led to prohibitly small time steps. In terms of the Nastran solution, we are not showing the whole simulation time because that would include the time to sample the DLM aerodynamics which are input into the NMROM as a post-processing step. Instead, the increase in time when adding an extra gust subcase to an already existing analysis is shown, i.e. the difference between one simulation that only computes one gust response and another with two. It is remarkable that the explicit solvers are faster on the nonlinear solution than the linear solution by a commercial software. Besides our highly efficient implementation, the main reason for this might be the Nastran solution involves first a frequency domain analysis and then an inverse Fourier transform to obtain the time-domain results.
-
-#+NAME: XRF1_times
-#+begin_src python  :results raw
-  dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
-  values = ["Time [s]"]
-  values += [', '.join([str(round(dfruns[f'XRF{i}'].iloc[0], 2)) for i in [3,5,7,8]])]
-  values += [0*60*60 + 1*60 + 21]
-  header = ["NMROM [S1, S2, S3, S4]" ]
-  header += ["$\Delta$ NASTRAN 146"]
-  # df_sp = pd.DataFrame(dict(times=TIMES_DICT.values()),
-  #                         index=TIMES_DICT.keys())
-
-  # df_ = results_df['shift_conm2sLM25']
-  # df_ = df_.rename(columns={"xlabel": "%Chord"})
-  tabulate([values], headers=header, tablefmt='orgtbl')
-#+end_src
-
-#+CAPTION: Computational times XRF1 gust solution.
-#+NAME: table:XRF1_times
-#+ATTR_LATEX:  :center t :placement [h]
-#+RESULTS: XRF1_times
-|          | NMROM [S1, S2, S3, S4]       | $\Delta$ NASTRAN 146 |
-|----------+------------------------------+----------------------|
-| Time [s] | 22.49, 18.94, 273.95, 847.89 |                   81 |
+In terms of the Nastran solution, we are not showing the whole simulation time because that would include the time to sample the DLM aerodynamics which are input into the NMROM as a post-processing step. Instead, the increase in time when adding an extra gust subcase to an already existing analysis is shown, i.e. the difference between one simulation that only computes one gust response and another with two. It is remarkable that the explicit solvers are faster on the nonlinear solution than the linear solution by a commercial software. Besides our highly efficient implementation, the main reason for this might be the Nastran solution involves first a frequency domain analysis and then an inverse Fourier transform to obtain the time-domain results.
 
 *** Aeroelastic AD verification
 Similarly to the examples above, we now validate the AD implementation for the nonlinear aeroelastic response to the gust $G1$. The sensitivity of the six components of the wing root loads are computed with respect to the gust parameters $w_g$ and $L_g$, and the flow parameters $u_{\inf}$ and $\rho_{\inf}$. The results are presented in [[table:XRF1_AD]]. A very good agreement with the finite differences is found with $\epsilon=10^{-4}$, except for $u_{\inf}$ which was found to be rather unstable and giving negative values, which is not very sensible. This is a common problem about using finite differences to approximate derivatives and another argument in favour of AD techniques. Reducing to $\epsilon=5\times 10^{-2}$ produces more stable results which are the ones shown in the comparison.
@@ -2352,37 +2264,31 @@ Similarly to the examples above, we now validate the AD implementation for the n
 #+NAME: table:XRF1_AD
 \begin{table} [h!]
 \begin{center}
-\begin{tabular}{lllll}
+\begin{tabular}{llll}
 \toprule
- & $w_g$ & $L_g$ & $u_{\inf}$ & $\rho_{\inf}$ \\
+ & $w_g$ & $L_g$ & $\rho_{\inf}$ \\
 \midrule
-$f_1$ (AD) & 12.180 & -0.690 & 6.666 & 477.208 \\
-$f_1$ (FD)  & 12.180 & -0.690  & 6.190  & 477.198  \\
-$\Delta$ \% & -1.1941E-5 & -2.8929E-3 & -7.1417E+0 & -2.1560E-3 \\
+$f_1$ (AD)  & 12.180  & -0.690  & 477.208 \\
+$f_1$ (FD)  & 12.180  & -0.690  & 477.198  \\
 \hline
-$f_2 (AD)$ & 19.088 & -1.015 & 6.122 & 712.485 \\
-$f_2 (FD)$ & 19.088 & -1.015 & 7.045 & 712.514  \\
-$\Delta$ \% & -8.0605E-5  & 1.6081E-2  & 1.5074E+1  & 4.1813E-3  \\
+$f_2 (AD)$  & 19.088  & -1.015  & 712.485 \\
+$f_2 (FD)$  & 19.088  & -1.015  & 712.514  \\
 \hline
-$f_3 (AD)$ & 65.574 & 18.764 & 8.218 & 1464.910 \\
-$f_3 (FD)$ & 65.574  & 18.764  & 7.813 & 1464.909  \\
-$\Delta$ \% & 5.1097E-6  & -5.0153E-5  & -4.9240E+0  & -1.0196E-4  \\
+$f_3 (AD)$  & 65.574  & 18.764  & 1464.910 \\
+$f_3 (FD)$  & 65.574  & 18.764  & 1464.909  \\
 \hline
-$f_4 (AD)$ & 126.648 & 6.961 & 21.598 & 2883.370 \\
-$f_4 (FD)$ & 126.648  & 6.961 & 19.736  & 2883.371  \\
-$\Delta$ \% & 6.2554E-6  & -2.2226E-3  & -8.6195E+0  & 5.2262E-5  \\
+$m_1 (AD)$  & 126.648 & 6.961   & 2883.370 \\
+$m_1 (FD)$  & 126.648 & 6.961   & 2883.371  \\
 \hline
-$f_5 (AD)$ & 330.759 & 84.098 & 85.224 & 5931.723 \\
-$f_5 (FD)$ & 330.759 & 84.099  & 97.188  & 5930.027  \\
-$\Delta$ \% & -1.3673E-5  & 2.0601E-3  & 1.4038E+1  & -2.8595E-2  \\
+$m_2 (AD)$  & 330.759 & 84.098  & 5931.723 \\
+$m_2 (FD)$  & 330.759 & 84.099  & 5930.027  \\
 \hline
-$f_6$ (AD) & 252.128 & 24.212 & 48.423 & 7179.735 \\
-$f_6$ (FD) & 252.128  & 24.211  & 14.980  & 7180.023  \\
-$\Delta$ \% & 4.4897E-5  & -5.4566E-3  & -6.9065E+1  & 4.0120E-3  \\
+$m_3$ (AD)  & 252.128 & 24.212  & 7179.735 \\
+$m_3$ (FD)  & 252.128 & 24.211  & 7180.023  \\
 \bottomrule
 \end{tabular}
 \end{center}
-  \end{table}
+\end{table}
 
 * Conclusions
 
