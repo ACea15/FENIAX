@@ -22,7 +22,7 @@ inp.fem.num_modes = 300
 inp.fem.eig_type = "scipy"
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
-    f"./results_try")
+    f"./results2D_50n")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.bc1 = 'free'

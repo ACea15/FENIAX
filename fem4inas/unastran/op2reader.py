@@ -63,27 +63,29 @@ class NastranReader:
         #asets = op2.displacements[1].node_gridtype[:,0]
         return t, u
 
-    def position(self):
-
-        asets = self.op2.displacements[1].node_gridtype[:,0]
-        if self.static:
-            ti = sorted(self.op2.displacements.keys())
-        else:
-            ti = self.op2.displacements[1].dts
-        # if self.bdfname:
-        #     assert (asets == self.nodes).all(), 'Asets in FEM not equal to asets in OP2'
-
-        X = self.geometry(aset=asets)
-        u = self.displacements()
+    def position(self, aset=None, full=True):
+        
+        if aset:
+            if self.static:
+                ti = sorted(self.op2.displacements.keys())
+            else:
+                ti = self.op2.displacements[1].dts
+            
+            asets = self.op2.displacements[1].node_gridtype[:,0]
+            # if self.bdfname:
+            #     assert (asets == self.nodes).all(), 'Asets in FEM not equal to asets in OP2'
+            X = self.geometry(aset=asets)
+        elif full:
+            X = self.geometry(full=full)
+            ti, u = self.displacements()
 
         r=[]
         for i in range(len(u)):
             if self.static:
-
                 r.append(X + u[i][:,0:3])
             else:
-                for tii in range(len(ti)):
-                    r.append(X + u[i][tii,:,0:3])
+                #for tii in range(len(ti)):
+                r.append(X.reshape((1,3,3)) + u[i][:, :, 0:3])
 
         r = np.asanyarray(r)
         return ti,r
@@ -91,9 +93,9 @@ class NastranReader:
 
 #mass, cg, I = fem.mass_properties()
 
-    def geometry(self,condensed=None,full=None,aset=[]):
+    def geometry(self,condensed=None,full=None,aset=None):
 
-        if aset is not []:
+        if aset is not None:
             nodeIds = aset
         elif condensed:
             nodeIds = sorted(self.fem.asets[0].node_ids)
@@ -106,6 +108,7 @@ class NastranReader:
         X=np.asarray(X)
 
         return X
+    
     def plot_asets(self):
          from mpl_toolkits.mplot3d import Axes3D
          import matplotlib.pyplot as plt

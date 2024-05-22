@@ -46,7 +46,7 @@ SPCADD   2       1
 $ Displacement Constraints of Load Set : spc1.1
 SPC1     1       123456  1
 LOAD,1,1.,1.,2
-GRAV,2,0,9.81,0.,0.,-1.
+GRAV,2,0,9.807,0.,0.,-1.
 $FORCE,2,2,0,9.81,0.,0.,-1.
 TABLED1        1
               0.      1.    100.      1.    ENDT

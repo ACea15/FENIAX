@@ -49,8 +49,8 @@ inp.driver.sol_path= pathlib.Path(
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.bc1 = 'free'
-inp.systems.sett.s1.t1 = 5.
-inp.systems.sett.s1.tn = 1000
+inp.systems.sett.s1.t1 = 20.
+inp.systems.sett.s1.tn = 2000
 inp.systems.sett.s1.solver_library = "diffrax" #"runge_kutta" #"diffrax" #
 inp.systems.sett.s1.solver_function = "ode"
 inp.systems.sett.s1.solver_settings = dict(solver_name="Dopri5")# "rk4")
@@ -69,18 +69,48 @@ config =  configuration.Config(inp)
 sol = fem4inas.fem4inas_main.main(input_obj=config)
 #time2 = time.time()
 
+import fem4inas.unastran.op2reader as op2reader
+import importlib
+importlib.reload(op2reader)
+
+op2 = op2reader.NastranReader("/home/acea/projects/FEM4INAS/examples/Pendulum/NASTRAN/2node/n400.op2",
+                        "/home/acea/projects/FEM4INAS/examples/Pendulum/NASTRAN/2node/n400.bdf")
+op2.readModel()
+tnastran, unastran = op2.displacements()
+tnastran, rnastran = op2.position()
+
 import fem4inas.plotools.uplotly as uplotly
 import fem4inas.plotools.utils as putils
 
-x, y = putils.pickIntrinsic2D(sol.dynamicsystem_s1.t,
+x0, y0 = putils.pickIntrinsic2D(sol.dynamicsystem_s1.t,
                               sol.dynamicsystem_s1.ra,
                               fixaxis2=dict(node=-1, dim=0))
+x2, y2 = putils.pickIntrinsic2D(sol.dynamicsystem_s1.t,
+                              sol.dynamicsystem_s1.ra,
+                              fixaxis2=dict(node=-1, dim=2))
+
 fig=None
-fig = uplotly.lines2d(x,y, fig,
+fig = uplotly.lines2d(x0, y0, fig,
                       dict(name="NMROM",
                            line=dict(color="navy")
                            ))
+fig = uplotly.lines2d(x2, y2, fig,
+                      dict(name="NMROM",
+                           line=dict(color="navy")
+                           ))
+fig = uplotly.lines2d(tnastran[0], unastran[0,:,1,0]+1, fig,
+                      dict(name="NMROM",
+                           line=dict(color="red", dash="dot")
+                           ))
+
+fig = uplotly.lines2d(tnastran[0], unastran[0,:,1,2], fig,
+                      dict(name="NMROM",
+                           line=dict(color="red", dash="dot")
+                           ))
+
 fig.show()
+
+
 
 # from functools import partial
 # import jax

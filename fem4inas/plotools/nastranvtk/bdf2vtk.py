@@ -145,12 +145,12 @@ def write_vtk_vis(filename,fem,onlypts):
 
 
 
-def run(bdfname,op2name,vtkname,onlypts,punch=False,modes2keep=None,fileformat='binary'):
+def run(bdfname,op2name,vtkname,onlypts,punch=False,modes2keep=None,fileformat='binary',xref=True):
 
     fem = BDF(debug=True,log=None)
     
     # Read bdf
-    fem.read_bdf(bdfname,xref=True,punch=punch)
+    fem.read_bdf(bdfname,xref=xref,punch=punch)
 
     print(fem.get_bdf_stats())
 

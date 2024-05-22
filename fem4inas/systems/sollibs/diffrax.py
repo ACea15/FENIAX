@@ -1,6 +1,7 @@
 import diffrax
 import optimistix as optx
 import jax.numpy as jnp
+import jax
 
 dict_norm = dict(linalg_norm=jnp.linalg.norm)
 
@@ -41,7 +42,7 @@ def ode(F: callable,
                               y0=q0,
                               args=args,
                               #throw=False,
-                              max_steps=20000,
+                              max_steps=30000,
                               saveat=saveat,
                               **diffeqsolve_sett
                               )
@@ -84,7 +85,9 @@ def newton_raphson(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **
     solver = optx.Newton(rtol=rtol,
                          atol=atol,
                          kappa=kappa,
-                         norm=dict_norm[norm])
+                         #norm=dict_norm[norm]
+                         )
+    # jax.debug.breakpoint()
     sol = optx.root_find(F, solver, q0, args=args, max_steps=max_steps)
     #sol = solver(F, q0, args, jac)
     return sol
