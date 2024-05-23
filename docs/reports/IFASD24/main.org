@@ -66,7 +66,7 @@
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "yes") ;; yes, no, no-export
+  (setq Veval_blocks "no-export") ;; yes, no, no-export
   (setq Vpics "pdf") ;; yes, no, no-export   
   (setq Veval_blocks_run "no-export")
   (setq pythonShell "*py1*")
@@ -1754,12 +1754,15 @@ A straight structure of constant square cross section (side = 3, wall thickness 
 #+NAME: fig:FFS
 #+CAPTION: FFS geometry, material properties and load cases
 #+ATTR_LATEX: :width 0.7\textwidth 
+[[file:figs_ext/ffbw10.pdf]]
 
 The free-flying evolution of the model is shown in 
 
-#+NAME: fig:FFS_2Dflying
-#+CAPTION: FFS geometry, material properties and load cases
-#+ATTR_LATEX: :width 0.7\textwidth 
+
+#+NAME: fig:FFB_2D
+#+CAPTION: Free-flying structure in the 2D plane
+#+ATTR_LATEX: :width 1.\textwidth 
+[[file:figs_ext/FFB_2D2.pdf]]
 
 Because the applied load is a dead force we can track the position of the center-of-gravity (Cg) analytically as a verification exercise. Furthermore, the highly nonlinear nature of this problem makes it a good example to showcase the strength of accelerators for large problems and to gain insights as to when it might be better to deploy the codes in standard CPUs instead. Table [[table:FFB_times]] shows
 
@@ -2106,7 +2109,7 @@ Fig. [[fig:xrf1_modalshapes]] shows the reference FE model with three modal shap
 #+NAME: fig:xrf1_modalshapes
 #+CAPTION: Modified XRF1 reference configuration with characteristic modal shapes
 #+ATTR_LATEX: :width 0.8\textwidth 
-[[file:figs_ext/xrf1_modalshapes.pdf]]
+[[file:figs_ext/xrf1_modalshapes2.pdf]]
 
 To verify the accuracy of the reduction method we show now a comparison of some of the most relevant natural frequencies in Table \ref{table8:xrf1-frequencies} (normalized with the lowest frequency). It is common practice in this industrial aeroelastic models to represent the mass model as lumped masses along the load axis (provided by the mass department which thoroughly tracks the multiple components and combines them into sectional lumped points with inertia). As explained above, this makes the Guyan reduction match an exact condensation and explains the accuracy of the results. 
 \begin{table}[h!]
