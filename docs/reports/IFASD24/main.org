@@ -1531,6 +1531,21 @@ A very important part in the calculation of dynamic loads is including the rigid
 \end{equation}
 
 The simplest case would be a trim where only two rigid-body DoF are allowed, the pitch $q_{0\alpha}$ and the plunge, $q_{0h}$; $q_{0h}$ is set to 0 and $q_{0\alpha}$ is part of the variables to be calculated along with a single tail elevator deflection, $q_c$ and the elastic strain modal DoF, $\bm q_{2}$. A somewhat more advanced trim would also allow a forward direction of flight and include thrust as another control state variable. However for this a good estimate of the aerodynamic drag forces would be required, which is not the case for the DLM.  
+** COMMENT Software design
+\textit{"Supporting state-of-the-art AI research means balancing rapid prototyping and quick iteration with the ability to deploy experiments at a scale traditionally associated with production systems."}.
+Jax target inside DeepMind would also be desirable in a scientific research environment. It however entails a good amount of labour and expertise into the field of software design, whose payoffs are only realisable in the long term.    
+# To what extent this is a feasible target is somehow unknown due to current constraints, but nonetheless a sensible objective to have in consideration when developing new tools.
+Fig. [[components_architecture]] shows a high-level view of this first version of the software in terms of components. A Configuration component builds the necessary settings for the simulation, including geometric coordinates, load-paths information.
+The Configuration is injected into the Driver component that initialises the Simulation component, the Systems and the Solution component, after which it triggers the simulation. The Systems are run as managed by the Simulation component and encapsulate the various equations to be solved (time marching, nonlinear static equilibrium or stability for instance). The solution component acts as a memory-efficient container of the new data to be kept as the solution process advances, and it is responsible for loading (from a previous simulations) and writing solution data too. It is thus passed to every System. 
+ 
+#+NAME: components_architecture
+#+CAPTION: Components architecture diagram
+#+ATTR_LATEX: :width 0.4\textwidth 
+#+RESULTS: components_architecture
+[[file:figs/components_architecture.png]]
+
+Fig. [[classes_architecture]] shows a lower view of the abstractions, interfaces between classes and how they interact via their public methods. The inputs to the program may be given via a .yaml file or a python dictionary in memory. The starting point in the main file is the initialisation of the driver corresponding to the mathematical description to be solved (so far only the intrinsic modal is available, Eqs. \eqref{eq3:intrinsic_full_aeroelastic}). The intrinsic driver computes (or loads), as a pre-simulation step, the intrinsic modal shapes and nonlinear tensors from the linear stiffness and mass matrices and the nodal coordinates; then it runs the cases by triggering the simulation class. This class is responsible for managing how the systems are being run (in serial, in parallel, or even in a coupling process between systems). From the configuration settings, the intrinsic system loads the equations (dqs), the external loads in Eqs. \eqref{eq2:sol_qs}, such as point-forces, gravity or modal aerodynamic GAFs. Various libraries can be chosen to either solve the static equations or march in time if the solution is dynamic; importantly, the JAX-based Diffrax library has been integrated and supports ordinary, stochastic and controlled equations, with many solvers and multiple adjoint methods which could be used in an optimization framework. This initial layout of the software is expected to evolve and to be consolidated as the software matures. 
+
 ** Computational implementation
 The main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor[fn:2:Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FEM4INAS.]. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in cite:&CEA2024. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures as will be demonstrated herein, and the computation of sensitivities via algorithmic differentiation (AD) across solvers has been implemented in [].
 The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. It combines XLA (accelerated linear algebra) and Autograd, the former being a compiler that optimises models for different hardware platforms, the latter is an Automatic Differentiation (AD) tool in Python. 
@@ -1649,6 +1664,7 @@ $\bm{\Gamma}_2$ $\longleftarrow$  jnp.einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\P
 \label{alg:couplings}
 \end{algorithm}
 
+The new capabilities come at the expense of a higher restriction in the way the code is written. Compilation and transformations in JAX only work for functionally pure programs, which pushes the software to comply with a nonconventional functional paradigm. Some of these characteristics are pure functions, i.e. functions that have no side effects, input/output stream management needs to be placed outside the numerical algorithms, inmutability of arrays. These very constraints allow to achieve the capabilities describe above via the many abstractions implemented internally in the library. An example of this restrictions is the effectively impossibility of jit-compile conventional for-loops (they are unrolled in the compilation therefore any the input to the loop should always be small).
 The integration of strains to obtain position and rotation fields as defined in Eq. \ref{eq:strain_integration} is a good example of a recursive operation whereby something more than vectorised operations needs to be introduced, as opposed to the Algorithms above. The function $\texttt{jax.lax.scan}$, which can be differentiated both in forward and backward modes, provides a fast solution for this operation where a previous computation in the loop has to be carried forward (in our case every new computed position and rotation matrix are passed to the next calculation). A greatly simplified version is shown in Algorithm \ref{alg:strain_integration} that has as inputs the position and rotation matrix of the first node (given as clamped or calculated via quaternion integration), the initial position of the nodes and the strain field, $X_3$. The $\texttt{scan}$ function iteration through the first axis of the input tensor $xs$ and also takes the initial carry state in the variable $init$. Such an abstraction usually imposes various concatenation and deconcatenation operations of the data in the process. 
 In the real algorithm an additional for-loop wraps this function to account for the various components in the aircraft (wings, fuselage, tail, etc.) that do not have contiguous nodes to perform the integration. This for-loop is unrolled in the $\texttt{jit}$ compilation but this is not problematic since a very small number of components made up the whole aircraft. 
 
@@ -1691,55 +1707,6 @@ Rab, ra $\longleftarrow$ deconcatenate(y)
 \caption{Strain and curvature integration via JAX scan}
 \label{alg:strain_integration}
 \end{algorithm}
-
-
-The new capabilities come at the expense of a higher restriction in the way the code is written. Compilation and transformations in JAX only work for functionally pure programs, which pushes the software to comply with a nonconventional functional paradigm. Some of these characteristics are pure functions, i.e. functions that have no side effects, input/output stream management needs to be placed outside the numerical algorithms, inmutability of arrays. These very constraints allow to achieve the capabilities describe above via the many abstractions implemented internally in the library. An example of this restrictions is the effectively impossibility of jit-compile conventional for loops. 
-[example of jax scan for]
-# The challenge after the algorithms have been implemented appropriately is to manage a generic software. Thus a mixed approach has been employed for this whereby numerical algorithms are written using functional programming but the flow of execution is managed using an object oriented approach that focus on modularity and extensibility.
-\\
-All the cases presented are part of a Test suite that has been built as a critical step for long term software management.
-They serve as a demonstration of the approach's ability to deal with geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved. Table \ref{table:benchmarks} introduces the cases that are discussed below with the improvements in performance from the new implementation.
-All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed. [update with GPUs]
-The previous version of the code based on Python made heavy use of for-loops instead of vectorised operations. These results highlight the advantages of writing scientific software with attention to the various optimization techniques available. Besides of this, it is also worth remarking the very short times in the solutions, which is also largely due to a formulation in modal space that naturally leads to reduced order models and easily caters for vectorised operations.
-Six examples are presented, first three are static cases and the other three are dynamic cases with the last one being a time domain aeroelastic response to a gust.
-The model complexity is also augmenting starting with beam model to then move to a representative aircraft of medium complexity, the so-called Sail Plane, and finally considering an industrial-scale aircraft, the XRF1 model.
-Note the longer dynamic simulation of the Sail Plane wing compared to the XRF1 gust response: despite i.e. more operations in the solution time step, driven the largest eigenvalue in the solution, was much smaller in the Sail Plane results 
-#+begin_src latex
-    \begin{table}[h!]
-      \begin{center}
-        \caption{Simulation times for cases part of the test suite}
-        \label{table:benchmarks}
-        \begin{tabular}{lrll}
-          \toprule
-          Model & Time [s] & Time (old) & Speed-up\\[0pt]
-          \midrule
-          ArgyrisCantilever (7 load-cases) & 7.8 & 9m:44s & $\times$74.9\\[0pt]
-          Simo45Beam (11 load cases) & 7.1 & 1m:45s & $\times$14.8\\[0pt]
-          SailPlane (6 load cases) & 8.1 & 56.3s & $\times$6.95\\[0pt]
-          ShellBeam (Dynamic, 20 sec. with 85 modes) & 34.3 & 6h:16m:53s & $\times$659.3\\[0pt]
-          SailPlaneWing (Dynamic, 15 sec. with 50 modes) & 10.88 & 2h:18min:35s & $\times$764.2\\[0pt]
-          XRF1-Gust (Dynamic Aeroelastic, 15 sec. with 70 modes) & 17.4 & 1h:38min:28s & $\times$339.5\\[0pt]
-          \bottomrule
-                &  &  & \\[0pt]
-        \end{tabular}
-      \end{center}
-    \end{table}
-#+end_src
-
-** COMMENT Software design
-\textit{"Supporting state-of-the-art AI research means balancing rapid prototyping and quick iteration with the ability to deploy experiments at a scale traditionally associated with production systems."}.
-Jax target inside DeepMind would also be desirable in a scientific research environment. It however entails a good amount of labour and expertise into the field of software design, whose payoffs are only realisable in the long term.    
-# To what extent this is a feasible target is somehow unknown due to current constraints, but nonetheless a sensible objective to have in consideration when developing new tools.
-Fig. [[components_architecture]] shows a high-level view of this first version of the software in terms of components. A Configuration component builds the necessary settings for the simulation, including geometric coordinates, load-paths information.
-The Configuration is injected into the Driver component that initialises the Simulation component, the Systems and the Solution component, after which it triggers the simulation. The Systems are run as managed by the Simulation component and encapsulate the various equations to be solved (time marching, nonlinear static equilibrium or stability for instance). The solution component acts as a memory-efficient container of the new data to be kept as the solution process advances, and it is responsible for loading (from a previous simulations) and writing solution data too. It is thus passed to every System. 
- 
-#+NAME: components_architecture
-#+CAPTION: Components architecture diagram
-#+ATTR_LATEX: :width 0.4\textwidth 
-#+RESULTS: components_architecture
-[[file:figs/components_architecture.png]]
-
-Fig. [[classes_architecture]] shows a lower view of the abstractions, interfaces between classes and how they interact via their public methods. The inputs to the program may be given via a .yaml file or a python dictionary in memory. The starting point in the main file is the initialisation of the driver corresponding to the mathematical description to be solved (so far only the intrinsic modal is available, Eqs. \eqref{eq3:intrinsic_full_aeroelastic}). The intrinsic driver computes (or loads), as a pre-simulation step, the intrinsic modal shapes and nonlinear tensors from the linear stiffness and mass matrices and the nodal coordinates; then it runs the cases by triggering the simulation class. This class is responsible for managing how the systems are being run (in serial, in parallel, or even in a coupling process between systems). From the configuration settings, the intrinsic system loads the equations (dqs), the external loads in Eqs. \eqref{eq2:sol_qs}, such as point-forces, gravity or modal aerodynamic GAFs. Various libraries can be chosen to either solve the static equations or march in time if the solution is dynamic; importantly, the JAX-based Diffrax library has been integrated and supports ordinary, stochastic and controlled equations, with many solvers and multiple adjoint methods which could be used in an optimization framework. This initial layout of the software is expected to evolve and to be consolidated as the software matures. 
 
 * Results
 :PROPERTIES:
@@ -1838,7 +1805,7 @@ With the examples herein and in previous works we sought to introduce a versatil
 The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs with composite materials employed in the construction. Flexible tail and rear stabiliser are rigidly attached to the wing. Structural and aerodynamic models are shown in Fig. [[fig:SailPlane2]]. This aircraft was first shown in [[cite:&CEA2021a]] is a good test case as it is not very complex yet representative of aircraft FE models and it is available open source.  
 
 #+NAME: fig:SailPlane2
-#+CAPTION: Representative plane structural and aerodynamic models
+#+CAPTION: Representative plane structural FE model
 #+ATTR_LATEX: :width 0.7\textwidth 
 [[file:figs_ext/SailPlaneRef.png]]
 
