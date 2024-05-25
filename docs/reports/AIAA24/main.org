@@ -67,8 +67,8 @@ The nonlinear trim and gust response of an industrial configuration are studied 
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "yes") ;; yes, no, no-export 
-  (setq Veval_blocks_run "no")
+  (setq Veval_blocks "no-export") ;; yes, no, no-export 
+  (setq Veval_blocks_run "no-export")
   (setq pythonShell "py1org")
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
@@ -383,7 +383,7 @@ We start with a global FE model of the airframe as illustrated in Fig. [[workflo
 #+NAME: workflow
 #+CAPTION: Workflow of the solution process
 #+ATTR_LATEX: :width 1.\textwidth 
-[[./figs/workflowAIAA2.pdf]]
+[[./figs/workflowAIAA3.pdf]]
 It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements.
 With those characteristics a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$ (Step 1 in Fig. [[workflow]]). The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$ (Step 2, however, $\pmb \Phi_0$ is defined on the master nodes and the figure shows the full reconstructed modal shapes). The dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written in material velocities, $\bm x_1$,  and stresses, $\bm x_2$, as state variables. A modal expansion of those is a key step in seamlessly mapping the global FEM into the nonlinear description. The intrinsic modes are introduced and the projection of the state variables is such  $\pmb{x}_1 = \pmb{\Phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\Phi}_2\pmb{q}_2$.
 A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes coming from the global FEM:
@@ -427,7 +427,7 @@ with $\lo_1$ and $\lo_2$ linear operators. The solution of Eqs. \ref{eq2:sol_qs}
 & \left. + \pmb{\mathcal{A}}_{g0}\bm{v}_g +\frac{c}{2U_\infty}\pmb{\mathcal{A}}_{g1} \dot{\bm{v}}_g +\left(\frac{c}{2U_\infty}\right)^2 \pmb{\mathcal{A}}_{g2}\ddot{\bm{v}}_g +  \sum_{p=1}^{N_p} \pmb{\lambda}_p  \right) 
 \end{split}
 \end{equation}
-Where the $\pmb{\mathcal{A}}_is$ are real matrices, $c$ is the reference chord, $\tfrac12\rho_\infty U_\infty^2$, \pmb{\lambda}_p the aerodynamic states and $N_p$ the number of lags. 
+Where the $\pmb{\mathcal{A}}_is$ are real matrices, $c$ is the reference chord, $\tfrac12\rho_\infty U_\infty^2$, $\pmb{\lambda}_p$ the aerodynamic states and $N_p$ the number of lags. 
 The coupling of the structure and aerodynamic equations combined with the aerodynamic lags gives the final ODE system: 
 
 \begin{equation}
@@ -469,14 +469,14 @@ Moreover, its extensible system of composable function transformations provides 
 \end{figure}
 #+end_export
 The tensor structure of the main components in the solution process is illustrated in Fig. [[fig:tensors]] in the sequential order they are computed. The discretization of the problem comprises $N_n$ number of condensed nodes, $N_m$ modes used in the reduced order model and $N_t$ time steps in the solution (if the problem is static, $N_t$ represents a ramping load stepping scheme). The intrinsic modes, $\Phi, \Psi  \in \mathbb{R}^{N_m \times 6 \times N_n}$ are computed from the eigenvalue solution and the coordinates $\bm X_a \in \mathbb{R}^{3 \times N_n}$ of the active nodes. 
-The nonlinear couplings, $\bm{\Gamma} \in \mathbb{R}^{N_m \times N_m \times N_m}$ are calculated next, from which the system in Eq. \ref{eq2:sol_qs} is assembled and solved to yield the solution states $\bm q \in \mathbb{R}^{N_s \times N_t}$. Local velocities and internal forces,  $\bm X_{1,2} \in \mathbb{R}^{N_t \times 6 \times N_n}$ are computed as a product of the corresponding instrinsic modes and states, and their integration leads to the position tensor with similar structure.
+The nonlinear couplings, $\bm{\Gamma} \in \mathbb{R}^{N_m \times N_m \times N_m}$ are calculated next, from which the system in Eq. \ref{eq2:sol_qs} is assembled and solved to yield the solution states $\bm q \in \mathbb{R}^{N_s \times N_t}$. Local velocities and internal forces,  $\bm X_{1,2} \in \mathbb{R}^{N_t \times 6 \times N_n}$ are computed as a product of the corresponding intrinsic modes and states, and their integration leads to the position tensor with similar structure.
 
 #+NAME: fig:tensors
-#+CAPTION: Main data components in the sequencial solution process
+#+CAPTION: Main data components in the sequential solution process together with their associated time and space complexities
 #+ATTR_LATEX: :width 1\textwidth 
 [[file:figs/tensors2.pdf]]
 
-An simplified version of the intrinsic modes evaluation is given in Algorithm [[alg:modes]].  
+A simplified version of the intrinsic modes evaluation is given in Algorithm [[alg:modes]].
 
 #+NAME: alg:modes
 \begin{algorithm}[h!]
@@ -519,10 +519,10 @@ $\bm{\psi}_2$ $\leftarrow$ - $\bm \phi_{1d} / \Delta_s + E_{\phi}$\;
 \BlankLine
 }
     }
-\caption{Intrinsic modal shapes implementation in JAX}
+\caption{JAX-based computation of intrinsic modal shapes}
 \end{algorithm}
 
-The various functions in the algorithm make heavy use of JAX $\texttt{vmap}$ function to vectorise the contraction and expansion operations. For instance, to yield the internal moments associated to each node due to the internal forces, the function \(\texttt{moment\_force}\) is cast in [[alg:internalmoments]]:
+The various functions in the algorithm make heavy use of JAX $\texttt{vmap}$ function to vectorise the contraction and expansion operations. For instance, to yield the internal moments associated to each node due to the internal forces, the function \(\texttt{moment\_force}\) is cast in Algorithm [[alg:internalmoments]]:
 
 #+NAME: alg:internalmoments
 \begin{algorithm}[h!]
@@ -581,8 +581,7 @@ The new capabilities come at the expense of a higher restriction in the way the 
 All the cases presented are part of a Test suite that has been built as a critical step for long term software management.
 They serve as a demonstration of the approach's ability to deal with geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved. Table \ref{table:benchmarks} introduces the cases that are discussed below with the improvements in performance from the new implementation.
 All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed. [update with GPUs]
-The old code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. These results convey the potential improvements in scientific software when paying attention to the implementation solely. Besides of this, it is also worth remarking the very short times in the solutions, which is also largely due to a formulation in modal space that naturally leads to reduced order models and easily caters for vectorised operations.
-[Table needs updating with GPUs performance and Nastran times]
+The previous version of the code based on Python made heavy use of for-loops instead of vectorised operations. These results highlight the advantages of writing scientific software with attention to the various optimization techniques available. Besides of this, it is also worth remarking the very short times in the solutions, which is also largely due to a formulation in modal space that naturally leads to reduced order models and easily caters for vectorised operations.
 Six examples are presented, first three are static cases and the other three are dynamic cases with the last one being a time domain aeroelastic response to a gust.
 The model complexity is also augmenting starting with beam model to then move to a representative aircraft of medium complexity, the so-called Sail Plane, and finally considering an industrial-scale aircraft, the XRF1 model.
 Note the longer dynamic simulation of the Sail Plane wing compared to the XRF1 gust response: despite i.e. more operations in the solution time step, driven the largest eigenvalue in the solution, was much smaller in the Sail Plane results 

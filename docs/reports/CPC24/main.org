@@ -68,12 +68,12 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "fem4inasdev")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "no-export") ;; yes, no, no-export 
-  (setq Veval_blocks_run "no-export")
+  (setq Veval_blocks "yes") ;; yes, no, no-export 
+  (setq Veval_blocks_run "yes")
   (setq pythonShell "py2")
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
@@ -340,8 +340,8 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   inp.simulation.typeof = "single"
   inp.systems.sett.s1.solution = "dynamic"
   inp.systems.sett.s1.t1 = 15.
-  inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
-  inp.systems.sett.s1.solver_library = "runge_kutta"
+  inp.systems.sett.s1.solver_settings = dict(solver_name="Dopri5")#, max_steps=) #"rk4")
+  inp.systems.sett.s1.solver_library = "diffrax"
   inp.systems.sett.s1.solver_function = "ode"
   inp.systems.sett.s1.xloads.follower_forces = True
   inp.systems.sett.s1.xloads.follower_points = [[23, 0],
@@ -418,10 +418,10 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   inp.driver.sol_path = pathlib.Path(
       f"./{name}")
 
-  run(inp, label=name)
+  #run(inp, label=name)
 #+end_src
 
-*** Plot
+*** COMMENT Plot
 :PROPERTIES:
 :header-args+: :tangle ./results/plot_wingSP.py :eval (print Veval_blocks)
 :END:
@@ -702,7 +702,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   run(inp, label=name)
 #+end_src
 
-*** XRF7
+*** COMMENT XRF7
 #+NAME: XRF7
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
@@ -726,7 +726,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
   run(inp, label=name)
 #+end_src
-*** XRF8
+*** COMMENT XRF8
 #+NAME: XRF8
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
@@ -889,7 +889,7 @@ https://plotly.com/python/subplots/
                                     sol2.data.dynamicsystem_s1.ra,
                                     fixaxis2=dict(node=150, dim=dim))
 
-      fig = uplotly.lines2d(x1[:], (y1[:]-y1[0])*scale, fig,
+      fig = uplotly.lines2d(x1[1:], (y1[:-1]-y1[0])*scale, fig,
                             dict(name=f"NMROM-G{labels[0]}",
                                  line=dict(color="orange")
                                  ))
@@ -1558,7 +1558,7 @@ Geometric nonlinearities are better illustrated by representing a sectional view
 #+CAPTION: Static geometrically-nonlinear effects on the aircraft main wing 
 #+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: SPWingsection
-[[file:figs/SPWingsection.png]]
+[[file:]]
 
 The tolerance in the Newton solver was set to $10^{-6}$ in all cases.
 A convergence analysis with the number of modes in the solution is presented in [[SPstatic_convergence]].
@@ -1720,6 +1720,9 @@ The dynamic response is presented in Fig. [[fig:wsp_3d]], where results have bee
   fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=2, labels=None, nast_load=0,axes=[[3.85,4.15],[27.4, 27.65]])
   figname
 #+end_src
+
+#+RESULTS: WSP_zzoom
+[[file:figs/WSP_zzoom.png]]
 
 # #+NAME: fig:WSP_zzoom
 # #+CAPTION: Convergence of dynamic simulation: zoom into the maximum displacement point 
@@ -1895,7 +1898,7 @@ Next we increase the gust intensity by a factor of 200 in order to show the effe
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   sol1= solution.IntrinsicReader("./XRF3")
   sol2= solution.IntrinsicReader("./XRF4")
-  fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip2, sol1, sol2, labels=[1,2], nast_scale=2., nast_load=[1,2])
+  fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip2, sol1, sol2, labels=[1,2], nast_scale=2., nast_load=[2,6])
   figname
 #+end_src
 

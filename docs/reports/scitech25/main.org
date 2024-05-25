@@ -1,7 +1,8 @@
 #+TITLE: Aircraft Nonlinear Dynamic Loads at Large Scale Using an Accelerator-Based Distributed Solution 
 # #+TITLE: Parallelized Aeroelastic Solution for Large Scale Simulation of Nonlinear Dynamic Loads on Accelerators
 # #+AUTHOR: Alvaro Cea and Rafael Palacios
-#+AUTHOR: Alvaro Cea\footnote{Research Associate, CAGB 308, South Kensington Campus. (alvaro.cea-esteban15@imperial.ac.uk)}, and Rafael Palacios\footnote{Professor in Computational Aeroelasticity, CAGB 338, South Kensington Campus. AIAA Associate Fellow (r.palacios@imperial.ac.uk)}.
+#+AUTHOR: Alvaro Cea\footnote{Research Associate, CAGB 308, South Kensington Campus. (alvaro.cea-esteban15@imperial.ac.uk)}, and Rafael Palacios\footnote{Professor in Computational Aeroelasticity, CAGB 338, South Kensington Campus. AIAA Associate Fellow (r.palacios@imperial.ac.uk)}
+#+DATE:
 #+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
 :LATEX_PROPERTIES:
 #+OPTIONS: toc:nil
@@ -163,21 +164,18 @@
 ** Helper functions
 
 * Introduction
-The ever-growing need for performance and operating costs reduction, together with the current push for sustainability in aviation, are driving new aircraft designs outside the conventional envelop. A particular feature are very high aspect ratio wings to minimise induced drag, which when combined with advancements in lighter materials to reduced vehicle weight, can significantly increase wing flexibility.    
-In such a scenario, aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines.
+Aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines.
 As highlighted in cite:&LIVNE2018, formulations that include nonlinear effects should be developed that not only enhance current modelling techniques  but that also allow rapid data turnaround for the industry. Real-time, hardware-in-the-loop flight simulators would also benefit of actively controlled, deformable airplane models. This leads to a more nonlinear landscape, where the overall aerodynamic performance needs to be calculated around a flight shape with large deformations cite:&GRAY2021; the input for efficient control laws account for the steady state and nonlinear couplings cite:&Artola2021; and the loads ultimately sizing the wings are atmospheric disturbances computed in the time-domain cite:&CESNIK2014a.
 This is also the case for more radical configurations that may or may not exhibit high flexibility but whose aeroelastic behaviour is more uncertain.
 A more holistic approach to the design also increases the complexity of the processes exponentially, and the trade-offs and cost-benefit analysis may not be possible until robust computational tools are in-place to simulate the different assumptions.
  Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations cite:&Kier2017, as it considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitively expensive computational times. 
 Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above.
-Those previous considerations set the goals for the current effort: 1) to be able to perform geometrically nonlinear aeroelastic analysis, 2) to work with generic FEMs in a non-intrusive manner, and 3) to achieve a computational efficiency that is equivalent to present linear methods (if not faster).
-Grounded on previous developments where the first two points were demonstrated cite:&PALACIOS2019, cite:&CEA2021b, cite:&CEA2023 we tackle the third point herein with a new implementation that achieves remarkable computational performance.
-The numerical library JAX cite:&jax2018github was leveraged to produce highly vectorised, automatically differentiated routines that are managed by a modular, object-oriented approach in Python. The power of JAX for scientific computation has been proved recently in fluid dynamics cite:&BEZGIN2023 and solid mechanics cite:&XUE2023 applications. We add to those a nonlinear solution that enhances linear aeroelastic models built for industrial loads analysis. This aligns with current efforts to build robust methods that incorporate nonlinear effects to complex 3-D FEMs, via stick models cite:&RISO2023 or other modal-based methods cite:&DRACHINSKY2022.
-
-
+Those previous considerations set the goals for our previous work [[cite:&CEA2023;&CEA2024]]: 1) to be able to perform geometrically nonlinear aeroelastic analysis, 2) to work with generic FEMs in a non-intrusive manner, and 3) to achieve a computational efficiency that is equivalent to present linear methods (if not faster).
+\\
 In this work we explore the latest advances on accelerator's parallelisation and how to integrate them into our solution process to enable large scale aeroelastic simulations under geometrically nonlinear assumptions.
 Specifically, we set out to characterise the dynamics of highly flexible aircraft in response to the very large envelopes of in-flight loads encountered in the certification process. 
-In our latest developments we have leveraged the numerical library JAX to build a new simulation environment for time-domain nonlinear aeroelastic analysis that achieves two orders of magnitude speed-ups with respect to standard implementations [[cite:&CEA2024]],  is suitable for modern hardware architectures such as GPUs [[cite:&ALVAROCEA2024]], and that is also capable of computing derivatives via algorithmic differentiation [[cite:&ALVAROCEA2024a]]. We want to go one step further by adding parallelisation and distributed computational capabilities to the codebase to tackle the very demanding task of calculating load envelopes while introducing new physics to account for the large displacements and rotations ultra-high-aspect-ratio wings undergo. 
+In our latest developments we have leveraged the numerical library JAX cite:&jax2018github to build a new simulation environment for time-domain nonlinear aeroelastic analysis that achieves two orders of magnitude speed-ups with respect to standard implementations [[cite:&CEA2024]],  is suitable for modern hardware architectures such as GPUs [[cite:&ALVAROCEA2024]], and that is also capable of computing derivatives via algorithmic differentiation [[cite:&ALVAROCEA2024a]]. The power of JAX for scientific computation has been proved recently in fluid dynamics cite:&BEZGIN2023 and solid mechanics cite:&XUE2023 applications. 
+We want to go one step further by adding parallelisation and distributed computational capabilities to the codebase to tackle the very demanding task of calculating load envelopes while introducing new physics to account for the large displacements and rotations ultra-high-aspect-ratio wings undergo. 
 In this multi-process environment, a Single Program Multiple Data (SPMD) paradigm is employed with the main computation spanning as many devices as available in the cluster and performing collective operations to communicate between devices. 
 By addressing in one program a substantial part of scenarios during flight (manoeuvres and gust responses at different velocities and altitudes, and for a range of mass cases and configurations), we will be able to produce the critical loading characteristics of the aircraft at a fraction of time. Moreover, the  boundaries of these critical cases will be differentiated using the AD, providing gradients for optimization studies as well as additional insights to the designer.  
 A representative configuration of a high-aspect-ratio aircraft is going to be studied and verification against MSC Nastran will be shown for the linear cases. Afterwards an assessment of geometrically nonlinear effects for trim, manoeuvre and gust loads will be carried out.   
@@ -185,7 +183,6 @@ This application of modern hardware architectures to aircraft nonlinear load ana
 
 * Theory and implementation
 In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelastic modelling as continuation of the work in [[cite:&CEA2021b;&CEA2023]]. A summary of the main formulation and its integration into an aeroelastic framework are presented next, along with some implementation details. 
-** Nonlinear aeroelastic system
 We start with a global FE model of the airframe as illustrated in Fig. [[workflow]].
 
 #+NAME: workflow
@@ -205,7 +202,7 @@ A resulting set of four intrinsic modal shapes are directly linked to the displa
    Results are presented in the mid-point between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
    
 4. Strain modes, $\bm \Psi_2 = -\bm \Phi_{0d} + \pmb{E}^{\top}\bm \Phi_{0m}$, with $\bm \Phi_{0d}$ the approximate derivative along $s$: $\bm \Phi_{0d}^i = \frac{\bm \Phi_0^{i+1} - \bm \Phi_0^{i}}{\Delta s_i}$; and $\bm \Phi_{0m} = \frac{\bm \Phi_0^{i+1} + \bm \Phi_0^{i}}{2}$, the displacement modal shape in between nodes. $\pmb{E}^{\top}$ is a constant matrix.
-Details in Algorithm [[alg:modes]] below. After the intrinsic modes have been computed, a dynamic system is obtained after a Galerkin projection of the equations of motion \cite[Ch. 8]{PALACIOS2023}:
+ After the intrinsic modes have been computed, a dynamic system is obtained after a Galerkin projection of the equations of motion \cite[Ch. 8]{PALACIOS2023}:
 
 \begin{equation}
 \label{eq2:sol_qs}
@@ -281,8 +278,16 @@ Once the nonlinear solution of the condensed model is computed, the correspondin
 This paves the way for a broader multidisciplinary analysis where CFD-based aerodynamic loading could be used for the calculation of the nonlinear static equilibrium, and also with the transfer of the full deformed state back to the original FE solver to study other phenomena such as local buckling. 
 
 * Results
+The following results show the strength of the approach in problems with large geometric nonlinearities, the ability to run on CPUs and GPUs and to automatically compute gradients of dynamic problems, and the edge in performance when compare with commercial toolbox Nastran.  
 ** Automatic differentiation of the nonlinear dynamics of a representative wing
 This test case demonstrates the accuracy of the NMROM approach for  dynamic geometrically-nonlinear calculations and was first introduced in [[cite:&CEA2021b]]. The right wing of Fig. [[fig:SailPlane2]] is considered and dynamic nonlinear simulations are carried out and compared to MSC Nastran linear and nonlinear analysis (SOL 109 and 400, respectively) on the full FE model.
+
+#+NAME: fig:SailPlane2
+#+CAPTION: Representative plane structural and aerodynamic models
+#+ATTR_LATEX: :width 0.7\textwidth 
+[[file:figs_ext/SailPlaneRef.png]]
+
+
 A force is applied at the wing tip with a triangular loading profile, followed by a sudden release of the applied force to heavily excite the wing. The force profile is given in Fig. [[fig:ramping_load]]. The applied force is then \(f_{tip} = \alpha \times \textup{\pmb{f}}_{max} f(0.05, 4) = [-2\times 10^5, 0., 6\times 10^5]f(0.05, 4)\) where $\alpha$ has been set to $1$.
 
 #+NAME: fig:ramping_load
@@ -388,20 +393,18 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 [[file:figs/FFBerror2.png]]
 
 
-* Future work
+* Further work
+The next step is to characterise the geometrically nonlinear aeroelastic response of the BUG High-Aspect-Ratio aircraft [[cite:&STODIECK2018a]] shown in Fig. [[fig:bug]]. We aim to achieve the following points:
 
-The 
-
-
-[[cite:&STODIECK2018a]]
-
-#+NAME: fig:xrf1_modalshapes
-#+CAPTION: Modified XRF1 reference configuration with characteristic modal shapes
+- Fine-tune the aeroelastic solvers to introduce an updating mechanism of the normal of the aerodynamic panels to account for the nonlinear effect around deformed configurations such as trimmed flight. 
+- Build manoeuvre and dynamic load envelopes that can also be differentiated via AD.
+- Bring parallelisation on distributed accelerators into our solution process, thus applying the state-of-the-art techniques in used for the large problems in deep-learning. Combined with our already fast simulations times, this could allow the prediction of those sizing aeroelastic loads that include thousands of cases in commercial aircraft, the computation of their gradients with respect to design variables, with geometrically nonlinear effects accounted for, and at such performance that the framework could be integrated into a larger multidisciplinary optimization.
+  
+#+NAME: fig:bug
+#+CAPTION: BUG static equilibrium 
 #+ATTR_LATEX: :width 0.8\textwidth 
 [[file:figs_ext/bug_model.pdf]]
 
-
-* Bibliography
 
 bibliographystyle:unsrt
 # bibliography:/home/acea/Documents/Engineering.bib

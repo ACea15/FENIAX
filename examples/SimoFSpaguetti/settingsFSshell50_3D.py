@@ -22,19 +22,19 @@ inp.fem.num_modes = 300
 inp.fem.eig_type = "scipy"
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
-    f"./resultsFS50_3D")
+    f"./results3D_50n")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.bc1 = 'free'
 inp.systems.sett.s1.t1 = 10.
-inp.systems.sett.s1.dt = 1e-3
+inp.systems.sett.s1.dt = 5e-4
 inp.systems.sett.s1.solver_library = "runge_kutta" #"runge_kutta" #"diffrax" #
 inp.systems.sett.s1.solver_function = "ode"
 inp.systems.sett.s1.solver_settings = dict(solver_name="rk4") # "rk4" "Dopri5"
 inp.systems.sett.s1.xloads.dead_forces = True
-inp.systems.sett.s1.xloads.dead_points = [[24, 0],
-                                          [24, 4],
-                                          [24, 5]]
+inp.systems.sett.s1.xloads.dead_points = [[49, 0],
+                                          [49, 4],
+                                          [49, 5]]
 inp.systems.sett.s1.xloads.x = [0., 2.5, 5., 20.5]
 inp.systems.sett.s1.xloads.dead_interpolation = [[0., 20., 0., 0.],
                                                  [0., 100., 0., 0.],
