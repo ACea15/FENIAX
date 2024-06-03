@@ -73,8 +73,8 @@ import fem4inas.unastran.op2reader as op2reader
 import importlib
 importlib.reload(op2reader)
 
-op2 = op2reader.NastranReader("/home/acea/projects/FEM4INAS/examples/Pendulum/NASTRAN/2node/n400.op2",
-                        "/home/acea/projects/FEM4INAS/examples/Pendulum/NASTRAN/2node/n400.bdf")
+op2 = op2reader.NastranReader("./NASTRAN/2node/n400.op2",
+                        "./NASTRAN/2node/n400.bdf")
 op2.readModel()
 tnastran, unastran = op2.displacements()
 tnastran, rnastran = op2.position()
@@ -91,22 +91,24 @@ x2, y2 = putils.pickIntrinsic2D(sol.dynamicsystem_s1.t,
 
 fig=None
 fig = uplotly.lines2d(x0, y0, fig,
-                      dict(name="NMROM",
+                      dict(name="NMROM-x",
                            line=dict(color="navy")
                            ))
 fig = uplotly.lines2d(x2, y2, fig,
-                      dict(name="NMROM",
-                           line=dict(color="navy")
+                      dict(name="NMROM-y",
+                           line=dict(color="black")
                            ))
 fig = uplotly.lines2d(tnastran[0], unastran[0,:,1,0]+1, fig,
-                      dict(name="NMROM",
+                      dict(name="NASTRAN-x",
                            line=dict(color="red", dash="dot")
                            ))
 
 fig = uplotly.lines2d(tnastran[0], unastran[0,:,1,2], fig,
-                      dict(name="NMROM",
-                           line=dict(color="red", dash="dot")
+                      dict(name="NASTRAN-y",
+                           line=dict(color="green", dash="dot")
                            ))
+fig.update_layout(      xaxis_title='time',
+                        yaxis_title='tip-position')
 
 fig.show()
 

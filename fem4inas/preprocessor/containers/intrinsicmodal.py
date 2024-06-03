@@ -226,7 +226,7 @@ class Dxloads(DataContainer):
         # force_gravity = jnp.zeros((2, 6, num_nodes))
         gravity = self.gravity * self.gravity_vect
         gravity_field = jnp.hstack([jnp.hstack([gravity, 0., 0., 0.])] * num_nodes)
-        _force_gravity = jnp.matmul(Mfe_order, gravity_field)
+        _force_gravity = jnp.matmul(Mfe_order, Ma @ gravity_field)
         gravity_interpol = jnp.vstack([xi * _force_gravity for xi in
                                       jnp.linspace(0, 1, len_x)]).T
         force_gravity = reshape_field(gravity_interpol, len_x, num_nodes_out)  # Becomes  (len_x, 6, Nn)
