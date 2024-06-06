@@ -111,7 +111,7 @@ def dq_11G2(q, *args):
     (gamma2, omega, phi1l,
      x, force_gravity,
      states,
-     A0hat, B0hat,
+     A0hat, B0hat, C0hat,
      X_xdelta,
      C0ab,
      component_names, num_nodes,
@@ -121,12 +121,15 @@ def dq_11G2(q, *args):
     # qe = q[states['qe']]
     q2i = q[states['q2']]
     q0i = -q2i / omega[2:]
+    qalpha = q[states['qalpha']]
     qx = q[states['qx']]
     q2 = jnp.hstack([0., 0., q[states['q2']]])
     q0 = jnp.hstack([0., 0., q0i])
-
+    jnp.hstack([0., 0., qalpha])
+    qm = jnp.hstack([0., 0., qalpha])
     eta_gravity = xloads.eta_pointdead(t, phi1l, x, force_gravity, C0ab)
     eta_aero = xloads.eta_steadyaero(q0, A0hat)
+    eta_aoa = xloads.eta_manoeuvre(qm, C0hat)
     eta_elevator = xloads.eta_control(qx, B0hat)
     F = omega * q2 - common.contraction_gamma2(gamma2, q2)
     F += (eta_gravity + eta_aero + eta_elevator)

@@ -112,10 +112,17 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
     def _compute_modalshapes(self):
 
         eigenvals, eigenvecs = self._compute_eigs()
-        modal_analysis = modes.shapes(
-            self._config.fem.X.T, self._config.fem.Ka, self._config.fem.Ma,
-            eigenvals, eigenvecs, self._config
-        )
+        if self._config.fem.constrainedDoF:
+            modal_analysis = modes.shapes(
+                self._config.fem.X.T, self._config.fem.Ka0s, self._config.fem.Ma0s,                
+                eigenvals, eigenvecs, self._config
+            )
+        else:
+            modal_analysis = modes.shapes(
+                self._config.fem.X.T, self._config.fem.Ka, self._config.fem.Ma,
+                eigenvals, eigenvecs, self._config
+            )
+
         modal_analysis_scaled = modes.scale(*modal_analysis)
         self.sol.add_container("Modes", *modal_analysis_scaled)
 

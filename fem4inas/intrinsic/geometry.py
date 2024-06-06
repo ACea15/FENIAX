@@ -68,11 +68,11 @@ def build_grid(grid: str | jnp.ndarray | pd.DataFrame | None,
 
         df_grid = pd.read_csv(grid, comment="#", sep=" ",
                               names=['x1', 'x2', 'x3', 'fe_order', 'component'])
-        
+
     elif isinstance(grid, jnp.ndarray):
         df_grid = pd.DataFrame(dict(x1=grid[:, 0], x2=grid[:, 1], x3=grid[:, 2],
                                     fe_order=grid[:, 3], component=grid[:, 4]))
-    
+
     elif isinstance(grid, pd.DataFrame):
         df_grid = grid
 
@@ -81,6 +81,7 @@ def build_grid(grid: str | jnp.ndarray | pd.DataFrame | None,
     if not isinstance(fe_order, jnp.ndarray):
         fe_order = df_grid.to_numpy()[:,3:4].astype('int').flatten()
         fe_order -= fe_order_start
+
     if not isinstance(component_vect, list):
         component_vect = list(df_grid.component.astype('str'))
     df_grid.fe_order -= fe_order_start
@@ -118,7 +119,7 @@ def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list],
     freeDoF = dict()
     clampedDoF = dict()
     total_clampedDoF = 0
-
+    constrainedDoF = False
     for i in fe_order:
         if i < 0:
             fe_node = str(abs(i))
@@ -129,20 +130,21 @@ def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list],
                 clampedDoF[clamped_nodes[-1]] = list(range(6))
                 total_clampedDoF += 6
             elif len(fe_node) > 6: #format = -1010117 with
-                # 101011 being clamped/free DoF and abs(-7 + 1)=6
-                # being the multibody node
-                clamped_nodes.append(int(fe_node[6:]) - 1)
+                # 101011 being clamped/free DoF and 7 being the multibody node
+                constrainedDoF = True
+                clamped_nodes.append(int(fe_node[6:]))
                 freeDoF[clamped_nodes[-1]] = [i for i,j in enumerate(fe_node[:6]) if j =='0']
                 clampedDoF[clamped_nodes[-1]] = [i for i,j in enumerate(fe_node[:6]) if j =='1']
                 total_clampedDoF += len(clampedDoF[clamped_nodes[-1]])
             else: #len(fe_node) == 6, format = -101011, multibody node assummed at 0
+                constrainedDoF = True
                 clamped_nodes.append(0)
                 # picks the index of free DoF
                 freeDoF[0] = [i for i, j in enumerate(fe_node) if j == '0']
                 clampedDoF[0] = [i for i, j in enumerate(fe_node) if j == '1']
                 total_clampedDoF += len(clampedDoF[0])
 
-    return clamped_nodes, freeDoF, clampedDoF, total_clampedDoF
+    return clamped_nodes, freeDoF, clampedDoF, total_clampedDoF, constrainedDoF
 
 def compute_component_father(component_connectivity:
                              dict[str:list]) -> (list[str], dict[str:str]):
@@ -424,7 +426,7 @@ def compute_Mfe_order(fe_order: np.ndarray,
     -------
     jnp.ndarray
         Matrix where each column represents one node and the
-        components in that column are 1s for the DoF for the
+        components in that column are 1s for the DoF 
 
     """
 
@@ -442,6 +444,33 @@ def compute_Mfe_order(fe_order: np.ndarray,
                 M[6 * node_index + di, 6 * fi + di + clamped_dofs] = 1.
 
     return jnp.array(M)
+
+def compute_Mconstrained(Ka, Ma, clamped_nodes, clampedDoF):
+
+    Ka2 = Ka.copy()
+    Ma2 = Ma.copy()
+    for cni in clamped_nodes:
+        for di in clampedDoF[cni]:
+            Ka2 = jnp.insert(Ka2, 6 * cni + di, 0., axis=0)
+            Ka2 = jnp.insert(Ka2, 6 * cni + di, 0., axis=1)
+            Ma2 = jnp.insert(Ma2, 6 * cni + di, 0., axis=0)
+            Ma2 = jnp.insert(Ma2, 6 * cni + di, 0., axis=1)
+
+    # Ka2 = jnp.insert(Ka, 6, 0., axis=0)
+    # Ka2 = jnp.insert(Ka2, 7, 0., axis=0)
+    # Ka2 = jnp.insert(Ka2, 8, 0., axis=0)
+    # Ka2 = jnp.insert(Ka2, 6, 0., axis=1)
+    # Ka2 = jnp.insert(Ka2, 7, 0., axis=1)
+    # Ka2 = jnp.insert(Ka2, 8, 0., axis=1)
+    
+    # Ma2 = jnp.insert(Ma, 6, 0., axis=0)
+    # Ma2 = jnp.insert(Ma2, 7, 0., axis=0)
+    # Ma2 = jnp.insert(Ma2, 8, 0., axis=0)
+    # Ma2 = jnp.insert(Ma2, 6, 0., axis=1)
+    # Ma2 = jnp.insert(Ma2, 7, 0., axis=1)
+    # Ma2 = jnp.insert(Ma2, 8, 0., axis=1)
+
+    return Ka2, Ma2
 
 def compute_Mloadpaths(components_range: list[str],
                        component_nodes: dict[str:list[int]],

@@ -260,6 +260,10 @@ class Dfem(DataContainer):
                               default=None, yaml_save=False)
     Ma: jnp.ndarray  = dfield("Condensed mass matrix",
                               default=None, yaml_save=False)
+    Ka0s: jnp.ndarray  = dfield("Condensed stiffness matrix augmented with 0s",
+                              default=None, yaml_save=False)
+    Ma0s: jnp.ndarray  = dfield("Condensed mass matrix augmented with 0s",
+                              default=None, yaml_save=False)    
     num_modes: int = dfield("Number of modes in the solution", default=None)
     eig_type: str = dfield("Calculation of eigenvalues/vectors",
                            default="scipy",
@@ -304,6 +308,8 @@ class Dfem(DataContainer):
     freeDoF: dict[str: list] = dfield("Grid coordinates", init=False)    
     clampedDoF: dict[str: list] = dfield("Grid coordinates", init=False)
     total_clampedDoF: int = dfield("Grid coordinates", init=False)
+    constrainedDoF:int = dfield("whether the analysis presents nodes with some DoF clamped",
+                                init=False)
     #
     prevnodes: list[int] = dfield("""Immediate previous node following """, init=False)    
     Mavg: jnp.ndarray = dfield("Matrix for tensor average between nodes", init=False)
@@ -361,12 +367,17 @@ class Dfem(DataContainer):
         setobj("component_nodes", geometry.compute_component_nodes(self.component_vect))
         setobj("component_chain", geometry.compute_component_chain(self.component_names,
                                                                    self.connectivity))        
-        clamped_nodes, freeDoF, clampedDoF, total_clampedDoF = \
+        clamped_nodes, freeDoF, clampedDoF, total_clampedDoF, constrainedDoF = \
             geometry.compute_clamped(self.fe_order.tolist())
         setobj("clamped_nodes", clamped_nodes)
         setobj("freeDoF", freeDoF)
         setobj("clampedDoF", clampedDoF)
         setobj("total_clampedDoF", total_clampedDoF)
+        setobj("constrainedDoF", constrainedDoF)
+        if constrainedDoF:
+            Ka0s, Ma0s = geometry.compute_Mconstrained(self.Ka, self.Ma, clamped_nodes, clampedDoF)
+            setobj("Ka0s", Ka0s)
+            setobj("Ma0s", Ma0s)
         setobj("prevnodes", geometry.compute_prevnode(self.component_vect,
                                                       self.component_nodes,
                                                       self.component_father))
@@ -562,6 +573,8 @@ class Dsystem(DataContainer):
         # TODO: keep upgrading/ add residualise
         if self.solution == "static":
             tracker.update(q2=num_modes)
+            if self.target.lower() == "trim":
+                tracker.update(qx=1)
         elif self.solution == "dynamic":
             tracker.update(q1=num_modes,
                            q2=num_modes)
