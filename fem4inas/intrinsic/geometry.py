@@ -51,10 +51,12 @@ def build_grid(grid: str | jnp.ndarray | pd.DataFrame | None,
                X: jnp.ndarray | None,
                fe_order: list[int] | jnp.ndarray | None,
                fe_order_start: int,
-               component_vect: list[str] | None) -> (pd.DataFrame,
-                                                     jnp.ndarray,
-                                                     np.ndarray,
-                                                     list[str]):
+               component_vect: list[str] | None,
+               dof_vect) -> (pd.DataFrame,
+                             jnp.ndarray,
+                             np.ndarray,
+                             list[str],
+                             list[str]):
     if grid is None:
         assert X is not None, "X needs to be provided \
         when no grid file is given"
@@ -63,31 +65,39 @@ def build_grid(grid: str | jnp.ndarray | pd.DataFrame | None,
         assert component_vect is not None, "component_vect needs to be \
         provided when no grid file is given"
         df_grid = pd.DataFrame(dict(x1=X[:, 0], x2=X[:, 1], x3=X[:, 2],
-                                    fe_order=fe_order, component=component_vect))
+                                    fe_order=fe_order, component=component_vect,
+                                    dof_vect=dof_vect))
     elif isinstance(grid, (str, pathlib.Path)):
-
         df_grid = pd.read_csv(grid, comment="#", sep=" ",
-                              names=['x1', 'x2', 'x3', 'fe_order', 'component'])
-
+                              names=['x1', 'x2', 'x3', 'fe_order', 'component', 'dof_vect'],
+                              dtype={'x1': float, 'x2': float, 'x3': float,
+                              'fe_order': int, 'component': str, 'dof_vect':str})
+        df_grid.dof_vect = df_grid.dof_vect.fillna('012345')
     elif isinstance(grid, jnp.ndarray):
-        df_grid = pd.DataFrame(dict(x1=grid[:, 0], x2=grid[:, 1], x3=grid[:, 2],
-                                    fe_order=grid[:, 3], component=grid[:, 4]))
-
+        if grid.shape[1] == 5:
+            df_grid = pd.DataFrame(dict(x1=grid[:, 0], x2=grid[:, 1], x3=grid[:, 2],
+                                        fe_order=grid[:, 3], component=grid[:, 4],
+                                        dof_vect=np.nan))
+        elif grid.shape[1] == 6:
+            df_grid = pd.DataFrame(dict(x1=grid[:, 0], x2=grid[:, 1], x3=grid[:, 2],
+                                        fe_order=grid[:, 3], component=grid[:, 4],
+                                        dof_vect=grid[:, 5]))
     elif isinstance(grid, pd.DataFrame):
         df_grid = grid
-
     if not isinstance(X, jnp.ndarray):
         X = jnp.array(df_grid.to_numpy()[:,:3].astype('float'))
     if not isinstance(fe_order, jnp.ndarray):
         fe_order = df_grid.to_numpy()[:,3:4].astype('int').flatten()
         fe_order -= fe_order_start
-
     if not isinstance(component_vect, list):
-        component_vect = list(df_grid.component.astype('str'))
+        component_vect = list(df_grid.component)
+    if not isinstance(dof_vect, list):
+        dof_vect = list(df_grid.dof_vect)
     df_grid.fe_order -= fe_order_start
-    return df_grid, X, fe_order, component_vect
+    
+    return df_grid, X, fe_order, component_vect, dof_vect
 
-def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list],
+def compute_clampedold(fe_order: list[int]) -> (list[int], dict[str: list],
                                              dict[str: list], int):
     """Computes the clamped characteristics of the model
 
@@ -144,6 +154,55 @@ def compute_clamped(fe_order: list[int]) -> (list[int], dict[str: list],
                 clampedDoF[0] = [i for i, j in enumerate(fe_node) if j == '1']
                 total_clampedDoF += len(clampedDoF[0])
 
+    return clamped_nodes, freeDoF, clampedDoF, total_clampedDoF, constrainedDoF
+
+def compute_clamped(fe_order: list[int],
+                    dof_vect) -> (list[int], dict[str: list],
+                                             dict[str: list], int):
+    """Computes the clamped characteristics of the model
+
+
+    A negative int in fe_order indicates clamped node; -1 will be the
+    first clamped node, -2 the second, etc. If only DoF are clamped
+    (multibody), the format is as follows: -101011 means
+    clamped-free-clamped-free-clamped-clamped in the first clamped
+    node. -1010112 is the same but in the second clamped node.
+
+    Parameters
+    ----------
+    fe_order : list[int]
+        Array of integers representing the mapping between a node an
+        the index in the stiffness and mass matrices
+
+    Returns
+    -------
+    (list[int], dict[str: list], dict[str: list], int)
+        List of clamped nodes (usually just one); dictionaries
+        relating the clamped nodes index to free and clamped DoF; int
+        with the total number of clampedDoF, usually 6 for one node
+        fully clamped
+
+
+    """
+
+    clamped_nodes = list()
+    freeDoF = dict()
+    clampedDoF = dict()
+    total_clampedDoF = 0
+    constrainedDoF = False
+    for i, fi in enumerate(fe_order):
+        if fi < 0: # fully clamped node
+            clamped_nodes.append(i)
+            freeDoF[i] = []
+            clampedDoF[i] = [di for di in range(6)]
+            total_clampedDoF += 6
+        else:
+            if len(dof_vect[i]) < 6:
+                constrainedDoF = True
+                clamped_nodes.append(i)
+                freeDoF[i] = [int(di) for di in dof_vect[i]]
+                clampedDoF[i] = [int(di) for di in range(6) if di not in freeDoF[i]]
+                total_clampedDoF += len(clampedDoF[i])
     return clamped_nodes, freeDoF, clampedDoF, total_clampedDoF, constrainedDoF
 
 def compute_component_father(component_connectivity:

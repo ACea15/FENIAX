@@ -290,6 +290,8 @@ class Dfem(DataContainer):
     fe_order_start: int = dfield("fe_order starting with this index", default=0)
     component_vect: list[str] = dfield("Array with component associated to each node",
                                        default=None)
+    dof_vect: list[str] = dfield("Array with DoF associated to each node (for constrained systems)",
+                                       default=None)    
     num_nodes: int = dfield("Number of nodes", init=False)
     component_names: list = dfield("Name of components defining the structure", init=False)
     component_father: dict[str: str] = dfield(
@@ -348,16 +350,18 @@ class Dfem(DataContainer):
             # full set of modes in the solution
             setobj("num_modes", len(self.Ka))
         if self.folder is None:
-            df_grid, X, fe_order, component_vect = geometry.build_grid(
-                self.grid, self.X, self.fe_order, self.fe_order_start, self.component_vect)
+            df_grid, X, fe_order, component_vect, dof_vect = geometry.build_grid(
+                self.grid, self.X, self.fe_order, self.fe_order_start, self.component_vect,
+                self.dof_vect)
         else:
-            df_grid, X, fe_order, component_vect = geometry.build_grid(
+            df_grid, X, fe_order, component_vect, dof_vect = geometry.build_grid(
                 self.folder / self.grid, self.X, self.fe_order,
-                self.fe_order_start, self.component_vect)
+                self.fe_order_start, self.component_vect, self.dof_vect)
         setobj("df_grid", df_grid)
         setobj("X", X)
         setobj("fe_order", fe_order)
         setobj("component_vect", component_vect)
+        setobj("dof_vect", dof_vect)
         num_nodes = len(self.X)
         setobj("num_nodes", num_nodes)
         component_names, component_father = geometry.compute_component_father(
@@ -368,7 +372,7 @@ class Dfem(DataContainer):
         setobj("component_chain", geometry.compute_component_chain(self.component_names,
                                                                    self.connectivity))        
         clamped_nodes, freeDoF, clampedDoF, total_clampedDoF, constrainedDoF = \
-            geometry.compute_clamped(self.fe_order.tolist())
+            geometry.compute_clamped(self.fe_order.tolist(), self.dof_vect)
         setobj("clamped_nodes", clamped_nodes)
         setobj("freeDoF", freeDoF)
         setobj("clampedDoF", clampedDoF)
@@ -398,11 +402,12 @@ class Dfem(DataContainer):
         (component_names_int,
          component_nodes_int,
          component_father_int) = geometry.convert_components(self.component_names,
-                                                                  self.component_nodes,
-                                                                  self.component_father)
+                                                             self.component_nodes,
+                                                             self.component_father)
         setobj("component_names_int", component_names_int)
         setobj("component_nodes_int", component_nodes_int)
         setobj("component_father_int", component_father_int)
+
 # @dataclass(frozen=True)
 # class Dpresimulation(DataContainer):
 

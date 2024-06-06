@@ -128,3 +128,4 @@ df = pd.read_csv("./FEM2nodes/structuralGrid", comment="#", sep=" ",
 #     x = x ** 2
 
 #   return x
+
