@@ -664,7 +664,7 @@ derivatives
 | 20g121   | Structural dynamic dead point forces            | [2,0,'g',0,0,0,0,2]   | Y   |
 | 20g22    | Free Structural dynamic follower point forces   | [2,0,'g',1,0,0,0,1]   | Y   |
 | 20g242   | Free Structural dynamic dead point forces       | [2,0,'g',1,0,0,0,2]   | Y   |
-| 11G2     | Static trimmed State (elevator-qalpha,          | [1,1,'G',1]           | N   |
+| 11G2     | Static trimmed State (elevator-qalpha,          | [1,1,'G',1,1]         | N   |
 |          |                       no gravity updating)      |                       |     |
 | 12G2     | Static trimmed State (elevator-qalpha,          | [1,2,'G',1]           | N   |
 |          |                       gravity updating)         |                       |     |
@@ -679,12 +679,12 @@ derivatives
 
 #+begin_src python :session py1 :results output
   import fem4inas.intrinsic.functions as functions
-  label = functions.label_generator([1,2,'G',1])
+  label = functions.label_generator([1,1,'G',1,1])
   print(label)
 #+end_src
 
 #+RESULTS:
-: 12G2
+: 11G6
 
 
 

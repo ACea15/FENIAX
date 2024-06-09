@@ -489,31 +489,39 @@ def compute_Mfe_order(fe_order: np.ndarray,
 
     """
 
-    clamped_dofs = 0
+    free_dofs = 0
+    costrained_nodes = set()
     M = np.zeros((6 * num_nodes, 6 * num_nodes - total_clampedDoF))
+    M2 = np.zeros((6 * num_nodes, 6 * num_nodes))
     for fi, node_index in zip(np.sort(fe_order), np.argsort(fe_order)):
-        for di in range(6):
-            if node_index in clamped_nodes:
+        if node_index in clamped_nodes:
+            for di in range(6):
                 if di in freeDoF[node_index]:
-                    M[6 * node_index + di, 6 * fi + clamped_dofs] = 1.
-                    clamped_dofs += 1
+                    costrained_nodes.add(node_index)
+                    M[6 * node_index + di, 6 * (fi - (len(costrained_nodes) - 1)) + free_dofs] = 1.
+                    M2[6 * node_index + di, 6 * fi + di] = 1.
+                    free_dofs += 1
                 else:
                     continue
-            else:
-                M[6 * node_index + di, 6 * fi + di + clamped_dofs] = 1.
+            # num_costrained_nodes += 1
+        else:
+            for di in range(6):
+                #M[6 * node_index + di, 6 * (fi - num_clamped_nodes) + free_dofs + di] = 1.
+                M[6 * node_index + di, 6 * (fi - len(costrained_nodes)) + free_dofs + di] = 1.
+                M2[6 * node_index + di, 6 * fi + di] = 1.
 
-    return jnp.array(M)
+    return jnp.array(M), jnp.array(M2)
 
-def compute_Mconstrained(Ka, Ma, clamped_nodes, clampedDoF):
+def compute_Mconstrained(Ka, Ma, fe_order, clamped_nodes, clampedDoF):
 
     Ka2 = Ka.copy()
     Ma2 = Ma.copy()
     for cni in clamped_nodes:
         for di in clampedDoF[cni]:
-            Ka2 = jnp.insert(Ka2, 6 * cni + di, 0., axis=0)
-            Ka2 = jnp.insert(Ka2, 6 * cni + di, 0., axis=1)
-            Ma2 = jnp.insert(Ma2, 6 * cni + di, 0., axis=0)
-            Ma2 = jnp.insert(Ma2, 6 * cni + di, 0., axis=1)
+            Ka2 = jnp.insert(Ka2, 6 * fe_order[cni] + di, 0., axis=0)
+            Ka2 = jnp.insert(Ka2, 6 * fe_order[cni] + di, 0., axis=1)
+            Ma2 = jnp.insert(Ma2, 6 * fe_order[cni] + di, 0., axis=0)
+            Ma2 = jnp.insert(Ma2, 6 * fe_order[cni] + di, 0., axis=1)
 
     # Ka2 = jnp.insert(Ka, 6, 0., axis=0)
     # Ka2 = jnp.insert(Ka2, 7, 0., axis=0)

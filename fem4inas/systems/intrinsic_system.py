@@ -65,8 +65,12 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             self.settings.xloads.build_point_dead(
                 self.fem.num_nodes)
         if self.settings.xloads.gravity_forces:
-            self.settings.xloads.build_gravity(self.fem.Ma,
-                                               self.fem.Mfe_order)
+            if self.fem.constrainedDoF:
+                self.settings.xloads.build_gravity(self.fem.Ma0s,
+                                                   self.fem.Mfe_order0s)
+            else:
+                self.settings.xloads.build_gravity(self.fem.Ma,
+                                                   self.fem.Mfe_order)
         if self.settings.aero is not None:
             import fem4inas.intrinsic.aero as aero            
             approx = self.settings.aero.approx.capitalize()
@@ -118,11 +122,11 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
 class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
-    def set_ic(self, q0):
-        if q0 is None:
-            self.q0 = jnp.zeros(self.fem.num_modes)
-        else:
-            self.q0 = q0
+    # def set_ic(self, q0):
+    #     if q0 is None:
+    #         self.q0 = jnp.zeros(self.fem.num_modes)
+    #     else:
+    #         self.q0 = q0
 
     def set_xloading(self):
         if self.settings.xloads.follower_forces:
@@ -132,10 +136,14 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             self.settings.xloads.build_point_dead(
                 self.fem.num_nodes)
         if self.settings.xloads.gravity_forces:
-            self.settings.xloads.build_gravity(self.fem.Ma,
-                                               self.fem.Mfe_order)
+            if self.fem.constrainedDoF:
+                self.settings.xloads.build_gravity(self.fem.Ma0s,
+                                                   self.fem.Mfe_order0s)
+            else:
+                self.settings.xloads.build_gravity(self.fem.Ma,
+                                                   self.fem.Mfe_order)
         if self.settings.aero is not None:
-            import fem4inas.intrinsic.aero as aero            
+            import fem4inas.intrinsic.aero as aero
             approx = self.settings.aero.approx.capitalize()
             aeroobj = aero.Registry.create_instance(f"Aero{approx}",
                                                     self.settings,
@@ -176,9 +184,9 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
         Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
         X2 = postprocess.compute_internalforces(self.sol.data.modes.phi2l,
-                                                self.qs)
+                                                self.qs[:, self.settings.states['q2']])
         X3 = postprocess.compute_strains(self.sol.data.modes.psi2l,
-                                         self.qs)
+                                         self.qs[:, self.settings.states['q2']])
         Cab, ra = postprocess.integrate_strains_t(ra0,
                                                   Cab0,
                                                   X3,
@@ -229,9 +237,12 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
             self.settings.xloads.build_point_dead(
                 self.fem.num_nodes)
         if self.settings.xloads.gravity_forces:
-            self.settings.xloads.build_gravity(self.fem.Ma,
-                                               self.fem.Mfe_order,
-                                               )
+            if self.fem.constrainedDoF:
+                self.settings.xloads.build_gravity(self.fem.Ma0s,
+                                                   self.fem.Mfe_order0s)
+            else:
+                self.settings.xloads.build_gravity(self.fem.Ma,
+                                                   self.fem.Mfe_order)
         if self.settings.aero is not None:
             import fem4inas.intrinsic.aero as aero            
             approx = self.settings.aero.approx.capitalize()

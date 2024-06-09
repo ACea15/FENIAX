@@ -104,9 +104,44 @@ def dq_10g15(q, *args):
     F += xloads.eta_manoeuvre(qalpha, A0)
     return F
 
-
-def dq_11G2(q, *args):
+def dq_11G6(q, *args):
     """Static trim1 """
+
+    (gamma2, omega, phi1, phi1l, psi2l,
+     x, force_gravity,
+     states,
+     A0hat, B0hat, elevator_index, elevator_link,
+     X_xdelta,
+     C0ab,
+     component_names, num_nodes,
+     component_nodes, component_father, t) = args[0]
+
+    # qe = q[states['qe']]
+    q2 = q[states['q2']]
+    q0i = -q2[2:] / omega[2:]
+    q0 = jnp.hstack([q2[:2], q0i])
+    qx = q[states['qx']]
+    X3t = postprocess.compute_strains_t(psi2l, q2)
+    Rab = postprocess.integrate_strainsCab(
+        jnp.eye(3), X3t,
+        X_xdelta, C0ab,
+        component_names,
+        num_nodes,
+        component_nodes,
+        component_father)
+
+    eta_gravity = xloads.eta_pointdead(t, phi1l, x, force_gravity, Rab)
+    eta_aero = xloads.eta_steadyaero(q0, A0hat)
+    eta_elevator = xloads.eta_controls(qx, B0hat, elevator_index, elevator_link)
+    F1 = omega * q2 - common.contraction_gamma2(gamma2, q2)
+    F1 += (eta_gravity + eta_aero + eta_elevator)
+    Fh = phi1[:, 2, 0].dot(q0)  # added eq: 0 vertical position of first node
+    #import jax.debug; jax.debug.breakpoint()
+    F = jnp.hstack([F1, Fh])
+    return F
+
+def dq_12G2(q, *args):
+    """Static trim2 """
 
     (gamma2, omega, phi1l,
      x, force_gravity,
@@ -130,41 +165,6 @@ def dq_11G2(q, *args):
     eta_gravity = xloads.eta_pointdead(t, phi1l, x, force_gravity, C0ab)
     eta_aero = xloads.eta_steadyaero(q0, A0hat)
     eta_aoa = xloads.eta_manoeuvre(qm, C0hat)
-    eta_elevator = xloads.eta_control(qx, B0hat)
-    F = omega * q2 - common.contraction_gamma2(gamma2, q2)
-    F += (eta_gravity + eta_aero + eta_elevator)
-    return F
-
-def dq_12G2(q, *args):
-    """Static trim2 """
-
-    (gamma2, omega, phi1l, psi2l,
-     x, force_gravity,
-     states,
-     A0hat, B0hat,
-     X_xdelta,
-     C0ab,
-     component_names, num_nodes,
-     component_nodes, component_father, t) = args[0]
-
-    # qalpha = q[states['qalpha']]
-    # qe = q[states['qe']]
-    q2i = q[states['q2']]
-    q0i = -q2i / omega[2:]
-    qx = q[states['qx']]
-    q2 = jnp.hstack([0., 0., q[states['q2']]])
-    q0 = jnp.hstack([0., 0., q0i])
-    X3t = postprocess.compute_strains_t(psi2l, q2)
-    Rab = postprocess.integrate_strainsCab(
-        jnp.eye(3), X3t,
-        X_xdelta, C0ab,
-        component_names,
-        num_nodes,
-        component_nodes,
-        component_father)
-
-    eta_gravity = xloads.eta_pointdead(t, phi1l, x, force_gravity, Rab)
-    eta_aero = xloads.eta_steadyaero(q0, A0hat)
     eta_elevator = xloads.eta_control(qx, B0hat)
     F = omega * q2 - common.contraction_gamma2(gamma2, q2)
     F += (eta_gravity + eta_aero + eta_elevator)

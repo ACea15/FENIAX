@@ -181,9 +181,12 @@ def eta_manoeuvre(qalpha: jnp.ndarray,
     return eta
 
 @jax.jit
-def eta_controls(qx, B0hat: jnp.ndarray):
-
-    eta = B0hat @ qx
+def eta_controls(qx, B0hat: jnp.ndarray,
+                 elevator_index: jnp.ndarray, elevator_link: jnp.ndarray):
+    
+    eta = jnp.tensordot(B0hat[:, elevator_index] * qx,
+                        elevator_link,
+                        axes=(1, 0))
     return eta
 
 @jax.jit

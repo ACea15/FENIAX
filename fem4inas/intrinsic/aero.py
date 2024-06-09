@@ -52,11 +52,15 @@ class AeroRoger(ModalAero):
         
     def _get_matrix(self, matrix: jnp.array, name: str):
         
-        self.container[f"{name}0"] = matrix[0]
-        self.container[f"{name}1"] = matrix[1]
-        self.container[f"{name}2"] = matrix[2]
-        self.container[f"{name}3"] = matrix[3:]
-
+        if len(matrix.shape) == 2:
+            self.container[f"{name}0"] = matrix
+        elif len(matrix.shape) == 3 and len(matrix) > 4:
+            self.container[f"{name}0"] = matrix[0]
+            self.container[f"{name}1"] = matrix[1]
+            self.container[f"{name}2"] = matrix[2]
+            self.container[f"{name}3"] = matrix[3:]
+        else:
+            pass # TODO: assert error
     def get_matrices(self, scale=True):
         if self.container is None:
             self._build_matrices()

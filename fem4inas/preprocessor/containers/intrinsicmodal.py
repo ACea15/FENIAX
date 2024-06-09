@@ -74,6 +74,8 @@ class Daero(DataContainer):
     c_ref: float = dfield("", default=None)
     qalpha: jnp.ndarray = dfield("", default=None)
     qx: jnp.ndarray = dfield("", default=None)
+    elevator_index: jnp.ndarray = dfield("", default=None)
+    elevator_link: jnp.ndarray = dfield("", default=None)
     #
     approx: str = dfield("", default="Roger")
     Qk_struct: list[jnp.ndarray,jnp.ndarray] = dfield("""Sample frquencies and
@@ -115,6 +117,10 @@ class Daero(DataContainer):
             object.__setattr__(self, "controller", None)
         if isinstance(self.poles, (str, pathlib.Path)):
             object.__setattr__(self, "poles", jnp.load(self.poles))
+        if self.elevator_link is not None:
+            object.__setattr__(self, "elevator_link", jnp.array(self.elevator_link))
+        if self.elevator_index is not None:
+            object.__setattr__(self, "elevator_index", jnp.array(self.elevator_index))            
         if self.poles is not None:
             object.__setattr__(self, "num_poles", len(self.poles))
         if self.u_inf is not None and self.rho_inf is not None:
@@ -180,6 +186,8 @@ class Dxloads(DataContainer):
     def __post_init__(self):
         if self.x is not None:
              object.__setattr__(self, "x", jnp.array(self.x))
+        else:
+            object.__setattr__(self, "x", jnp.linspace(0, 1, 2))
         # self.label = f"{int(self.follower_forces)}\
         # {int(self.dead_forces)}{self.gravity_forces}{self.aero_forces}"
         
@@ -318,6 +326,8 @@ class Dfem(DataContainer):
     Mdiff: jnp.ndarray = dfield("Matrix for tensor difference between nodes", init=False)
     Mfe_order: jnp.ndarray = dfield("""Matrix with 1s and 0s that reorders quantities
     such as eigenvectors in the FE model; nodes in horizontal arrangement.""", init=False)
+    Mfe_order0s: jnp.ndarray = dfield("""Matrix with 1s and 0s that reorders quantities
+    such as eigenvectors in the FE model; nodes in horizontal arrangement.""", init=False)    
     Mload_paths: jnp.ndarray = dfield("""Matrix with with 1s and 0s for the load paths
     that each node, in vertical arrangement, need to transverse to sum up to a free-end.""",
                                       init=False)
@@ -379,7 +389,7 @@ class Dfem(DataContainer):
         setobj("total_clampedDoF", total_clampedDoF)
         setobj("constrainedDoF", constrainedDoF)
         if constrainedDoF:
-            Ka0s, Ma0s = geometry.compute_Mconstrained(self.Ka, self.Ma, clamped_nodes, clampedDoF)
+            Ka0s, Ma0s = geometry.compute_Mconstrained(self.Ka, self.Ma, self.fe_order, clamped_nodes, clampedDoF)
             setobj("Ka0s", Ka0s)
             setobj("Ma0s", Ma0s)
         setobj("prevnodes", geometry.compute_prevnode(self.component_vect,
@@ -388,13 +398,15 @@ class Dfem(DataContainer):
         setobj("Mavg",geometry.compute_Maverage(self.prevnodes, self.num_nodes))
         setobj("Xm", jnp.matmul(self.X.T, self.Mavg))
         setobj("Mdiff", geometry.compute_Mdiff(self.prevnodes, self.num_nodes))
-        setobj("Mfe_order", geometry.compute_Mfe_order(self.fe_order,
-                                                       self.clamped_nodes,
-                                                       self.freeDoF,
-                                                       self.total_clampedDoF,
-                                                       self.component_nodes,
-                                                       self.component_chain,
-                                                       self.num_nodes))
+        Mfe_order, Mfe_order0s =  geometry.compute_Mfe_order(self.fe_order,
+                                                             self.clamped_nodes,
+                                                             self.freeDoF,
+                                                             self.total_clampedDoF,
+                                                             self.component_nodes,
+                                                             self.component_chain,
+                                                             self.num_nodes)
+        setobj("Mfe_order", Mfe_order)
+        setobj("Mfe_order0s", Mfe_order0s)
         setobj("Mload_paths", geometry.compute_Mloadpaths(self.component_vect,
                                                           self.component_nodes,
                                                           self.component_chain,
