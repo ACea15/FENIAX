@@ -18,10 +18,15 @@ class SerialSimulation(Simulation, cls_name="serial"):
             sys.set_states()
             if sys0 is not None:
                 q0 = self._compute_q0(sys, sys0)
+                #q0=None
+                sys.set_eta0(eta0)
             else:
                 q0 = None
+                sys.set_eta0()
             sys.set_ic(q0)
             sys.solve()
+            if sys0 is None:
+                eta0 = sys.build_connection_eta()
             sys.build_solution()
             sys0 = sys
             #self._post_run(k, sol_obj)
@@ -40,6 +45,6 @@ class SerialSimulation(Simulation, cls_name="serial"):
         q0 = jnp.zeros(num_states)
         for k, vi in states.items():
             if k in states0.keys():
-                q0 = q0.at[vi].set(sys0.qs[-1, states0[k]])
+                q0 = q0.at[vi[2:]].set(sys0.qs[-1, states0[k][2:]])
 
         return q0

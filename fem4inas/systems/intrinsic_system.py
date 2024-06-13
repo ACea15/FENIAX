@@ -28,6 +28,14 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         #self._set_generator()
         #self._set_solver()
 
+    def set_eta0(self, eta0=None):
+        num_modes = self.fem.num_modes
+        if eta0 is None:
+            self.eta0 = jnp.zeros(num_modes)
+        else:
+            assert len(eta0) == num_modes, "wrong length in eta0"
+            self.eta0 = eta0
+
     def set_ic(self, q0):
         if q0 is None:
             self.q0 = jnp.zeros(self.settings.num_states)
@@ -71,23 +79,6 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             else:
                 self.settings.xloads.build_gravity(self.fem.Ma,
                                                    self.fem.Mfe_order)
-        if self.settings.aero is not None:
-            import fem4inas.intrinsic.aero as aero            
-            approx = self.settings.aero.approx.capitalize()
-            aeroobj = aero.Registry.create_instance(f"Aero{approx}",
-                                                    self.settings,
-                                                    self.sol)
-            aeroobj.get_matrices()
-            aeroobj.save_sol()
-            if self.settings.aero.gust is not None:
-                import fem4inas.intrinsic.gust as gust
-                profile = self.settings.aero.gust_profile.capitalize()
-                gustobj = gust.Registry.create_instance(f"Gust{approx}{profile}",
-                                                        self.settings,
-                                                        self.sol)
-                gustobj.calculate_normals()
-                gustobj.calculate_downwash()
-                gustobj.set_solution(self.sol, self.settings.name)
 
     def set_states(self):
         self.settings.build_states(self.fem.num_modes, self.fem.num_nodes)
@@ -117,6 +108,26 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         sol.add_container('DynamicSystem', label=self.name,
                           q=qs, X1=X1, X2=X2, X3=X3,
                           Rab=Rab, ra=ra)
+        
+    def build_connection_eta(self):
+        import fem4inas.intrinsic.xloads as xloads
+        elevator_index = self.settings.aero.elevator_index
+        elevator_link = self.settings.aero.elevator_link
+        aero = getattr(self.sol.data, f"modalaeroroger_{self.settings.name}")
+        A0hat = aero.A0hat
+        B0hat = aero.B0hat
+        q = self.qs[-1]
+        states = self.settings.states
+        omega = self.sol.data.modes.omega
+        q2 = q[states['q2']]
+        q0i = -q2[2:] / omega[2:]
+        q0 = jnp.hstack([q2[:2], q0i])
+        qx = q[states['qx']]
+        eta_aero = xloads.eta_steadyaero(q0, A0hat)
+        eta_elevator = xloads.eta_controls(qx, B0hat, elevator_index, elevator_link)
+        eta0 = eta_aero + eta_elevator
+        return eta0
+        
     def save(self):
         pass
 
@@ -129,21 +140,9 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
     #         self.q0 = q0
 
     def set_xloading(self):
-        if self.settings.xloads.follower_forces:
-            self.settings.xloads.build_point_follower(
-                self.fem.num_nodes, self.sol.data.modes.C06ab)
-        if self.settings.xloads.dead_forces:
-            self.settings.xloads.build_point_dead(
-                self.fem.num_nodes)
-        if self.settings.xloads.gravity_forces:
-            if self.fem.constrainedDoF:
-                self.settings.xloads.build_gravity(self.fem.Ma0s,
-                                                   self.fem.Mfe_order0s)
-            else:
-                self.settings.xloads.build_gravity(self.fem.Ma,
-                                                   self.fem.Mfe_order)
+        super().set_xloading()
         if self.settings.aero is not None:
-            import fem4inas.intrinsic.aero as aero
+            import fem4inas.intrinsic.aero as aero            
             approx = self.settings.aero.approx.capitalize()
             aeroobj = aero.Registry.create_instance(f"Aero{approx}",
                                                     self.settings,
@@ -167,7 +166,8 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             args1 = solver_args(self.sol,
                                 self.settings,
                                 self.fem,
-                                ti)
+                                ti,
+                                eta_0=self.eta0)
             sol = self.eqsolver(self.dFq,
                                 qs[-1],
                                 args1,
@@ -230,19 +230,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
     def set_xloading(self):
-        if self.settings.xloads.follower_forces:
-            self.settings.xloads.build_point_follower(
-                self.fem.num_nodes, self.sol.data.modes.C06ab)
-        if self.settings.xloads.dead_forces:
-            self.settings.xloads.build_point_dead(
-                self.fem.num_nodes)
-        if self.settings.xloads.gravity_forces:
-            if self.fem.constrainedDoF:
-                self.settings.xloads.build_gravity(self.fem.Ma0s,
-                                                   self.fem.Mfe_order0s)
-            else:
-                self.settings.xloads.build_gravity(self.fem.Ma,
-                                                   self.fem.Mfe_order)
+        super().set_xloading()
         if self.settings.aero is not None:
             import fem4inas.intrinsic.aero as aero            
             approx = self.settings.aero.approx.capitalize()
@@ -274,7 +262,8 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
                               f"arg_{label}")
         args1 = solver_args(self.sol,
                             self.settings,
-                            self.fem)
+                            self.fem,
+                            eta_0=self.eta0)
         sol = self.eqsolver(self.dFq,
                             args1,
                             q0=self.q0,
@@ -347,3 +336,22 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
                                Cab=Cab, ra=ra, t=self.settings.t)
         if self.settings.save:
             self.sol.save_container('DynamicSystem', label="_"+self.name)
+
+    def build_connection_eta(self):
+        import fem4inas.intrinsic.xloads as xloads
+        elevator_index = self.settings.aero.elevator_index
+        elevator_link = self.settings.aero.elevator_link
+        aero = getattr(self.sol.data, f"modalaeroroger_{self.settings.name}")
+        A0hat = aero.A0hat
+        B0hat = aero.B0hat
+        q = self.qs[-1]
+        states = self.settings.states
+        omega = self.sol.data.modes.omega
+        q2 = q[states['q2']]
+        q0i = -q2[2:] / omega[2:]
+        q0 = jnp.hstack([q2[:2], q0i])
+        qx = q[states['qx']]
+        eta_aero = xloads.eta_steadyaero(q0, A0hat)
+        eta_elevator = xloads.eta_controls(qx, B0hat, elevator_index, elevator_link)
+        eta0 = eta_aero + eta_elevator
+        return eta0

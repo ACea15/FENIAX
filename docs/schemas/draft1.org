@@ -679,12 +679,12 @@ derivatives
 
 #+begin_src python :session py1 :results output
   import fem4inas.intrinsic.functions as functions
-  label = functions.label_generator([1,1,'G',1,1])
+  label = functions.label_generator([1,1,'G',1,1,'l'])
   print(label)
 #+end_src
 
 #+RESULTS:
-: 11G6
+: 11G6l
 
 
 

@@ -614,6 +614,8 @@ class Dsystem(DataContainer):
 
     def build_label(self):
         # WARNING: order dependent for the label
+        # nonlinear and residualise should always come last as they are represented
+        # with letters
         lmap = dict()
         lmap['soltype'] = SystemSolution[self.solution.upper()].value
         lmap['target'] = SimulationTarget[self.target.upper()].value - 1
