@@ -685,12 +685,39 @@ class Dsystems(DataContainer):
     sett: dict[str: dict] = dfield("Settings ", yaml_save=True)
     mapper: dict[str: Dsystem]  = dfield("Dictionary with systems in the simulation",
                                        init=False)
+    borrow: dict[str: str]  = dfield("""Borrow settings from another system:
+    if there is only one system, then inactive; otherwise default to take settings from
+    the first system unless specified.
+    """,
+                                     default=None
+                                       )
 
     def __post_init__(self):
         mapper = dict()
+        counter = 0
         for k, v in self.sett.items():
-            mapper[k] = initialise_Dclass(
-                v, Dsystem, name=k)
+            if self.borrow is None:
+                mapper[k] = initialise_Dclass(
+                        v, Dsystem, name=k)
+            elif isinstance(self.borrow, str):
+                assert self.borrow in self.sett.keys(), "borrow not in system names"
+                if k == self.borrow:
+                    mapper[k] = initialise_Dclass(
+                        v, Dsystem, name=k)
+                else:
+                    v0 = self.sett[self.borrow]
+                    mapper[k] = initialise_Dclass(
+                        v0, Dsystem, name=k, **v)
+            else: 
+                if k in self.borrow.keys():
+                    v0 = self.sett[self.borrow[k]]
+                    mapper[k] = initialise_Dclass(
+                        v0, Dsystem, name=k, **v)
+                else:
+                    mapper[k] = initialise_Dclass(
+                        v, Dsystem, name=k)
+
+            counter += 1
         object.__setattr__(self, "mapper", mapper)
 
 @dataclass(frozen=True)
