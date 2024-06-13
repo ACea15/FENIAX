@@ -60,8 +60,66 @@ def vtkModes_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None, size_car
         mbdfi.write_bdf(write_pathi, size=size_card)
         bdf2vtk.run(write_pathi, None, write_vtki, False, fileformat="ascii")
 
-def vtkSol_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None):
-    ...
+def vtkSol_fromop2(bdf_file, op2_file, scale = 1., loads2plot=None, size_card=8, write_path=None, plot_ref=False):
+
+    "TODO: make into a class together with previous function"
+    bdfile = pathlib.Path(bdf_file)
+    mbdf = BDF()
+    mop2 = OP2()
+    mbdf.read_bdf(bdf_file)
+    nids, ntransform, icd = mbdf.get_displacement_index()
+    mop2.read_op2(op2_file)
+    mop2.transform_displacements_to_global(icd, mbdf.coords)
+    eigv = mop2.displacements[1].data
+    if loads2plot is None:
+        loads2plot = range(len(eigv))
+    nodes_sorted = sorted(list(mbdf.node_ids))
+    # run the reference
+    if write_path is None:
+        write_path = bdfile.parent / bdfile.name.split('.')[0]
+        write_path.mkdir(parents=True, exist_ok=True)
+    else:
+        write_path = pathlib.Path(write_path)
+        write_path.mkdir(parents=True, exist_ok=True)
+    if plot_ref:
+        write_vtk = f"{write_path}/Ref.vtk"
+        mbdf.write_bdf(f"{write_path}/Ref.bdf", size=size_card)
+        bdf2vtk.run(f"{write_path}/Ref.bdf", None, write_vtk, False, fileformat="ascii")
+    # run the modes
+    for mode_i in loads2plot:
+        # mbdfi = copy.deepcopy(mbdf)
+        mbdfi = BDF()
+        mbdfi.read_bdf(bdf_file)
+        nodes_sorted = sorted(list(mbdf.node_ids))
+        for i, ni in enumerate(nodes_sorted):
+            try:
+                # r = mbdfi.Node(ni).get_position()
+                # cdi = mbdfi.Node(ni).Cd()
+                # if cdi != 0:
+                #     #rl = mbdfi.Node(ni).get_position_wrt(mbdfi, cdi)
+                #     #mbdfi.Node(ni).set_position(mbdfi, rl + scale * eigv[mode_i, i, :3], cid=cdi)
+                #     r_new = r #mbdfi.Node(ni).get_position()
+                # else:
+                #     r_new = r + scale * eigv[mode_i, i, :3]
+                # cpi = mbdfi.Node(ni).Cp()
+                # # import pdb; pdb.set_trace()
+                # if cpi != 0:
+                #     mbdfi.Node(ni).set_position(mbdfi, r_new)
+                #     r_new2 = mbdfi.Node(ni).get_position_wrt(mbdf, cpi)
+                #     mbdfi.Node(ni).set_position(mbdfi, r_new2, cpi)
+                # else:
+                #     mbdfi.Node(ni).set_position(mbdfi, r_new)
+                r = mbdfi.Node(ni).get_position()
+                u = scale * eigv[mode_i, i, :3]
+                mbdfi.Node(ni).set_position(mbdfi, r + u)
+                
+            except AttributeError:
+                print(f"Node {ni} was not read")
+        write_pathi = f"{write_path}/L{mode_i}.bdf"
+        write_vtki = f"{write_path}/L{mode_i}.vtk"
+        mbdfi.write_bdf(write_pathi, size=size_card)
+        bdf2vtk.run(write_pathi, None, write_vtki, False, fileformat="ascii")
+
 
 class DefBdf:
 
