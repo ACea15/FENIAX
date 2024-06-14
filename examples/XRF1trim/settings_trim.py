@@ -41,7 +41,7 @@ inp.systems.sett.s1.solver_library = "diffrax"#"runge_kutta"
 inp.systems.sett.s1.solver_function = "newton_raphson"
 inp.systems.sett.s1.xloads.modalaero_forces = True
 inp.systems.sett.s1.xloads.gravity_forces = True
-inp.systems.sett.s1.xloads.gravity = 9.807 * 1
+inp.systems.sett.s1.xloads.gravity = 9.807 * 4
 #inp.systems.sett.s1.xloads.gravity = 0.5
 inp.systems.sett.s1.t = [1.]#[0., 0.25, 0.25 + 0.125, 0.5,
                         # 0.5 + 0.125, 0.75, 0.75 + 0.125, 1.]

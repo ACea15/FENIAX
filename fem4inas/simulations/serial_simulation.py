@@ -45,6 +45,7 @@ class SerialSimulation(Simulation, cls_name="serial"):
         q0 = jnp.zeros(num_states)
         for k, vi in states.items():
             if k in states0.keys():
-                q0 = q0.at[vi[2:]].set(sys0.qs[-1, states0[k][2:]])
+                q0 = q0.at[vi[:]].set(sys0.qs[-1, states0[k][:]])
+                q0 = q0.at[-4:].set(jnp.array([1., 0., 0., 0.]))
 
         return q0
