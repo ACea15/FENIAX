@@ -8,6 +8,7 @@ import pandas as pd
 import fem4inas.plotools.reconstruction as rec
 import fem4inas.preprocessor.configuration as configuration
 import jax.numpy as jnp
+import fem4inas.plotools.nastranvtk as nastranvtk
 
 Nastran = False
 
@@ -27,9 +28,9 @@ results = "results4g"
 config = configuration.Config.from_file(f"./{results}/config.yaml")
 sol = solution.IntrinsicReader(f"./{results}")
 
-r, u = rec.rbf_based("/media/acea/work/projects/FEM4INAS/examples/XRF1/NASTRAN/XRF1-146run.bdf",
+r, u = rec.rbf_based("./NASTRAN/XRF1-144trim.bdf",
                      config.fem.X,
-                     jnp.array([0,1,2,3,4, 5,6,7]), #sol.data.staticsystem_s1.t,
+                     jnp.array([0,1,2,3]), #sol.data.staticsystem_s1.t,
                      sol.data.staticsystem_s1.ra,
                      sol.data.staticsystem_s1.Cab,
                      sol.data.modes.C0ab,
@@ -39,6 +40,23 @@ r, u = rec.rbf_based("/media/acea/work/projects/FEM4INAS/examples/XRF1/NASTRAN/X
                      tolerance=1e-2,
                      size_cards=16,
                      rbe3s_full=False)
+
+
+results = "results4gl"
+configl = configuration.Config.from_file(f"./{results}/config.yaml")
+soll = solution.IntrinsicReader(f"./{results}")
+load = 0
+q2 = soll.data.staticsystem_s1.q[load, 0:-1]
+q0i = - q2[2:]/ soll.data.modes.omega[2:]
+q0 = jnp.hstack([q2[:2], q0i])  
+nastranvtk.vtkSol_op2Modes("./NASTRAN/XRF1-144trim.bdf",
+                           "./NASTRAN/runs/XRF1-144trim.op2",
+                           q0,
+                           label="Sol",
+                           size_card=16,
+                           write_path="./results4glVTK/",
+                           write_ref=True)
+
 
 
 

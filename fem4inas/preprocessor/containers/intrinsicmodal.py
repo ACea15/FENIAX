@@ -662,8 +662,6 @@ class Dsystem(DataContainer):
             lmap["q0treatment"] = 0
         elif self.q0treatment == 1:
             lmap["q0treatment"] = 1
-        elif self.nonlinear == -1:
-            lmap["nonlinear"] = "l"
         if self.nonlinear == 1:
             lmap["nonlinear"] = ""
         elif self.nonlinear == -1:

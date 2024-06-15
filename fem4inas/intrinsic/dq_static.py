@@ -149,7 +149,7 @@ def dq_11G6(q, *args):
 def dq_11G6l(q, *args):
     """Static trim1 linear"""
 
-    (eta_0, gamma2, omega, phi1, phi1l, psi2l,
+    (eta_0, omega, phi1, phi1l, psi2l,
      x, force_gravity,
      states,
      A0hat, B0hat, elevator_index, elevator_link,

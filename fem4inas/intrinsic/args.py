@@ -179,6 +179,42 @@ def arg_11G6(sol: solution.IntrinsicSolution,
             component_names, num_nodes,
             component_nodes, component_father, t)
 
+@catter2library
+def arg_11G6l(sol: solution.IntrinsicSolution,
+             system: intrinsicmodal.Dsystem,
+             fem: intrinsicmodal.Dfem,
+             t: float,
+             *args, **kwargs):
+
+    eta_0 = kwargs['eta_0']
+    phi1 = sol.data.modes.phi1
+    phi1l = sol.data.modes.phi1l
+    psi2l = sol.data.modes.psi2l
+    # gamma2 = sol.data.couplings.gamma2
+    omega = sol.data.modes.omega
+    x = system.xloads.x
+    states = system.states
+    force_gravity = system.xloads.force_gravity
+    X_xdelta = sol.data.modes.X_xdelta
+    C0ab = sol.data.modes.C0ab
+    num_nodes = fem.num_nodes
+    component_nodes = fem.component_nodes_int
+    component_names = fem.component_names_int
+    component_father = fem.component_father_int
+    elevator_index = system.aero.elevator_index
+    elevator_link = system.aero.elevator_link
+    aero = getattr(sol.data, f"modalaeroroger_{system.name}")
+    A0hat = aero.A0hat
+    B0hat = aero.B0hat
+    return (eta_0, omega, phi1, phi1l, psi2l,
+            x, force_gravity,
+            states,
+            A0hat, B0hat, elevator_index, elevator_link,
+            X_xdelta,
+            C0ab,
+            component_names, num_nodes,
+            component_nodes, component_father, t)
+
 #########################################################
 @catter2library
 def arg_20g1(sol: solution.IntrinsicSolution,

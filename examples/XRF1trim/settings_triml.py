@@ -26,12 +26,12 @@ inp.driver.typeof = "intrinsic"
 # inp.driver.sol_path = pathlib.Path(
 #     f"./resultsGust_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    "./results4g")
+    "./results4gl")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "static"
 inp.systems.sett.s1.target = "trim"
 inp.systems.sett.s1.bc1 = 'free'
-# inp.systems.sett.s1.nonlinear = 
+inp.systems.sett.s1.nonlinear = -1
 inp.systems.sett.s1.solver_function = "newton_raphson"
 inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                            atol=1e-6,
@@ -44,8 +44,8 @@ inp.systems.sett.s1.xloads.modalaero_forces = True
 inp.systems.sett.s1.xloads.gravity_forces = True
 inp.systems.sett.s1.xloads.gravity = 9.807 * 4
 #inp.systems.sett.s1.xloads.gravity = 0.5
-# inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.t = [0.25, 0.5, 0.75, 1.]
+# inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.u_inf = 180.
 inp.systems.sett.s1.aero.rho_inf = 0.778
