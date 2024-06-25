@@ -45,12 +45,21 @@ def dfield(description, **kwargs):
             init=init, **kwargs
         )
 
+def update_dict(d, u):
+    result = d.copy()  # Start with a shallow copy of the original dictionary
+    for k, v in u.items():
+        if isinstance(v, dict) and isinstance(result.get(k), dict):
+            result[k] = update_dict(result[k], v)
+        else:
+            result[k] = v
+    return result
+
 def initialise_Dclass(data, Dclass, **kwargs):
 
     if data is None:
         return Dclass()
     elif isinstance(data, dict):
-        return Dclass(**(data | kwargs))
+        return Dclass(**(update_dict(data,kwargs)))
     elif isinstance(data, Dclass):
         return data
     else:
