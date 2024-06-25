@@ -21,6 +21,8 @@ while getopts ":s:hc:o" opt; do
             echo "  -s <solution>   Specify a solution among these:"
             echo "     <103cao> Modal solution, outputs eigenvectors in op2,"
 	    echo "              ASET model, clamped"
+            echo "     <103cam> Modal solution, outputs Ma, Ka and eigenvectors,"
+	    echo "              ASET model, clamped"	    
             echo "     <103eao> Modal solution, outputs eigenvectors in op2,"
 	    echo "              ASET model, free"
 	    
@@ -90,6 +92,14 @@ then
     run_nastran "BUG_103cao.bdf"
     move_outputs "BUG_103cao.bdf"
 fi
+
+if [ "$s_option" = "103cam" ]
+
+then
+    run_nastran "BUG_103cam.bdf"
+    move_outputs "BUG_103cam.bdf"
+fi
+
 
 if [ "$s_option" = "103cfo" ]
 

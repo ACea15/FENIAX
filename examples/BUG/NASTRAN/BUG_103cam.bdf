@@ -1,0 +1,76 @@
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$ EXECUTIVE CONTROL								  $
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$ TIME 100 $(Max execution time)       
+assign output4='./output_fem/Phia.op4',formatted,UNIT=11
+assign output4='./output_fem/Ma.op4',formatted,UNIT=12
+assign output4='./output_fem/Ka.op4',formatted,UNIT=13
+SOL 103
+DIAG  20
+COMPILE SEMODES
+ALTER  'CALL.*SUPER3.*CASECC.*CASEM.*PHA1.*LAMA2'
+OUTPUT4 PHA,,,,//0/11///20
+OUTPUT4 MAA,,,,//0/12///20
+OUTPUT4 KAA,,,,//0/13///20
+CEND
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$ CASE CONTROL									  $
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+TITLE=BUG model #                                 
+ECHO=NONE                      	  
+SPC = 1
+SPCF = ALL
+DISPLACEMENT=ALL
+METHOD = 100
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$ BULK   									  $
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+BEGIN BULK
+PARAM,AUTOMSET,YES
+$ PARAM,BAILOUT,-1
+$ PARAM,GRDPNT,0                                                              
+$ PARAM,K6ROT,1.0
+$ PARAM,SNORM,20.0
+PARAM,POST,-1
+$ PARAM,MAXRATIO,1.0E07
+$ PARAM,EXTOUT,DMIGPCH
+EIGRL,100,,,100
+								
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$ MODEL										  $
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+INCLUDE './Parts/BUG_Fuselage_VTP.bdf'
+INCLUDE './Parts/BUG_WING_LWBOX.bdf'
+INCLUDE './Parts/BUG_WING_RWBOX.bdf'
+INCLUDE './Parts/fuselage_LWBOX_rbe.bdf'
+INCLUDE './Parts/fuselage_RWBOX_rbe.bdf'
+INCLUDE './Parts/MTOW_FUEL_LWBOX.bdf'
+INCLUDE './Parts/MTOW_FUEL_RWBOXmod.bdf'
+INCLUDE './Parts/BUG_LHTP.bdf'
+INCLUDE './Parts/BUG_RHTP.bdf'
+
+$$$$$$$$$$$$$$$$$$$$$$$$$
+$ SPCS                  $
+$$$$$$$$$$$$$$$$$$$$$$$$$
+
+$ INCLUDE './Config/spcs.bdf'
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$ CLAMPING NODE									  $
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+SPC1    1       123456  1005
+
+
+$$$$$$$$$$$$$$$$$$$$$$$$$
+$ ASETs                 $
+$$$$$$$$$$$$$$$$$$$$$$$$$
+
+INCLUDE './Config/asets_clamped_reduced.bdf'
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$
+ENDDATA
