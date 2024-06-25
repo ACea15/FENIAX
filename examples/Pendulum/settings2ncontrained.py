@@ -14,23 +14,23 @@ Ka = jnp.load('./FEM2nodes/Ka.npy')
 Ma = jnp.load('./FEM2nodes/Ma.npy')
 w, v = scipy.linalg.eigh(Ka, Ma)
 
-# Ka2 = jnp.insert(Ka, 6, 0., axis=0)
-# Ka2 = jnp.insert(Ka2, 7, 0., axis=0)
-# Ka2 = jnp.insert(Ka2, 8, 0., axis=0)
-# Ka2 = jnp.insert(Ka2, 6, 0., axis=1)
-# Ka2 = jnp.insert(Ka2, 7, 0., axis=1)
-# Ka2 = jnp.insert(Ka2, 8, 0., axis=1)
+Ka2 = jnp.insert(Ka, 6, 0., axis=0)
+Ka2 = jnp.insert(Ka2, 7, 0., axis=0)
+Ka2 = jnp.insert(Ka2, 8, 0., axis=0)
+Ka2 = jnp.insert(Ka2, 6, 0., axis=1)
+Ka2 = jnp.insert(Ka2, 7, 0., axis=1)
+Ka2 = jnp.insert(Ka2, 8, 0., axis=1)
 
-# Ma2 = jnp.insert(Ma, 6, 0., axis=0)
-# Ma2 = jnp.insert(Ma2, 7, 0., axis=0)
-# Ma2 = jnp.insert(Ma2, 8, 0., axis=0)
-# Ma2 = jnp.insert(Ma2, 6, 0., axis=1)
-# Ma2 = jnp.insert(Ma2, 7, 0., axis=1)
-# Ma2 = jnp.insert(Ma2, 8, 0., axis=1)
+Ma2 = jnp.insert(Ma, 6, 0., axis=0)
+Ma2 = jnp.insert(Ma2, 7, 0., axis=0)
+Ma2 = jnp.insert(Ma2, 8, 0., axis=0)
+Ma2 = jnp.insert(Ma2, 6, 0., axis=1)
+Ma2 = jnp.insert(Ma2, 7, 0., axis=1)
+Ma2 = jnp.insert(Ma2, 8, 0., axis=1)
 
-# v2 = jnp.insert(v, 6, 0., axis=0)
-# v2 = jnp.insert(v2, 7, 0., axis=0)
-# v2 = jnp.insert(v2, 8, 0., axis=0)
+v2 = jnp.insert(v, 6, 0., axis=0)
+v2 = jnp.insert(v2, 7, 0., axis=0)
+v2 = jnp.insert(v2, 8, 0., axis=0)
 
 
 inp = Inputs()
@@ -38,12 +38,13 @@ inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'0': None}
 inp.fem.folder = pathlib.Path('./FEM2nodes')
 inp.fem.num_modes = 3
-inp.fem.Ka = Ka
-inp.fem.Ma = Ma
-inp.fem.grid = "structuralGridConstrained"
+inp.fem.Ka = Ka2
+inp.fem.Ma = Ma2
+inp.fem.eigenvecs = v2
+inp.fem.grid = "structuralGrid"
+#inp.fem.grid = "structuralGrid"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.array([0, 0, 0])
-inp.fem.eigenvecs = v
+inp.fem.eigenvals = jnp.hstack([jnp.array([0, 0, 0]), w[3:]])
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
     f"./results2")

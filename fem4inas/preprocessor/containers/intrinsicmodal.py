@@ -614,6 +614,8 @@ class Dsystem(DataContainer):
 
     def build_label(self):
         # WARNING: order dependent for the label
+        # nonlinear and residualise should always come last as they are represented
+        # with letters
         lmap = dict()
         lmap['soltype'] = SystemSolution[self.solution.upper()].value
         lmap['target'] = SimulationTarget[self.target.upper()].value - 1
@@ -660,8 +662,6 @@ class Dsystem(DataContainer):
             lmap["q0treatment"] = 0
         elif self.q0treatment == 1:
             lmap["q0treatment"] = 1
-        elif self.nonlinear == -1:
-            lmap["nonlinear"] = "l"
         if self.nonlinear == 1:
             lmap["nonlinear"] = ""
         elif self.nonlinear == -1:
@@ -685,12 +685,39 @@ class Dsystems(DataContainer):
     sett: dict[str: dict] = dfield("Settings ", yaml_save=True)
     mapper: dict[str: Dsystem]  = dfield("Dictionary with systems in the simulation",
                                        init=False)
+    borrow: dict[str: str]  = dfield("""Borrow settings from another system:
+    if there is only one system, then inactive; otherwise default to take settings from
+    the first system unless specified.
+    """,
+                                     default=None
+                                       )
 
     def __post_init__(self):
         mapper = dict()
+        counter = 0
         for k, v in self.sett.items():
-            mapper[k] = initialise_Dclass(
-                v, Dsystem, name=k)
+            if self.borrow is None:
+                mapper[k] = initialise_Dclass(
+                        v, Dsystem, name=k)
+            elif isinstance(self.borrow, str):
+                assert self.borrow in self.sett.keys(), "borrow not in system names"
+                if k == self.borrow:
+                    mapper[k] = initialise_Dclass(
+                        v, Dsystem, name=k)
+                else:
+                    v0 = self.sett[self.borrow]
+                    mapper[k] = initialise_Dclass(
+                        v0, Dsystem, name=k, **v)
+            else: 
+                if k in self.borrow.keys():
+                    v0 = self.sett[self.borrow[k]]
+                    mapper[k] = initialise_Dclass(
+                        v0, Dsystem, name=k, **v)
+                else:
+                    mapper[k] = initialise_Dclass(
+                        v, Dsystem, name=k)
+
+            counter += 1
         object.__setattr__(self, "mapper", mapper)
 
 @dataclass(frozen=True)

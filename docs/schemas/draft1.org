@@ -639,7 +639,8 @@ derivatives
 - default
 - options
 
-* System based solutions 
+* System based solutions
+TODO: make automatic label as the first
 | Type        | Target | Gravity    | BC1        | ModalAero | SteadyAero   | UnsteadyAero | Point loads | q0 approx | Rigid-body           | Nonlinearities         | residualised |
 |-------------+--------+------------+------------+-----------+--------------+--------------+-------------+-----------+----------------------+------------------------+--------------|
 | 1 static    | Level  | False: "g" | Clamped    | None      | None         | None         | None        | via q2    | 1-quaternion+strains | All -> ""              | None -> ""   |
@@ -664,7 +665,7 @@ derivatives
 | 20g121   | Structural dynamic dead point forces            | [2,0,'g',0,0,0,0,2]   | Y   |
 | 20g22    | Free Structural dynamic follower point forces   | [2,0,'g',1,0,0,0,1]   | Y   |
 | 20g242   | Free Structural dynamic dead point forces       | [2,0,'g',1,0,0,0,2]   | Y   |
-| 11G2     | Static trimmed State (elevator-qalpha,          | [1,1,'G',1,1]         | N   |
+| 11G6     | Static trimmed State (elevator-qalpha,          | [1,1,'G',1,1]         | Y   |
 |          |                       no gravity updating)      |                       |     |
 | 12G2     | Static trimmed State (elevator-qalpha,          | [1,2,'G',1]           | N   |
 |          |                       gravity updating)         |                       |     |
@@ -679,12 +680,12 @@ derivatives
 
 #+begin_src python :session py1 :results output
   import fem4inas.intrinsic.functions as functions
-  label = functions.label_generator([1,1,'G',1,1])
+  label = functions.label_generator([1,0,'G',1,1])
   print(label)
 #+end_src
 
 #+RESULTS:
-: 11G6
+: 10G6
 
 
 
