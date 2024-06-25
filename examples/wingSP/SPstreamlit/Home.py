@@ -22,10 +22,13 @@ st.image(wingsp_path, caption="Wing box FE model")
 
 
 st.text("This is what we can do!!")
-video_file = open('/Users/ac5015/postdoc2/Papers/Scitech2024/out4.mp4', 'rb')
-video_bytes = video_file.read()
-st.video(video_bytes)
-st.divider()
+try:
+    video_file = open('/Users/ac5015/postdoc2/Papers/Scitech2024/out4.mp4', 'rb')
+    video_bytes = video_file.read()
+    st.video(video_bytes)
+    st.divider()
+except FileNotFoundError:
+    pass
 
 st.markdown("""
 ### Select a folder with results for postprocessing

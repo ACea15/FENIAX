@@ -77,3 +77,4 @@ q0 = jnp.hstack([q2[:2], q0i])
 X0 = jnp.tensordot(sol.modes.phi1, q0, axes=(0, 0))
 print(X0[-2,0])
 print(sol.staticsystem_s1.q[load,-1])
+
