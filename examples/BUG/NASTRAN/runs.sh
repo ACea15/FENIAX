@@ -1,4 +1,4 @@
-#/bin/zsh
+#/bin/bash
 
 nastran="/msc/MSC_Nastran/2023.1/bin/nast20231"
 option=""
@@ -39,7 +39,7 @@ while getopts ":s:hc:o" opt; do
     esac
 done
 
-function run_nastran(){
+run_nastran(){
     local file_in="$1"
     local file_out="$(echo $file_in | sed -e 's/bdf/f06/')"
     # ANOTHER WAY:
@@ -62,15 +62,15 @@ function run_nastran(){
 
 }
 
-function move_outputs(){
+move_outputs(){
     local file_in="$1"
     local basename="${file_in%.*}"
     local timestamp=$(date +"%m_%d_%y-%H_%M_%S")
     # Save the results of find into an array
-    files=($(find . -maxdepth 1 -mindepth 1 -type f -name "$basename*" -not -name "${basename}.bdf"))
-
+    files=$(find . -maxdepth 1 -mindepth 1 -type f -name "$basename*" -not -name "${basename}.bdf")
+    
     # Loop through the array
-    for file in "${files[@]}"; do
+    for file in $files; do #"${files[@]}"
 	# Get the basename of the file without the directory path
 	fileonly="${file##*/}"
 	
@@ -98,6 +98,13 @@ if [ "$s_option" = "103cam" ]
 then
     run_nastran "BUG_103cam.bdf"
     move_outputs "BUG_103cam.bdf"
+fi
+
+if [ "$s_option" = "103cap" ]
+
+then
+    run_nastran "BUG_103cap.bdf"
+    move_outputs "BUG_103cap.bdf"
 fi
 
 
