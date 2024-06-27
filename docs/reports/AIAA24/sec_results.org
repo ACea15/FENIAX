@@ -1,7 +1,70 @@
+#+setupfile: ./config.org
+* House keeping  :noexport: 
+#+begin_src elisp :results none :tangle no :exports none
+    (add-to-list 'org-structure-template-alist
+    '("sp" . "src python :session (print pythonShell)"))
+    (add-to-list 'org-structure-template-alist
+    '("se" . "src elisp"))
+    (setq org-confirm-babel-evaluate nil)
+    (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+    (setq org-latex-pdf-process
+      '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
+        "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
+    ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+    (pyvenv-workon "fem4inasdev")
+    (require 'org-tempo)
+    ;; Veval_blocks -> eval blocks of latex
+    ;; Veval_blocks_run -> eval blocks to obtain results
+    (setq Veval_blocks "yes") ;; yes, no, no-export
+    (setq Vpics "png") ;; yes, no, no-export   
+    (setq Veval_blocks_run "no-export")
+    (setq pythonShell "*py1*")
+    ;; export_blocks: code, results, both, none
+    (setq export_blocks  "results")  
+#+end_src
 * Load modules :noexport: 
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both :tangle ./results/run.py
 :END:
+
+#+NAME: PYTHONMODULES
+#+begin_src python  :results none  :tangle ./results/run.py
+  import plotly.express as px
+  import pyNastran.op4.op4 as op4
+  import matplotlib.pyplot as plt
+  import pdb
+  import datetime
+  import os
+  import shutil
+  REMOVE_RESULTS = False
+  if os.getcwd().split('/')[-1] != 'results':
+      if not os.path.isdir("./figs"):
+          os.mkdir("./figs")
+      if REMOVE_RESULTS:
+          if os.path.isdir("./results"):
+              shutil.rmtree("./results")
+      if not os.path.isdir("./results"):
+          print("***** creating results folder ******")
+          os.mkdir("./results")
+      os.chdir("./results")
+
+  import pathlib
+  import plotly.express as px
+  import pickle
+  import jax.numpy as jnp
+  import jax
+  import pandas as pd
+  import numpy as np
+  import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+  from fem4inas.preprocessor.inputs import Inputs
+  import fem4inas.fem4inas_main
+  import fem4inas.plotools.uplotly as uplotly
+  import fem4inas.plotools.utils as putils
+  import fem4inas.preprocessor.solution as solution
+  import fem4inas.unastran.op2reader as op2reader
+  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  from tabulate import tabulate
+#+end_src
 
 ** Helper functions
 
@@ -185,7 +248,6 @@ https://plotly.com/python/subplots/
   
 #+end_src
 
-
 * Results
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
@@ -208,12 +270,10 @@ The free-flying evolution of the 3D model is shown in Fig. [[fig:FFB_2D]] for th
 #+ATTR_LATEX: :width 0.8\textwidth 
 [[file:figs_ext/FFB_2D3.pdf]]
 
-
 #+NAME: fig:FFB_3D
 #+CAPTION: Free-flying structure in the 3D plane
 #+ATTR_LATEX: :width 1.\textwidth 
 [[file:figs_ext/FFB_3D3.pdf]]
-
 
 Because the applied load is a dead force we can track the position of the center-of-gravity (CG) analytically as a verification exercise. Furthermore, the highly nonlinear nature of this problem makes it a good example to showcase the strength of accelerators for large problems and to gain insights as to when it might be better to deploy the codes in standard CPUs instead. Therefore we perform a sweep with the number of modes kept in the solution from 50 to 300, which determines the size of the system to be solved. The full modal basis is employed at 300 modes and due to the nonlinear cubic term this entails operations of the order of $O(10^7)$ at every time step of the solution, making it a good case for accelerators. The increase in the number of modes also restricts the incremental time step used in the explicit solver to preserve stability. Table [[table:FFB_times]] shows both computational time and CG error for the planar case in two scenarios: linking  the integration time-step to the largest eigenvalue $\lambda$ in the solution $dt=\lambda^{-0.5}$; and fixing it to $dt=10^{-3}$.
 The error metric is defined as the L-2 norm divided by the time steps.
@@ -246,7 +306,7 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
   gpu_times2 = [58, 65, 67, 76, 94, 111]
   cpu_times2 = [42, 184, 287, 421, 893, 1869]
   fig, figname = fig_out(name)(plot_ffb_times)(modes, gpu_times1, cpu_times1, "GPU", "CPU")
-  #figname
+  figname
 #+end_src
 
 #+RESULTS: FFBtimes1
@@ -271,7 +331,6 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 #+end_src
 
 #+RESULTS: FFBerror1
-[[file:figs/FFBerror1.png]]
 
 #+NAME: FFBerror2
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -283,11 +342,9 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 #+CAPTION: Error metric CG position for planar case
 #+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: FFBerror2
-[[file:figs/FFBerror2.png]]
+[[file:]]
 
-
-** XRF1
-
+** COMMENT XRF1
 
 *** Trim flight
 
@@ -314,6 +371,11 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
   #fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip2, sol1.data.dynamicsystem_s2.t, #sol1.data.dynamicsystem_s2.ra, labels=[1,2], node=0)
   #figname
 #+end_src
+
+#+NAME: fig:xrf1_trim
+#+CAPTION: XRF1 3D trim  
+#+ATTR_LATEX: :width 0.9\textwidth 
+[[file:figs_ext/xrf1_trim.png]]
 
 
 *** Gust response
