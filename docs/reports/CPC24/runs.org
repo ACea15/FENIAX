@@ -1,4 +1,53 @@
-#+setupfile: ./config.org
+# #+TITLE: JAX-based Aeroelastic Simulation Engine for Differentiable Aircraft Dynamics
+#+TITLE: JAX-based Aeroelastic Simulation Engine for Differentiable Aircraft Dynamics
+# #+TITLE: JAX-based Simulation Engine for Differentiable Dynamics of Flexible Aircraft
+# #A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
+#+AUTHOR: Alvaro Cea and Rafael Palacios
+#+BIBLIOGRAPHY:~/Documents/Engineering.bib
+:LATEX_PROPERTIES:
+#+OPTIONS: toc:nil
+#+OPTIONS: broken-links:mark
+#+BIND: org-latex-prefer-user-labels t
+#+LATEX_HEADER: \synctex=1
+#+LATEX_HEADER: \usepackage[margin=1in]{geometry}
+#+LATEX_HEADER: \usepackage{graphicx}
+#+LATEX_HEADER: \usepackage{amsmath,bm}
+# +LATEX_HEADER: \usepackage{algorithm}
+#+LATEX_HEADER: \usepackage{algpseudocode}
+#+LATEX_HEADER: \usepackage[ruled,vlined]{algorithm2e}
+#+LATEX_HEADER: \usepackage[version=4]{mhchem}
+#+LATEX_HEADER: \usepackage{siunitx}
+#+LATEX_HEADER: \usepackage{longtable,tabularx}
+#+LATEX_HEADER: \usepackage{booktabs}
+#+LATEX_HEADER: \usepackage{tabularx,longtable,multirow,subfigure,caption}
+#+LATEX_HEADER: \setlength\LTleft{0pt} 
+#+LATEX_HEADER: \usepackage{mathrsfs}
+#+LATEX_HEADER: \usepackage{amsfonts}
+#+LATEX_HEADER: \usepackage{enumitem}
+#+LATEX_HEADER: \usepackage{mathalpha}
+#+LATEX_HEADER: \renewcommand{\figurename}{\bf \small Figure}
+#+LATEX_HEADER: \renewcommand{\tablename}{\bf \small Table}
+#+LATEX_HEADER: \newcommand{\de}{\delta}
+#+LATEX_HEADER: \newcommand{\ve}{\text{v}}
+#+LATEX_HEADER: \newcommand{\lo}{\mathcal{L}}
+#+LATEX_HEADER: \newcommand{\vt}{\overline{\delta\bm{\theta}}}
+#+LATEX_HEADER: \newcommand{\vu}{\overline{\delta\bm{u}}}
+#+LATEX_HEADER: \newcommand{\e}{\bm{\mathfrak{e}}}
+#+LATEX_HEADER: \newcommand{\E}{\bm{\mathbb{E}}}
+#+LATEX_HEADER: \newcommand{\T}{\bm{\mathcal{T}}}
+#+LATEX_HEADER: \newcommand{\fra}{(\mathtt{1})}
+#+LATEX_HEADER: \newcommand{\frb}{(\mathtt{2})}
+#+LATEX_HEADER: \newcommand{\fri}{(\mathfrak{i})}
+#+LATEX_HEADER: \newcommand{\bs}[1]{\boldsymbol{#1}}
+#+LATEX_HEADER: \newcommand{\rhoinf}{\rho}	
+#+LATEX_HEADER: \newcommand{\Vinf}{U}
+#+LATEX_HEADER: \newcommand{\Cl}[1]{c_{l_{#1}}}
+#+LATEX_HEADER: \newcommand{\barCl}[1]{\bar{c}_{l_{#1}}}
+#+LATEX_HEADER: \newcommand{\Cm}[1]{c_{m_{#1}}}
+#+LATEX_HEADER: \newcommand{\barCm}[1]{\bar{c}_{m_{#1}}}
+#+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
+
+:END:
 
 #+begin_abstract
 A novel methodology is presented in this paper for the structural and aeroelastic analysis of large engineering systems with slender components, such as aircraft.
@@ -19,12 +68,12 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "fem4inasdev")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
   (setq Veval_blocks "yes") ;; yes, no, no-export 
-  (setq Veval_blocks_run "no-export")
+  (setq Veval_blocks_run "yes")
   (setq pythonShell "py2")
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
@@ -84,6 +133,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 
 #+end_src
 
+* Run models :noexport:  
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
 :END:
@@ -706,21 +756,3 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 #+begin_src python :results none
   save_times()
 #+end_src
-* Introduction
-#+INCLUDE: "./sec_text.org::*Introduction" :only-contents t
-* Theory and implementation
-#+INCLUDE: "./sec_text.org::*Theory and implementation" :only-contents t
-* Examples
-:PROPERTIES:
-:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
-:END:
-#+INCLUDE: "./sec_examples.org::*Examples" :only-contents t
-* Conclusions
-#+INCLUDE: "./sec_text.org::*Conclusions" :only-contents t
-* Appendix: Nonlinear Modal Reduced Order Models
-#+INCLUDE: "./sec_text.org::*Appendix: Nonlinear Modal Reduced Order Models" :only-contents t
-
-bibliographystyle:plain
-# bibliography:/home/acea/Documents/Engineering.bib
-bibliography:~/Documents/Engineering.bib
-

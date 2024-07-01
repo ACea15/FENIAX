@@ -74,7 +74,7 @@ Furthermore, the nonlinear gust response of an industrial configuration with ove
     (require 'org-tempo)
     ;; Veval_blocks -> eval blocks of latex
     ;; Veval_blocks_run -> eval blocks to obtain results
-    (setq Veval_blocks "no-export") ;; yes, no, no-export
+    (setq Veval_blocks "yes") ;; yes, no, no-export
     (setq Vpics "png") ;; yes, no, no-export   
     (setq Veval_blocks_run "no-export")
     (setq pythonShell "*py1*")
@@ -811,7 +811,7 @@ https://plotly.com/python/subplots/
 
   @fig_background
   def xrf1_wingtip2(sol1, sol2, dim, labels=None,nast_scale=None, nast_load=None):
-      scale = 100./33.977
+      scale = 1./33.977
       fig=None
       x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
                                     sol1.data.dynamicsystem_s1.ra,
@@ -1001,7 +1001,7 @@ https://plotly.com/python/subplots/
 
   @fig_background
   def xrf1_wingtip4(sol1, sol2, sol3, sol4, dim, labels=None,nast_scale=None, nast_load=None):
-      scale = 100./33.977
+      scale = 1./33.977
       fig=None
       x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
                                       sol1.data.dynamicsystem_s1.ra,
@@ -1041,7 +1041,7 @@ https://plotly.com/python/subplots/
 
   @fig_background
   def wsp_wingtip(sol_list, dim, labels=None, nast_load=None, axes=None,
-                  modes = [5, 15, 30, 50, 100],scale = 100./28.8):
+                  modes = [5, 15, 30, 50, 100],scale = 1./28.8):
 
       fig = None
       colors=["red", "darkgreen",
@@ -2171,7 +2171,7 @@ The increase in the internal loading, $f(\alpha)$, above the linear correlation 
   #fig = subplots_wsp(sol_wsp, labels=None, nast_load=0)
   #figname
   fig, figname = fig_out(name, update_layout=dict(legend=dict(x=0.13, y=0.3,
-      font=dict(size= 16))))(wsp_wingtip)(sol_wspz, dim=2, scale=1, modes=["0.5","1","1.5"], axes=[[0,10],None])
+      font=dict(size= 16))))(wsp_wingtip)(sol_wspz, dim=2, modes=["0.5","1","1.5"], axes=[[0,10],None])
   figname
 #+end_src
 
