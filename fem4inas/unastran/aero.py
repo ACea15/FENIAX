@@ -39,7 +39,7 @@ class GenDLMPanels:
             x43=self.x43==o.x43, 
             nspan=self.nspan==o.nspan,
             nchord=self.nchord==o.nchord,
-            se1x=self.set1x==o.set1x,
+            set1x=self.set1x==o.set1x,
             spline_type=self.spline_type==o.spline_type
             )
         equal = False if False in equal_dict.values() else True
@@ -53,6 +53,23 @@ class GenDLMPanels:
         yaml = YAML()
         yaml_dict = yaml.load(pathlib.Path(file_dir))
         return cls(**yaml_dict)
+
+    @classmethod
+    def from_dict(cls, input1: dict):
+
+        sett = dict()
+        sett["num_surfaces"] = len(input1)
+        sett["components"] = list(input1.keys())
+        sett["p1"] = [input1[ki]["p1"] for ki in sett["components"]]
+        sett["p4"] = [input1[ki]["p4"] for ki in sett["components"]]
+        sett["x12"] = [input1[ki]["x12"] for ki in sett["components"]]
+        sett["p43"] = [input1[ki]["x43"] for ki in sett["components"]]
+        sett["nspan"] = [input1[ki]["nspan"] for ki in sett["components"]]
+        sett["nchord"] = [input1[ki]["nchord"] for ki in sett["components"]]
+        sett["set1x"] = [input1[ki]["set1x"] for ki in sett["components"]]
+        sett["spline_type"] = [input1[ki]["spline_type"] for ki in sett["components"]]
+
+        return cls(**sett)
     
     @staticmethod
     def dlm1(num_surfaces,paero1,caero1,aelist,set1,spline67,p1,x12,p4,x43,nspan,nchord,set1x, spline_type):

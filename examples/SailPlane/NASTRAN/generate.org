@@ -114,6 +114,53 @@
   nastran run_cao.bdf
 #+end_src
 
+#+begin_src org :tangle "./SOL103/run_cfo.bdf" :mkdirp yes :noweb yes
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ EXECUTIVE CONTROL								  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  SOL 103
+  DIAG  20
+
+  CEND
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CASE CONTROL									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  TITLE=SailPlane #                                 
+  ECHO=NONE                      	  
+  DISP=ALL                                
+  SPC = 2
+  METHOD = 100
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  BEGIN BULK
+  PARAM,BAILOUT,0
+  PARAM,GRDPNT,0                                                              
+  PARAM,K6ROT,1.0
+  PARAM,SNORM,20.0
+  PARAM,POST,-1
+  PARAM,MAXRATIO,1.0E07
+  $PARAM,EXTOUT,DMIGPCH
+  EIGRL,100,,,<<python_parameters(output="num_modes")>>
+
+  SPC1           1  123456  999079
+  SPCADD         2       1
+  INCLUDE '../base.bdf'
+  $ INCLUDE '../asets_clamped.bdf'
+
+  ENDDATA
+
+#+end_src
+
+#+begin_src bash :tangle "./SOL103/run2.sh" :mkdirp yes :shebang   #!/usr/bin/zsh -i :results none
+  cd SOL103
+  nastran run_cfo.bdf
+#+end_src
+
 ** Build modes in OP4
 #+begin_src python :session py1  :results none 
   #from fem4inas.utils import write_op4modes
@@ -138,14 +185,23 @@
 #+end_src
 
 
-
 ** VTK modes
 #+begin_src python :session py1 :results none :tangle py1.py
-  import fem4inas.plotools.nastranvtk.modes as modes
+  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
   import  importlib
-  importlib.reload(modes)
-  modes.vtk_fromop2("./SOL103/run_cao.bdf", "./SOL103/run_cao.op2", scale = 100.)
+  #importlib.reload(modes)
+  bdfdef.vtkModes_fromop2("./SOL103/run_cao.bdf", "./SOL103/run_cao.op2", modes2plot=range(40))
+  #modes.vtk_fromop2("./SOL103/run_cao.bdf", "./SOL103/run_cao.op2", scale = 100.)
 #+end_src
+
+#+begin_src python :session py1 :results none :tangle py1.py
+  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  import  importlib
+  #importlib.reload(modes)
+  bdfdef.vtkModes_fromop2("./SOL103/run_cfo.bdf", "./SOL103/run_cfo.op2", modes2plot=range(40))
+  #modes.vtk_fromop2("./SOL103/run_cao.bdf", "./SOL103/run_cao.op2", scale = 100.)
+#+end_src
+
 * SOL400 (structure-only)
 #+begin_src python :session py1 :results none :tangle py1.py
   import fem4inas.unastran.op2reader as op2reader
@@ -2172,7 +2228,6 @@ plot GAFs
   op2model = op2reader.NastranReader("./SOL146/run_cao")
   op2model.readModel()
 #+end_src
-
 
 * VTK
 #+begin_src python :session py1  :results none :noweb yes

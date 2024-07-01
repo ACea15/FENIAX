@@ -4,6 +4,11 @@ import pandas as pd
 bdf = BDF()#debug=False)
 bdf.read_bdf("./BUG_103cao.bdf", validate=False)
 
+bdfaero = BDF()#debug=False)
+bdfaero.read_bdf("/home/acea/projects/FEM4INAS/examples/BUG/NASTRAN/OldAero/aero_rightonly.bdf", validate=False, punch=True)
+
+
+
 # bdf_conm2 = BDF()
 # conm2_ids = list(range(314, 345)) + [376, 377, 378]
 # for cmi in conm2_ids:
