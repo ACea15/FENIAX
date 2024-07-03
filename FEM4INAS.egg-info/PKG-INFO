@@ -1,0 +1,67 @@
+Metadata-Version: 2.1
+Name: FEM4INAS
+Version: 0.0.0
+Summary: FEM4INAS is an aeroelastic toolbox written and parallelized in Python, which acts as a post-processor of commercial software such as MSC Nastran. Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.
+Home-page: https://github.com/ACea15/FEM4INAS
+Author: Alvaro Cea
+Author-email: alvaro_cea@outlook.com
+License: GPL-3
+Keywords: nonlinear aeroelastic structural aerodynamic analysis
+Requires-Python: >=3.11
+License-File: LICENSE.md
+License-File: AUTHORS.md
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: pandas
+Requires-Dist: ruamel.yaml
+Requires-Dist: jax
+Requires-Dist: jaxlib
+Requires-Dist: diffrax
+Requires-Dist: jaxopt
+Requires-Dist: tabulate
+Requires-Dist: multipledispatch
+Requires-Dist: pyNastran
+Provides-Extra: cpu
+Requires-Dist: jax[cpu]; extra == "cpu"
+Provides-Extra: plot
+Requires-Dist: matplotlib; extra == "plot"
+Requires-Dist: plotly; extra == "plot"
+Requires-Dist: pyvista; extra == "plot"
+Provides-Extra: docs
+Requires-Dist: sphinx; extra == "docs"
+Requires-Dist: myst-parser; extra == "docs"
+Requires-Dist: sphinx_rtd_theme; extra == "docs"
+Requires-Dist: nbsphinx; extra == "docs"
+Provides-Extra: tests
+Requires-Dist: pytest; extra == "tests"
+Provides-Extra: streamlit
+Requires-Dist: streamlit; extra == "streamlit"
+Requires-Dist: stpyvista; extra == "streamlit"
+Requires-Dist: streamlit-pdf-viewer; extra == "streamlit"
+Provides-Extra: all
+Requires-Dist: numpy; extra == "all"
+Requires-Dist: scipy; extra == "all"
+Requires-Dist: pandas; extra == "all"
+Requires-Dist: ruamel.yaml; extra == "all"
+Requires-Dist: jax; extra == "all"
+Requires-Dist: jaxlib; extra == "all"
+Requires-Dist: diffrax; extra == "all"
+Requires-Dist: jaxopt; extra == "all"
+Requires-Dist: tabulate; extra == "all"
+Requires-Dist: multipledispatch; extra == "all"
+Requires-Dist: pyNastran; extra == "all"
+Requires-Dist: matplotlib; extra == "all"
+Requires-Dist: plotly; extra == "all"
+Requires-Dist: pyvista; extra == "all"
+Requires-Dist: pytest; extra == "all"
+Requires-Dist: jupyterlab; extra == "all"
+Requires-Dist: matplotlib; extra == "all"
+Requires-Dist: plotly; extra == "all"
+Requires-Dist: pyvista; extra == "all"
+Requires-Dist: sphinx; extra == "all"
+Requires-Dist: myst-parser; extra == "all"
+Requires-Dist: sphinx_rtd_theme; extra == "all"
+Requires-Dist: nbsphinx; extra == "all"
+Requires-Dist: streamlit; extra == "all"
+Requires-Dist: stpyvista; extra == "all"
+Requires-Dist: streamlit-pdf-viewer; extra == "all"

@@ -1,0 +1,12 @@
+MSC Nastran V2018.2 (Intel Windows 10 Pro 6.2 9200) Wed Jul  3 21:35:32 2024
+
+*** SYSTEM INFORMATION MESSAGE (pgm: nastran, fn: estimate_job_requirements)
+    Starting ESTIMATE, please wait...
+
+*** USER INFORMATION MESSAGE (pgm: nastran, fn: estimate_job_requirements)
+    Estimated memory=0.0MB
+    Estimated bpool=0.0MB
+MSC Nastran beginning job rom_15.
+MSC Nastran started  c:\msc.software\msc_nastran\20182\msc20182\win64i8\mscdate
+MSC Nastran finished c:\msc.software\msc_nastran\20182\msc20182\win64i8\mscdate
+MSC Nastran job rom_15 completed.
