@@ -1,0 +1,233 @@
+1
+ 
+ 
+ 
+ 
+                      Warning: This computer program is protected by copyright law and international treaties.       
+                  Unauthorized use, reproduction or distribution of this computer program, or any portion of it, may 
+                                          result in severe civil and criminal penalties.                             
+                         Copyright (C) 2018 MSC Software Corporation and its licensors. All rights reserved.         
+ 
+ 
+                                              * * * * * * * * * * * * * * * * * * * *
+                                              * * * * * * * * * * * * * * * * * * * *
+                                              * *                                 * *
+                                              * *           MSC Software          * *
+                                              * *               CORP              * *
+                                              * *                                 * *
+                                              * *      M S C   N a s t r a n      * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *     Version 2018.2.1-CL598405   * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *          SEP 11, 2018           * *
+                                              * *                                 * *
+                                              * *              Intel              * *
+                                              * *  MODEL Xeon/3659 (AY-WS414-4)   * *
+                                              * *     Windows 10 Pro 6.2 9200     * *
+                                              * * Compiled for 8664 (SINGLE Mode) * *
+                                              * *                                 * *
+                                              * * * * * * * * * * * * * * * * * * * *
+                                              * * * * * * * * * * * * * * * * * * * *
+1                                                                              JULY   3, 2024  MSC Nastran  9/11/18   PAGE     1
+                                                                                                                                    
+0        N A S T R A N    F I L E    A N D    S Y S T E M    P A R A M E T E R    E C H O                                           
+0                                                                                                                                   
+                                                                                                                                    
+                                                                                                                                    
+     $ SYSFIELD=SCR*(RAW=YES,BUFFIO=YES,WNUM=16,WSIZE=16MB) $(C:/MSC.SOFTWARE/MSC_NAS
+     $ SYSFIELD=DBALL(RAW=YES,BUFFIO=YES,WNUM=16,WSIZE=16MB) $(C:/MSC.SOFTWARE/MSC_NA
+     NASTRAN BUFFSIZE=32769 $(C:/MSC.SOFTWARE/MSC_NASTRAN/20182/CONF/NAST20182.RCF[6]
+     $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+     $ EXECUTIVE CONTROL                                                             
+     $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+1                                                                              JULY   3, 2024  MSC Nastran  9/11/18   PAGE     2
+                                                                                                                                    
+0        N A S T R A N    E X E C U T I V E    C O N T R O L    E C H O                                                             
+0                                                                                                                                   
+                                                                                                                                    
+                                                                                                                                    
+     SOL 103                                                                                 
+     CEND                                                                                    
+1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     3
+                                                                                                                                    
+0                                                                                                                                   
+0                                        C A S E    C O N T R O L    E C H O                                                        
+                 COMMAND                                                                                                            
+                 COUNT                                                                                                              
+                  1      $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$        $$$$$$$$
+                  2      $ CASE CONTROL                                                                          
+                  3      $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$        $$$$$$$$
+                  4      SET 1 = 1006,1007,1008,1009,1004,1003,1002,1001,                                        
+                  5      1000,2001,2003,2005,2008,2010,2012,2014,                                        
+                  6      2016,2018,2020,2022,2024,2026,2028,2030,                                        
+                  7      2032,2034,2036,2038,2040,2042,2044,2046,                                        
+                  8      2048,2050,2052,10002001,10002003,10002005,10002008,10002010,                    
+                  9      10002012,10002014,10002016,10002018,10002020,10002022,10002024,10002026,        
+                 10      10002028,10002030,10002032,10002034,10002036,10002038,10002040,10002042,        
+                 11      10002044,10002046,10002048,10002050,10002052,1010,3001,3002,                    
+                 12      3003,3004,3005,3006,3007,3008,4000,3010,                                        
+                 13      4001,4002,4003,4004,4005,4006,4007,4008,                                        
+                 14      4009,4010,4011,4012,4013,10004001,10004002,10004003,                            
+                 15      10004004,10004005,10004006,10004007,10004008,10004009,10004010,10004011,        
+                 16      10004012,10004013,1005                                                          
+                 17      TITLE=BUG MODEL #                                                                       
+                 18      ECHO=NONE                                                                               
+                 19      SPC = 1                                                                                 
+                 20      SPCF = ALL                                                                              
+                 21      DISPLACEMENT=1                                                                          
+                 22      METHOD = 100                                                                            
+                 23                                                                                              
+                 24      $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$        $$$$$$$$
+                 25      $ BULK                                                                                  
+                 26      $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$        $$$$$$$$
+                 27                                                                                              
+                 28      BEGIN BULK                                                                              
+1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     4
+                                                                                                                                    
+0                                                                                                                                   
+                                              I N P U T   B U L K   D A T A   E C H O                                               
+                 ENTRY                                                                                                              
+                 COUNT        .   1  ..   2  ..   3  ..   4  ..   5  ..   6  ..   7  ..   8  ..   9  ..  10  .                      
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File
+    './Parts/BUG_Fuselage_VTP.bdf' is included in file
+    '../nastran/bug_103cao.bdf' at statement number 49.  The "INCLUDE" request
+    is skipped.
+                              $INCLUDE ./Parts/BUG_Fuselage_VTP.bdf FAILED
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File './Parts/BUG_WING_LWBOX.bdf'
+    is included in file '../nastran/bug_103cao.bdf' at statement number 50.
+    The "INCLUDE" request is skipped.
+                              $INCLUDE ./Parts/BUG_WING_LWBOX.bdf FAILED
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File './Parts/BUG_WING_RWBOX.bdf'
+    is included in file '../nastran/bug_103cao.bdf' at statement number 51.
+    The "INCLUDE" request is skipped.
+                              $INCLUDE ./Parts/BUG_WING_RWBOX.bdf FAILED
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File
+    './Parts/fuselage_LWBOX_rbe.bdf' is included in file
+    '../nastran/bug_103cao.bdf' at statement number 52.  The "INCLUDE" request
+    is skipped.
+                              $INCLUDE ./Parts/fuselage_LWBOX_rbe.bdf FAILED
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File
+    './Parts/fuselage_RWBOX_rbe.bdf' is included in file
+    '../nastran/bug_103cao.bdf' at statement number 53.  The "INCLUDE" request
+    is skipped.
+                              $INCLUDE ./Parts/fuselage_RWBOX_rbe.bdf FAILED
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File
+    './Parts/MTOW_FUEL_LWBOX.bdf' is included in file
+    '../nastran/bug_103cao.bdf' at statement number 54.  The "INCLUDE" request
+    is skipped.
+                              $INCLUDE ./Parts/MTOW_FUEL_LWBOX.bdf FAILED
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File
+    './Parts/MTOW_FUEL_RWBOXmod.bdf' is included in file
+    '../nastran/bug_103cao.bdf' at statement number 55.  The "INCLUDE" request
+    is skipped.
+                              $INCLUDE ./Parts/MTOW_FUEL_RWBOXmod.bdf FAILED
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File './Parts/BUG_LHTP.bdf' is
+    included in file '../nastran/bug_103cao.bdf' at statement number 56.  The
+    "INCLUDE" request is skipped.
+                              $INCLUDE ./Parts/BUG_LHTP.bdf FAILED
+1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     5
+                                                                                                                                    
+0                                                                                                                                   
+                                              I N P U T   B U L K   D A T A   E C H O                                               
+                 ENTRY                                                                                                              
+                 COUNT        .   1  ..   2  ..   3  ..   4  ..   5  ..   6  ..   7  ..   8  ..   9  ..  10  .                      
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File './Parts/BUG_RHTP.bdf' is
+    included in file '../nastran/bug_103cao.bdf' at statement number 57.  The
+    "INCLUDE" request is skipped.
+                              $INCLUDE ./Parts/BUG_RHTP.bdf FAILED
+
+*** USER FATAL MESSAGE (fn: GETLIN)
+    A requested INCLUDE file was not found.  File
+    './Config/asets_clamped_reduced.bdf' is included in file
+    '../nastran/bug_103cao.bdf' at statement number 76.  The "INCLUDE" request
+    is skipped.
+                              $INCLUDE ./Config/asets_clamped_reduced.bdf FAILED
+1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     6
+                                                                                                                                    
+0                                                                                                                                   
+ *** USER FATAL MESSAGE 208 (SCA.MDSolver.Io.AccessAccess:AccessAccess::StreamToBinary)
+     Fatal messages were encountered while converting the stream input file ../nastran/bug_103cao.bdf.
+ *** USER FATAL MESSAGE 102 (SCA.MDSolver.Obj.InputFile:InputFile::read)
+Severe fatal Errors occured while reading the input file ../nastran/bug_103cao.bdf.
+Check the MDSolver.System.PrintListener output.
+                                        M O D E L   S U M M A R Y          BULK = 0
+                                   ENTRY NAME        NUMBER OF ENTRIES
+                                   ----------        -----------------
+                                        EIGRL                        1
+                                        PARAM                        2
+                                         SPC1                        1
+
+ ^^^     
+ ^^^ >>> IFP OPERATIONS COMPLETE <<< 
+ ^^^     
+ ^^^     
+ *** USER FATAL MESSAGE 9002 (SUBDMAP IFPS)
+     ERROR(S) ENCOUNTERED IN THE MAIN BULK DATA SECTION
+     SEE MESSAGES ABOVE. ERROR ENCOUNTERED IN MODULE IFP,
+ ^^^     
+1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     7
+                                                                                                                                    
+0                                                                                                                                   
+0                                                                                                                                   
+                                                                                                                                    
+                                                                                                                                    
+ *** USER INFORMATION MESSAGE 4425 (PRTPRN)
+     ONE OR MORE FATAL ERRORS HAVE OCCURRED.  THERE MAY BE MORE ERROR MESSAGES IN THE PRECEDING OUTPUT
+1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     8
+                                                                                                                                    
+0                                                                                                                                   
+ * * * *  D B D I C T   P R I N T  * * * *      SUBDMAP = PRTSUM  ,  DMAP STATEMENT NO.     71
+
+
+
+0                                   * * * *  A N A L Y S I S  S U M M A R Y  T A B L E  * * * *
+0 SEID  PEID PROJ VERS APRCH      SEMG SEMR SEKR SELG SELR MODES DYNRED SOLLIN PVALID SOLNL LOOPID DESIGN CYCLE SENSITIVITY
+ --------------------------------------------------------------------------------------------------------------------------
+0SEID = SUPERELEMENT ID.
+ PEID = PRIMARY SUPERELEMENT ID OF IMAGE SUPERELEMENT.
+ PROJ = PROJECT ID NUMBER.
+ VERS = VERSION ID.
+ APRCH = BLANK FOR STRUCTURAL ANALYSIS.  HEAT FOR HEAT TRANSFER ANALYSIS.
+ SEMG = STIFFNESS AND MASS MATRIX GENERATION STEP.
+ SEMR = MASS MATRIX REDUCTION STEP (INCLUDES EIGENVALUE SOLUTION FOR MODES).
+ SEKR = STIFFNESS MATRIX REDUCTION STEP.
+ SELG = LOAD MATRIX GENERATION STEP.
+ SELR = LOAD MATRIX REDUCTION STEP. 
+ MODES = T (TRUE) IF NORMAL MODES OR BUCKLING MODES CALCULATED.
+ DYNRED = T (TRUE) MEANS GENERALIZED DYNAMIC AND/OR COMPONENT MODE REDUCTION PERFORMED.
+ SOLLIN = T (TRUE) IF LINEAR SOLUTION EXISTS IN DATABASE.
+ PVALID = P-DISTRIBUTION ID OF P-VALUE FOR P-ELEMENTS
+ LOOPID = THE LAST LOOPID VALUE USED IN THE NONLINEAR ANALYSIS.  USEFUL FOR RESTARTS.
+ SOLNL = T (TRUE) IF NONLINEAR SOLUTION EXISTS IN DATABASE.
+ DESIGN CYCLE = THE LAST DESIGN CYCLE (ONLY VALID IN OPTIMIZATION).
+ SENSITIVITY = SENSITIVITY MATRIX GENERATION FLAG.
+ 
+ No PARAM values were set in the Control File.
+ 
+1                                        * * * END OF JOB * * *
+ 
+ 
+ No Symbolic Replacement variables or values were specified.
+
