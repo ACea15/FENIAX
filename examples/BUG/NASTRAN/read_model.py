@@ -2,7 +2,7 @@ from pyNastran.bdf.bdf import BDF
 import pandas as pd
 from fem4inas.unastran.asetbuilder import BuildAsetModel
 from fem4inas.unastran.aero import GenDLMPanels
-import PostProcessing.panels as panels
+import fem4inas.aeromodal.panels as panels
 import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
 
 bdf = BDF()#debug=False)
