@@ -445,7 +445,7 @@
 
 ** Plot
 #+begin_src python :session py1 :results none :tangle py1.py
-  import PostProcessing.panels as panels
+  import fem4inas.aeromodal.panels as panels
   import pathlib
   grid = panels.caero2grid(components, dlm_panels.caero1)
   panels.build_gridmesh(grid, 'dlm_mesh')
