@@ -90,6 +90,9 @@ def vtkSol_op2Modes(bdf_file, op2_file, q, label="Sol",
     if write_path is None:
         write_path = bdfile.parent / bdfile.name.split('.')[0]
         write_path.mkdir(parents=True, exist_ok=True)
+    else:
+        write_path = pathlib.Path(write_path)
+        write_path.mkdir(parents=True, exist_ok=True)
     if write_ref:
         write_vtk = f"{write_path}/Ref.vtk"
         mbdf.write_bdf(f"{write_path}/Ref.bdf", size=size_card)
