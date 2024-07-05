@@ -1,7 +1,7 @@
 $EXECUTIVE CONTROL DECK
-assign OUTPUT4='./Qhh0_8-20.op4',formatted,UNIT=11
-assign OUTPUT4='./Qhj0_8-20.op4',formatted,UNIT=12
-assign INPUTT4='../SOL103/Phi20.op4',formatted,UNIT=90
+assign OUTPUT4='../data_out/Qhh0_8-50.op4',formatted,UNIT=11
+assign OUTPUT4='../data_out/Qhj0_8-50.op4',formatted,UNIT=12
+assign INPUTT4='../data_out/Phi50.op4',formatted,UNIT=90
 $assign INPUTT4= 'Phi1.op4',formatted,UNIT=91
 $NASTRAN NLINES=999999
 NASTRAN QUARTICDLM=1
@@ -118,7 +118,7 @@ PARAM   WTMASS  1.0
 PARAM   OPPHIB  1
 PARAM   OPPHIPA 1
 
-EIGRL,100,,,20
+EIGRL,100,,,50
 SPC1           1  123456  999079
 SPCADD         2       1
 INCLUDE ../base.bdf
