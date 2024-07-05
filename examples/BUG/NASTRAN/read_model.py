@@ -101,7 +101,7 @@ print(sorted(bdfaero.asets[0].ids))
 print(bdfaero.Nodes([2001, 2003, 2005, 2008, 2010] + list(range(2012, 2053, 2)))) # wing nodes
 
 aeros['RWing1']['set1x'] = [1004, 2001] 
-aeros['RWing2']['set1x'] = [2003, 2005, 2008, 20010] 
+aeros['RWing2']['set1x'] = [2003, 2005, 2008, 2010] 
 aeros['RWing3']['set1x'] = list(range(2012, 2030, 2))
 aeros['RWing4']['set1x'] = list(range(2030, 2044, 2))
 aeros['RWing5']['set1x'] = list(range(2044,2053, 2))
@@ -109,7 +109,7 @@ aeros['RHTP']['set1x'] = list(range(4000, 4014))
 
 dlm = GenDLMPanels.from_dict(aeros) # pass your dictionary with DLM model
 dlm.build_model()
-dlm.model.write_bdf("./aero1.bdf") # write the bdf file
+dlm.model.write_bdf("./dlm_model.bdf") # write the bdf file
 
 grid = panels.caero2grid(dlm.components, dlm.caero1) # build grid from dlm model
 panels.build_gridmesh(grid, 'dlm_mesh')  #  write paraview mesh

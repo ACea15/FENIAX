@@ -7,7 +7,7 @@
 
 * INPUT PARAMETERS
 #+NAME: python_parameters
-#+begin_src python :session py1 :var output="num_modes" :results none :tangle py1.py
+#+begin_src python :session py1 :var output="num_modes" :results value :tangle py1.py
   import numpy as np
   import fem4inas.unastran.aero as nasaero
   mach = 0.8
@@ -164,8 +164,8 @@
 ** Build modes in OP4
 #+begin_src python :session py1  :results none 
   #from fem4inas.utils import write_op4modes
-  import fem4inas.utils as femutils
-  eigs, modes = femutils.write_op4modes("./SOL103/run_cao",
+  import fem4inas.unastran.op4handler as op4handler
+  eigs, modes = op4handler.write_op4modes("./SOL103/run_cao",
                                num_modes,
                                op4_name=f"./data_out/Phi{num_modes}",
                                return_modes=True)
