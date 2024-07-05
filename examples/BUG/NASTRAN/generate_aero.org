@@ -2,7 +2,7 @@
 #+begin_src elisp :results none
   (setq org-confirm-babel-evaluate nil)
   (require 'org-tempo)
-  (pyvenv-workon "fem4inasdev")
+  (pyvenv-workon "fem4inas")
 #+end_src
 
 * INPUT PARAMETERS
@@ -39,6 +39,9 @@
   eval(output)
 #+end_src
 
+#+RESULTS: python_parameters
+: 50
+
 
 * Solution folder
 #+begin_src org :tangle "./data_out/README.org" :mkdirp yes :noweb yes
@@ -55,7 +58,7 @@
 #+end_src
 
 * Modal Solution
-#+begin_src org :tangle "./SOL103/run_caof.bdf" :mkdirp yes :noweb yes
+#+begin_src org :tangle "./run_caof.bdf" :mkdirp yes :noweb yes
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   $ EXECUTIVE CONTROL								      $
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -123,7 +126,7 @@
 #+begin_src python :session py1  :results none :tangle generate_aero.py
   #from fem4inas.utils import write_op4modes
   import fem4inas.unastran.op4handler as op4handler
-  eigs, modes = op4handler.write_op4modes("./SOL103/run_caof",
+  eigs, modes = op4handler.write_op4modes("./run_caof",
                                num_modes,
                                op4_name=f"./data_out/Phi{num_modes}",
                                return_modes=True)
@@ -171,11 +174,11 @@
 
 #+end_src
 
-#+begin_src org :noweb yes :tangle "./GAFs/run_cao.bdf" :mkdirp yes
+#+begin_src org :noweb yes :tangle "./run_cao.bdf" :mkdirp yes
   $EXECUTIVE CONTROL DECK
-  assign OUTPUT4='../data_out/Qhh<<python_parameters()>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=11
-  assign OUTPUT4='../data_out/Qhj<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=12
-  assign INPUTT4='../data_out/Phi<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=90
+  assign OUTPUT4='./data_out/Qhh<<python_parameters()>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=11
+  assign OUTPUT4='./data_out/Qhj<<python_parameters(output="Mach")>>-<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=12
+  assign INPUTT4='./data_out/Phi<<python_parameters(output="num_modes")>>.op4',formatted,UNIT=90
   $assign INPUTT4= 'Phi1.op4',formatted,UNIT=91
   $NASTRAN NLINES=999999
   NASTRAN QUARTICDLM=1
@@ -263,7 +266,7 @@
   TITLE=Sailplane #                                 
   $SPC=  100001                                                            
   $MPC=  100001
-  SPC = 2                  
+  SPC = 1                  
   METHOD = 100
   FMETHOD = <<python_parameters(output="flutter_id")>>
   $
@@ -298,9 +301,9 @@
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   
   SPC1    1       123456  1005
-  INCLUDE ../base.bdf
-  INCLUDE ../dlm_model.bdf
-  INCLUDE ./aero_flutter.bdf
+  INCLUDE ./base_model.bdf
+  INCLUDE ./dlm_model.bdf
+  INCLUDE ./gafs/aero_flutter.bdf
 
 #+end_src
 
@@ -308,9 +311,11 @@
   import pyNastran.op4.op4 as op4
   from scipy.io import savemat
 
-  Qhh = op4.read_op4(f"./data_out/Qhh{Mach}-{num_modes}.op4")
-  # savemat(f"./GAFs/matlab_Qhh{Mach}-{num_modes}.mat", dict(Qhh=Qhh['Q_HH'][1],
-  #                                                          reduced_freqs=reduced_freqs))
+  READ_Qhh = False
+  if READ_Qhh:
+      Qhh = op4.read_op4(f"./data_out/Qhh{Mach}-{num_modes}.op4")
+      # savemat(f"./GAFs/matlab_Qhh{Mach}-{num_modes}.mat", dict(Qhh=Qhh['Q_HH'][1],
+      #                                                          reduced_freqs=reduced_freqs))
 
 #+end_src
 ** COMMENT Roger RFA

@@ -1,0 +1,29 @@
+$pyNastran: version=msc
+$pyNastran: punch=True
+$pyNastran: encoding=utf-8
+$pyNastran: nnodes=0
+$pyNastran: nelements=0
+$FLUTTER
+AERO           0    200.      1.     1.5
+FLUTTER     9010      PK    9011    9012    9013       L
+$Density factors
+FLFACT      9011     1.5
+$Density factors
+FLFACT      9012      .8
+$Reduced_freq. or velocity factors
+FLFACT      9013    200.    220.
+$sampled Mach numbers and reduced freqs.
+MKAERO1       .8
+         .000001    .001.0213878.0417755.0621633 .082551.1029388.1233265
+MKAERO1       .8
+        .1437143 .164102.1844898.2048776.2252653.2456531.2660408.2864286
+MKAERO1       .8
+        .3068163.3272041.3475918.3679796.3883673.4087551.4291429.4495306
+MKAERO1       .8
+        .4699184.4903061.5106939.5310816.5514694.5718571.5922449.6126327
+MKAERO1       .8
+        .6330204.6534082.6737959.6941837.7145714.7349592.7553469.7757347
+MKAERO1       .8
+        .7961224.8165102 .836898.8572857.8776735.8980612 .918449.9388367
+MKAERO1       .8
+        .9592245.9796122      1.
