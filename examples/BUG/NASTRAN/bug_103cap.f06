@@ -26,13 +26,13 @@
                                               * *          SEP 11, 2018           * *
                                               * *                                 * *
                                               * *              Intel              * *
-                                              * *  MODEL Xeon/3133 (AY-WS414-4)   * *
+                                              * *  MODEL Xeon/3567 (AY-WS414-4)   * *
                                               * *     Windows 10 Pro 6.2 9200     * *
                                               * * Compiled for 8664 (SINGLE Mode) * *
                                               * *                                 * *
                                               * * * * * * * * * * * * * * * * * * * *
                                               * * * * * * * * * * * * * * * * * * * *
-1                                                                              JULY   3, 2024  MSC Nastran  9/11/18   PAGE     1
+1                                                                              JULY   5, 2024  MSC Nastran  9/11/18   PAGE     1
                                                                                                                                     
 0        N A S T R A N    F I L E    A N D    S Y S T E M    P A R A M E T E R    E C H O                                           
 0                                                                                                                                   
@@ -45,7 +45,7 @@
      $ EXECUTIVE CONTROL                                                             
      $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
      $ TIME 100 $(MAX EXECUTION TIME)                                                
-1                                                                              JULY   3, 2024  MSC Nastran  9/11/18   PAGE     2
+1                                                                              JULY   5, 2024  MSC Nastran  9/11/18   PAGE     2
                                                                                                                                     
 0        N A S T R A N    E X E C U T I V E    C O N T R O L    E C H O                                                             
 0                                                                                                                                   
@@ -53,7 +53,7 @@
                                                                                                                                     
      SOL 103                                                                                 
      CEND                                                                                    
-1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     3
+1   BUG MODEL #                                                                JULY   5, 2024  MSC Nastran  9/11/18   PAGE     3
                                                                                                                                     
 0                                                                                                                                   
 0                                        C A S E    C O N T R O L    E C H O                                                        
@@ -64,7 +64,7 @@
                   3      $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$        $$$$$$$$
                   4      TITLE=BUG MODEL #                                                                       
                   5      ECHO=NONE                                                                               
-                  6      SPC = 1                                                                                 
+                  6      $SPC = 1                                                                                
                   7      $SPCF = ALL                                                                             
                   8      $DISPLACEMENT=ALL                                                                       
                   9      METHOD = 100                                                                            
@@ -74,7 +74,7 @@
                  13      $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$        $$$$$$$$
                  14                                                                                              
                  15      BEGIN BULK                                                                              
-1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     4
+1   BUG MODEL #                                                                JULY   5, 2024  MSC Nastran  9/11/18   PAGE     4
                                                                                                                                     
 0                                                                                                                                   
                                               I N P U T   B U L K   D A T A   E C H O                                               
@@ -100,7 +100,7 @@
                               $END OF INCLUDE "./Parts/BUG_RHTP.bdf"
                               $INCLUDE "./Config/asets_clamped_reduced.bdf"
                               $END OF INCLUDE "./Config/asets_clamped_reduced.bdf"
-1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     5
+1   BUG MODEL #                                                                JULY   5, 2024  MSC Nastran  9/11/18   PAGE     5
                                                                                                                                     
 0                                                                                                                                   
                                         M O D E L   S U M M A R Y          BULK = 0
@@ -123,7 +123,6 @@
                                        PSHELL                    17146
                                          RBE2                       33
                                          RBE3                      105
-                                         SPC1                        1
 
  ^^^     
  ^^^ >>> IFP OPERATIONS COMPLETE <<< 
@@ -149,7 +148,7 @@
      (MAXIMUM SIZE OF FORTRAN RECORDS WRITTEN =       65538 WORDS.)
            (NUMBER OF FORTRAN RECORDS WRITTEN =          54 RECORDS.)
            (TOTAL DATA WRITTEN FOR DATA BLOCK =      532949 WORDS.)
-1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     6
+1   BUG MODEL #                                                                JULY   5, 2024  MSC Nastran  9/11/18   PAGE     6
                                                                                                                                     
 0                                                                                                                                   
 0                                                                                                                                   
@@ -157,12 +156,12 @@
                                                                                                                                     
  *** USER INFORMATION MESSAGE 4114 (OUTPX2)
      DATA BLOCK GEOM4X   WRITTEN ON FORTRAN UNIT  12 IN BINARY (LTLEND) FORMAT USING NDDL DESCRIPTION FOR GEOM4705, TRL =
-                    104                 0                 0                 0                64              2568                 0
+                    104                 0                 0                 0                 0              2568                 0
      NAME OF DATA BLOCK WRITTEN ON FORTRAN UNIT IS GEOM4   
         (MAXIMUM POSSIBLE FORTRAN RECORD SIZE =       65538 WORDS.)
      (MAXIMUM SIZE OF FORTRAN RECORDS WRITTEN =        1263 WORDS.)
-           (NUMBER OF FORTRAN RECORDS WRITTEN =          35 RECORDS.)
-           (TOTAL DATA WRITTEN FOR DATA BLOCK =        1709 WORDS.)
+           (NUMBER OF FORTRAN RECORDS WRITTEN =          30 RECORDS.)
+           (TOTAL DATA WRITTEN FOR DATA BLOCK =        1697 WORDS.)
  *** USER INFORMATION MESSAGE 4114 (OUTPX2)
      DATA BLOCK EPTX     WRITTEN ON FORTRAN UNIT  12 IN BINARY (LTLEND) FORMAT USING NDDL DESCRIPTION FOR EPT01, TRL =
                     105                 0              4608                 0              1024                 0                 0
@@ -187,7 +186,7 @@
      (MAXIMUM SIZE OF FORTRAN RECORDS WRITTEN =          30 WORDS.)
            (NUMBER OF FORTRAN RECORDS WRITTEN =          20 RECORDS.)
            (TOTAL DATA WRITTEN FOR DATA BLOCK =          61 WORDS.)
-1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     7
+1   BUG MODEL #                                                                JULY   5, 2024  MSC Nastran  9/11/18   PAGE     7
                                                                                                                                     
 0                                                                                                                                   
  *** USER INFORMATION MESSAGE 7310 (VECPRN)
@@ -206,13 +205,13 @@
              TOTALS  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00  0.000000E+00
   
  *** SYSTEM INFORMATION MESSAGE 4159 (DFMSA)
-     THE DECOMPOSITION OF KOO      YIELDS A MAXIMUM MATRIX-TO-FACTOR-DIAGONAL RATIO OF    1.283057E+02
+     THE DECOMPOSITION OF KOO      YIELDS A MAXIMUM MATRIX-TO-FACTOR-DIAGONAL RATIO OF    9.678002E+01
  *** USER INFORMATION MESSAGE 4110 (OUTPX2)
                                  END-OF-DATA SIMULATION ON FORTRAN UNIT 12
                                  (MAXIMUM SIZE OF FORTRAN RECORDS WRITTEN =      1 WORDS.)
                                        (NUMBER OF FORTRAN RECORDS WRITTEN =      1 RECORDS.)
                                        (TOTAL DATA WRITTEN FOR EOF MARKER =      1 WORDS.)
-1   BUG MODEL #                                                                JULY   3, 2024  MSC Nastran  9/11/18   PAGE     8
+1   BUG MODEL #                                                                JULY   5, 2024  MSC Nastran  9/11/18   PAGE     8
                                                                                                                                     
 0                                                                                                                                   
  * * * *  D B D I C T   P R I N T  * * * *      SUBDMAP = PRTSUM  ,  DMAP STATEMENT NO.     71

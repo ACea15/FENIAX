@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 
-def read_pch(fname):
+def read_pch(fname,sparse=False):
   f=open(fname,'r')
   lines=f.read().splitlines()
   f.close()
@@ -55,6 +55,9 @@ def read_pch(fname):
   indice_m=np.concatenate([indice_m_,indice_m_[msk_nondiag_m,::-1]],axis=0)
   data_m=np.concatenate([data_m,data_m[msk_nondiag_m]],axis=0)
 
-  Kaa=sp.sparse.coo_matrix((data_k,(indice_k[:,0],indice_k[:,1])),shape=mat_shape).toarray()
-  Maa=sp.sparse.coo_matrix((data_m,(indice_m[:,0],indice_m[:,1])),shape=mat_shape).toarray()
+  Kaa=sp.sparse.coo_matrix((data_k,(indice_k[:,0],indice_k[:,1])),shape=mat_shape)
+  Maa=sp.sparse.coo_matrix((data_m,(indice_m[:,0],indice_m[:,1])),shape=mat_shape)
+  if not sparse:
+    Kaa=Kaa.toarray()
+    Maa=Maa.toarray()
   return nid_list,Kaa,Maa

@@ -9,7 +9,7 @@ MEM=65370MB      $
 MACH='Intel'
 OPER='Windows 10 Pro'
 OSV='6.2 9200'
-MODEL='Xeon/3133 (AY-WS414-4)'
+MODEL='Xeon/3567 (AY-WS414-4)'
 NPROC='36'
 CONFIG=6
 NPROC=36
@@ -19,8 +19,8 @@ symbol=LM_NO_SNMP=1 $(c:/msc.software/msc_nastran/20182/conf/nast20182.rcf[10])
 symbol=MKL_INTERFACE_LAYER=ILP64 $(c:/msc.software/msc_nastran/20182/conf/nast20182.rcf[1])
 symbol=SSSALTERDIR='c:/msc.software/msc_nastran/20182/msc20182/nast/sssalter' $(program default)
 symbol=TPLDIR='c:/msc.software/msc_nastran/20182/msc20182/nast/tpl' $(program default)
-SDIR='c:/scratch/bug_103cap.T15972_9'
-DBS='c:/scratch/bug_103cap.T15972_9'
+SDIR='c:/scratch/bug_103cap.T29400_4'
+DBS='c:/scratch/bug_103cap.T29400_4'
 SCR='yes'
 SMEM=100
 BPOOL=16342.5MB
@@ -49,9 +49,9 @@ FPE:         yes
 ----------------------------------------------------------------- 
 Current resource limits:
  Physical memory:                   130740 MB
- Physical memory available:          83807 MB
+ Physical memory available:          82089 MB
  Paging file size:                  152134 MB
- Paging file size available:         97079 MB
+ Paging file size available:         98263 MB
  Virtual memory:                 134217727 MB
  Virtual memory available:       134212972 MB
 ----------------------------------------------------------------- 
@@ -59,8 +59,8 @@ System configuration:
  Hostname:         AY-WS414-4.t.u-tokyo.ac.jp
  Architecture:     win64i8
  Platform:         Intel Windows 10 Pro 6.2 9200 (Windows Compute Cluster)
- Model:            Xeon/2614
- Clock freq.:      2615 MHz
+ Model:            Xeon/2350
+ Clock freq.:      2350 MHz
  Number of CPUs:   36
  Executable:       standard
  Raw model ID:     6
@@ -74,7 +74,7 @@ System configuration:
                    <ccs_cmd> (Windows CCS nodes)
 ----------------------------------------------------------------- 
 MSC Nastran started  c:\msc.software\msc_nastran\20182\msc20182\win64i8\mscdate 
- 22:47:13  Beginning Analysis
+ 19:16:05  Beginning Analysis
 SCA Kernel 20.0.520419 successfully initialized
 BLAS/LAPACK .dll "c:\msc.software\msc_nastran\20182\msc20182\win64i8\libimalloc.dll" has been loaded.
 BLAS/LAPACK .dll "c:\msc.software\msc_nastran\20182\msc20182\win64i8\mkl_core.dll" has been loaded.
@@ -82,9 +82,9 @@ BLAS/LAPACK .dll "c:\msc.software\msc_nastran\20182\msc20182\win64i8\mkl_intel_t
 BLAS/LAPACK .dll "c:\msc.software\msc_nastran\20182\msc20182\win64i8\mkl_rt.dll" has been loaded.
 BLAS/LAPACK .dll "c:\msc.software\msc_nastran\20182\msc20182\win64i8\MSCblas.dll" has been loaded.
 
- 22:47:14  MSC Authorization Information - System Attributes (1004, 0)
- 22:47:14  -----------------------------------------------------------
-  Date:          Wed Jul  3 22:47:13 2024
+ 19:16:06  MSC Authorization Information - System Attributes (1004, 0)
+ 19:16:06  -----------------------------------------------------------
+  Date:          Fri Jul  5 19:16:06 2024
   MSC Id:        00d861151b9b (ethernet) (Intel)
   Hostname:      AY-WS414-4 (user nakagawa, display EISUKE)
   License files: 27500@10.8.158.50
@@ -103,55 +103,55 @@ BLAS/LAPACK .dll "c:\msc.software\msc_nastran\20182\msc20182\win64i8\MSCblas.dll
   * * * * * * * * * * * * * * * * * * * *
   * * * * * * * * * * * * * * * * * * * *
 
- 22:47:14  MSC Authorization Information - Checkout Successful (1016, 0)
- 22:47:14  -------------------------------------------------------------
- 22:47:14  Acquired 1 license for MSC Nastran from license server on host 10.8.158.50
+ 19:16:06  MSC Authorization Information - Checkout Successful (1016, 0)
+ 19:16:06  -------------------------------------------------------------
+ 19:16:06  Acquired 1 license for MSC Nastran from license server on host 10.8.158.50
 
 
 Beginning bulk data processing using the IFPStar component.
 For more information on IFPStar, please see KB article KB8019200
 on our support pages, at http://simcompanion.mscsoftware.com.
 
- 22:47:14  Reading INCLUDE file "./Parts/BUG_Fuselage_VTP.bdf"
- 22:47:14  187 records read from INCLUDE file "./Parts/BUG_Fuselage_VTP.bdf"
- 22:47:14  Reading INCLUDE file "./Parts/BUG_WING_LWBOX.bdf"
- 22:47:14  50075 records read from INCLUDE file "./Parts/BUG_WING_LWBOX.bdf"
- 22:47:14  Reading INCLUDE file "./Parts/BUG_WING_RWBOX.bdf"
- 22:47:14  50112 records read from INCLUDE file "./Parts/BUG_WING_RWBOX.bdf"
- 22:47:14  Reading INCLUDE file "./Parts/fuselage_LWBOX_rbe.bdf"
- 22:47:14  5 records read from INCLUDE file "./Parts/fuselage_LWBOX_rbe.bdf"
- 22:47:14  Reading INCLUDE file "./Parts/fuselage_RWBOX_rbe.bdf"
- 22:47:14  5 records read from INCLUDE file "./Parts/fuselage_RWBOX_rbe.bdf"
- 22:47:14  Reading INCLUDE file "./Parts/MTOW_FUEL_LWBOX.bdf"
- 22:47:14  69 records read from INCLUDE file "./Parts/MTOW_FUEL_LWBOX.bdf"
- 22:47:14  Reading INCLUDE file "./Parts/MTOW_FUEL_RWBOXmod.bdf"
- 22:47:14  69 records read from INCLUDE file "./Parts/MTOW_FUEL_RWBOXmod.bdf"
- 22:47:14  Reading INCLUDE file "./Parts/BUG_LHTP.bdf"
- 22:47:14  135 records read from INCLUDE file "./Parts/BUG_LHTP.bdf"
- 22:47:14  Reading INCLUDE file "./Parts/BUG_RHTP.bdf"
- 22:47:14  142 records read from INCLUDE file "./Parts/BUG_RHTP.bdf"
- 22:47:14  Reading INCLUDE file "./Config/asets_clamped_reduced.bdf"
- 22:47:14  15 records read from INCLUDE file "./Config/asets_clamped_reduced.bdf"
- 22:47:14  67 records read from JID file "./bug_103cap.bdf"
- 22:47:14  A total of 100881 records were read from 11 files.
+ 19:16:07  Reading INCLUDE file "./Parts/BUG_Fuselage_VTP.bdf"
+ 19:16:07  187 records read from INCLUDE file "./Parts/BUG_Fuselage_VTP.bdf"
+ 19:16:07  Reading INCLUDE file "./Parts/BUG_WING_LWBOX.bdf"
+ 19:16:07  50075 records read from INCLUDE file "./Parts/BUG_WING_LWBOX.bdf"
+ 19:16:07  Reading INCLUDE file "./Parts/BUG_WING_RWBOX.bdf"
+ 19:16:07  50112 records read from INCLUDE file "./Parts/BUG_WING_RWBOX.bdf"
+ 19:16:07  Reading INCLUDE file "./Parts/fuselage_LWBOX_rbe.bdf"
+ 19:16:07  5 records read from INCLUDE file "./Parts/fuselage_LWBOX_rbe.bdf"
+ 19:16:07  Reading INCLUDE file "./Parts/fuselage_RWBOX_rbe.bdf"
+ 19:16:07  5 records read from INCLUDE file "./Parts/fuselage_RWBOX_rbe.bdf"
+ 19:16:07  Reading INCLUDE file "./Parts/MTOW_FUEL_LWBOX.bdf"
+ 19:16:07  69 records read from INCLUDE file "./Parts/MTOW_FUEL_LWBOX.bdf"
+ 19:16:07  Reading INCLUDE file "./Parts/MTOW_FUEL_RWBOXmod.bdf"
+ 19:16:07  69 records read from INCLUDE file "./Parts/MTOW_FUEL_RWBOXmod.bdf"
+ 19:16:07  Reading INCLUDE file "./Parts/BUG_LHTP.bdf"
+ 19:16:07  135 records read from INCLUDE file "./Parts/BUG_LHTP.bdf"
+ 19:16:07  Reading INCLUDE file "./Parts/BUG_RHTP.bdf"
+ 19:16:07  142 records read from INCLUDE file "./Parts/BUG_RHTP.bdf"
+ 19:16:07  Reading INCLUDE file "./Config/asets_clamped_reduced.bdf"
+ 19:16:07  15 records read from INCLUDE file "./Config/asets_clamped_reduced.bdf"
+ 19:16:07  67 records read from JID file "./bug_103cap.bdf"
+ 19:16:07  A total of 100881 records were read from 11 files.
 
 Processing of bulk data entries is complete.
 
- 22:47:22  Analysis started.
- 22:47:22  Geometry access/verification to CAD part initiated (if needed).
- 22:47:22  Geometry access/verification to CAD part successfully completed (if needed).
- 22:47:22  Finite element model generation started.
- 22:47:23  Finite element model generated 98148 degrees of freedom.
- 22:47:23  Finite element model generation successfully completed.
- 22:47:23  Application of Loads and Boundary Conditions to the finite element model started.
- 22:47:23  Application of Loads and Boundary Conditions to the finite element model successfully completed.
- 22:47:28  Normal modes analysis completed.
- 22:47:28  22 records read from JID file "./bug_103cap.bdf"
- 22:47:28  NSEXIT: EXIT(0)
- 22:47:28  Analysis complete  0
-Real:       16.986 seconds ( 0:00:16.986)
-User:        9.718 seconds ( 0:00:09.718)
-Sys:         6.812 seconds ( 0:00:06.812)
+ 19:16:17  Analysis started.
+ 19:16:17  Geometry access/verification to CAD part initiated (if needed).
+ 19:16:17  Geometry access/verification to CAD part successfully completed (if needed).
+ 19:16:17  Finite element model generation started.
+ 19:16:18  Finite element model generated 98148 degrees of freedom.
+ 19:16:18  Finite element model generation successfully completed.
+ 19:16:18  Application of Loads and Boundary Conditions to the finite element model started.
+ 19:16:18  Application of Loads and Boundary Conditions to the finite element model successfully completed.
+ 19:16:24  Normal modes analysis completed.
+ 19:16:25  22 records read from JID file "./bug_103cap.bdf"
+ 19:16:25  NSEXIT: EXIT(0)
+ 19:16:25  Analysis complete  0
+Real:       21.962 seconds ( 0:00:21.962)
+User:       11.390 seconds ( 0:00:11.390)
+Sys:         9.000 seconds ( 0:00:09.000)
  ==================================================
  OS:              6.2
  OEM ID:         9
@@ -167,10 +167,10 @@ Sys:         6.812 seconds ( 0:00:06.812)
  ==================================================
  Time Summary                 CPU       Wall   ( Time in Seconds )
  Input File                   1.9          2 
- Solver                       1.2          1 
- Miscellaneous               11.2         11 
+ Solver                       1.4          2 
+ Miscellaneous               14.7         14 
  -------------------------------------------
- Total:                      14.3         14 
+ Total:                      18.0         18 
  ==================================================
  Consider using SOLVE=AUTO if you have not.
  =====================================================
