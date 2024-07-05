@@ -1,0 +1,70 @@
+1
+ 
+ 
+ 
+ 
+                      Warning: This computer program is protected by copyright law and international treaties.       
+                  Unauthorized use, reproduction or distribution of this computer program, or any portion of it, may 
+                                          result in severe civil and criminal penalties.                             
+                         Copyright (C) 2018 MSC Software Corporation and its licensors. All rights reserved.         
+ 
+ 
+                                              * * * * * * * * * * * * * * * * * * * *
+                                              * * * * * * * * * * * * * * * * * * * *
+                                              * *                                 * *
+                                              * *           MSC Software          * *
+                                              * *               CORP              * *
+                                              * *                                 * *
+                                              * *      M S C   N a s t r a n      * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *     Version 2018.2.1-CL598405   * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *                                 * *
+                                              * *          SEP 11, 2018           * *
+                                              * *                                 * *
+                                              * *              Intel              * *
+                                              * *  MODEL Xeon/3310 (AY-WS414-4)   * *
+                                              * *     Windows 10 Pro 6.2 9200     * *
+                                              * * Compiled for 8664 (SINGLE Mode) * *
+                                              * *                                 * *
+                                              * * * * * * * * * * * * * * * * * * * *
+                                              * * * * * * * * * * * * * * * * * * * *
+1                                                                              JULY   5, 2024  MSC Nastran  9/11/18   PAGE     1
+                                                                                                                                    
+0        N A S T R A N    F I L E    A N D    S Y S T E M    P A R A M E T E R    E C H O                                           
+0                                                                                                                                   
+                                                                                                                                    
+                                                                                                                                    
+     $ SYSFIELD=SCR*(RAW=YES,BUFFIO=YES,WNUM=16,WSIZE=16MB) $(C:/MSC.SOFTWARE/MSC_NAS
+     $ SYSFIELD=DBALL(RAW=YES,BUFFIO=YES,WNUM=16,WSIZE=16MB) $(C:/MSC.SOFTWARE/MSC_NA
+     NASTRAN BUFFSIZE=32769 $(C:/MSC.SOFTWARE/MSC_NASTRAN/20182/CONF/NAST20182.RCF[6]
+     $EXECUTIVE CONTROL DECK                                                         
+     ASSIGN OUTPUT4='../data_out/Qhh50-50.op4',FORMATTED,UNIT=11                     
+     ASSIGN OUTPUT4='../data_out/Qhj0_8-50.op4',FORMATTED,UNIT=12                    
+     ASSIGN INPUTT4='../data_out/Phi50.op4',FORMATTED,UNIT=90                        
+     $ASSIGN INPUTT4= 'PHI1.OP4',FORMATTED,UNIT=91                                   
+     $NASTRAN NLINES=999999                                                          
+     NASTRAN QUARTICDLM=1                                                            
+  *** USER FATAL MESSAGE 1019 (OPNPFL)                                                                                               
+      FORTRAN UNIT OPEN ERROR                                                                                                        
+      IOSTAT =    29, No error (errno=0)                                                                                             
+      LOGICAL = OUTPUT4  FILE = ../data_out/qhh50-50.op4                                                                             
+  *** USER FATAL MESSAGE 1019 (OPNPFL)                                                                                               
+      FORTRAN UNIT OPEN ERROR                                                                                                        
+      IOSTAT =    29, No error (errno=0)                                                                                             
+      LOGICAL = OUTPUT4  FILE = ../data_out/qhj0_8-50.op4                                                                            
+  *** USER FATAL MESSAGE 1019 (OPNPFL)                                                                                               
+      FORTRAN UNIT OPEN ERROR                                                                                                        
+      IOSTAT =     3, No error (errno=0)                                                                                             
+      LOGICAL = INPUTT4  FILE = ../data_out/phi50.op4                                                                                
+ *** SYSTEM INFORMATION MESSAGE 480 (XSEMBT)
+     JOB TERMINATED DUE TO ABOVE ERROR(S) IN THE FILE MANAGEMENT SECTION.
+0FATAL ERROR
+1                                        * * * END OF JOB * * *
+ 
+ 
+No Symbolic Replacement variables or values were specified.
+

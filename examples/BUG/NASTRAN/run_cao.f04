@@ -1,0 +1,104 @@
+1
+ MACHINE                          MODEL                 OPERATING SYSTEM       MSC Nastran       BUILD DATE         RUN DATE
+ Intel                            Xeon/3310 (AY-WS414-  Windows 10 Pro 6.2 920     i8 V2018.2.1  SEP 11, 2018       JUL  5, 2024
+
+ 
+                               ===    M S C   N a s t r a n           E X E C U T I O N   S U M M A R Y    ===
+
+ Day_Time  Elapsed     I/O_Mb      Del_Mb     CPU_Sec    Del_CPU    Subroutine
+ 
+ 20:35:10     0:00        0.0         0.0        -0.0       -0.0    SEMTRN   BGN
+ 20:35:10     0:00        0.0         0.0        -0.0        0.0    SEMTRN   END
+ 20:35:10     0:00        0.0         0.0        -0.0        0.0    DBINIT   BGN
+      ** CURRENT PROJECT ID = ' "BLANK" '  ** CURRENT VERSION ID =          1
+
+     S U M M A R Y   O F   F I L E   A S S I G N M E N T   F O R   T H E   P R I M A R Y   D A T A B A S E     ( DBSNO   1, V2018.1 )
+
+    ASSIGNED PHYSICAL FILE NAME (/ORIGINAL)      LOGICAL NAME     DBSET        STATUS    BUFFSIZE     CLUSTER SIZE      TIME STAMP
+    ---------------------------------------      ------------     -----        ------    --------     ------------     ------------
+    c:/scratch/run_cao.T10924_5.MASTER           MASTER           MASTER       NEW          32769           1          240705203510
+    c:/scratch/run_cao.T10924_5.DBALL            DBALL            DBALL        NEW          32769           1          240705203511
+    c:/scratch/run_cao.T10924_5.OBJSCR           OBJSCR           OBJSCR       NEW           8193           1          240705203512
+               **** MEM FILE ****                * N/A *          SCRATCH 
+    c:/scratch/run_cao.T10924_5.SCRATCH          SCRATCH          SCRATCH      NEW          32769           1          240705203513
+    c:/scratch/run_cao.T10924_5.SCR300           SCR300           SCRATCH      NEW          32769           1          240705203514
+ 20:35:10     0:00        4.0         4.0         0.0        0.0    DBINIT   END
+
+
+ *** PARALLEL PROCESSES CPU INFORMATION (SECONDS) ***
+
+  MODULE     PROCESS-1     PROCESS-2     PROCESS-3     PROCESS-4     PROCESS-5     PROCESS-6     PROCESS-7     PROCESS-8
+  --------   -----------   -----------   -----------   -----------   -----------   -----------   -----------   -----------
+  ========   ===========   ===========   ===========   ===========   ===========   ===========   ===========   ===========
+  MODULE     PROCESS- 9    PROCESS-10    PROCESS-11    PROCESS-12    PROCESS-13    PROCESS-14    PROCESS-15    PROCESS-16
+  --------   -----------   -----------   -----------   -----------   -----------   -----------   -----------   -----------
+  ========   ===========   ===========   ===========   ===========   ===========   ===========   ===========   ===========
+  MODULE     PROCESS-17    PROCESS-18    PROCESS-19    PROCESS-20    PROCESS-21    PROCESS-22    PROCESS-23    PROCESS-24
+  --------   -----------   -----------   -----------   -----------   -----------   -----------   -----------   -----------
+  ========   ===========   ===========   ===========   ===========   ===========   ===========   ===========   ===========
+  MODULE     PROCESS-25    PROCESS-26    PROCESS-27    PROCESS-28    PROCESS-29    PROCESS-30    PROCESS-31    PROCESS-32
+  --------   -----------   -----------   -----------   -----------   -----------   -----------   -----------   -----------
+  ========   ===========   ===========   ===========   ===========   ===========   ===========   ===========   ===========
+  MODULE     PROCESS-33    PROCESS-34    PROCESS-35    PROCESS-36    PROCESS-37    PROCESS-38    PROCESS-39    PROCESS-40
+  --------   -----------   -----------   -----------   -----------   -----------   -----------   -----------   -----------
+  ========   ===========   ===========   ===========   ===========   ===========   ===========   ===========   ===========
+  
+ *** SYSTEM WARNING MESSAGE 6299 (PARCPU)
+     NO PARALLEL PROCESS CREATED
+
+*** SUMMARY OF COMPONENT SERVICES USAGE ACTIVITY ***
+
+           SERVICE                         LOAD  IMPLEMENTATION    GENERIC             COMPONENT  
+            NAME                           COUNT    LANGUAGE     LIBRARY NAME         LIBRARY NAME 
+
+SCA.Framework.ErrorPolicyManager             1       C++         SCAKernel            SCAKernel                                 
+SCA.Framework.Logger                         1       C++         SCAKernel            SCAKernel                                 
+SCA.Framework.MessageDispatcher              1       C++         SCA/...spatcher_20_0 c:/m...amework/MessageDispatcher_20_0.dll 
+SCA.Framework.ResourceManager                1       C++         SCAKernel            SCAKernel                                 
+SCA.Framework.SecurityManager                1       C++         SCAKernel            SCAKernel                                 
+SCA.Framework.ServiceManager                 9       C++         SCAKernel            SCAKernel                                 
+SCA.Framework.SharedLibraryManager           4       C++         SCAKernel            SCAKernel                                 
+SCA.Framework.TextTranslation                3       C++         SCAKernel            SCAKernel                                 
+SCA.MDSolver.System.PrintServer              2       C++         SCA/...ntServer_20_0 c:/m...Solver/System/PrintServer_20_0.dll 
+
+ *** TOTAL MEMORY AND DISK USAGE STATISTICS ***
+
+ +---------- SPARSE SOLUTION MODULES -----------+         +------------- MAXIMUM DISK USAGE -------------+
+    HIWATER               SUB_DMAP        DMAP               HIWATER               SUB_DMAP        DMAP
+    (WORDS)       DAY_TIME     NAME      MODULE                 (MB)   DAY_TIME      NAME         MODULE
+              0   20:35:10    PREFACE     0  PREFACE           2.250   20:35:10    PREFACE     0  PREFACE 
+
+
+ *** DATABASE USAGE STATISTICS ***
+ 
+ +---------------- LOGICAL DBSETS ----------------+   +------------------------------ DBSET FILES -----------------------------+
+  DBSET     ALLOCATED  BLOCKSIZE       USED   USED     FILE      ALLOCATED  ALLOCATED    HIWATER       HIWATER  I/O TRANSFERRED
+             (BLOCKS)    (WORDS)   (BLOCKS)      %                (BLOCKS)       (GB)   (BLOCKS)          (GB)             (GB)
+ 
+  MASTER        25000      32768          7   0.03     MASTER        25000       6.10          7         0.002            0.001
+  DBALL      20000000      32768         22   0.00     DBALL      20000000    4882.81         22         0.005            0.001
+  OBJSCR        25000       8192          4   0.02     OBJSCR        25000       1.53          4         0.000            0.000
+  SCRATCH    40000100      32768         43   0.00    (MEMFILE         100       0.02         41         0.010            0.000)
+                                                       SCRATCH    20000000    4882.81          1         0.000            0.000
+                                                       SCR300     20000000    4882.81          1         0.000            0.000
+                                                                                                                 ==============
+                                                                                                          TOTAL:          0.003
+ 
+ *** BUFFER POOL AND SCRATCH 300 USAGE STATISTICS ***
+ 
+ +----------------- BUFFER POOL -----------------+      +-------------------------- SCRATCH 300 --------------------------+ 
+   OPTION        BLOCKS      BLOCKS      BLOCKS           OPTION    HIWATER               SUB_DMAP        DMAP     OPN/CLS
+  SELECTED     ALLOCATED     REUSED     RELEASED         SELECTED  (BLOCKS)   DAY_TIME      NAME         MODULE    COUNTER
+   BPOOL4         65367          98           0              2           1    20:35:10    PREFACE     0  PREFACE       0
+
+
+ *** SUMMARY OF PHYSICAL FILE I/O ACTIVITY ***
+
+ ASSIGNED PHYSICAL FILE NAME                                   RECL (BYTES)  READ/WRITE COUNTS   WSIZE  (WNUM)  MAP-I/O CNT
+ ------------------------------------------------------------  -----------  -------------------  -------------  -----------
+ c:/scratch/run_cao.T10924_5.SCRATCH                                262144          0/1               1MB ( 4)            1 (M)
+ c:/scratch/run_cao.T10924_5.OBJSCR                                  65536          2/4             256KB ( 4)            1 (M)
+ c:/scratch/run_cao.T10924_5.MASTER                                 262144          2/3               1MB ( 4)            1 (M)
+ c:/scratch/run_cao.T10924_5.DBALL                                  262144          2/3               1MB ( 4)            1 (M)
+ c:/scratch/run_cao.T10924_5.SCR300                                 262144          0/1               1MB ( 4)            1 (M)
+ 
