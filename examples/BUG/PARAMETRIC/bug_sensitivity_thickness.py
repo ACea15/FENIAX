@@ -15,6 +15,7 @@ class NastranDesignModel_thickness(NastranDesignModel):
     """
     param : float (nparam,)
       values of the design parameters at control points
+    fname : output Nastran model
     coord : float (nparam,2)
       coordinates of the control points
     """

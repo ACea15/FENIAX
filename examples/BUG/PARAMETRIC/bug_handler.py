@@ -488,15 +488,4 @@ def write_shell_material(gmat,mids,fname,bdf_name):
     bdf.Materials([mid])[0].G33=g33[i]
   bdf.write_bdf(fname)
 
-def parallel_execute_nastran(input_dir,output_dir,dbf_name,n_job,n_parallel=5,max_memory=0.8):
-  fname_template=input_dir+dbf_name+'{}.bdf'
-  max_memory_job=max_memory/n_parallel
-  cmd_list=[]
-  for i in range(n_job):
-    fname=fname_template.format(i)
-    command=f'{NASTRAN_LOC} {fname} out={output_dir} memorymax={max_memory_job} old=no news=no'
-    cmd_list.append(f'{command} > nul 2>&1')
-  
-  with concurrent.futures.ThreadPoolExecutor(max_workers=n_parallel) as executor:
-    executor.map(os.system, cmd_list)
     
