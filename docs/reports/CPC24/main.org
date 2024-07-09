@@ -20,7 +20,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
         '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
           "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "fem4inasdev")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results

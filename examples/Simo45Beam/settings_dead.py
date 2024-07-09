@@ -35,9 +35,10 @@ inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
 inp.systems.sett.s1.xloads.dead_forces = True
 inp.systems.sett.s1.xloads.dead_points = [[15, 2]]
 inp.systems.sett.s1.xloads.x = list(range(11))
-inp.systems.sett.s1.xloads.dead_interpolation = [jnp.arange(0,3300,300)]
+inp.systems.sett.s1.xloads.dead_interpolation = [list(range(0,3300,300))]
 inp.systems.sett.s1.t = list(range(1,11))
 config =  configuration.Config(inp)
+
 sol = fem4inas.fem4inas_main.main(input_obj=config)
 
 
