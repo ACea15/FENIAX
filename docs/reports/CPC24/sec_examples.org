@@ -797,64 +797,26 @@ The computations in this section were carried out on a single CPU with a i7-6700
 The static equilibrium of the aircraft under prescribed loads is first studied with follower loads normal to the wing applied at the tip of each wing. The response for an increasing load stepping of 200, 300, 400, 480 and 530 KN is computed. Nonlinear static simulations on the original full model (before condensation) are also carried out in MSC Nastran and are included. The interpolation elements in Nastran are used to output the displacements at the condensation nodes for direct comparison with the NMROM results.
 Geometric nonlinearities are better illustrated by representing a sectional view of the wing as in Fig. [[fig:SPWingsection]], where deformations in the z-direction versus the metric $S = \sqrt{x^2+y^2}$ are shown. MSC Nastran linear solutions (Solution 101) are also included to appreciate more clearly the shortening and follower force effects in the nonlinear computations.
 
-\begin{minted}[
-gobble=2,
-frame=single,
-linenos
-]{yaml}
-xloads:
-  # Include point follower forces
-  follower_forces: true
-  # x-axis vector for interpolation
-  x:
-  - 0
-  - 1
-  - 2
-  - 3
-  - 4
-  - 5
-  - 6
-  follower_points:
-  - - 25
-    - 2
-  - - 48
-    - 2
-  dead_points:
-  # (Linear) interpolation of the follower forces on t         [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]
-  follower_interpolation:
-  - - 0.0
-    - 200000.0
-    - 250000.0
-    - 300000.0
-    - 400000.0
-    - 480000.0
-    - 530000.0
-  - - 0.0
-    - 200000.0
-    - 250000.0
-    - 300000.0
-    - 400000.0
-    - 480000.0
-    - 530000.0
-# Time vector
-t:
-- 1
-- 2
-- 3
-- 4
-- 5
-- 6
-# Library solving our system of equations
-solver_library: diffrax
-# Name for the solver of the previously defined library
-solver_function: newton_raphson
-# Settings for the solver
-solver_settings:
-rtol: 1e-06
-atol: 1e-06
-max_steps: 50
-norm: linalg_norm
-kappa: 0.01
+\begin{minted}{python}
+inp.fem.folder = "./FEM/"
+inp.fem.num_modes = 50
+inp.simulation.typeof = "single"
+inp.systems.sett.s1.solution = "static"
+inp.systems.sett.s1.solver_library = "diffrax"
+inp.systems.sett.s1.solver_function = "newton_raphson"
+inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
+                                           atol=1e-6,
+                                           max_steps=50,
+                                           norm="linalg_norm")
+inp.systems.sett.s1.xloads.follower_forces = True
+inp.systems.sett.s1.xloads.follower_points = [[25, 2], [48, 2]]
+inp.systems.sett.s1.xloads.x = [0, 1, 2, 3, 4, 5, 6]
+inp.systems.sett.s1.xloads.follower_interpolation =
+[[0., 2e5, 2.5e5, 3.e5, 4.e5, 4.8e5, 5.3e5],
+[0., 2e5, 2.5e5, 3.e5, 4.e5, 4.8e5, 5.3e5]]
+inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]
+config =  configuration.Config(inp)
+sol = fem4inas.fem4inas_main.main(input_obj=config)
 \end{minted}
 
 
@@ -996,65 +958,24 @@ The increase in the internal loading, $f(\alpha)$, above the linear correlation 
 The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
 Fig. [[fig:xrf1_modalshapes]] shows the reference FE model with three modal shapes. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. The aerodynamic model contains \(\sim 1,500\) aerodynamic panels. The simulations are carried out with a modal resolution of 70 modes and a time step in the Runge-Kutta solver of 0.005. 
 
-\begin{minted}[
-    gobble=2,
-    frame=single,
-    linenos
-  ]{yaml}
-  Ka_name: Ka.npy
-  # Condensed mass matrix
-  Ma_name: Ma.npy
-  # Number of modes in the solution
-  num_modes: 50
-  # Calculation of eigenvalues/vectors
-  eig_type: input_memory
-  # cut-off frequency such that eigenvalues smaller than this are set to 0
-  eig_cutoff: 0.01
-  # Tolerance for building the local frames
-  Cab_xtol: 0.0001
-  # System name
-  name: s1
-  # Type of solution to be solved
-  solution: dynamic
-  # The simulation goal of this system
-  target: Level
-  # Boundary condition first node
-  bc1: clamped
-  # Save results of the run system
-  save: true
-  xloads:
-    # Include gravity in the analysis
-    gravity_forces: true
-    # Include aerodynamic forces
-    modalaero_forces: true
-    # gravity force [m/s]
-    gravity: 9.807
-    # gravity vector
-    gravity_vect:
-    - 0
-    - 0
-    - -1
-  aero:
-    u_inf: 200.0
-    rho_inf: 1.225
-    c_ref: 7.271
-    approx: Roger
-    num_poles: 8
-    gust_profile: mc
-    gust:
-      intensity: 28.1464623124
-      step: 1.0
-      length: 67.0
-      shift: 0.0
-  # Library solving our system of equations
-  solver_library: diffrax
-  # Name for the solver of the previously defined library
-  solver_function: ode
-  # Settings for the solver
-  solver_settings:
-    solver_name: Dopri5
+\begin{minted}{python}
+inp.fem.folder = "./FEM/"
+inp.fem.num_modes = 70
+inp.systems.sett.s1.solution = "dynamic"
+inp.systems.sett.s1.t1 = 7.5
+inp.systems.sett.s1.tn = 2001
+inp.systems.sett.s1.solver_library = "runge_kutta"
+inp.systems.sett.s1.solver_function = "ode"
+inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
+inp.systems.sett.s1.xloads.modalaero_forces = True
+inp.systems.sett.s1.aero..folder = "./AERO/"
+inp.systems.sett.s1.aero.c_ref = 7.271
+inp.systems.sett.s1.aero.u_inf = 200.
+inp.systems.sett.s1.aero.rho_inf = 1.225
+inp.systems.sett.s1.aero.gust_profile = "mc"
+inp.systems.sett.s1.aero.gust.intensity = 14.0732311562*2
+inp.systems.sett.s1.aero.gust.length = 67.
 \end{minted}
-
 
 
 #+NAME: fig:xrf1_modalshapes
@@ -1063,35 +984,36 @@ Fig. [[fig:xrf1_modalshapes]] shows the reference FE model with three modal shap
 [[file:figs/xrf1_modalshapes.pdf]]
 
 To verify the accuracy of the reduction method we show now a comparison of some of the most relevant natural frequencies in Table \ref{table8:xrf1-frequencies} (normalized with the lowest frequency). It is common practice in this industrial aeroelastic models to represent the mass model as lumped masses along the load axis (provided by the mass department which thoroughly tracks the multiple components and combines them into sectional lumped points with inertia). As explained above, this makes the Guyan reduction match an exact condensation and explains the accuracy of the results. 
-\begin{table}[h!]
-\begin{center}
-\caption{Normalised natural frequencies of the modified XRF1 clamped model}
-\label{table8:xrf1-frequencies}
-\begin{tabular}{c c c c}
-\toprule
-%\hline
-\textbf{Mode Type}  & $ \pmb{\omega_{full}}$  &$ \pmb{\omega_{condensation}}$ & \textbf{Error} (\%) \\
-First out-of-plane wing bending (1) &1.0              &1.0        &    0.0001   \\ 
-First out-of-plane wing bending (2) &1.04948    &1.04949  &    0.0004   \\ 
-First fuselage bending  (3)  &1.4285     &1.4288       &    0.025     \\ 
-Fuselage lateral bending + wing out-of-plane bending (4) &1.5093      &1.5099       &    0.038     \\ 
-Wing and pylon lateral roll bending (5)&2.1449      &2.1449       &    0.0007   \\ 
-%&2.23018    &2.23018   &    0.0002   \\ 
-%&2.316        &2.315            &    0.07     \\ 
-%&2.4107      &2.4102        &    0.035    \\ 
-%&2.45487   &2.45495  &    0.007    \\ 
-%&2.506       &2.5052         &    0.06     \\
-\vdots &  &        &       \\
-First in-plane wing bending (13) &   3.156  &  3.155  &0.03  \\
-Second in-plane wing bending (14) & 3.25655&  3.2566  &  0.0016  \\
-\vdots &  &        &       \\
-First wing torsion (28)   & 7.675 & 7.676&  0.01   \\
-Second wing torsion (29) &   7.7368 & 7.7366   &0.002 \\
-%\hline
-\bottomrule
-\end{tabular}
-\end{center}
-\end{table}
+
+# \begin{table}[h!]
+# \begin{center}
+# \caption{Normalised natural frequencies of the modified XRF1 clamped model}
+# \label{table8:xrf1-frequencies}
+# \begin{tabular}{c c c c}
+# \toprule
+# %\hline
+# \textbf{Mode Type}  & $ \pmb{\omega_{full}}$  &$ \pmb{\omega_{condensation}}$ & \textbf{Error} (\%) \\
+# First out-of-plane wing bending (1) &1.0              &1.0        &    0.0001   \\ 
+# First out-of-plane wing bending (2) &1.04948    &1.04949  &    0.0004   \\ 
+# First fuselage bending  (3)  &1.4285     &1.4288       &    0.025     \\ 
+# Fuselage lateral bending + wing out-of-plane bending (4) &1.5093      &1.5099       &    0.038     \\ 
+# Wing and pylon lateral roll bending (5)&2.1449      &2.1449       &    0.0007   \\ 
+# %&2.23018    &2.23018   &    0.0002   \\ 
+# %&2.316        &2.315            &    0.07     \\ 
+# %&2.4107      &2.4102        &    0.035    \\ 
+# %&2.45487   &2.45495  &    0.007    \\ 
+# %&2.506       &2.5052         &    0.06     \\
+# \vdots &  &        &       \\
+# First in-plane wing bending (13) &   3.156  &  3.155  &0.03  \\
+# Second in-plane wing bending (14) & 3.25655&  3.2566  &  0.0016  \\
+# \vdots &  &        &       \\
+# First wing torsion (28)   & 7.675 & 7.676&  0.01   \\
+# Second wing torsion (29) &   7.7368 & 7.7366   &0.002 \\
+# %\hline
+# \bottomrule
+# \end{tabular}
+# \end{center}
+# \end{table}
 
 While the previous results where purely structural, now the dynamic response to an atmospheric disturbance or gust is computed. This aeroelastic analysis is a requirement for certification purposes and it is one of the main drivers in sizing the wings of high aspect ratio wings. Furthermore, the previous examples showed the advantage of our approach in terms of computational speed, but other than that results could be obtained with commercial software. The geometrically nonlinear aeroelastic response, however, it is not currently available in commercial solutions that are bounded to linear analysis in the frequency domain. Other research codes feature those additional physics, yet are limited to simple models. Thus the added value in the proposed approach comes at the intersection between the nonlinear physics arising from large integrated displacements, computational efficiency and the ability to enhance the models already built for industrial use.
 \newpage

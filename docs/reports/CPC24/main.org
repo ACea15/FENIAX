@@ -20,7 +20,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
         '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
           "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inasdev")
+  (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -109,8 +109,10 @@ The computational advantage of the methodology is demonstrated throughout using 
 \\
 As for future work, a strategy to compute manoeuvre and dynamic load envelopes that can also be differentiated via AD will be built. This will be enabled using JAX capabilities for parallelisation of distributed accelerators such that the thousands of loads cases are computed fast. 
 Increasing the fidelity in the load calculations to consider CFD-based aerodynamics would be an additional necessary step in order to achieve a more accurate nonlinear aeroelastic methodology. 
+
+\appendix
 * Appendix: Nonlinear Modal Reduced Order Models
-#+INCLUDE: "./sec_text.org::*Appendix: Nonlinear Modal Reduced Order Models" :only-contents t
+#+INCLUDE: "./sec_text.org::*Nonlinear Modal Reduced Order Models" :only-contents t
 
 bibliographystyle:plain
 # bibliography:/home/acea/Documents/Engineering.bib
