@@ -46,4 +46,5 @@
 #+LATEX_HEADER: \newcommand{\Cm}[1]{c_{m_{#1}}}
 #+LATEX_HEADER: \newcommand{\barCm}[1]{\bar{c}_{m_{#1}}}
 #+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
+#+LATEX_HEADER: \usepackage{minted}
 :END:

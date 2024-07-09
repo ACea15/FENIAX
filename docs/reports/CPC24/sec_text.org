@@ -66,35 +66,36 @@ The coupling of the structure and aerodynamic equations combined with the aerody
 \end{equation}
 in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$. The aerodynamic matrices $\hat{\bm{\mathcal{A}}}_{p+2}$ have also been scaled accordingly.
 
+\begin{algorithm}[h!]
+\DontPrintSemicolon
+%\KwData{$G=(X,U)$ such that $G^{tc}$ is an order.}
+%\KwResult{$G’=(X,V)$ with $V\subseteq U$ such that $G’^{tc}$ is an interval order.}
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\Input{Intrinsic modal shapes: $\bm{\Phi}_1$, $\bm{\Phi}_2$, $\bm{\Psi}_1$, $\bm{\Psi}_2$; nodal differences, $\Delta_s$}
+\Output{Intrinsic nonlinear modal couplings $\bm{\Gamma}_1$ and $\bm{\Gamma}_2$}
+\Begin{
+ \BlankLine
+\texttt{f1 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot($\mathcal{L}_1$(u), v, axes=(1, 1),
+      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate through nodes} \;
+f2 $\longleftarrow$ vmap(f1, in\_axes=(0, None), out\_axes=0)  \;
+$\bm{L}_1$ $\longleftarrow$ f2($\bm \Phi_1$, $\bm \psi_1$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
+$\bm{\Gamma}_{1}$ $\longleftarrow$  jnp.einsum(isn,jskn$\rightarrow$ijk, $\bm \Phi_1$, $\bm{L}_1$) \;
+\BlankLine
+f3 $\longleftarrow$ vmap(lambda u, v: jnp.tensordot($\mathcal{L}_2$(u), v, axes=(1, 1),
+      in\_axes=(1, 2), out\_axes=2))  \Comment{iterate nodes} \;
+f4 $\longleftarrow$ vmap(f3, in\_axes=(0, None), out\_axes=0)  \;
+$\bm{L}_2$ $\longleftarrow$ f4($\bm \Phi_2$, $\bm \psi_2$)   \Comment{Nm$\times$6$\times$Nm$\times$Nm} \;
+$\bm{\Gamma}_2$ $\longleftarrow$  jnp.einsum(isn,jskn,n$\rightarrow$ijk, $\bm{\Phi}_{m1}$, $\bm{L}_2$, $\Delta_s$)  \;
+\BlankLine
+}
+    }
+\caption{Nonlinear Couplings implementation in JAX}
+\label{alg:couplings}
+\end{algorithm}
+
+
 # \newpage
-* Conclusions
-#+begin_comment
-
-
-
-physics -> geometric nonlinearities
-implementation -> speed
-
-
-This paper has presented a modal-based description that incorporates geometrically nonlinear effects due to structural slenderness onto generic FE models initially built for linear analysis. 
-While the underlying theory had already been introduced, a new implementation has been put in-place for both high-performance and software modularity, with the numerical library JAX as the engine powering the computations. 
-
-Geometrically nonlinear aeroelastic framework: Follower aerodynamic forces, geometric stiffening, coupling
-between elastic and rigid-body DoF...
-Seamlessly compatible with industrial (linear) aeroelastic models.
-Time-domain computations in near real-time with two orders of magnitude accelerations compared to
-conventional implementations.
-Fully differentiated code via Algorithmic Differentiation (AD).
-Capable on running on modern architectures, e.g. GPUs.
-
-An important remark about these computations is that the gusts have been input in the reference configuration. Undergoing updates in the implementation aim to update the gust intensity at each panel with its normal component. This will account for the added nonlinearity of the changing in downwash.
-
-Furthermore, a relevant amount of test cases accompany the software, of which a subset has been presented to illustrate the main capabilities that may range from a canonical beam undergoing extremely large deformations to a full-vehicle nonlinear aeroelastic response. A major highlight are the computational accelerations experimented which reach two orders of magnitude in dynamic analysis. This is due to the heavy use of vectorisation and just-in-time compilation.  
-The ability to recover the full 3D state from the NMROM was also demonstrated and compared to the solution in NASTRAN.  
-\\
-In the immediate future two objectives are foreseen with this implementation: first, a further assessment of the computational gains by running the examples presented here on GPUs; second and more important, the propagation of derivatives in the solution process via the Algorithmic Differentiation tool embedded in JAX. This will complete a fully differentiated aeroelastic framework that can run very efficient in modern software architectures while enhancing traditional FE models that can be very complex by construction but lack the physics of geometrically nonlinear effects. After that, increasing the fidelity in the load calculations to consider CFD-based aerodynamics would be an additional necessary step in order to achieve a more accurate nonlinear aeroelastic methodology. 
-#+end_comment
-
 * Appendix: Nonlinear Modal Reduced Order Models
 ** Dynamic condensation of linear FE models
 \label{sec:dynamic_condensation}

@@ -17,13 +17,14 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (setq org-confirm-babel-evaluate nil)
   (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
   (setq org-latex-pdf-process
-    '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
+        '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
+          "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
   (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "yes") ;; yes, no, no-export 
+  (setq Veval_blocks "no-export") ;; yes, no, no-export 
   (setq Veval_blocks_run "no-export")
   (setq pythonShell "py2")
   ;; export_blocks: code, results, both, none
@@ -98,29 +99,16 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 :END:
 #+INCLUDE: "./sec_examples.org::*Examples" :only-contents t
 * Conclusions
-
-physics -> geometric nonlinearities
-implementation -> speed
-
-
-This paper has presented a modal-based description that incorporates geometrically nonlinear effects due to structural slenderness onto generic FE models initially built for linear analysis. 
-While the underlying theory had already been introduced, a new implementation has been put in-place for both high-performance and software modularity, with the numerical library JAX as the engine powering the computations. 
-
-Geometrically nonlinear aeroelastic framework: Follower aerodynamic forces, geometric stiffening, coupling
-between elastic and rigid-body DoF...
-Seamlessly compatible with industrial (linear) aeroelastic models.
-Time-domain computations in near real-time with two orders of magnitude accelerations compared to
-conventional implementations.
-Fully differentiated code via Algorithmic Differentiation (AD).
-Capable on running on modern architectures, e.g. GPUs.
-
-An important remark about these computations is that the gusts have been input in the reference configuration. Undergoing updates in the implementation aim to update the gust intensity at each panel with its normal component. This will account for the added nonlinearity of the changing in downwash.
-
-Furthermore, a relevant amount of test cases accompany the software, of which a subset has been presented to illustrate the main capabilities that may range from a canonical beam undergoing extremely large deformations to a full-vehicle nonlinear aeroelastic response. A major highlight are the computational accelerations experimented which reach two orders of magnitude in dynamic analysis. This is due to the heavy use of vectorisation and just-in-time compilation.  
-The ability to recover the full 3D state from the NMROM was also demonstrated and compared to the solution in NASTRAN.  
+This paper has presented a modal-based description that incorporates geometrically nonlinear effects due to structural slenderness onto generic FE models initially built for linear analysis. The underlying formulation is written in the material frame of reference with velocities and internal forces as main variables, thus facilitating the construction of a nonlinear aeroelastic framework that seamlessly accounts for follower aerodynamic forces, geometric stiffening and the coupling between elastic and rigid-body DoF.
+Leveraging on the numerical library JAX, a new implementation has been built for both high-performance and software modularity. The combination of a performant codebase with modal formulation that produces nonlinear reduced-order models, has allowed time-domain computations in near real-time with two orders of magnitude speed-ups compared to conventional implementations.
+Furthermore, the propagation of derivatives in the solution process via the AD tool embedded in JAX has been successfully demonstrated on structural and aeroelastic problems. Lastly we have shown the ability to recover the full 3D state from the reduced-order-model with a verification against full FE nonlinear solution.
+Thus completing a differentiated aeroelastic framework that can run very efficiently in modern hardware architectures while enhancing traditional FE models that can be very complex by construction but lack the physics of geometrically nonlinear effects.
 \\
-In the immediate future two objectives are foreseen with this implementation: first, a further assessment of the computational gains by running the examples presented here on GPUs; second and more important, the propagation of derivatives in the solution process via the Algorithmic Differentiation tool embedded in JAX. This will complete a fully differentiated aeroelastic framework that can run very efficient in modern software architectures while enhancing traditional FE models that can be very complex by construction but lack the physics of geometrically nonlinear effects. After that, increasing the fidelity in the load calculations to consider CFD-based aerodynamics would be an additional necessary step in order to achieve a more accurate nonlinear aeroelastic methodology. 
-
+Two examples have been introduced to show the main features of the approach: a representative model of an aircraft without engines and fuselage is employed to validate the 3D structural static and dynamic nonlinear response against commercial FE software as well as their corresponding sensitivities against finite-differences; the dynamic aeroelastic response to an atmospheric gust on a full aircraft configuration is shown together with the derivatives with respect to flow and gust parameters.
+The computational advantage of the methodology is demonstrated throughout using relevant benchmarks against linear and nonlinear solutions. 
+\\
+As for future work, a strategy to compute manoeuvre and dynamic load envelopes that can also be differentiated via AD will be built. This will be enabled using JAX capabilities for parallelisation of distributed accelerators such that the thousands of loads cases are computed fast. 
+Increasing the fidelity in the load calculations to consider CFD-based aerodynamics would be an additional necessary step in order to achieve a more accurate nonlinear aeroelastic methodology. 
 * Appendix: Nonlinear Modal Reduced Order Models
 #+INCLUDE: "./sec_text.org::*Appendix: Nonlinear Modal Reduced Order Models" :only-contents t
 
