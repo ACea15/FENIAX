@@ -798,62 +798,63 @@ The static equilibrium of the aircraft under prescribed loads is first studied w
 Geometric nonlinearities are better illustrated by representing a sectional view of the wing as in Fig. [[fig:SPWingsection]], where deformations in the z-direction versus the metric $S = \sqrt{x^2+y^2}$ are shown. MSC Nastran linear solutions (Solution 101) are also included to appreciate more clearly the shortening and follower force effects in the nonlinear computations.
 
 \begin{minted}[
-    gobble=2,
-    frame=single,
-    linenos
-  ]{yaml}
-  Ka_name: Ka.npy
-  # Condensed mass matrix
-  Ma_name: Ma.npy
-  # Number of modes in the solution
-  num_modes: 50
-  # Calculation of eigenvalues/vectors
-  eig_type: input_memory
-  # cut-off frequency such that eigenvalues smaller than this are set to 0
-  eig_cutoff: 0.01
-  # Tolerance for building the local frames
-  Cab_xtol: 0.0001
-  # System name
-  name: s1
-  # Type of solution to be solved
-  solution: dynamic
-  # The simulation goal of this system
-  target: Level
-  # Boundary condition first node
-  bc1: clamped
-  # Save results of the run system
-  save: true
-  xloads:
-    # Include gravity in the analysis
-    gravity_forces: true
-    # Include aerodynamic forces
-    modalaero_forces: true
-    # gravity force [m/s]
-    gravity: 9.807
-    # gravity vector
-    gravity_vect:
-    - 0
-    - 0
-    - -1
-  aero:
-    u_inf: 200.0
-    rho_inf: 1.225
-    c_ref: 7.271
-    approx: Roger
-    num_poles: 8
-    gust_profile: mc
-    gust:
-      intensity: 28.1464623124
-      step: 1.0
-      length: 67.0
-      shift: 0.0
-  # Library solving our system of equations
-  solver_library: diffrax
-  # Name for the solver of the previously defined library
-  solver_function: ode
-  # Settings for the solver
-  solver_settings:
-    solver_name: Dopri5
+gobble=2,
+frame=single,
+linenos
+]{yaml}
+xloads:
+  # Include point follower forces
+  follower_forces: true
+  # x-axis vector for interpolation
+  x:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  follower_points:
+  - - 25
+    - 2
+  - - 48
+    - 2
+  dead_points:
+  # (Linear) interpolation of the follower forces on t         [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]
+  follower_interpolation:
+  - - 0.0
+    - 200000.0
+    - 250000.0
+    - 300000.0
+    - 400000.0
+    - 480000.0
+    - 530000.0
+  - - 0.0
+    - 200000.0
+    - 250000.0
+    - 300000.0
+    - 400000.0
+    - 480000.0
+    - 530000.0
+# Time vector
+t:
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+# Library solving our system of equations
+solver_library: diffrax
+# Name for the solver of the previously defined library
+solver_function: newton_raphson
+# Settings for the solver
+solver_settings:
+rtol: 1e-06
+atol: 1e-06
+max_steps: 50
+norm: linalg_norm
+kappa: 0.01
 \end{minted}
 
 
