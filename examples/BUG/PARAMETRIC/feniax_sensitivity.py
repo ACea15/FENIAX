@@ -3,8 +3,11 @@ import scipy as sp
 import os
 import concurrent.futures
 from pyNastran.op2.op2 import read_op2
+from pyNastran.op4.op4 import read_op4
 from pch_parser import read_pch
 from bug_aero import *
+from roger import *
+import jax.numpy as jnp
 
 NASTRAN_LOC='cmd.exe /c C:/MSC.Software/MSC_Nastran/20182/bin/nast20182.exe'
 
@@ -55,14 +58,40 @@ class NastranHandler:
     #write eigvecs and eigvals to op4 file
     generate_aero(modesdata,eigsdata)
 
-    #calculate aero
+    #calculate aero using Nastran
     fname=f'{self.dir_input}rom_aero.bdf'
     aemodel=self.cls_NatranModel(self.fname_aeroelastic)
     aemodel.return_bdf(param,fname,*args)
     command=f'{NASTRAN_LOC} {fname} out={self.dir_output} old=no'
     os.system(f'{command} > nul 2>&1')
 
+    #calculate Roger's rational function approximation
+    aero=read_op4('./data_out/Qhh50-50.op4')
+    aero2=read_op4('./data_out/Qhj0_8-50.op4')
+    qhh = jnp.array(aero['Q_HH'].data)
+    qhj =  jnp.array(aero2['Q_HJ'].data)
+    k_array = jnp.linspace(1e-3,1, 50)
+    self.poles=jnp.linspace(1e-3,5,20)
+    k_matrix_comp = frequency_matrix(k_array, self.poles)
+    self.rogerQhh=rogerRFA(k_matrix_comp,qhh)
+    self.rogerQhj=rogerRFA(k_matrix_comp,qhj)
+
+    #extract eigenvector of reduced order model
+    nid_aset=self.amodel.bdf_handler.bdf.asets[0].node_ids
+    nid_aset=np.sort(nid_aset)
+    nid_aset_in_full=_find_indices(nid_aset,op2model.eigenvectors[1].node_gridtype[:,0])
+    self.eigvecs_aset=modesdata[:,nid_aset_in_full]
+    self.nid_aset=nid_aset
+    
+    #extract coordinates of reduced order model
+    nodes=self.amodel.bdf_handler.bdf.Nodes(nid_aset)
+    self.coord_aset=np.array([node.xyz for node in nodes])
+
   def set_aeromodel(self,fname_aero,fname_aeroelastic):
+    """
+    fname_aero : run_caof.bdf
+    fname_aeroelastic : run_cao.bdf
+    """
     self.amodel=self.cls_NatranModel(fname_aero)
     self.fname_aeroelastic=fname_aeroelastic
     
@@ -171,3 +200,7 @@ def parallel_execute_nastran(input_dir,output_dir,dbf_name,n_job,n_parallel=5,ma
   
   with concurrent.futures.ThreadPoolExecutor(max_workers=n_parallel) as executor:
     executor.map(os.system, cmd_list)
+
+def _find_indices(arr_trg, arr_ref):
+  index_map = {value: idx for idx, value in enumerate(arr_ref)}
+  return np.array([index_map.get(element, None) for element in arr_trg])
