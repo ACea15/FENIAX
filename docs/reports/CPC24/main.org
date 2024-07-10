@@ -111,7 +111,7 @@ As for future work, a strategy to compute manoeuvre and dynamic load envelopes t
 Increasing the fidelity in the load calculations to consider CFD-based aerodynamics would be an additional necessary step in order to achieve a more accurate nonlinear aeroelastic methodology. 
 
 \appendix
-* Appendix: Nonlinear Modal Reduced Order Models
+* Nonlinear Modal Reduced Order Models
 #+INCLUDE: "./sec_text.org::*Nonlinear Modal Reduced Order Models" :only-contents t
 
 bibliographystyle:plain

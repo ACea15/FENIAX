@@ -24,22 +24,72 @@
 #+end_src
 
 * Introduction
+The field of aeroelasticity, which encompasses the interaction between structural, aerodynamic and inertia forces [[cite:&COLLAR1978]], has been dominated by linear methods, in part due to its inherit complexity and demanding simulation times.
+The assumptions underpinning linear analysis may not longer be valid with the current  push towards lighter, more flexible materials. This is certainly the case for aviation where it has already being noted the need for formulations that include nonlinear effects to enhance current modelling techniques but that also allow rapid data turnaround cite:&LIVNE2018. 
+
+that solves the compressible potential equation and is still the de-facto solution among practisioners.
+
+
+The fluid-structure interaction problem involves the solution of challenging multiphysics phenomena for which various numerical methods have been developed [[cite:&HOU2012]]. 
+[[cite:&GEUZAINE2003]]
+[[cite:&FARHAT2006]]
+
+While high-fidelity aero-structural nonlinear analysis and optimization have already been demonstrated [[cite:&GRAY2023]], those are mostly restricted to the steady part of the problem. 
+
+
+Data driven approaches that can also handle unsteady physics have been proposed [urban], however, they are far from being robust for large scale models and accepted in the certification process.
+
+
 The ever-growing need for performance and operating costs reduction, together with the current push for sustainability in aviation, are driving new aircraft designs outside the conventional envelope. A particular feature are very high aspect ratio wings to minimise induced drag, which when combined with advancements in lighter materials to reduce vehicle weight, can significantly increase wing flexibility.    
 In such a scenario, aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines.
+Data driven 
+
 As highlighted in cite:&LIVNE2018, formulations that include nonlinear effects are needed that not only enhance current modelling techniques  but that also allow rapid data turnaround for the industry. Real-time, hardware-in-the-loop flight simulators would also benefit of actively controlled, deformable airplane models. This leads to a more nonlinear landscape, where the overall aerodynamic performance needs to be calculated around a flight shape with large deformations cite:&GRAY2021a; the input for efficient control laws account for the steady state and nonlinear couplings cite:&Artola2021; and the loads ultimately sizing the wings are atmospheric disturbances computed in the time-domain cite:&CESNIK2014.
 This is also the case for more radical configurations that may or may not exhibit high flexibility but whose aeroelastic behaviour is more uncertain.
 A more holistic approach to the design also increases the complexity of the processes exponentially, and the trade-offs and cost-benefit analysis may not be possible until robust computational tools are in-place to simulate the different assumptions. High fidelity structural [[cite:&JONSSON2023]] and aero-structural optimizations [[cite:&GRAY2023]], which also include flutter constraints due to geometric nonlinearities, are good examples of the push for further integration in the design process.
 \\
-Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations cite:&Kier2017, as it considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. For roll manoeuvres, for instance, it has been shown the importance of fully coupled nonlinear aeroelastic flight dynamics solutions [[cite:&SANGHI2024]]. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitively expensive computational times. To tackle this, projection based reduced order models have been employed even for high fidelity analysis [[cite:&CHOI2020a]], and are also blended with machine learning models [[cite:&SWISCHUK2019]].
-Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above. This has led to recent efforts geared towards building robust methods that incorporate nonlinear effects to those FEMs, either via stick models constructed for aeroelastic analysis cite:&RISO2023, or using a modal-based approximation cite:&DRACHINSKY2022.
+Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations cite:&Kier2017, as it considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. For roll manoeuvres, for instance, it has been shown the importance of fully coupled nonlinear aeroelastic flight dynamics solutions [[cite:&SANGHI2024]]. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitively expensive computational times. To tackle this, projection based reduced order models have been employed even for high fidelity analysis [[cite:&CHOI2020,cite:&BONCORAGLIO2021a]], and are also blended with machine learning models [[cite:&SWISCHUK2019]].
+
+parallel FEM
+[[cite:&BOOPATHY2019a]]
+
+[[cite:&DEMASI2009]]
+
+
+[[cite:&CAVALLARO2015]]
+
+
+non-intrusive
+[[cite:&KARAMOOZMAHDIABADI2021]]
+[[cite:&MIGNOLET2013]]
+
+data driven 
+[[cite:&HICKNER2023]]
+
+[[cite:&LAHOOTI2023]]
+
+diffrax
+[[cite:&kidger2021on]]
+
+Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above.
+
+
+This has led to recent efforts geared towards building robust methods that incorporate nonlinear effects to those FEMs, either via stick models constructed for aeroelastic analysis  or using a modal-based approximation cite:&DRACHINSKY2022.
 \\
+
+This works blends the solution of partial differential equations (PDEs), reduced order models that maintain the dynamic characteristics of the problem, and the integration with commercial packages for aeroelasticity while enhancing them with geometrically nonlinear effects. The nonlinear capabilities of our solution include: follower aerodynamic forces, geometric stiffening, shortening effects and coupling between elastic and rigid-body degrees-of-freedom (DoF). 
+
+
 Those previous considerations set the goals for the present work: 1) to be able to perform geometrically nonlinear aeroelastic analysis, 2) to work with generic FEMs in a non-intrusive manner, and 3) to achieve a computational efficiency that is equivalent to present linear methods (if not faster).
 Grounded on previous developments where the first two points were demonstrated cite:&PALACIOS2019, cite:&CEA2021b, cite:&CEA2023 we tackle the third point herein with a new implementation that achieves remarkable computational performance.
 The numerical library JAX cite:&jax2018github was leveraged to produce highly vectorised, automatically differentiated routines that are managed by a modular, object-oriented approach in Python. The power of JAX for scientific computation has been proved recently in fluid dynamics cite:&BEZGIN2023 and solid mechanics cite:&XUE2023 applications.
 It provides a unified computational framework that can be seamlessly deployed on CPUs, GPUs and TPUs without needing to resort to Domain Specific Languages (DSL) [[cite:&LUSHER2021]]. In addition it also features powerful parallelisation capabilities across devices, a hot research topic given the new era we enter where software does not outlive hardware but potentially the other way around.
 \\
-Our proposed method has two main inputs for the analysis: a linear (arbitrarily complex) FE model, and frequency-dependent aerodynamic influence coefficient matrices that provide the mapping between FE states and the corresponding aerodynamic forces (either in modal or in physical coordinates). The latter are obtained herein from the Doublet Lattice Method (DLM) and a rational function approximation (RFA) [[cite:&Roger1977]] to transform to the time domain. We have also presented a more efficient data-driven approach that circumvents the lag selection process of the RFA in cite:&PALACIOS2023a and which would also be suitable for more accurate Computational Fluids Aerodynamics (CFD). Using the 3D FE model, a skeleton-like substructure along the main load paths is derived, on which modal shapes and nonlinear couplings are evaluated in intrinsic variables (velocities and strains) [[cite:&WANG2015]]. They conform a basis of a Galerkin-projection of the geometrically-nonlinear 1D description [[cite:&HODGES2003]] after which the projected equations are solved in time-domain. Advantages of the approach are its direct and accurate map between the 3D and 1D domains, as it only requires of a modal condensation that is already available in many industrial aeroelastic models to link the structural model to the aerodynamic loading.
-This is unlike stick models which need of various post-processing steps to build the equivalent stiffness and mass models.
+
+
+
+
+Our proposed method has two main inputs for the analysis: a linear (arbitrarily complex) FE model, and frequency-dependent aerodynamic influence coefficient matrices that provide the mapping between FE states and the corresponding aerodynamic forces (either in modal or in physical coordinates). The latter are obtained herein from the Doublet Lattice Method (DLM) and a rational function approximation (RFA) [[cite:&Roger1977]] to transform to the time domain. We have also presented a more efficient data-driven approach that circumvents the lag selection process of the RFA in cite:&PALACIOS2023a and which would also be suitable for more accurate Computational Fluids Aerodynamics (CFD). Using the 3D FE model, a skeleton-like substructure along the main load paths is derived, on which modal shapes and nonlinear couplings are evaluated in intrinsic variables (velocities and strains) [[cite:&WANG2015]]. They conform a basis of a Galerkin-projection of the geometrically-nonlinear 1D description [[cite:&HODGES2003]] after which the projected equations are solved in time-domain. Advantages of the approach are its direct and accurate map between the 3D and 1D domains, as it only requires a well known modal dynamic condensation.
 Furthermore, we show how the full 3D solution using the nonlinear 1D solution is computed to a good accuracy by reconstructing the cross-sectional elements and applying a Radial Basis Function (RBF) interpolation to the remaining nodes in the domain.
 A well established formulation effectively applied to large-scale aeroelastic models and now combined with a highly vectorised implementation in JAX results in an extremely efficient nonlinear aeroelastic solver. The overall procedure has been implemented in what we have named as \emph{Nonlinear Modal Reduced Order Model} (NMROM). 
 \\
@@ -63,7 +113,7 @@ After the state of the condensed model has been solved for, the full 3D state ca
 #+ATTR_LATEX: :width 1.\textwidth 
 [[./figs/workflowCPC.pdf]]
 
-The underlying mathematical description of the reduction process to build the so called Nonlinear Modal Reduced Order Model (NMROM) is described in the Appendix. The main components in the solution are given in Algorithm [[alg:components]].
+The underlying mathematical description of the reduction process to build the so called Nonlinear Modal Reduced Order Model (NMROM) is described in the Appendix. The main components in the solution are given in Algorithm [[alg:components]] with time complexity and data sizes 
 
 #+NAME: alg:components
 \begin{algorithm}[h!]
@@ -227,18 +277,6 @@ def f_gamma1(phi1: jnp.array, psi1: jnp.array) -> jnp.array:
 \end{minted}
 
 
-** Bridging full and reduced descriptions through modal spaces
-A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes coming from the global FEM:
-
-1. Velocity modes, $\bm \phi_1 = \bm \phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \phi_1 \bm q_1 = \bm \phi_0 \dot{\bm q}_0$. The LNMs, $\phi_0$, are the output of the dynamic condensation. 
-
-2. Momentum modes, $\bm \psi_1 = \bm M_a \bm \phi_0$. For arbitrary distributed mass models, the dynamic condensation technique will produce a fully-populated $\bm M_a$ matrix, and the various couplings will be captured after the matrix multiplication. 
-
-3. Force/moment modes, $\bm \phi_2 = \mathcal{S}(\bm K_a \bm \phi_0)$, represent the internal stress resultants in the structure as the sum, $\mathcal{S}$, along the main load-paths of equilibrium forces and moments produced by the modal deformations.
-   # As a consequence, results are presented in the mid-point between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
-   # Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$.
-   
-4. Strain modes are approximated from the linearisation of the equations as $\bm \psi_2 = -\bm \phi_{0}' + \pmb{E}^{\top}\bm \phi_{0}$, with  with the derivative taken along the spanwise coordinate, $s$. $\pmb{E}^{\top}$ is a constant matrix in Eq. \ref{eq:linear_operators}.
 ** COMMENT Time domain unsteady aerodynamics
 Various representations has been adopted to construct reduced-order models in unsteady aerodynamics. The doublet-lattice method (DLM)  [[cite:&ALBANO1969]] is a transfer function approach; the unsteady vortex lattice method \cite{Katz2001} is a state-space approach; and system identification approaches from CFD often use impulse response methods \cite{Silva2017}. We will make use of the DLM, a numerical solution to the compressible potential equation, a linearisation of the Navier-Stocks equations with no viscosity and isentropic assumptions:
 \begin{equation}\label{eq3:potential_aero}
@@ -286,4 +324,16 @@ bibliographystyle:plain
 # bibliography:/home/acea/Documents/Engineering.bib
 bibliography:~/Documents/Engineering.bib
 
+** Bridging full and reduced descriptions through modal spaces
+A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes coming from the global FEM:
+
+1. Velocity modes, $\bm \phi_1 = \bm \phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \phi_1 \bm q_1 = \bm \phi_0 \dot{\bm q}_0$. The LNMs, $\phi_0$, are the output of the dynamic condensation. 
+
+2. Momentum modes, $\bm \psi_1 = \bm M_a \bm \phi_0$. For arbitrary distributed mass models, the dynamic condensation technique will produce a fully-populated $\bm M_a$ matrix, and the various couplings will be captured after the matrix multiplication. 
+
+3. Force/moment modes, $\bm \phi_2 = \mathcal{S}(\bm K_a \bm \phi_0)$, represent the internal stress resultants in the structure as the sum, $\mathcal{S}$, along the main load-paths of equilibrium forces and moments produced by the modal deformations.
+   # As a consequence, results are presented in the mid-point between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
+   # Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$.
+   
+4. Strain modes are approximated from the linearisation of the equations as $\bm \psi_2 = -\bm \phi_{0}' + \pmb{E}^{\top}\bm \phi_{0}$, with  with the derivative taken along the spanwise coordinate, $s$. $\pmb{E}^{\top}$ is a constant matrix in Eq. \ref{eq:linear_operators}.
 * Input and postprocessing
