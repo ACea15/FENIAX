@@ -92,7 +92,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   import datetime
   import os
   import shutil
-  REMOVE_RESULTS = False
+  REMOVE_RESULTS = True
   #   for root, dirs, files in os.walk('/path/to/folder'):
   #       for f in files:
   #           os.unlink(os.path.join(root, f))
@@ -236,7 +236,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   inp.simulation.typeof = "single"
   inp.systems.sett.s1.solution = "static"
   inp.systems.sett.s1.solver_library = "diffrax"
-  inp.systems.sett.s1.solver_function = "newton_raphson"
+  inp.systems.sett.s1.solver_function = "newton"
   inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                              atol=1e-6,
                                              max_steps=50,
@@ -702,7 +702,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   run(inp, label=name)
 #+end_src
 
-*** COMMENT XRF7
+*** XRF7
 #+NAME: XRF7
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
@@ -726,7 +726,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
   run(inp, label=name)
 #+end_src
-*** COMMENT XRF8
+*** XRF8
 #+NAME: XRF8
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
