@@ -37,7 +37,7 @@ class NastranHandler:
     self.model.return_bdf(param,fname,*args)
     command=f'{NASTRAN_LOC} {fname} out={self.dir_output} old=no'
     os.system(f'{command} > nul 2>&1')
-    _,self.Ka,self.Ma=read_pch(f'{self.dir_output}rom.pch')
+    self.nid_rom,self.Ka,self.Ma=read_pch(f'{self.dir_output}rom.pch')
   
   def get_rom(self,param,*args):
     self._run_nastran(param,*args)

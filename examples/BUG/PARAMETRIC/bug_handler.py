@@ -11,13 +11,21 @@ NASTRAN_LOC='cmd.exe /c C:/MSC.Software/MSC_Nastran/20182/bin/nast20182.exe'
 
 
 class BUGHandler:
-  def __init__(self,fname):
-    self.bdf_name=fname
-    self.bdf = read_bdf(fname,debug=None)
+  def __init__(self,fname=None,bdfmodel=None):
+    if fname is not None:
+      self.bdf_name=fname
+      self.bdf=read_bdf(fname,debug=None)
+    elif bdfmodel is not None:
+      self.bdf=bdfmodel
+    else:
+      raise ValueError('Either fname or bdfmodel must be given')
     self._preprocess_properties()
     self._preprocess_nodes()
     self._preprocess_elements()
     self._preprocess_materials()
+    self.annotation_property=dict()
+    self.annotation_conm=dict()
+    self.annotation_material=dict()
 
   def _preprocess_properties(self):
     """
@@ -80,6 +88,83 @@ class BUGHandler:
     self.mid_dict=mid_dict
     self.mtypes=mtype
 
+  def add_annotation(self,fname:str,label:str):
+    """
+    add annotation for pids and eids
+    """
+    bdfmodel=read_bdf(fname,debug=None,punch=True,xref=False)
+    if label not in self.annotation_property.keys():
+      self.annotation_property[label]=[]
+      self.annotation_conm[label]=[]
+      self.annotation_material[label]=[]
+    for pid in bdfmodel.properties:
+      self.annotation_property[label].append(pid)
+    for eid in bdfmodel.masses:
+      self.annotation_conm[label].append(eid)
+    for mid in bdfmodel.materials:
+      self.annotation_material[label].append(mid)
+
+
+  def add_pshell_annotation(self,seps=None):
+    """
+    add annotation for pshells
+    """
+    pshell_norms=self.get_pshell_norms()
+    pshell_center=self.get_pshell_coordinates()
+    annotation_wing=np.argmax(np.abs(pshell_norms),axis=1)
+    msk_spar=(annotation_wing==0)
+    msk_rib=(annotation_wing==1)
+    msk_skin_l=((annotation_wing==2)*(pshell_norms[:,2]>0))
+    msk_skin_u=((annotation_wing==2)*(pshell_norms[:,2]<0))
+    self.annotation_pshell=dict()
+    pids=np.array(self.pid_dict['PSHELL'])
+    self.annotation_pshell['SPAR']=pids[msk_spar]
+    self.annotation_pshell['RIB']=pids[msk_rib]
+    self.annotation_pshell['SKIN_LOWER']=pids[msk_skin_l]
+    self.annotation_pshell['SKIN_UPPER']=pids[msk_skin_u]
+    self.annotation_pshell['SKIN']=np.concatenate((pids[msk_skin_l],pids[msk_skin_u]))
+    
+    if seps is not None:
+      seps=np.sort(np.abs(seps))
+      msk_seps=[]
+      pshell_y=np.abs(pshell_center[:,1])
+      msk_seps.append(pshell_y<seps[0])
+      for i in range(len(seps)-1):
+        msk_seps.append((pshell_y>=seps[i])*(pshell_y<seps[i+1]))
+      msk_seps.append(pshell_y>=seps[-1])
+      for i in range(len(msk_seps)):
+        self.annotation_pshell[f'SPAR_{i+1}']=pids[msk_spar*msk_seps[i]]
+        self.annotation_pshell[f'RIB_{i+1}']=pids[msk_rib*msk_seps[i]]
+        self.annotation_pshell[f'SKIN_LOWER_{i+1}']=pids[msk_skin_l*msk_seps[i]]
+        self.annotation_pshell[f'SKIN_UPPER_{i+1}']=pids[msk_skin_u*msk_seps[i]]
+  
+  def add_caero_annotation(self,threashodx=30.0):
+    """
+    add annotation for caeros
+    """
+    self.annotation_caero=dict()
+    self.annotation_caero['WING']=[]
+    self.annotation_caero['RWING']=[]
+    self.annotation_caero['LWING']=[]
+    self.annotation_caero['HTAIL']=[]
+    self.annotation_caero['RHTAIL']=[]
+    self.annotation_caero['LHTAIL']=[]
+    for caero in self.bdf.caeros:
+      a=self.bdf.caeros[caero]
+      coord_center=(a.p1+a.p4)/2
+      if coord_center[0]<threashodx:
+        self.annotation_caero['WING'].append(caero)
+        if coord_center[1]>0:
+          self.annotation_caero['RWING'].append(caero)
+        else:
+          self.annotation_caero['LWING'].append(caero)
+      else:
+        self.annotation_caero['HTAIL'].append(caero)
+        if coord_center[1]>0:
+          self.annotation_caero['RHTAIL'].append(caero)
+        else:
+          self.annotation_caero['LHTAIL'].append(caero)
+
   def get_nodes_using_pids(self,pids):
     """
     get nids in elements that use given property ids
@@ -109,6 +194,33 @@ class BUGHandler:
           break
     return list(set(pids))
   
+  def plot_caeros(self,eids=None,fig=None):
+    """
+    plot caero elements
+    """
+    if fig is None:
+      fig=go.Figure()
+    if eids is None:
+      eids=self.bdf.caeros
+    coords=np.zeros((len(eids),4,3))
+    connect=np.zeros((len(eids),2,3))
+    connect[:]=np.array([[0,1,2],[2,3,0]])
+    connect=connect+np.arange(len(eids))[:,None,None]*4
+    connect=connect.reshape(-1,3)
+    for i,eid in enumerate(eids):
+      caero=self.bdf.caeros[eid]
+      p1=caero.p1.copy()
+      p2=caero.p1.copy()
+      p2[0]+=caero.x12
+      p4=caero.p4.copy()
+      p3=caero.p4.copy()
+      p3[0]+=caero.x43
+      coords[i]=np.stack((p1,p2,p3,p4)) #(4,3)
+    coords=coords.reshape(-1,3)
+    fig.add_trace(go.Mesh3d(x=coords[:,0],y=coords[:,1],z=coords[:,2],i=connect[:,0],j=connect[:,1],k=connect[:,2],opacity=0.3))
+    fig.update_layout(scene=dict(aspectmode='data'),margin=dict(l=0,r=0,b=0,t=10))
+    return fig
+
   def plot_nodes(self,marker_size=3):
     """
     plot nodes
@@ -185,10 +297,12 @@ class BUGHandler:
     fig.update_layout(scene=dict(aspectmode='data'),margin=dict(l=0,r=0,b=0,t=10))
     return fig
     
-  def plot_shells(self,pids,etypes=['CTRIA3', 'CQUAD4'],fig=None,showlegend=False):
+  def plot_shells(self,pids=None,etypes=['CTRIA3', 'CQUAD4'],fig=None,showlegend=False):
     """
     plot shell elements that have pshells of given pids
     """
+    if pids is None:
+      pids=self.pid_dict['PSHELL']
     if fig is None:
       fig=go.Figure()
     coord_list=[]
@@ -259,66 +373,6 @@ class BUGHandler:
     fig.update_layout(scene=dict(aspectmode='data'),margin=dict(l=0,r=0,b=0,t=10))
     return fig
 
-  def get_pshell_info(self,pids,etypes=['CTRIA3', 'CQUAD4']):
-    """
-    get pshell information
-    """
-    coord_list=[]
-    connect_list=[]
-    connect_offset=0
-    pid_tri=[]
-    pid_quad=[]
-    label_tri=[]
-    label_quad=[]
-    for etype in etypes:
-      eid_trg_dict={}
-      for pid in pids:
-        eid_trg_dict[pid]=[]
-      elems=self.bdf.Elements(self.eid_dict[etype])
-      nnode=len(elems[0].nodes)
-      for elem in elems:
-        if elem.pid in pids:
-          eid_trg_dict[elem.pid].append(elem.eid)
-      if nnode==3:
-        for pid in pids:
-          
-          eid=eid_trg_dict[pid]
-          nelem=len(eid)
-          if nelem==0:
-            continue
-          elems=self.bdf.Elements(eid)
-          coord=np.zeros((nelem,3,3))
-          for i,elem in enumerate(elems):
-            pid_tri.append(elem.pid)
-            for j,nid in enumerate(elem.nodes):
-              coord[i,j]=self.bdf.nodes[nid].xyz
-            norm=np.cross(coord[i,1]-coord[i,0],coord[i,2]-coord[i,0])
-            label_tri.append(norm[2]>0)
-          idx=np.arange(nelem*3).reshape(-1,3).T #(3,ne) 
-          coord=coord.reshape(-1,3) #(ne*3,3)
-          coord_list.append(coord)
-          connect_list.append(idx+connect_offset)
-          connect_offset+=len(coord)
-      elif nnode==4:
-        for pid in pids:
-          eid=eid_trg_dict[pid]
-          nelem=len(eid)
-          if nelem==0:
-            continue
-          elems=self.bdf.Elements(eid)
-          coord=np.zeros((nelem,4,3))
-          for i,elem in enumerate(elems):
-            pid_quad.append(elem.pid)
-            for j,nid in enumerate(elem.nodes):
-              coord[i,j]=self.bdf.nodes[nid].xyz
-            norm=np.cross(coord[i,1]-coord[i,0],coord[i,2]-coord[i,0])
-          label_quad.append(norm[2]>0)
-          idx=np.arange(nelem*4).reshape(-1,4).T #(4,ne)
-          coord=coord.reshape(-1,3) #(ne*3,3)
-          coord_list.append(coord)
-          connect_list.append(idx+connect_offset)
-          connect_offset+=len(coord)
-    return coord,idx,(pid_tri,pid_quad),(label_tri,label_quad)
 
   def set_trg_pids(self,pids):
     """
@@ -378,10 +432,45 @@ class BUGHandler:
       self.bdf.Materials([mid])[0].G23=g23[i]
       self.bdf.Materials([mid])[0].G33=g33[i]
 
+  def get_conm_coordinates(self,eid):
+    coord=np.zeros((len(eid),3))
+    for i,e in enumerate(eid):
+      nid=self.bdf.masses[e].nid
+      coord[i]=self.bdf.nodes[nid].xyz
+    return coord
+  
+  def get_conm_offset(self,eid):
+    offset=np.zeros((len(eid),3))
+    for i,e in enumerate(eid):
+      offset[i]=self.bdf.masses[e].X
+    return offset
+  
+  def get_caero_coordinates(self,eid):
+    p1=[]
+    p4=[]
+    for e in eid:
+      p1.append(self.bdf.caeros[e].p1.copy())
+      p4.append(self.bdf.caeros[e].p4.copy())
+    return np.array(p1),np.array(p4)
+  
+  def get_caero_coordinates_y_abs(self,eid):
+    y_coord=[]
+    for e in eid:
+      y_coord.append(self.bdf.caeros[e].p1[1])
+      y_coord.append(self.bdf.caeros[e].p4[1])
+    y_coord=np.unique(np.abs(y_coord))
+    return y_coord
+
   def get_mid_from_pid(self,pid):
     out=[prop.mid1 for prop in self.bdf.Properties(pid)]
     return out
   
+  def get_mat_coordinates(self,mids):
+    coords=np.zeros((len(mids),3))
+    for i,mid in enumerate(mids):
+      coords[i]=self.bdf.Materials([mid])[0].rho
+    return coords
+
   def get_pshell_coordinates(self,pids=None):
     if pids is None:
       pids=self.pid_dict['PSHELL']
@@ -398,6 +487,35 @@ class BUGHandler:
         coords_center[i]=coord.mean(axis=0)
       self.shell_center_coord=coords_center
       return coords_center
+    else:
+      raise NotImplementedError
+    
+  def get_pshell_thickness(self,pids=None):
+    """
+    get thickness of pshell elements
+    """
+    if pids is None:
+      pids=self.pid_dict['PSHELL']
+    thickness=np.zeros(len(pids))
+    for i,pid in enumerate(pids):
+      thickness[i]=self.bdf.properties[pid].t
+    return thickness
+
+  def get_pshell_norms(self,pids=None):
+    """
+    get normal vectors of pshell elements
+    """
+    if pids is None:
+      pids=self.pid_dict['PSHELL']
+    norms=np.zeros((len(pids),3))
+    if self.is_eid_equal_pid():
+      for i,eid in enumerate(pids):
+        nids=self.bdf.elements[eid].nodes
+        v1=self.bdf.nodes[nids[1]].xyz-self.bdf.nodes[nids[0]].xyz
+        v2=self.bdf.nodes[nids[2]].xyz-self.bdf.nodes[nids[0]].xyz
+        norms[i]=np.cross(v1,v2)
+      norms=norms/np.linalg.norm(norms,axis=1,keepdims=True)
+      return norms
     else:
       raise NotImplementedError
   
@@ -489,3 +607,14 @@ def write_shell_material(gmat,mids,fname,bdf_name):
   bdf.write_bdf(fname)
 
     
+Q_reference=np.array([[1.26880489e+11, 3.66473728e+09, 0.00000000e+00],
+                      [3.66473728e+09, 1.19896494e+10, 0.00000000e+00],
+                      [0.00000000e+00, 0.00000000e+00, 5.01485056e+09]])
+
+AnnotationLabels=['BUG_Fuselage_VTP',
+                   'BUG_WING_LWBOX',
+                   'BUG_WING_RWBOX',
+                   'MTOW_FUEL_LWBOX',
+                   'MTOW_FUEL_RWBOXmod',
+                   'BUG_LHTP',
+                   'BUG_RHTP',]
