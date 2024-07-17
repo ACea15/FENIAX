@@ -408,6 +408,35 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 
   run(inp, label=name)
 #+end_src
+**** WSP4alpha05
+#+NAME: WSP4alpha05
+#+begin_src python :results none :var name=(org-element-property :name (org-element-context))
+
+  <<wingSP>>
+  inp.fem.num_modes = 50
+  inp.systems.sett.s1.xloads.follower_interpolation = [[0.05 * -2e5, 0.5 * -2e5, 0., 0.],
+                                                       [0.05 * 6e5, 0.5 * 6e5,  0., 0.]
+                                                       ]
+  inp.systems.sett.s1.dt = round(1./ eigenvals[inp.fem.num_modes]**0.5, 6)
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+
+  run(inp, label=name)
+#+end_src
+**** WSP4alpha15
+#+NAME: WSP4alpha15
+#+begin_src python :results none :var name=(org-element-property :name (org-element-context))
+  <<wingSP>>
+  inp.fem.num_modes = 50
+  inp.systems.sett.s1.xloads.follower_interpolation = [[0.05 * -2e5, 1.5 * -2e5, 0., 0.],
+                                                       [0.05 * 6e5, 1.5 * 6e5,  0., 0.]
+                                                       ]
+  inp.systems.sett.s1.dt = round(1./ eigenvals[inp.fem.num_modes]**0.5, 6)
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+  run(inp, label=name)
+#+end_src
+
 ****  WSP5
 #+NAME: WSP5
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))

@@ -19,6 +19,7 @@
   (setq Veval_blocks "yes") ;; yes, no, no-export 
   (setq Veval_blocks_run "no-export")
   (setq pythonShell "py2")
+  (setq Vpics "png") ;; yes, no, no-export   
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
 #+end_src
@@ -869,7 +870,6 @@ Read data from Nastran simulations
 
 #+end_src
 
-
 * Examples
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
@@ -905,6 +905,7 @@ A Guyan reduction is employed in the reduction process and Fig. [[fig:modes]] il
 The static equilibrium of the aircraft under prescribed loads is first studied with follower loads normal to the wing applied at the tip of each wing. The response for an increasing load stepping of 200, 300, 400, 480 and 530 KN is computed. Nonlinear static simulations on the original full model (before condensation) are also carried out in MSC Nastran and are included. The interpolation elements in Nastran are used to output the displacements at the condensation nodes for direct comparison with the NMROM results.
 Geometric nonlinearities are better illustrated by representing a sectional view of the wing as in Fig. [[fig:SPWingsection]], where deformations in the z-direction versus the metric $S = \sqrt{x^2+y^2}$ are shown. MSC Nastran linear solutions (Solution 101) are also included to appreciate more clearly the shortening and follower force effects in the nonlinear computations.
 
+\begin{listing}[!ht]
 \begin{minted}[frame=single]{python}
 import fem4inas.preprocessor.configuration as configuration
 from fem4inas.preprocessor.inputs import Inputs
@@ -929,6 +930,10 @@ inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]
 config =  configuration.Config(inp)
 sol = fem4inas.fem4inas_main.main(input_obj=config)
 \end{minted}
+\caption{Example from external file}
+\label{code:1}
+\end{listing}
+
 
 #+NAME: SPWingsection
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -1145,7 +1150,7 @@ The increase in the internal loading, $f(\alpha)$, above the linear correlation 
 #+NAME: WSP_adz
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   sol_wspz= [solution.IntrinsicReader(f"./WSP{i}") for i in ["4alpha05",
-                                                            "4alpha1",
+                                                            "4",
                                                             "4alpha15"]] #range(1,6)]
   # fig, figname = fig_out(name)(wsp_wingtip)(sol_wsp, dim=0, labels=None, nast_load=0)
   #fig = subplots_wsp(sol_wsp, labels=None, nast_load=0)
@@ -1159,7 +1164,7 @@ The increase in the internal loading, $f(\alpha)$, above the linear correlation 
 #+ATTR_LATEX: :width 0.55\textwidth 
 #+CAPTION: Span-normalised wing-tip \(z\)-displacement for load profiles with $\alpha = 0.5, 1, 1.5$
 #+RESULTS: WSP_adz
-[[file:figs/WSP_adz.png]]
+[[file:]]
 
 #+NAME: WSP_adx2
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
