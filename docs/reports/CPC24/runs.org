@@ -68,7 +68,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inasdev")
+  (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -740,7 +740,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   inp.systems.sett.s1.solver_settings = dict(solver_name="Kvaerno3", #"ImplicitEuler",#"Kvaerno3",
             # stepsize_controller=dict(PIDController=dict(atol=1e-5,
             #                                            rtol=1e-5)),
-            root_finder=dict(Newton=dict(atol=1e-5,
+            root_finder=dict(Chord=dict(atol=1e-5,
                                         rtol=1e-5))                              
             # root_finder=dict(Newton=dict(atol=1e-6,
             #                              rtol=1e-6))

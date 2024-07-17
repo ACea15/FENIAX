@@ -875,11 +875,11 @@ Read data from Nastran simulations
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
 The cases presented are a demonstration of our solution approach to manage geometric nonlinearities, the accuracy of the solvers when compared to full FE simulations, and the computational gains that can be achieved.
-All computations are carried out on a single core of the same CPU, an i7-6700 with 3.4 GHz clock speed.
+All computations are carried out on a single CPU with an i7-6700 processor of 3.4 GHz clock speed.
+
 # The previous version of the code based on Python was not optimised and made heavy use of for-loops instead of vectorised operations. The main reason to show those previous results is to highlight the potential improvements in scientific software when paying attention to the implementation solely.
 ** Structural verification of a representative configuration
 \label{sec:representative_aircraft}
-
 A representative FE model of a full aircraft without engines is used to demonstrate  a versatile solution that accounts for geometric nonlinearities in a very efficient manner and only needs modal shapes and linear FE matrices from a generic FE solver as inputs. Another of the goals set for this work was to achieve an equally flexible strategy in the automatic calculation of derivatives across the various solvers in the code. The structural static and dynamic responses and their sensitivities with respect to input parameters are verified against MSC Nastran and finite differences respectively.
 \\
 The aircraft’s main wing is composed of wing surfaces, rear and front spars, wing box and ribs with composite materials employed in the construction. Flexible tail and rear stabiliser are rigidly attached to the wing (28.8 m of span), as  shown in Fig. [[fig:SailPlane2]]. This aircraft was first used in [[cite:&CEA2021a]] and is a good test case as it is not very complex yet representative of aircraft FE models and it is available open source.  
@@ -889,8 +889,7 @@ The aircraft’s main wing is composed of wing surfaces, rear and front spars, w
 #+ATTR_LATEX: :width 0.7\textwidth 
 [[file:figs_ext/SailPlaneRef.png]]
 
-A Guyan reduction is employed in the reduction process and Fig. [[fig:modes]] illustrates the accuracy of the condensed model by comparing the 3D modal shapes. No differences can be appreciated for the first few modes (the lowest frequency corresponding to a bending mode agrees in both models at $\omega_1=4.995$ rads/s) so we show higher frequency modes: a high order bending mode ($\omega_{10}=60.887/60.896$ rads/s in full versus reduced models) and a torsional mode ($\omega_{20}=107.967/107.969$ rads/s). This very good preservation of the full model leads to an excellent accuracy in the static and dynamic results presented below. It is important to remark this aircraft model is typical of previous generations airliners and does not feature high-aspect ratio wings. Therefore while this modelling strategy would not be suitable for every engineering structure, as long as there is a dominant dimension and deformations in the other two remain small (as is the case in high level descriptions of aircraft, bridges or wind turbines) it has been found to produce very good approximations when compared with full dimensional solutions.
-The computations in this section were carried out on a single CPU with a i7-6700 processor. 
+A Guyan reduction is employed in the reduction process and Fig. [[fig:modes]] illustrates the accuracy of the condensed model by comparing the 3D modal shapes. No differences can be appreciated for the first few modes (the lowest frequency corresponding to a bending mode agrees in both models at $\omega_1=4.995$ rads/s), so we show higher frequency modes: a high order bending mode ($\omega_{10}=60.887/60.896$ rads/s in full versus reduced models) and a torsional mode ($\omega_{20}=107.967/107.969$ rads/s). This very good preservation of the full model leads to an excellent accuracy in the static and dynamic results presented below. It is important to remark this aircraft model is typical of previous generations airliners and does not feature high-aspect ratio wings. Therefore while this modelling strategy would not be suitable for every engineering structure, as long as there is a dominant dimension and deformations in the other two remain small (as is the case in high level descriptions of aircraft, bridges or wind turbines) it has been found to produce very good approximations when compared with full dimensional solutions.
 
 #+NAME: fig:modes2
 #+CAPTION: Full VS reduced order models on the 10th modal shape $\omega_{10}=60.887/60.896$ rads/s
@@ -906,10 +905,13 @@ The computations in this section were carried out on a single CPU with a i7-6700
 The static equilibrium of the aircraft under prescribed loads is first studied with follower loads normal to the wing applied at the tip of each wing. The response for an increasing load stepping of 200, 300, 400, 480 and 530 KN is computed. Nonlinear static simulations on the original full model (before condensation) are also carried out in MSC Nastran and are included. The interpolation elements in Nastran are used to output the displacements at the condensation nodes for direct comparison with the NMROM results.
 Geometric nonlinearities are better illustrated by representing a sectional view of the wing as in Fig. [[fig:SPWingsection]], where deformations in the z-direction versus the metric $S = \sqrt{x^2+y^2}$ are shown. MSC Nastran linear solutions (Solution 101) are also included to appreciate more clearly the shortening and follower force effects in the nonlinear computations.
 
-\begin{minted}[frame=lines]{python}
+\begin{minted}[frame=single]{python}
+import fem4inas.preprocessor.configuration as configuration
+from fem4inas.preprocessor.inputs import Inputs
+import fem4inas.fem4inas_main
+inp = Inputs()
 inp.fem.folder = "./FEM/"
 inp.fem.num_modes = 50
-inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "static"
 inp.systems.sett.s1.solver_library = "diffrax"
 inp.systems.sett.s1.solver_function = "newton_raphson"
@@ -1179,7 +1181,7 @@ The increase in the internal loading, $f(\alpha)$, above the linear correlation 
 The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
 Fig. [[fig:xrf1_modalshapes]] shows the reference FE model with three modal shapes. The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. The aerodynamic model contains \(\sim 1,500\) aerodynamic panels. The simulations are carried out with a modal resolution of 70 modes and a time step in the Runge-Kutta solver of 0.005. 
 
-\begin{minted}[frame=lines]{python}
+\begin{minted}[frame=single]{python}
 inp.fem.folder = "./FEM/"
 inp.fem.num_modes = 70
 inp.systems.sett.s1.solution = "dynamic"
@@ -1350,7 +1352,7 @@ Snapshots of the 3D response are reconstructed for the G1 gust using the method 
 #+NAME: fig:xrf1gust3D
 #+CAPTION: 3D XRF1 Nonlinear gust response 
 #+ATTR_LATEX: :width 1\textwidth 
-[[file:figs_ext/xrf1gust3D.pdf]]
+[[file:figs_ext/xrf1gust3D2.pdf]]
 
 In previous examples the same Runge-Kutta 4 (RK4) time-marching scheme is used and now we explore the dynamic solution with other solvers to assess their accuracy and also their computational performance. Two explicit ODE solvers, RK4 and Dormand-Prince's 5/4 method (labelled S1 and S2), and two implicit, Euler first order and Kvaerno's 3/2 method ((labelled S3 and S4)), are compared in Fig. [[fig:GustXRF3578]] . In order to justify the use of implicit solvers we reduce the time step from 0.005 to 0.02 seconds, at which point both explicit solvers diverge. Kvaerno's implicit solver remain stable and accurate despite the larger time step while the Euler implicit method is stable but do not yield accurate results.
 
@@ -1370,7 +1372,7 @@ In previous examples the same Runge-Kutta 4 (RK4) time-marching scheme is used a
 #+CAPTION: Wing-tip response to high intensity gust using implicit solvers
 #+ATTR_LATEX: :width 0.8\textwidth 
 #+RESULTS: GustXRF3578
-[[file:figs/GustXRF3578.png]]
+[[file:]]
 
 
 # #+NAME: GustXRF56_x
@@ -1454,27 +1456,21 @@ Similarly to the examples above, we now verify the AD implementation for the non
 \midrule
 $f_1$ (AD) & 12.180 & -0.690 & 6.666 & 477.208 \\
 $f_1$ (FD)  & 12.180 & -0.690  & 6.190  & 477.198  \\
-$\Delta$ \% & -1.1941E-5 & -2.8929E-3 & -7.1417E+0 & -2.1560E-3 \\
 \hline
 $f_2 (AD)$ & 19.088 & -1.015 & 6.122 & 712.485 \\
 $f_2 (FD)$ & 19.088 & -1.015 & 7.045 & 712.514  \\
-$\Delta$ \% & -8.0605E-5  & 1.6081E-2  & 1.5074E+1  & 4.1813E-3  \\
 \hline
 $f_3 (AD)$ & 65.574 & 18.764 & 8.218 & 1464.910 \\
 $f_3 (FD)$ & 65.574  & 18.764  & 7.813 & 1464.909  \\
-$\Delta$ \% & 5.1097E-6  & -5.0153E-5  & -4.9240E+0  & -1.0196E-4  \\
 \hline
 $f_4 (AD)$ & 126.648 & 6.961 & 21.598 & 2883.370 \\
 $f_4 (FD)$ & 126.648  & 6.961 & 19.736  & 2883.371  \\
-$\Delta$ \% & 6.2554E-6  & -2.2226E-3  & -8.6195E+0  & 5.2262E-5  \\
 \hline
 $f_5 (AD)$ & 330.759 & 84.098 & 85.224 & 5931.723 \\
 $f_5 (FD)$ & 330.759 & 84.099  & 97.188  & 5930.027  \\
-$\Delta$ \% & -1.3673E-5  & 2.0601E-3  & 1.4038E+1  & -2.8595E-2  \\
 \hline
 $f_6$ (AD) & 252.128 & 24.212 & 48.423 & 7179.735 \\
 $f_6$ (FD) & 252.128  & 24.211  & 14.980  & 7180.023  \\
-$\Delta$ \% & 4.4897E-5  & -5.4566E-3  & -6.9065E+1  & 4.0120E-3  \\
 \bottomrule
 \end{tabular}
 \end{center}
