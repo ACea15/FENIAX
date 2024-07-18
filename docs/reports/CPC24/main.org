@@ -9,14 +9,15 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 \\
 
 *Program summary*
-Program Title: FENIAX
+Program Title: FENIAX 
 /Library link to program files:/ https://github.com/ACea15/FENIAX/tree/master/docs/reports/CPC24
 /Developer’s repository link:/ https://github.com/ACea15/FENIAX
-/Code Ocean capsule:/ https://codeocean.com/capsule/0851990
 /Licensing provisions:/ GNU GPLv3
 /Programming language:/ Python
-/Nature of problem:/
-/Solution method:/ 
+/Nature of problem:/ Aeroelastic solutions that couple structural and fluid domains are paramount in the study of many engineering structures such aeroplanes, bridges or wind-turbines. They often feature slender and light components that can potentially undergo large deflections that require of geometrically nonlinear modelling tools, which are linked to higher computational resources and potentially prohibitively simulation times. In addition, since the advent of computers, organizations have gathered an expertise to build large finite-element (FE) models based on linear formulations that might not be easily amendable for nonlinear analysis. 
+We propose a non-intrusive framework to enhance complex FE structural and aeroelastic models with geometric nonlinearities -including follower aerodynamic forces, geometric stiffening of the structure and shortening effects-, and the ability to perform time-domain dynamic analysis in near-real time. 
+/Solution method:/ We have built the library FENIAX, a nonlinear aeroelastic toolbox that is automatic differentiable and can be deployed on modern hardware architectures. It is powered by Google's high-performance JAX library, originally developed towards machine learning problems but that has also proved very useful for Scientific computation. The inputs to the library are controlled via a yaml file or a python dictionary and the output are efficient binary numpy arrays. A modular architecture allows easy extension of the core routines, more importantly as new features continue to be added.
+/Additional comments including restrictions:/ FENIAX is not a stand-alone library as it requires inputs from standard FE packages. Other open-source third-party Python libraries are automatically installed. Currently FENIAX only runs on a single processing unit but work is already in place to make it compatible with multi-process environments. The library includes a test-suite with over a hundred tests and runs on Linux and macOS operating systems.
 #+end_abstract
 # https://stackoverflow.com/questions/44414584/how-to-export-a-org-mode-table-to-latex-with-the-correct-placement-h
 * House keeping  :noexport: 
@@ -31,7 +32,7 @@ Program Title: FENIAX
         '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
           "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "fem4inasdev")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -94,7 +95,6 @@ Program Title: FENIAX
   import fem4inas.unastran.op2reader as op2reader
   import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
-
 #+end_src
 
 :PROPERTIES:

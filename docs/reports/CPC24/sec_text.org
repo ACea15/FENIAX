@@ -65,7 +65,7 @@ Lastly, sec. [[Conclusions]] summarises the the achievements and further develop
 
 * Theory and implementation
 In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelasticity modelling. For further details, see [[cite:&PALACIOS2019]] and cite:&CEA2021b.
-A major contribution with respect to our previous works is a new computational implementation that achieves accelerations of over 2 orders of magnitude compared to standard implementations[fn:2::Both the new implementation and the examples of this paper can be found at https://github.com/ACea15/FENIAX.]. Furthermore, a highly modular, flexible architecture based on software design patterns has been put in place cite:&CEA2024.
+A major contribution with respect to our previous works is a new computational implementation that achieves accelerations of over 2 orders of magnitude compared to standard implementations. Furthermore, a highly modular, flexible architecture based on software design patterns has been put in place cite:&CEA2024.
 The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation.
 Next we described the main formulation that leads to a geometrically nonlinear enhancement of generic aircraft models and its integration into an aeroelastic framework, along with some implementation details.
 ** Airframe idealisation
@@ -95,9 +95,9 @@ The time complexity of the various components is stated on the side of the algor
  \BlankLine
 $\bm{\phi}$, $\bm{\psi}$  $\longleftarrow$ modes($\bm{K}_a$, $\bm{M}_a$, $\bm{X}_a$) \Comment{Intrinsic modes: O($N_n^2 \times N_m$)}  \;
 $\bm{\Gamma}$  $\longleftarrow$ couplings($\bm{\phi}$, $\bm{\psi}$) \Comment{Nonlinear couplings O($N_n \times N_m^3$)} \;
-$\bm{q}$  $\longleftarrow$ system($\bm{\Gamma}$, $\bm{\mathcal{A}}$, $\bm{\phi}$, $\bm{X}_a$) \Comment{Modal coordinates: O($N_t \times$ N_m^3$)}  \;
+$\bm{q}$  $\longleftarrow$ system($\bm{\Gamma}$, $\bm{\mathcal{A}}$, $\bm{\phi}$, $\bm{X}_a$) \Comment{Modal coordinates: O($N_t \times N_m^3$)}  \;
 $\bm{X}_1$, $\bm{X}_{2}$, $\bm{X}_{3}$   $\longleftarrow$ ivars($\bm{q}$, $\bm{\phi}$, $\bm{\psi}$) \Comment{velocity/strain fields: O($N_t \times N_m$)} \;
-$\bm{r}_a$, $\bm{R}_{a}$   $\longleftarrow$ integration($\bm{X}_{3}, $\bm{X}_a$) \Comment{Positional/rotational fields: O($N_t \times N_n$)}  \;
+$\bm{r}_a$, $\bm{R}_{a}$   $\longleftarrow$ integration($\bm{X}_{3}$, $\bm{X}_a$) \Comment{Positional/rotational fields: O($N_t \times N_n$)}  \;
 \BlankLine
 }
 \caption{Main components in solution process}
@@ -115,7 +115,7 @@ For a set of reduced frequencies and a given Mach number, the DLM (or a higher f
 where the $\pmb{\mathcal{A}}_is$ are real matrices, $c$ is the reference chord, $Q_\infty = \tfrac12\rho_\infty U_\infty^2$ is the dynamic pressure, $\pmb{\lambda}_p$ the aerodynamic states and $N_p$ the number of lags. The term $\bm{q}_0$ is the displacement modal amplitude and $\bm{q}_1$ is the velocity modal amplitude; note both displacement and velocity amplitudes are used to define the inputs to the aerodynamic subproblem.
 Eq. \ref{eq3:eta_full} needs to be combined with linear system of ODEs describing the aerodynamic states:
 \begin{equation}
-\dot{\bm{\lambda}}_{p} &= Q_{\infty}\bm{\mathcal{A}}_{p+2}\pmb{q}_{1}
+\dot{\bm{\lambda}}_{p} = Q_{\infty}\bm{\mathcal{A}}_{p+2}\pmb{q}_{1}
                        + Q_{\infty}\bm{\mathcal{A}}_{g(p+2)}\dot{\pmb{v}}_g
                        -\frac{2U_\infty\gamma_p}{c}\bm{\lambda}_{p}
  \qquad \textup{for} \qquad p=1,\ldots,N_p
@@ -139,7 +139,7 @@ The size of the system
 If instead of the dynamics the interest lies in the nonlinear static equilibrium to the external forces, the solution is posed as the following nonlinear system of equations, which is formed from Eqs. \ref{eq2:sol_qs} by setting velocities and accelerations to 0 ($\bm q_1 = \dot{\bm q}_1 = \pmb 0$):
 
 \begin{equation}\label{eq:q_static}
-\pmb F(\pmb{q}_{2}) &=  \pmb{\omega} \odot  \pmb{q}_{2}  - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \bm{\eta}_a +  \bm{\eta}_g + \bm{\eta}_f = \bm 0 
+\pmb F(\pmb{q}_{2}) =  \pmb{\omega} \odot  \pmb{q}_{2}  - \pmb{\Gamma}_{2} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{2} \right) + \bm{\eta}_a +  \bm{\eta}_g + \bm{\eta}_f = \bm 0 
 \end{equation}
 
 A load-stepping scheme has been implemented such that a pseudo-time variable controls the amount of load $\bm \eta$ that is applied in an iterative process of the Newton-Raphson solver. This becomes critical for the Newton-Raphson solvers to converge in very nonlinear problems and the pseudo-time variable also allows to maintain data structures similar to that of the dynamic solution. Our own Runge-Kutta solvers have been implemented and also integration with Diffrax is available, a JAX-based library that provides a large number of solvers and advanced features such as adjoints of the differential equations, [[cite:&kidger2021on]].
@@ -257,19 +257,6 @@ def f_gamma1(phi1: jnp.array, psi1: jnp.array) -> jnp.array:
     return gamma1
 \end{minted}
 
-** Bridging full and reduced descriptions through modal spaces
-A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes, $\bm \phi_0$ obtained from the global FEM as output of the dynamic condensation:
-
-1. Velocity modes, $\bm \phi_1 = \bm \phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \phi_1 \bm q_1 = \bm \phi_0 \dot{\bm q}_0$. 
-
-2. Momentum modes, $\bm \psi_1 = \bm M_a \bm \phi_0$. For arbitrary distributed mass models, the dynamic condensation technique will produce a fully-populated $\bm M_a$ matrix, and the various couplings will be captured after the matrix multiplication. 
-
-3. Force/moment modes, $\bm \phi_2 = \mathcal{S}(\bm K_a \bm \phi_0)$, represent the internal stress resultants in the structure as the sum, $\mathcal{S}$, along the main load-paths of equilibrium forces and moments produced by the modal deformations.
-   # As a consequence, results are presented in the mid-point between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
-   # Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$.
-   
-4. Strain modes are approximated from the linearisation of the equations as $\bm \psi_2 = -\bm \phi_{0}' + \pmb{E}^{\top}\bm \phi_{0}$, with  with the derivative taken along the spanwise coordinate, $s$. $\pmb{E}^{\top}$ is a constant matrix in Eq. \ref{eq:linear_operators}.
-
 ** COMMENT Time domain unsteady aerodynamics
 Various representations has been adopted to construct reduced-order models in unsteady aerodynamics. The doublet-lattice method (DLM)  [[cite:&ALBANO1969]] is a transfer function approach; the unsteady vortex lattice method \cite{Katz2001} is a state-space approach; and system identification approaches from CFD often use impulse response methods \cite{Silva2017}. We will make use of the DLM, a numerical solution to the compressible potential equation, a linearisation of the Navier-Stocks equations with no viscosity and isentropic assumptions:
 \begin{equation}\label{eq3:potential_aero}
@@ -312,6 +299,19 @@ This need to be combined with linear system of ODE describing the aerodynamic st
 
 The term $\bm{q}_0$ is the displacement modal amplitude and $\bm{q}_1$ is the velocity modal amplitude; note both displacement and velocity amplitudes are used to define the inputs to the aerodynamic subproblem. For convenience in the formulation the aerodynamic states are rescaled with the dynamic pressure$.
 
-bibliographystyle:plain
+** Bridging full and reduced descriptions through modal spaces
+A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes, $\bm \phi_0$ obtained from the global FEM as output of the dynamic condensation:
+
+1. Velocity modes, $\bm \phi_1 = \bm \phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \phi_1 \bm q_1 = \bm \phi_0 \dot{\bm q}_0$. 
+
+2. Momentum modes, $\bm \psi_1 = \bm M_a \bm \phi_0$. For arbitrary distributed mass models, the dynamic condensation technique will produce a fully-populated $\bm M_a$ matrix, and the various couplings will be captured after the matrix multiplication. 
+
+3. Force/moment modes, $\bm \phi_2 = \mathcal{S}(\bm K_a \bm \phi_0)$, represent the internal stress resultants in the structure as the sum, $\mathcal{S}$, along the main load-paths of equilibrium forces and moments produced by the modal deformations.
+   # As a consequence, results are presented in the mid-point between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
+   # Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$.
+   
+4. Strain modes are approximated from the linearisation of the equations as $\bm \psi_2 = -\bm \phi_{0}' + \pmb{E}^{\top}\bm \phi_{0}$, with  with the derivative taken along the spanwise coordinate, $s$. $\pmb{E}^{\top}$ is a constant matrix in Eq. \ref{eq:linear_operators}.
+
+# bibliographystyle:plain
+# # bibliography:/home/acea/Documents/Engineering.bib
 # bibliography:/home/acea/Documents/Engineering.bib
-bibliography:/home/acea/Documents/Engineering.bib
