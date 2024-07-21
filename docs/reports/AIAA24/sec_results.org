@@ -1,26 +1,25 @@
 #+setupfile: ./config.org
 * House keeping  :noexport: 
 #+begin_src elisp :results none :tangle no :exports none
-    (add-to-list 'org-structure-template-alist
-    '("sp" . "src python :session (print pythonShell)"))
-    (add-to-list 'org-structure-template-alist
-    '("se" . "src elisp"))
-    (setq org-confirm-babel-evaluate nil)
-    (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
-    (setq org-latex-pdf-process
-      '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
-        "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
-    ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-    (pyvenv-workon "fem4inasdev")
-    (require 'org-tempo)
-    ;; Veval_blocks -> eval blocks of latex
-    ;; Veval_blocks_run -> eval blocks to obtain results
-    (setq Veval_blocks "yes") ;; yes, no, no-export
-    (setq Vpics "png") ;; yes, no, no-export   
-    (setq Veval_blocks_run "no-export")
-    (setq pythonShell "*py1*")
-    ;; export_blocks: code, results, both, none
-    (setq export_blocks  "results")  
+  (add-to-list 'org-structure-template-alist
+  '("sp" . "src python :session (print pythonShell)"))
+  (add-to-list 'org-structure-template-alist
+  '("se" . "src elisp"))
+  (setq org-confirm-babel-evaluate nil)
+  (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+  (setq org-latex-pdf-process
+    '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
+      "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
+  ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+  (pyvenv-workon "fem4inas")
+  (require 'org-tempo)
+  ;; Veval_blocks -> eval blocks of latex
+  ;; Veval_blocks_run -> eval blocks to obtain results
+  (setq Veval_blocks "yes") ;; yes, no, no-export
+  (setq Vpics "png") ;; yes, no, no-export   
+  (setq pythonShell "py1org")
+  ;; export_blocks: code, results, both, none
+  (setq export_blocks  "results")  
 #+end_src
 * Load modules :noexport: 
 :PROPERTIES:
@@ -239,14 +238,62 @@ https://plotly.com/python/subplots/
                         yaxis_title='Cg error')
       return fig
 
-  def get_trimaoa(ti, q, omega, phi1):
+  def get_trimaoa_ti(ti, q, omega, phi1):
       q2= q[ti, 0:-1]
       q0i = - q2[2:]/ omega[2:]
       q0 = jnp.hstack([q2[:2], q0i])
       X0 = jnp.tensordot(phi1, q0, axes=(0, 0))
-      return X0
-  
+      return X0[4,0]
+
+  def get_trimaoa(q, omega, phi1):
+
+      q_len = len(q)
+      aoa = [get_trimaoa_ti(i,
+                           q,
+                           omega,
+                           phi1) for i in range(q_len)]
+      return jnp.array(aoa)
+
+  def get_trimelevator(q, ti=None):
+      q_len = len(q)
+      if ti is None:
+          q_elevator = [q[i, -1] for i in range(q_len)]
+      else:
+          q_elevator= q[ti, -1]
+      return jnp.array(q_elevator)
+
+  @fig_background
+  def plot_trimaoa(loads, alphas, labels):
+
+      colors = ['blue', 'green', 'red', 'black', 'orange', 'yellow']
+      fig = None
+      for i, (alphai, labeli) in enumerate(zip(alphas, labels)):
+          fig = uplotly.lines2d(loads, alphai, fig,
+                                    dict(name=labeli,
+                                         line=dict(color=colors[i])
+                                         ),
+                                    dict())
+
+      #fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
+      fig.update_layout(#showlegend=False,
+                        #height=800,
+                        xaxis_title='Loads [n-g]',
+                        yaxis_title=r'Angle [$^o$]')
+      return fig
+
 #+end_src
+
+* Nastran runs
+see
+[[../../../examples/XRF1trim/NASTRAN/runs/]]
+
+[[file:~/projects/FEM4INAS/examples/XRF1trim/NASTRAN/runs/XRF1-144trim1g.f06::ID LABEL TYPE TRIM STATUS VALUE OF UX][go to f06]]
+
+| Load | aoa      | elevetor |
+| 1g   | 7.552e-2 | 4.632e-2 |
+| 2g   | 1.511e-1 | 9.263e-2 |
+| 3g   | 2.266e-1 | 1.39e-1  |
+| 4g   | 3.021e-1 | 1.853e-1 |
 
 * Results
 :PROPERTIES:
@@ -344,38 +391,74 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 #+RESULTS: FFBerror2
 [[file:]]
 
-** COMMENT XRF1
+** XRF1
 
 *** Trim flight
 
-#+NAME: TrimXRF1
-#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context)) :tangle ./results/run.py
-  sol1= solution.IntrinsicReader("./xrf1trim_1")
-  X0 = [get_trimaoa(i,
-                   sol1.data.staticsystem_s1.q,
-                   sol1.data.modes.omega,
-                   sol1.data.modes.phi1) for i in range(len(sol1.data.staticsystem_s1.q))]
-  #sol2= solution.IntrinsicReader("./XRF2")
-  #fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip2, sol1.data.dynamicsystem_s2.t, #sol1.data.dynamicsystem_s2.ra, labels=[1,2], node=0)
-  #figname
+#+NAME: sol=xrf1trim1_4g
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
+  sol1= solution.IntrinsicReader("./xrf1trim1_4g")
+  aoa = get_trimaoa(sol1.data.staticsystem_s1.q,
+                    sol1.data.modes.omega,
+                    sol1.data.modes.phi1)
+  q_elevator = get_trimelevator(sol1.data.staticsystem_s1.q)
 #+end_src
 
-#+NAME: TrimXRF1l
-#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context)) :tangle ./results/run.py
-  sol1= solution.IntrinsicReader("./xrf1trim_1l")
-  X0 = [get_trimaoa(i,
-                   sol1.data.staticsystem_s1.q,
-                   sol1.data.modes.omega,
-                   sol1.data.modes.phi1) for i in range(len(sol1.data.staticsystem_s1.q))]
-  #sol2= solution.IntrinsicReader("./XRF2")
-  #fig, figname = fig_out(name)(subplots_wtips)(xrf1_wingtip2, sol1.data.dynamicsystem_s2.t, #sol1.data.dynamicsystem_s2.ra, labels=[1,2], node=0)
-  #figname
+#+RESULTS: sol=xrf1trim1_4g
+
+#+NAME: sol=xrf1trimlin1_4g
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
+  sol1lin= solution.IntrinsicReader("./xrf1trimlin1_4g")
+  aoalin = get_trimaoa(sol1lin.data.staticsystem_s1.q,
+                    sol1lin.data.modes.omega,
+                    sol1lin.data.modes.phi1)
+  qlin_elevator = get_trimelevator(sol1lin.data.staticsystem_s1.q)
 #+end_src
+
+#+RESULTS: sol=xrf1trimlin1_4g
+
+#+NAME: sol=xrf1trim_nastran
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context))
+
+  aoa_nastran = jnp.array([7.552e-2,
+                 1.511e-1,
+                 2.266e-1,
+                 3.021e-1,
+                 ])
+  qelevator_nastran = jnp.array([4.632e-2,
+                       9.263e-2,
+                       1.39e-1, 
+                       1.853e-1
+                       ])
+
+#+end_src
+
+#+NAME: sol=xrf1trim_plot
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_trimaoa)(loads=[1,2,3,4],
+                                             alphas=[aoa,
+                                                     aoalin,
+                                                     aoa_nastran,
+                                                     q_elevator,
+                                                     qlin_elevator,
+                                                     qelevator_nastran],
+                                             labels=["NLMROM-AoA",
+                                                     "LROM-AoA",
+                                                     "NASTRAN-AoA",
+                                                     "NLMROM-Elevator",
+                                                     "LROM-Elevator",
+                                                     "NASTRAN-Elevator"])
+  figname
+#+end_src
+
+#+RESULTS: sol=xrf1trim_plot
+[[file:figs/sol=xrf1trim_plot.png]]
+
+
 
 #+NAME: fig:xrf1_trim
 #+CAPTION: XRF1 3D trim  
 #+ATTR_LATEX: :width 0.9\textwidth 
 [[file:figs_ext/xrf1_trim.png]]
-
 
 *** Gust response

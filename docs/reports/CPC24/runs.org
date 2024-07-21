@@ -447,7 +447,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   inp.driver.sol_path = pathlib.Path(
       f"./{name}")
 
-  #run(inp, label=name)
+  run(inp, label=name)
 #+end_src
 
 *** COMMENT Plot
