@@ -85,15 +85,17 @@ def fe_matrices(fem):
     
     st.subheader('Ka and Ma input matrices')
     st.write("Stiffness matrix")
-    fig = px.imshow(fem.Ka, aspect="auto")
-    st.plotly_chart(fig, use_container_width=True)
-    with st.expander("See Stiffness matrix"):
+    with st.expander("See Stiffness matrix color map"):
+        fig = px.imshow(fem.Ka, aspect="auto")
+        st.plotly_chart(fig, use_container_width=True)
+    with st.expander("See Stiffness matrix data-frame"):
         st.table(fem.Ka)
     st.divider()
     st.write("Mass matrix")
-    fig2 = px.imshow(fem.Ma, aspect="auto")
-    st.plotly_chart(fig2, use_container_width=True)
-    with st.expander("See mass matrix"):
+    with st.expander("See mass matrix color map"):
+        fig2 = px.imshow(fem.Ma, aspect="auto")
+        st.plotly_chart(fig2, use_container_width=True)
+    with st.expander("See mass matrix data-frame"):
         st.table(fem.Ma)
 
 def df_modes(sol, config):
