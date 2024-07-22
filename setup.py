@@ -72,6 +72,9 @@ setup(
             ####
             "pytest",
             ####
+            "python-lsp-server",
+            "python-lsp-ruff",
+            ####
             "jupyterlab",
             "matplotlib",
             "plotly",
