@@ -3,9 +3,21 @@
 #+begin_abstract
 A novel methodology is presented in this paper for the structural and aeroelastic analysis of large engineering systems with slender components, such as aircraft.
 Leveraging on the numerical library JAX, a nonlinear formulation based on velocities and strains enables a highly vectorised codebase that is especially suitable for the integration of aerodynamic loads which naturally appear as follower forces. On top of that, JAX automatic differentiation capabilities lead to a differentiable software that can be embedded into broader multidisciplinary frameworks. 
-The general solution starts from a linear Finite-Element (FE) model of arbitrary complexity, on which a structural model order reduction is performed. A nonlinear description of the reduced model follows with the corresponding reconstruction of the full 3D dynamics. Both highly accurate and efficient solutions for representative aircraft models are shown. An extensive verification has been carried out by comparison with MSC Nastran full-FE linear and nonlinear solutions.
-Furthermore the nonlinear gust response of an industrial configuration with over half a million degrees-of-freedom is computed, and it is faster than its frequency-based, linear equivalent as implemented by commercial packages. Therefore this could be harnessed by aircraft loads engineers to add geometrically nonlinear effects to their existing workflows at no extra computational effort.
+The general solution starts from a linear Finite-Element (FE) model of arbitrary complexity, on which a structural model order reduction is performed. A nonlinear description of the reduced model follows, with the corresponding reconstruction of the full 3D dynamics. Both highly accurate and efficient solutions for representative aircraft models are shown. An extensive verification has been carried out by comparison with MSC Nastran full-FE linear and nonlinear solutions.
+Furthermore the nonlinear gust response of an industrial configuration with over half a million degrees-of-freedom is computed, and it is faster than its frequency-based, linear equivalent as implemented by the commercial package. Therefore this could be harnessed by aircraft loads engineers to add geometrically nonlinear effects to their existing workflows at no extra computational effort.
 Finally, automatic differentiation on both static and dynamic problems is validated against finite-differences, which combined with a near real-time performance of the solvers opens new possibilities for aeroelastic studies and design optimisation.
+\\
+
+*Program summary*
+Program Title: FENIAX 
+/Library link to program files:/ https://github.com/ACea15/FENIAX/tree/master/docs/reports/CPC24
+/Developer’s repository link:/ https://github.com/ACea15/FENIAX
+/Licensing provisions:/ GNU GPLv3
+/Programming language:/ Python
+/Nature of problem:/ Aeroelastic solutions that couple structural and fluid domains are paramount in the study of many engineering structures such aeroplanes, bridges or wind-turbines. They often feature slender and light components that can potentially undergo large deflections that require of geometrically nonlinear modelling tools, which are linked to higher computational resources and potentially prohibitively simulation times. In addition, since the advent of computers, organizations have gathered an expertise to build large finite-element (FE) models based on linear formulations that might not be easily amendable for nonlinear analysis. 
+We propose a non-intrusive framework to enhance complex FE structural and aeroelastic models with geometric nonlinearities -including follower aerodynamic forces, geometric stiffening of the structure and shortening effects-, and the ability to perform time-domain dynamic analysis in near-real time. 
+/Solution method:/ We have built the library FENIAX, a nonlinear aeroelastic toolbox that is automatic differentiable and can be deployed on modern hardware architectures. It is powered by Google's high-performance JAX library, originally developed towards machine learning problems but that has also proved very useful for Scientific computation. The inputs to the library are controlled via a yaml file or a python dictionary and the output are efficient binary numpy arrays. A modular architecture allows easy extension of the core routines, more importantly as new features continue to be added.
+/Additional comments including restrictions:/ FENIAX is not a stand-alone library as it requires inputs from standard FE packages. Other open-source third-party Python libraries are automatically installed. Currently FENIAX only runs on a single processing unit but work is already in place to make it compatible with multi-process environments. The library includes a test-suite with over a hundred tests and runs on Linux and macOS operating systems.
 #+end_abstract
 # https://stackoverflow.com/questions/44414584/how-to-export-a-org-mode-table-to-latex-with-the-correct-placement-h
 * House keeping  :noexport: 
@@ -24,8 +36,9 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "no-export") ;; yes, no, no-export 
+  (setq Veval_blocks "yes") ;; yes, no, no-export 
   (setq Veval_blocks_run "no-export")
+  (setq Vpics "png") ;; yes, no, no-export   
   (setq pythonShell "py2")
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
@@ -82,7 +95,6 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   import fem4inas.unastran.op2reader as op2reader
   import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
-
 #+end_src
 
 :PROPERTIES:
@@ -109,8 +121,10 @@ The computational advantage of the methodology is demonstrated throughout using 
 \\
 As for future work, a strategy to compute manoeuvre and dynamic load envelopes that can also be differentiated via AD will be built. This will be enabled using JAX capabilities for parallelisation of distributed accelerators such that the thousands of loads cases are computed fast. 
 Increasing the fidelity in the load calculations to consider CFD-based aerodynamics would be an additional necessary step in order to achieve a more accurate nonlinear aeroelastic methodology. 
-* Appendix: Nonlinear Modal Reduced Order Models
-#+INCLUDE: "./sec_text.org::*Appendix: Nonlinear Modal Reduced Order Models" :only-contents t
+
+\appendix
+* Nonlinear Modal Reduced Order Models
+#+INCLUDE: "./sec_text.org::*Nonlinear Modal Reduced Order Models" :only-contents t
 
 bibliographystyle:plain
 # bibliography:/home/acea/Documents/Engineering.bib

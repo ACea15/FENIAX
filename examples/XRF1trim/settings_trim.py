@@ -32,14 +32,14 @@ inp.systems.sett.s1.solution = "static"
 inp.systems.sett.s1.target = "trim"
 inp.systems.sett.s1.bc1 = 'free'
 # inp.systems.sett.s1.nonlinear = 
-inp.systems.sett.s1.solver_function = "newton_raphson"
+inp.systems.sett.s1.solver_function = "newton"
 inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                            atol=1e-6,
                                            max_steps=100,
                                            norm="linalg_norm",
                                            kappa=0.01)
 inp.systems.sett.s1.solver_library = "diffrax"#"runge_kutta"
-inp.systems.sett.s1.solver_function = "newton_raphson"
+inp.systems.sett.s1.solver_function = "newton"
 inp.systems.sett.s1.xloads.modalaero_forces = True
 inp.systems.sett.s1.xloads.gravity_forces = True
 inp.systems.sett.s1.xloads.gravity = 9.807 * 4

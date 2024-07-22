@@ -80,7 +80,7 @@ def ode2(F: callable,
     return sol
 
 
-def newton_raphson(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **kwargs):
+def newton(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **kwargs):
 
     solver = optx.Newton(rtol=rtol,
                          atol=atol,
@@ -97,7 +97,7 @@ def pull_ode(sol):
     qs = jnp.array(sol.ys)
     return qs
 
-def pull_newton_raphson(sol):
+def pull_newton(sol):
 
     qs = jnp.array(sol.value)
     return qs

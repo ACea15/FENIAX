@@ -9,11 +9,11 @@
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inasdev")
+  (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "no-export") ;; yes, no, no-export 
+  (setq Veval_blocks "yes") ;; yes, no, no-export 
   (setq Veval_blocks_run "yes")
   (setq pythonShell "py1org")
   ;; export_blocks: code, results, both, none
@@ -106,9 +106,7 @@
 
 - Models run on this exercise:
 
-** COMMENT SimoFSpaguetti
-
-25 node discretization
+** SimoFSpaguetti
 
 #+NAME: rrb
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
@@ -116,13 +114,12 @@
   inp.engine = "intrinsicmodal"
   inp.fem.connectivity = {'0': None}
   inp.fem.folder = examples_folder / 'SimoFSpaguetti/FEMshell25'
-  inp.fem.num_modes = 150
   inp.fem.eig_type = "scipy"
   inp.driver.typeof = "intrinsic"
   inp.simulation.typeof = "single"
   inp.systems.sett.s1.solution = "dynamic"
   inp.systems.sett.s1.bc1 = 'free'
-  inp.systems.sett.s1.t1 = 15.
+  inp.systems.sett.s1.t1 = 10.
   inp.systems.sett.s1.dt = 5e-4
   inp.systems.sett.s1.solver_library = "runge_kutta" #"runge_kutta" #"diffrax" #
   inp.systems.sett.s1.solver_function = "ode"
@@ -130,13 +127,16 @@
   inp.systems.sett.s1.xloads.dead_forces = True
 #+end_src
 
-*** 2D
+*** 25 Nodes
+25 node discretization of asets
+**** 2D_150m
 
-#+NAME: rrb2d
+#+NAME: rrb2d_25n_150m
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
   <<rrb>>
   inp.driver.sol_path= pathlib.Path(
       f"./{name}")
+  inp.fem.num_modes = 150
   inp.systems.sett.s1.xloads.dead_points = [[24, 0],
                                             [24, 5]]
   inp.systems.sett.s1.xloads.x = [0., 2.5, 2.5+1e-6, 15.5]
@@ -146,12 +146,49 @@
   run(inp, label=name)
 #+end_src
 
-*** 3D
-#+NAME: rrb3d
+**** 3D_150m
+#+NAME: rrb3d_25n_150m
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
   <<rrb>>
   inp.driver.sol_path= pathlib.Path(
       f"./{name}")
+  inp.fem.num_modes = 150
+  inp.systems.sett.s1.xloads.dead_points = [[24, 0],
+                                          [24, 4],
+                                          [24, 5]]
+  inp.systems.sett.s1.xloads.x = [0., 2.5, 5., 20.5]
+  inp.systems.sett.s1.xloads.dead_interpolation = [[0., 20., 0., 0.],
+                                                 [0., 100., 0., 0.],
+                                                 [0., -200., 0., 0.]
+                                                 ]
+  run(inp, label=name)
+#+end_src
+*** COMMENT 50 nodes
+50 node discretization of asets
+**** 2D_300m
+
+#+NAME: rrb2d_50n_300m
+#+begin_src python :results none :var name=(org-element-property :name (org-element-context))
+  <<rrb>>
+  inp.driver.sol_path= pathlib.Path(
+      f"./{name}")
+  inp.fem.num_modes = 300
+  inp.systems.sett.s1.xloads.dead_points = [[24, 0],
+                                            [24, 5]]
+  inp.systems.sett.s1.xloads.x = [0., 2.5, 2.5+1e-6, 15.5]
+  inp.systems.sett.s1.xloads.dead_interpolation = [[8., 8., 0., 0.],
+                                                   [-80., -80., 0., 0.]
+                                                   ]
+  run(inp, label=name)
+#+end_src
+
+**** 3D_300m
+#+NAME: rrb3d_50n_300m
+#+begin_src python :results none :var name=(org-element-property :name (org-element-context))
+  <<rrb>>
+  inp.driver.sol_path= pathlib.Path(
+      f"./{name}")
+  inp.fem.num_modes = 300
   inp.systems.sett.s1.xloads.dead_points = [[24, 0],
                                           [24, 4],
                                           [24, 5]]
@@ -178,7 +215,7 @@
                           [14], [15], [16, 21], [17, 23, 25],
                           [18], [19], [20], [], [22], [], [24], [],
                           [26], [], [28], [], [30], [], []]
-  inp.fem.num_modes = 50
+  inp.fem.num_modes = 70
   inp.driver.typeof = "intrinsic"
   # inp.driver.sol_path = pathlib.Path(
   #     f"./resultsGust_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
@@ -187,14 +224,13 @@
   inp.systems.sett.s1.target = "trim"
   inp.systems.sett.s1.bc1 = 'free'
   # inp.systems.sett.s1.nonlinear = 
-  inp.systems.sett.s1.solver_function = "newton_raphson"
+  inp.systems.sett.s1.solver_function = "newton"
   inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                              atol=1e-6,
                                              max_steps=100,
                                              norm="linalg_norm",
                                              kappa=0.01)
   inp.systems.sett.s1.solver_library = "diffrax"#"runge_kutta"
-  inp.systems.sett.s1.solver_function = "newton_raphson"
   inp.systems.sett.s1.xloads.modalaero_forces = True
   inp.systems.sett.s1.xloads.gravity_forces = True
   #inp.systems.sett.s1.xloads.gravity = 0.5
@@ -208,7 +244,8 @@
   inp.systems.sett.s1.aero.elevator_link = [+1, -1]
 #+end_src
 
-#+NAME: xrf1trim1
+*** XRF1trim-1_4g
+#+NAME: xrf1trim1_4g
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
   <<xrf1trim>>
   inp.systems.sett.s1.xloads.gravity = 9.807 * 4
@@ -218,29 +255,19 @@
   run(inp, label=name)
 #+end_src
 
-#+NAME: xrf1trim_dyn
+*** XRF1trimlin-1_4g
+#+NAME: xrf1trimlin1_4g
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
   <<xrf1trim>>
   inp.systems.sett.s1.xloads.gravity = 9.807 * 4
   inp.systems.sett.s1.t = [0.25, 0.5, 0.75, 1.]
+  inp.systems.sett.s1.nonlinear = -1
   inp.driver.sol_path = pathlib.Path(
       f"./{name}")
-  inp.systems.borrow = 's1'
-  inp.systems.sett.s2.solution = "dynamic"
-  inp.systems.sett.s2.target = "level"
-  inp.systems.sett.s2.bc1 = 'free'
-  inp.systems.sett.s2.solver_library = "diffrax"#"runge_kutta"
-  inp.systems.sett.s2.solver_function = "ode"
-  inp.systems.sett.s2.solver_settings = dict(solver_name="Dopri5")#"rk4")
-  inp.systems.sett.s2.q0treatment = 1
-  inp.systems.sett.s2.t = None
-  inp.systems.sett.s2.t1 = 1.
-  inp.systems.sett.s2.dt = 5e-3
-  inp.systems.sett.s2.aero.poles = f"./NASTRAN/AERO/Poles000_8r{inp.fem.num_modes}.npy"
   run(inp, label=name)
 #+end_src
 
-** XRF1-gust
+** COMMENT XRF1-gust
 
 #+NAME: xrf1gust1
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context)) :tangle ./results/runs.py 
@@ -272,4 +299,9 @@
   inp.systems.sett.s2.aero.gust.panels_dihedral = jnp.load("./NASTRAN/AERO/Dihedral.npy")
   inp.systems.sett.s2.aero.gust.collocation_points = "./NASTRAN/AERO/Control_nodes.npy"
   run(inp, label=name)
+#+end_src
+
+** Wrap up
+#+begin_src python :results none
+  save_times()
 #+end_src

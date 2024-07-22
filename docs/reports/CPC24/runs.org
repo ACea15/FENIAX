@@ -68,7 +68,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inasdev")
+  (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -92,7 +92,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   import datetime
   import os
   import shutil
-  REMOVE_RESULTS = False
+  REMOVE_RESULTS = True
   #   for root, dirs, files in os.walk('/path/to/folder'):
   #       for f in files:
   #           os.unlink(os.path.join(root, f))
@@ -236,7 +236,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   inp.simulation.typeof = "single"
   inp.systems.sett.s1.solution = "static"
   inp.systems.sett.s1.solver_library = "diffrax"
-  inp.systems.sett.s1.solver_function = "newton_raphson"
+  inp.systems.sett.s1.solver_function = "newton"
   inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                              atol=1e-6,
                                              max_steps=50,
@@ -408,6 +408,35 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 
   run(inp, label=name)
 #+end_src
+**** WSP4alpha05
+#+NAME: WSP4alpha05
+#+begin_src python :results none :var name=(org-element-property :name (org-element-context))
+
+  <<wingSP>>
+  inp.fem.num_modes = 50
+  inp.systems.sett.s1.xloads.follower_interpolation = [[0.05 * -2e5, 0.5 * -2e5, 0., 0.],
+                                                       [0.05 * 6e5, 0.5 * 6e5,  0., 0.]
+                                                       ]
+  inp.systems.sett.s1.dt = round(1./ eigenvals[inp.fem.num_modes]**0.5, 6)
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+
+  run(inp, label=name)
+#+end_src
+**** WSP4alpha15
+#+NAME: WSP4alpha15
+#+begin_src python :results none :var name=(org-element-property :name (org-element-context))
+  <<wingSP>>
+  inp.fem.num_modes = 50
+  inp.systems.sett.s1.xloads.follower_interpolation = [[0.05 * -2e5, 1.5 * -2e5, 0., 0.],
+                                                       [0.05 * 6e5, 1.5 * 6e5,  0., 0.]
+                                                       ]
+  inp.systems.sett.s1.dt = round(1./ eigenvals[inp.fem.num_modes]**0.5, 6)
+  inp.driver.sol_path = pathlib.Path(
+      f"./{name}")
+  run(inp, label=name)
+#+end_src
+
 ****  WSP5
 #+NAME: WSP5
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
@@ -418,7 +447,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   inp.driver.sol_path = pathlib.Path(
       f"./{name}")
 
-  #run(inp, label=name)
+  run(inp, label=name)
 #+end_src
 
 *** COMMENT Plot
@@ -702,7 +731,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   run(inp, label=name)
 #+end_src
 
-*** COMMENT XRF7
+*** XRF7
 #+NAME: XRF7
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
@@ -726,7 +755,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
   run(inp, label=name)
 #+end_src
-*** COMMENT XRF8
+*** XRF8
 #+NAME: XRF8
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
@@ -740,7 +769,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   inp.systems.sett.s1.solver_settings = dict(solver_name="Kvaerno3", #"ImplicitEuler",#"Kvaerno3",
             # stepsize_controller=dict(PIDController=dict(atol=1e-5,
             #                                            rtol=1e-5)),
-            root_finder=dict(Newton=dict(atol=1e-5,
+            root_finder=dict(Chord=dict(atol=1e-5,
                                         rtol=1e-5))                              
             # root_finder=dict(Newton=dict(atol=1e-6,
             #                              rtol=1e-6))

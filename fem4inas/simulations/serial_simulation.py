@@ -11,6 +11,7 @@ class SerialSimulation(Simulation, cls_name="serial"):
         # Implement _run for SerialSimulation
 
         sys0 = None
+        eta0 = None
         for k, sys in self.systems.items(): # only one item in the loop
             sys.set_system()
             sys.set_solver()
