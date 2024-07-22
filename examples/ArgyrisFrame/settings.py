@@ -25,7 +25,7 @@ inp.simulation.typeof = "single"
 #inp.ex.Cab_xtol = 1e-4
 inp.systems.sett.s1.solution = "static"
 inp.systems.sett.s1.solver_library = "diffrax"
-inp.systems.sett.s1.solver_function = "newton_raphson"
+inp.systems.sett.s1.solver_function = "newton"
 inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                            atol=1e-6,
                                            max_steps=50,

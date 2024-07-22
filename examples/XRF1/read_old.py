@@ -23,3 +23,9 @@ with open ("%s/../Results_modes/Geometry"%(directory), 'rb') as fp:
 
 with open ("%s/Sols_%s"%(directory, nmodes), 'rb') as fp:
     ra0,ra,Rab,strain,kappa  = pickle.load(fp)
+
+np.save("oldResults/ra.npy", ra)
+
+# with open("oldResults/ra", "w") as f1:
+#     pickle.dump(ra, f1)
+    

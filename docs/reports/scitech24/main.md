@@ -121,7 +121,7 @@ An extensive verification has been carried out and is presented herein, starting
     inp.simulation.typeof = "single"
     inp.systems.sett.s1.solution = "static"
     inp.systems.sett.s1.solver_library = "diffrax"
-    inp.systems.sett.s1.solver_function = "newton_raphson"
+    inp.systems.sett.s1.solver_function = "newton"
     inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                atol=1e-6,
                                                max_steps=50,
@@ -274,7 +274,7 @@ An extensive verification has been carried out and is presented herein, starting
     inp.simulation.typeof = "single"
     inp.systems.sett.s1.solution = "static"
     inp.systems.sett.s1.solver_library = "diffrax"
-    inp.systems.sett.s1.solver_function = "newton_raphson"
+    inp.systems.sett.s1.solver_function = "newton"
     inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                atol=1e-6,
                                                max_steps=50,
@@ -314,7 +314,7 @@ An extensive verification has been carried out and is presented herein, starting
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.solver_library = "diffrax"
-        inp.systems.sett.s1.solver_function = "newton_raphson"
+        inp.systems.sett.s1.solver_function = "newton"
         inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                    atol=1e-6,
                                                    max_steps=50,
@@ -526,7 +526,7 @@ An extensive verification has been carried out and is presented herein, starting
         inp.simulation.typeof = "single"
         inp.systems.sett.s1.solution = "static"
         inp.systems.sett.s1.solver_library = "diffrax"
-        inp.systems.sett.s1.solver_function = "newton_raphson"
+        inp.systems.sett.s1.solver_function = "newton"
         inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
                                                    atol=1e-6,
                                                    max_steps=50,
