@@ -1,19 +1,23 @@
-import scipy as sp
+"""
+Class name: '{nastran card name}'+'{arbitrary label}' (e.g. 'PSHELL'+'T')
+"""
 
+import scipy as sp
 from bug_handler import *
 from composite_material import *
 
 class BUGDecoder:
   is_variable=True #if True, the corresponding parameter is put into sensitivity analysis
   scale_param=1.0
+  idx=None
   def get_val(self,param):
-    pass
+    raise NotImplementedError('get_val must be implemented in the derived class')
 
-class PSHELLThick(BUGDecoder):
+class PSHELLT(BUGDecoder):
   def __init__(self,pid,bug_handler:BUGHandler,y_control=None):
-    self.pid=pid
+    self.idx=pid
     self.pshell_y_abs=np.abs(bug_handler.get_pshell_coordinates(pid)[:,1])
-    self.y_control=y_control
+    self.coord_control=y_control
     self.bug_handler=bug_handler
   
   def get_val(self,param):
@@ -21,16 +25,14 @@ class PSHELLThick(BUGDecoder):
     param : thickness ratio at control points (nparam,)
     """
     nparam=len(param)
-    if self.y_control is None:
-      y_control=np.linspace(self.pshell_y_abs.min(),self.pshell_y_abs.max(),nparam)
-    else:
-      y_control=self.y_control
+    if self.coord_control is None:
+      self.coord_control=np.linspace(self.pshell_y_abs.min(),self.pshell_y_abs.max(),nparam)
     #interpolate thickness using PchipInterpolator
-    thick_ratio=sp.interpolate.PchipInterpolator(y_control,param)(self.pshell_y_abs)
-    thickness=thick_ratio*self.bug_handler.get_pshell_thickness(self.pid)
+    thick_ratio=sp.interpolate.PchipInterpolator(self.coord_control,param)(self.pshell_y_abs)
+    thickness=thick_ratio*self.bug_handler.get_pshell_thickness(self.idx)
     #return dictionary
     out=dict()
-    out['pid']=self.pid
+    out['pid']=self.idx
     out['t']=thickness
     return out
   
@@ -38,12 +40,12 @@ class MAT2G(BUGDecoder):
   def __init__(self,pid,bug_handler:BUGHandler,g_lamina,y_control=None):
     mid=bug_handler.get_mid_from_pid(pid)
     assert len(mid)==np.unique(mid).shape[0], 'MAT2 must be unique in given pid set'
-    self.pid=pid
+    self.idx=pid
     self.mid=mid
     pshell_y=bug_handler.get_pshell_coordinates(pid)[:,1]
     self.pshell_y_abs=np.abs(pshell_y)
     self.pshell_y_sgn=np.sign(pshell_y)
-    self.y_control=y_control
+    self.coord_control=y_control
     self.bug_handler=bug_handler
     self.g_lamina=g_lamina #lamina properties
   
@@ -55,14 +57,12 @@ class MAT2G(BUGDecoder):
     """
     self.scale_param=180.0
     nparam=len(param)
-    if self.y_control is None:
-      y_control=np.linspace(self.pshell_y_abs.min(),self.pshell_y_abs.max(),nparam)
-    else:
-      y_control=self.y_control
+    if self.coord_control is None:
+      self.coord_control=np.linspace(self.pshell_y_abs.min(),self.pshell_y_abs.max(),nparam)
     #interpolate angles using PchipInterpolator
-    theta=sp.interpolate.PchipInterpolator(y_control,param[:,0])(self.pshell_y_abs)
+    theta=sp.interpolate.PchipInterpolator(self.coord_control,param[:,0])(self.pshell_y_abs)
     theta=self.pshell_y_sgn*theta*np.pi/180
-    alpha=sp.interpolate.PchipInterpolator(y_control,param[:,1])(self.pshell_y_abs)
+    alpha=sp.interpolate.PchipInterpolator(self.coord_control,param[:,1])(self.pshell_y_abs)
     alpha=alpha*np.pi/180
     
     #calculate Q matrix
@@ -82,12 +82,12 @@ class MAT2G(BUGDecoder):
   
 class CONM2X1(BUGDecoder):
   def __init__(self,eid,bug_handler:BUGHandler,y_control=None):
-    self.eid=eid
+    self.idx=eid
     self.bug_handler=bug_handler
     conm_y=bug_handler.get_conm_coordinates(eid)[:,1]
-    self.y_control=y_control
+    self.coord_control=y_control
     self.conm_y_abs=np.abs(conm_y)
-    self.y_control=y_control
+    self.coord_control=y_control
     self.bug_handler=bug_handler
 
   def get_val(self,param):
@@ -95,38 +95,36 @@ class CONM2X1(BUGDecoder):
     param : x component of mass offset at control points (nparam,)
     """
     nparam=len(param)
-    if self.y_control is None:
-      y_control=np.linspace(self.conm_y_abs.min(),self.conm_y_abs.max(),nparam)
-    else:
-      y_control=self.y_control
+    if self.coord_control is None:
+      self.coord_control=np.linspace(self.conm_y_abs.min(),self.conm_y_abs.max(),nparam)
     #interpolate mass using PchipInterpolator
-    x=sp.interpolate.PchipInterpolator(y_control,param)(self.conm_y_abs)
-    offset=self.bug_handler.get_conm_offset(self.eid)
+    x=sp.interpolate.PchipInterpolator(self.coord_control,param)(self.conm_y_abs)
+    offset=self.bug_handler.get_conm_offset(self.idx)
     offset[:,0]+=x
     #return dictionary
     out=dict()
-    out['eid']=self.eid
+    out['eid']=self.idx
     out['X']=offset
     return out
     
 class CAERO1PX(BUGDecoder):
-  def __init__(self,eid,bug_handler:BUGHandler):
+  def __init__(self,eid,bug_handler:BUGHandler,y_control=None):
     self.bug_handler=bug_handler
-    self.eid=eid
-    self.y_control=bug_handler.get_caero_coordinates_y_abs(eid)
+    self.idx=eid
+    self.coord_control=bug_handler.get_caero_coordinates_y_abs(eid)
     
   def get_val(self,param):
     """
     param : offset of x component of P1, P4 
     """
-    assert len(param)==len(self.y_control), f'param must have the same length as y_control {self.y_control.shape}'
+    assert len(param)==len(self.coord_control), f'param must have the same length as y_control {self.coord_control.shape}'
     #return dictionary
     out=dict()
-    out['eid']=self.eid
+    out['eid']=self.idx
     out['p1']=[]
     out['p4']=[]
-    interpolator=sp.interpolate.PchipInterpolator(self.y_control,param)
-    for e in self.eid:
+    interpolator=sp.interpolate.PchipInterpolator(self.coord_control,param)
+    for e in self.idx:
       p1=self.bug_handler.bdf.caeros[e].p1.copy()
       offsetx1=interpolator(np.abs(p1[1]))
       p1[0]+=offsetx1
@@ -147,11 +145,11 @@ class CAERO1CHORD(CAERO1PX):
     """
     #return dictionary
     out=dict()
-    out['eid']=self.eid
+    out['eid']=self.idx
     out['x12']=[]
     out['x43']=[]
-    interpolator=sp.interpolate.PchipInterpolator(self.y_control,param)
-    for e in self.eid:
+    interpolator=sp.interpolate.PchipInterpolator(self.coord_control,param)
+    for e in self.idx:
       p1=self.bug_handler.bdf.caeros[e].p1.copy()
       x12=self.bug_handler.bdf.caeros[e].x12
       x12+=interpolator(np.abs(p1[1]))

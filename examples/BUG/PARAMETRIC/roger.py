@@ -1,4 +1,6 @@
 import jax.numpy as jnp
+import numpy as np
+from pyNastran.op4.op4 import read_op4
 
 def frequency_matrix(k_array, poles):
   num_reducedfreq = len(k_array)
@@ -19,9 +21,19 @@ def Q_RFA(k_array, roger_matrices, poles):
 
 def rogerRFA(k_matrix_comp, Qk):
   lhs=Qk[1:]
-  lhs_expand=jnp.concatenate((lhs.real,lhs.imag),axis=0) 
+  lhs_expand=jnp.concatenate((lhs.real,lhs.imag),axis=0)
   k_expand=jnp.concatenate((k_matrix_comp.real,k_matrix_comp.imag),axis=0)
   inv_k=jnp.linalg.pinv(k_expand)
   rhs_expand=jnp.einsum('ij,jkl->ikl', inv_k, lhs_expand)
   return rhs_expand
 
+def process_Q(op4name,poles=None):
+  if poles==None:
+    poles=jnp.linspace(1e-3, 5, 20)
+  aero=read_op4(op4name)
+  key=list(aero.keys())[0]
+  q=jnp.array(aero[key].data)
+  k_array=jnp.linspace(0,1,50)
+  k_matrix=frequency_matrix(k_array, poles)
+  roger_matrices=rogerRFA(k_matrix,q)
+  return roger_matrices

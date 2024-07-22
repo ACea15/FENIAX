@@ -1,13 +1,13 @@
 import numpy as np
 import scipy as sp
 import os
-import concurrent.futures
 from pyNastran.op2.op2 import read_op2
 from pyNastran.op4.op4 import read_op4
 from pch_parser import read_pch
 from bug_aero import *
 from roger import *
 import jax.numpy as jnp
+from nastran_tools import parallel_execute_nastran
 
 NASTRAN_LOC='cmd.exe /c C:/MSC.Software/MSC_Nastran/20182/bin/nast20182.exe'
 
@@ -188,18 +188,6 @@ class SensitivityNastran(NastranHandler):
   def get_eig_sensitivity_op2(self,param,*args):
     self._run_nastran_parallel_op2(param,*args)
     return self.dvec,self.dval
-
-def parallel_execute_nastran(input_dir,output_dir,dbf_name,n_job,n_parallel=5,max_memory=0.8):
-  fname_template=input_dir+dbf_name+'{}.bdf'
-  max_memory_job=max_memory/n_parallel
-  cmd_list=[]
-  for i in range(n_job):
-    fname=fname_template.format(i)
-    command=f'{NASTRAN_LOC} {fname} out={output_dir} memorymax={max_memory_job} old=no news=no'
-    cmd_list.append(f'{command} > nul 2>&1')
-  
-  with concurrent.futures.ThreadPoolExecutor(max_workers=n_parallel) as executor:
-    executor.map(os.system, cmd_list)
 
 def _find_indices(arr_trg, arr_ref):
   index_map = {value: idx for idx, value in enumerate(arr_ref)}
