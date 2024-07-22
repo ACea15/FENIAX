@@ -574,6 +574,11 @@ If for instance one wants to set an optimisation with boundaries on the maximum 
 *** Perform calculations on different models in a single run
 Via the supercase option of driver. This might be used to compute finite differences; or if the response of if the response of a fractured component is to be compared.
 * Code design
+- Config object with input settings.
+- Driver class: initialises all relevant objects such as the simulation, and the systems that will solved in the solution process.
+- Simulation class: responsible for running the various systems appropriately, including setting the initial conditions from one system to another.
+- System class: set the computations to solve the corresponding system of equations, including the solver library that should be called, the system of equations and the arguments to the solvers.  
+
 ** Config
 config.engine = intrinsic
 config.supercase.fems[dict]
