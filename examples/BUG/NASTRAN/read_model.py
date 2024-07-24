@@ -2,8 +2,11 @@ from pyNastran.bdf.bdf import BDF
 import pandas as pd
 from fem4inas.unastran.asetbuilder import BuildAsetModel
 from fem4inas.unastran.aero import GenDLMPanels
+import  fem4inas.unastran.matrixbuilder as matrixbuilder
 import fem4inas.aeromodal.panels as panels
 import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+import jax.numpy as jnp
+import jax
 
 bdf = BDF()#debug=False)
 bdf.read_bdf("./BUG_103cao.bdf", validate=False)
@@ -22,7 +25,7 @@ bdfaero.read_bdf("./BUGaero1.bdf", validate=False, punch=False)
 
 ######## BUILD STRUCTURAL MODEL ##############
 
-
+# Initial model
 components_ids = dict()
 components_ids['FusWing'] = [2000]
 components_ids['FusBack'] = [1006, 1007, 1008, 1009]
@@ -39,7 +42,7 @@ components_ids['LHTP'] = list(range(10004001, 10004014))
 # model = BuildAsetModel(components_ids, clamped_node=1005)
 # model.write_asets("./Config/asets_clamped.bdf")
 
-
+# Initial model removing some ASET nodes along the wing
 components_ids = dict()
 #components_ids['FusWing'] = [2000]
 components_ids['FusBack'] = [1006, 1007, 1008, 1009]
@@ -54,8 +57,13 @@ components_ids['VTPTail'] = [3010]
 components_ids['RHTP'] = list(range(4001, 4014))
 components_ids['LHTP'] = list(range(10004001, 10004014))
 
-# model_red = BuildAsetModel(components_ids, clamped_node=1005)
-# model_red.write_asets("./Config/asets_clamped_reduced.bdf")
+model_red = BuildAsetModel(components_ids, bdf, clamped_node=1005)
+WRITE_ASETS= False
+if WRITE_ASETS:
+    model_red.write_asets("./Config/asets_clamped_reduced.bdf")
+WRITE_GRID= True
+if WRITE_GRID:
+    model_red.write_grid("../FEM/structuralGrid")
 
 # string = ""
 # for i, ai in enumerate(bdfaero.asets[0].ids):#model_red.asets_ids):

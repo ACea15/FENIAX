@@ -409,6 +409,33 @@ def arg_20G78(sol: solution.IntrinsicSolution,
      component_names, num_nodes,
      component_nodes, component_father)
 
+@catter2library
+def arg_20G78l(sol: solution.IntrinsicSolution,
+              system: intrinsicmodal.Dsystem,
+              fem: intrinsicmodal.Dfem,
+              *args, **kwargs):
+
+    eta_0 = kwargs['eta_0']
+    phi1l = sol.data.modes.phi1l
+    psi2l = sol.data.modes.psi2l
+    omega = sol.data.modes.omega
+    num_modes = fem.num_modes
+    states = system.states
+    u_inf = system.aero.u_inf
+    c_ref = system.aero.c_ref    
+    aero = getattr(sol.data, f"modalaeroroger_{system.name}")
+    num_poles = system.aero.num_poles
+    force_gravity = system.xloads.force_gravity
+    states = system.states
+    C0ab = sol.data.modes.C0ab
+
+    return (eta_0, omega, phi1l, psi2l,
+     num_modes, num_poles,
+     aero.A0hat, aero.A1hat, aero.A2hatinv, aero.A3hat,
+     u_inf, c_ref, aero.poles,
+     force_gravity,
+     states,
+     C0ab)
 
 @catter2library
 def arg_20g21l(sol: solution.IntrinsicSolution,
@@ -500,6 +527,42 @@ def arg_20G546(sol: solution.IntrinsicSolution,
      C0ab,
      component_names, num_nodes,
      component_nodes, component_father)
+
+@catter2library
+def arg_20G546l(sol: solution.IntrinsicSolution,
+              system: intrinsicmodal.Dsystem,
+              fem: intrinsicmodal.Dfem,
+              *args, **kwargs):
+
+    eta_0 = kwargs['eta_0']
+    phi1l = sol.data.modes.phi1l
+    psi2l = sol.data.modes.psi2l
+    gamma1 = sol.data.couplings.gamma1
+    gamma2 = sol.data.couplings.gamma2
+    omega = sol.data.modes.omega
+    num_modes = fem.num_modes
+    states = system.states
+    u_inf = system.aero.u_inf
+    c_ref = system.aero.c_ref    
+    aero = getattr(sol.data, f"modalaeroroger_{system.name}")
+    num_poles = system.aero.num_poles
+    gust = getattr(sol.data, f"gustroger_{system.name}")
+    F1g = gust.Qhj_wsum  # NmxNt
+    Flg = gust.Qhjl_wdot  # NpxNmxNt (NumPoles_NumModes_NumTime)
+    xgust = gust.x
+    force_gravity = system.xloads.force_gravity
+    states = system.states
+    X_xdelta = sol.data.modes.X_xdelta
+    C0ab = sol.data.modes.C0ab
+
+    return (eta_0, omega, phi1l, psi2l,
+     num_modes, num_poles,
+     aero.A0hat, aero.A1hat, aero.A2hatinv, aero.A3hat,
+     u_inf, c_ref, aero.poles,
+     xgust, F1g, Flg,
+     force_gravity,
+     states,
+     C0ab)
 
 ############################################
 @catter2library
