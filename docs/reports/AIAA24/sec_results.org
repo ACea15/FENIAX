@@ -11,19 +11,19 @@
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
       "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "fem4inasdev")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
   (setq Veval_blocks "yes") ;; yes, no, no-export
   (setq Vpics "png") ;; yes, no, no-export   
-  (setq pythonShell "py1org")
+  (setq pythonShell "*py_results*")
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
 #+end_src
 * Load modules :noexport: 
 :PROPERTIES:
-:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both :tangle ./results/run.py
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both :tangle ./results/examples.py :var figfmt=(print Vpics)
 :END:
 
 #+NAME: PYTHONMODULES
@@ -54,6 +54,7 @@
   import jax
   import pandas as pd
   import numpy as np
+  from plotly.subplots import make_subplots
   import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
   from fem4inas.preprocessor.inputs import Inputs
   import fem4inas.fem4inas_main
@@ -71,9 +72,9 @@
 https://plotly.com/python/subplots/
 #+end_comment
 
-#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) :tangle ./results/run.py
-
-  def fig_out(name, figformat="png", update_layout=None):
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+  print(f"Format for figures: {figfmt}")
+  def fig_out(name, figformat=figfmt, update_layout=None):
       def inner_decorator(func):
           def inner(*args, **kwargs):
               fig = func(*args, **kwargs)
@@ -81,7 +82,7 @@ https://plotly.com/python/subplots/
                   fig.update_layout(**update_layout)
               fig.show()
               figname = f"figs/{name}.{figformat}"
-              fig.write_image(f"../{figname}")
+              fig.write_image(f"../{figname}", scale=6)
               return fig, figname
           return inner
       return inner_decorator
@@ -97,8 +98,8 @@ https://plotly.com/python/subplots/
           #     showlegend = fig.data[0].showlegend
 
           fig.update_xaxes(
-                         titlefont=dict(size=14),
-                         tickfont = dict(size=14),
+                         titlefont=dict(size=20),
+                         tickfont = dict(size=20),
                          mirror=True,
                          ticks='outside',
                          showline=True,
@@ -107,8 +108,8 @@ https://plotly.com/python/subplots/
           #zerolinewidth=2,
               #zerolinecolor='LightPink',
                          gridcolor='lightgrey')
-          fig.update_yaxes(tickfont = dict(size=14),
-                         titlefont=dict(size=14),
+          fig.update_yaxes(tickfont = dict(size=20),
+                         titlefont=dict(size=20),
                          zeroline=True,
                          mirror=True,
                          ticks='outside',
@@ -129,39 +130,36 @@ https://plotly.com/python/subplots/
       return inner
 
   @fig_background
-  def xrf1_wingtip2(t, ra, dim, labels=None, node=150):
-      scale = 100./33.977
+  def plot_ra(t, ra,  dim, ra0=[0.,0.,0.], labels=None, node=150,
+              scale=100./33.977, x_range=[0,4]):
       fig=None
-      x1, y1 = putils.pickIntrinsic2D(t,
-                                      ra,
-                                      fixaxis2=dict(node=node, dim=dim))
-      x2, y2 = putils.pickIntrinsic2D(t,
-                                      ra,
-                                      fixaxis2=dict(node=node, dim=dim))
+      colors = ["steelblue", "orange", "green", "black"]
+      for i, rai in enumerate(ra):
+          x1, y1 = putils.pickIntrinsic2D(t,
+                                          rai,
+                                          fixaxis2=dict(node=node, dim=dim))
 
-      fig = uplotly.lines2d(x1[1:], (y1[:-1]-y1[0])*scale, fig,
-                            dict(name=f"NMROM-G{labels[0]}",
-                                 line=dict(color="orange")
-                                 ))
-      fig = uplotly.lines2d(x2[1:], (y2[:-1]-y2[0])*scale, fig,
-                            dict(name=f"NMROM-G{labels[1]}",
-                                 line=dict(color="steelblue")
+          fig = uplotly.lines2d(x1, (y1 - ra0[dim]) * scale, fig,
+                                dict(name=f"NMROM-G{labels[i]}",
+                                     line=dict(color=colors[i])
                                  ))
 
       dim_dict = {0:'x', 1:'y', 2:'z'}
       fig.update_yaxes(title=r'\large $\hat{u}%s$'%dim_dict[dim])
-      fig.update_xaxes(range=[0, 4], title='time [s]')
+      fig.update_xaxes(range=x_range, title='time [s]')
       return fig
 
-  def subplots_wtips(fun, *args, **kwargs):
+  def subplots_ra(fun, *args, **kwargs):
 
       fig1 = fun(*args, dim=0, **kwargs)
       fig2 = fun(*args, dim=1, **kwargs)
       fig3 = fun(*args, dim=2, **kwargs)
       fig3.update_xaxes(title=None)
-      fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.135, vertical_spacing=0.1,
-                          specs=[[{"colspan": 2}, None],
-                                 [{}, {}]])
+      fig2.update_xaxes(title=None)
+      fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.135, vertical_spacing=0.1,
+                          # specs=[[{"colspan": 2}, None],
+                          #       [{}, {}]]
+                          )
       for i, f3i in enumerate(fig3.data):
           fig.add_trace(f3i,
                         row=1, col=1
@@ -176,15 +174,21 @@ https://plotly.com/python/subplots/
           f2inew = f2i
           f2inew.showlegend = False          
           fig.add_trace(f2inew,
-                        row=2, col=2
+                        row=3, col=1
                         )
 
-      fig.update_xaxes(fig1.layout.xaxis,row=2, col=1)
-      fig.update_yaxes(fig1.layout.yaxis,row=2, col=1)
-      fig.update_xaxes(fig2.layout.xaxis,row=2, col=2)
-      fig.update_yaxes(fig2.layout.yaxis,row=2, col=2)
-      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1)
-      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1)
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig1.layout.xaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig1.layout.yaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
       fig.update_layout(plot_bgcolor='white',
                         yaxis=dict(zerolinecolor='lightgrey'),
                         showlegend=True, #showlegend,
@@ -195,6 +199,7 @@ https://plotly.com/python/subplots/
                             t=2,
                             b=0
                             ))
+      fig.update_layout(legend=dict(x=0.81, y=1))
       #fig.update_layout(showlegend=False,row=2, col=1)
       # fig.update_layout(showlegend=False,row=2, col=2)
       #fig.update_layout(fig1.layout)
@@ -408,7 +413,7 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 
 #+NAME: sol=xrf1trimlin1_4g
 #+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
-  sol1lin= solution.IntrinsicReader("./xrf1trimlin1_4g")
+  sol1lin= solution.IntrinsicReader("./xrf1trim1lin_4g")
   aoalin = get_trimaoa(sol1lin.data.staticsystem_s1.q,
                     sol1lin.data.modes.omega,
                     sol1lin.data.modes.phi1)
@@ -433,6 +438,8 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 
 #+end_src
 
+#+RESULTS: sol=xrf1trim_nastran
+
 #+NAME: sol=xrf1trim_plot
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   fig, figname = fig_out(name)(plot_trimaoa)(loads=[1,2,3,4],
@@ -455,10 +462,77 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 [[file:figs/sol=xrf1trim_plot.png]]
 
 
-
 #+NAME: fig:xrf1_trim
 #+CAPTION: XRF1 3D trim  
 #+ATTR_LATEX: :width 0.9\textwidth 
 [[file:figs_ext/xrf1_trim.png]]
 
+
+#+NAME: sol=xrf1trim1_dyn
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
+  solxrf1trim1_dyn= solution.IntrinsicReader("./xrf1trim1_dynNl")
+#+end_src
+
+#+RESULTS: sol=xrf1trim1_dyn
+
+
+#+NAME: plot=xrf1trim1_dyn
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  t = solxrf1trim1_dyn.data.dynamicsystem_s2.t
+  ra = []
+  ra.append(solxrf1trim1_dyn.data.dynamicsystem_s2.ra)
+  # X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
+  # X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
+  # X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name)(plot_ra)(t, ra, dim=2, labels=labels, node=0, scale=1., x_range=[0,1])
+  figname
+#+end_src
+
+#+RESULTS: plot=xrf1trim1_dyn
+[[file:figs/plot=xrf1trim1_dyn.png]]
+
+
 *** Gust response
+
+#+NAME: sol=xrf1gust_load
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
+  solxrf1gust1= solution.IntrinsicReader("./xrf1gust1")
+  solxrf1gust1l= solution.IntrinsicReader("./xrf1gust1lin")
+  solxrf1gust2= solution.IntrinsicReader("./xrf1gust2")
+  solxrf1gust2l= solution.IntrinsicReader("./xrf1gust2lin")
+#+end_src
+
+#+RESULTS: sol=xrf1gust_load
+
+#+NAME: sol=xrf1gust_tip
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  t = solxrf1gust1.data.dynamicsystem_s2.t
+  ra = []
+  ra.append(solxrf1gust1.data.dynamicsystem_s2.ra)
+  ra.append(solxrf1gust1l.data.dynamicsystem_s2.ra)
+  ra.append(solxrf1gust2.data.dynamicsystem_s2.ra)
+  ra.append(solxrf1gust2l.data.dynamicsystem_s2.ra)
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name)(subplots_ra)(plot_ra, t, ra, labels=labels, node=150, scale=1./33.977, x_range=[0,1])
+  figname
+#+end_src
+
+#+RESULTS: sol=xrf1gust_tip
+[[file:figs/sol=xrf1gust_tip.png]]
+
+#+NAME: sol=xrf1gust_root
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  t = solxrf1gust1.data.dynamicsystem_s2.t
+  X2 = []
+  X2.append(solxrf1gust1.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name)(plot_ra)(t, X2, dim=2, labels=labels, node=4, scale=1., x_range=[0,1])
+  figname
+#+end_src
+
+#+RESULTS: sol=xrf1gust_root
+[[file:figs/sol=xrf1gust_root.png]]
