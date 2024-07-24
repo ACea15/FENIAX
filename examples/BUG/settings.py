@@ -10,8 +10,9 @@ import fem4inas.fem4inas_main
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "inputs"
-inp.fem.connectivity = dict(FusWing=['RWing',
-                                     'LWing'],
+
+inp.fem.connectivity = dict(# FusWing=['RWing',
+                            #          'LWing'],
                             FusBack=['FusTail',
                                      'VTP'],
                             FusFront=None,
@@ -32,7 +33,7 @@ inp.driver.typeof = "intrinsic"
 #inp.driver.sol_path = pathlib.Path(
 #    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    f"./results_struct")
+    "./results_struct")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "static"
 inp.systems.sett.s1.solver_library = "diffrax"
