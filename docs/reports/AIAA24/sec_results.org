@@ -73,7 +73,10 @@ https://plotly.com/python/subplots/
 #+end_comment
 
 #+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+
+  scale_quality = 6
   print(f"Format for figures: {figfmt}")
+  print(f"Image quality: {scale_quality}")  
   def fig_out(name, figformat=figfmt, update_layout=None):
       def inner_decorator(func):
           def inner(*args, **kwargs):
@@ -82,11 +85,10 @@ https://plotly.com/python/subplots/
                   fig.update_layout(**update_layout)
               fig.show()
               figname = f"figs/{name}.{figformat}"
-              fig.write_image(f"../{figname}", scale=6)
+              fig.write_image(f"../{figname}", scale=scale_quality)
               return fig, figname
           return inner
       return inner_decorator
-
 
   def fig_background(func):
 
@@ -130,26 +132,52 @@ https://plotly.com/python/subplots/
       return inner
 
   @fig_background
-  def plot_ra(t, ra,  dim, ra0=[0.,0.,0.], labels=None, node=150,
+  def plot_Xtime(t, X,  dim, X0=[0.,0.,0., 0.,0.,0.], labels=None, node=150,
               scale=100./33.977, x_range=[0,4]):
       fig=None
+      if labels is None:
+          labels = list(range(X))      
       colors = ["steelblue", "orange", "green", "black"]
-      for i, rai in enumerate(ra):
+      for i, Xi in enumerate(X):
           x1, y1 = putils.pickIntrinsic2D(t,
-                                          rai,
+                                          Xi,
                                           fixaxis2=dict(node=node, dim=dim))
 
-          fig = uplotly.lines2d(x1, (y1 - ra0[dim]) * scale, fig,
+          fig = uplotly.lines2d(x1, (y1 - X0[dim]) * scale, fig,
                                 dict(name=f"NMROM-G{labels[i]}",
                                      line=dict(color=colors[i])
                                  ))
 
-      dim_dict = {0:'x', 1:'y', 2:'z'}
+      dim_dict = {0:'x', 1:'y', 2:'z', 3:'theta_x', 4:'theta_y', 5:'theta_z'}
       fig.update_yaxes(title=r'\large $\hat{u}%s$'%dim_dict[dim])
       fig.update_xaxes(range=x_range, title='time [s]')
       return fig
 
-  def subplots_ra(fun, *args, **kwargs):
+  @fig_background
+  def plot_Xcomponents(X,  dim1, dim2, labels=None, node=150,
+              scale1=1, scale2=1):
+      fig=None
+      if labels is None:
+          labels = list(range(X))
+      colors = ["steelblue", "orange", "green", "black"]
+      for i, Xi in enumerate(X):
+          x1, y1 = putils.pickIntrinsic2D(Xi,
+                                          Xi,
+                                          fixaxis1=dict(node=node, dim=dim1),
+                                          fixaxis2=dict(node=node, dim=dim2)
+                                          )
+
+          fig = uplotly.lines2d(x1 * scale1, y1 * scale2, fig,
+                                dict(name=f"NMROM-G{labels[i]}",
+                                     line=dict(color=colors[i])
+                                 ))
+
+      dim_dict = {0:'x', 1:'y', 2:'z', 3:'theta_x', 4:'theta_y', 5:'theta_z'}
+      fig.update_yaxes(title=r'\large $\hat{X}%s$'%dim_dict[dim1])
+      fig.update_xaxes(title=r'\large $\hat{X}%s$'%dim_dict[dim2])
+      return fig
+
+  def subplots_X(fun, *args, **kwargs):
 
       fig1 = fun(*args, dim=0, **kwargs)
       fig2 = fun(*args, dim=1, **kwargs)
@@ -467,10 +495,12 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 #+ATTR_LATEX: :width 0.9\textwidth 
 [[file:figs_ext/xrf1_trim.png]]
 
+**** Check trim flight :noexport: 
 
 #+NAME: sol=xrf1trim1_dyn
 #+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
   solxrf1trim1_dyn= solution.IntrinsicReader("./xrf1trim1_dynNl")
+  solxrf1trim1l_dyn= solution.IntrinsicReader("./xrf1trim1_dynLin")
 #+end_src
 
 #+RESULTS: sol=xrf1trim1_dyn
@@ -481,6 +511,7 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
   t = solxrf1trim1_dyn.data.dynamicsystem_s2.t
   ra = []
   ra.append(solxrf1trim1_dyn.data.dynamicsystem_s2.ra)
+  ra.append(solxrf1trim1l_dyn.data.dynamicsystem_s2.ra)
   # X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
   # X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
   # X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
@@ -514,7 +545,7 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
   ra.append(solxrf1gust2.data.dynamicsystem_s2.ra)
   ra.append(solxrf1gust2l.data.dynamicsystem_s2.ra)
   labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
-  fig, figname = fig_out(name)(subplots_ra)(plot_ra, t, ra, labels=labels, node=150, scale=1./33.977, x_range=[0,1])
+  fig, figname = fig_out(name)(subplots_X)(plot_Xtime, t, ra, labels=labels, node=150, scale=1./33.977, x_range=[0,2])
   figname
 #+end_src
 
@@ -530,9 +561,25 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
   X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
   X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
   labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
-  fig, figname = fig_out(name)(plot_ra)(t, X2, dim=2, labels=labels, node=4, scale=1., x_range=[0,1])
+  fig, figname = fig_out(name)(plot_Xtime)(t, X2, dim=3, labels=labels, node=4, scale=1., x_range=[0,1.5])
   figname
 #+end_src
 
 #+RESULTS: sol=xrf1gust_root
 [[file:figs/sol=xrf1gust_root.png]]
+
+#+NAME: sol=xrf1gustcomp_root
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  t = solxrf1gust1.data.dynamicsystem_s2.t
+  X2 = []
+  X2.append(solxrf1gust1.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name)(plot_Xcomponents)(X2, dim1=3, dim2=2, labels=labels, node=4, scale1=1, scale2=1)
+  figname
+#+end_src
+
+#+RESULTS: sol=xrf1gustcomp_root
+[[file:figs/sol=xrf1gustcomp_root.png]]

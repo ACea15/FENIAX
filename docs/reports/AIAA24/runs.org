@@ -31,11 +31,10 @@
   import pyNastran.op4.op4 as op4
   import matplotlib.pyplot as plt
   import pdb
-  import pathlib
   import datetime
   import os
   import shutil
-  REMOVE_RESULTS = True
+  REMOVE_RESULTS = False
   #   for root, dirs, files in os.walk('/path/to/folder'):
   #       for f in files:
   #           os.unlink(os.path.join(root, f))
@@ -52,7 +51,6 @@
           print("***** creating results folder ******")
           os.mkdir("./results")
       os.chdir("./results")
-  examples_folder = pathlib.Path.cwd() / "../../../../examples"    
 #+end_src
 
 #+NAME: PYTHONMODULES
@@ -63,6 +61,7 @@
   import jax
   import pandas as pd
   import numpy as np
+  import pathlib
   import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
   from fem4inas.preprocessor.inputs import Inputs
   import fem4inas.fem4inas_main
@@ -72,6 +71,8 @@
   import fem4inas.unastran.op2reader as op2reader
   import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
+  examples_folder = pathlib.Path.cwd() / "../../../../examples"    
+
 #+end_src
 
 * RunModels
@@ -244,7 +245,7 @@
   inp.systems.sett.s1.aero.elevator_index = [-2, -1]
   inp.systems.sett.s1.aero.elevator_link = [+1, -1]
 #+end_src
-
+** COMMENT XRF1trim-runs
 *** XRF1trim-1_4g
 #+NAME: xrf1trim1_4g
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
@@ -272,6 +273,7 @@
 #+NAME: xrf1trim1_dyn
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
   <<xrf1trim1>>
+  inp.simulation.typeof = "serial"
   inp.systems.sett.s1.xloads.gravity = 9.807 * 4
   inp.systems.sett.s1.t = [0.25, 0.5, 0.75, 1.]
   inp.driver.sol_path = pathlib.Path(
@@ -314,7 +316,8 @@
 #+NAME: xrf1gust1_sett
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context)) :tangle ./results/runs.py 
   <<xrf1trim1>>
-  inp.systems.sett.s1.xloads.gravity = 9.807 * 1
+  inp.simulation.typeof = "serial"
+  inp.systems.sett.s1.xloads.gravity = 9.807 * 1.
   inp.systems.sett.s1.t = [1.]
   inp.systems.borrow = 's1'
   inp.systems.sett.s2.solution = "dynamic"
@@ -327,7 +330,7 @@
   inp.systems.sett.s2.xloads.modalaero_forces = True
   inp.systems.sett.s2.xloads.gravity_forces = True
   inp.systems.sett.s2.t = None
-  inp.systems.sett.s2.t1 = 1.
+  inp.systems.sett.s2.t1 = 2.
   inp.systems.sett.s2.dt = 5e-3
   inp.systems.sett.s2.aero.poles = examples_folder / "XRF1trim" / f"NASTRAN/AERO/Poles000_8r{inp.fem.num_modes}.npy"
   inp.systems.sett.s2.aero.D = examples_folder / "XRF1trim" / f"NASTRAN/AERO/AICsQhj{inp.fem.num_modes}-000_8r{inp.fem.num_modes}.npy"
