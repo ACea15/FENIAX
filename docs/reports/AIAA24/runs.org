@@ -330,7 +330,7 @@
   inp.systems.sett.s2.xloads.modalaero_forces = True
   inp.systems.sett.s2.xloads.gravity_forces = True
   inp.systems.sett.s2.t = None
-  inp.systems.sett.s2.t1 = 2.
+  inp.systems.sett.s2.t1 = 1.5
   inp.systems.sett.s2.dt = 5e-3
   inp.systems.sett.s2.aero.poles = examples_folder / "XRF1trim" / f"NASTRAN/AERO/Poles000_8r{inp.fem.num_modes}.npy"
   inp.systems.sett.s2.aero.D = examples_folder / "XRF1trim" / f"NASTRAN/AERO/AICsQhj{inp.fem.num_modes}-000_8r{inp.fem.num_modes}.npy"

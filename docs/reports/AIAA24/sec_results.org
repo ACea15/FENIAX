@@ -425,7 +425,9 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 [[file:]]
 
 ** XRF1
-
+The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
+The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. The aerodynamic model contains \(\sim 1,500\) aerodynamic panels. The simulations are carried out with a modal resolution of 70 modes and a time step in the Runge-Kutta solver of 0.005 s.
+This aeroelastic analysis is a requirement for certification purposes and it is one of the main drivers in sizing the wings of high aspect ratio wings. 
 *** Trim flight
 
 #+NAME: sol=xrf1trim1_4g
@@ -489,6 +491,7 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 #+RESULTS: sol=xrf1trim_plot
 [[file:figs/sol=xrf1trim_plot.png]]
 
+The aircraft trim equilibrium is shown in Fig. [[fig:xrf1trim]] for a range of pull-up manoeuvres from 1g to 3.5g. The reason to go beyond regulation requirements is to check the robustness of our solvers in large-deformations scenarios and also to appreciate better the differences between linear and nonlinear analysis. Moreover, by comparing with Nastran's 144 solution on the full FE model at small displacements, we verify our implementation of the trim.
 
 #+NAME: fig:xrf1_trim
 #+CAPTION: XRF1 3D trim  
@@ -525,7 +528,7 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 
 
 *** Gust response
-
+Next we look at the gust response of of the aircraft under trimmed conditions. Two high intensity gusts are imposed of the 1-g trimmed condition. 
 #+NAME: sol=xrf1gust_load
 #+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
   solxrf1gust1= solution.IntrinsicReader("./xrf1gust1")
@@ -545,10 +548,14 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
   ra.append(solxrf1gust2.data.dynamicsystem_s2.ra)
   ra.append(solxrf1gust2l.data.dynamicsystem_s2.ra)
   labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
-  fig, figname = fig_out(name)(subplots_X)(plot_Xtime, t, ra, labels=labels, node=150, scale=1./33.977, x_range=[0,2])
+  fig, figname = fig_out(name)(subplots_X)(plot_Xtime, t, ra, labels=labels, node=150, scale=1./33.977, x_range=[0,1.5])
   figname
 #+end_src
 
+Fig. [[sol=xrf1gust_tip]] presents the time evolution of the wing-tip normalised displacements and the difference between the linear and nonlinear analysis
+#+NAME: fig:xrf1gust_tip
+#+CAPTION: Wing tip displacements for trim and gust analysis
+#+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: sol=xrf1gust_tip
 [[file:figs/sol=xrf1gust_tip.png]]
 
@@ -561,13 +568,20 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
   X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
   X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
   labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
-  fig, figname = fig_out(name)(plot_Xtime)(t, X2, dim=3, labels=labels, node=4, scale=1., x_range=[0,1.5])
+  fig, figname = fig_out(name)(plot_Xtime)(t, X2, dim=2, labels=labels, node=4, scale=1., x_range=[0,1.5])
   figname
 #+end_src
 
+A more interesting metric is the loading at the root of the 
+
+The higher loads in the nonlinear analysis indicate a different response when the rigid-body dynamics are included in the simulations to the case of a clamped aircraft. We see that linear calculations can lead to nonconservative dynamic loadings, for which safety factors are in place, of course, but could be problematic in more flexible designs. Such effects have also been reported in [1], and yet, further investigations need to be carried out on this matter to properly assess the coupling of trim and dynamic disturbances, and the causes for this increment in the loads from nonlinear analysis.
+#+NAME: fig:xrf1gust_root
+#+CAPTION: Wing vertical shear force time evolution
+#+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: sol=xrf1gust_root
 [[file:figs/sol=xrf1gust_root.png]]
 
+Fig. [[fig:xrf1gustcomp_root]] shows the VMT plot of the shear and torsional forces acting at the wing-root. The reason for building load envelopes that span a large set of different gusts is clear: the sharper gust produces larger shear forces whereas the gust with a bigger length induces larger torsional moments.   
 #+NAME: sol=xrf1gustcomp_root
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   t = solxrf1gust1.data.dynamicsystem_s2.t
@@ -581,5 +595,24 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
   figname
 #+end_src
 
+#+NAME: fig:xrf1gustcomp_root
+#+CAPTION: Wing root shear-torsion load diagram in response to two 1-cos gust
+#+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: sol=xrf1gustcomp_root
 [[file:figs/sol=xrf1gustcomp_root.png]]
+
+#+NAME: sol=xrf1gustcomp_root2
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  t = solxrf1gust1.data.dynamicsystem_s2.t
+  X2 = []
+  X2.append(solxrf1gust1.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name)(plot_Xcomponents)(X2, dim1=5, dim2=3, labels=labels, node=4, scale1=1, scale2=1)
+  figname
+#+end_src
+
+#+RESULTS: sol=xrf1gustcomp_root2
+[[file:figs/sol=xrf1gustcomp_root2.png]]
