@@ -266,22 +266,22 @@ class BUGHandler:
   def get_component_names(self):
     out=dict()
     pshell_keys=list(self.annotation_pshell.keys())
-    out['THICKNESS']=pshell_keys
+    thickness_keys=[]
+    for key in pshell_keys:
+      if 'COMP' not in key:
+        thickness_keys.append(key)
+    out['THICKNESS']=thickness_keys
     valid_keys=[]
     for key in pshell_keys:
       if 'COMP' not in key:
         temp=[]
         for pid in self.annotation_pshell[key]:
           mid=self.bdf.properties[pid].mid1
-          if self.bdf.materials[30075161].type=='MAT2':
+          if self.bdf.materials[mid].type=='MAT2':
             temp.append(pid)
         if len(temp)>=1:
           self.annotation_pshell[key+'_COMP']=temp
           valid_keys.append(key+'_COMP')
-      else:
-        if len(self.annotation_pshell[key])>=1:
-          valid_keys.append(key)
-        #valid_keys.append(key)
     out['PLY_ANGLE']=valid_keys
     out['MASS_X1']=list(self.annotation_conm.keys())
     out['PX']=list(self.annotation_caero.keys())
