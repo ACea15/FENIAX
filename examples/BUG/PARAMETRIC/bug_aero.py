@@ -1,6 +1,6 @@
 from pyNastran.bdf.bdf import read_bdf
 from fem4inas.unastran.aero import GenDLMPanels
-import PostProcessing.panels as panels
+import fem4inas.aeromodal.panels as panels
 import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
 import numpy as np
 import fem4inas.unastran.aero as nasaero
@@ -53,7 +53,7 @@ def generate_dlm(bdf_input='./BUGaero1.bdf',bdf_output='./dlm_model.bdf',
   aeros['RHTP']['set1x'] = list(range(4000, 4014))
 
   aeros['LWing1']['set1x'] = [1004, 10002001] 
-  aeros['LWing2']['set1x'] = [10002003, 10002005, 10002008, 100020010] 
+  aeros['LWing2']['set1x'] = [10002003, 10002005, 10002008, 10002010] 
   aeros['LWing3']['set1x'] = list(range(10002012, 10002030, 2))
   aeros['LWing4']['set1x'] = list(range(10002030, 10002044, 2))
   aeros['LWing5']['set1x'] = list(range(10002044,10002053, 2))

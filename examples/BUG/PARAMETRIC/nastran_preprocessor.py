@@ -11,9 +11,8 @@ import pyNastran.op4.op4 as op4
 from roger import *
 
 class NastranPreprocessor:
-  def __init__(self,bdfname,nastra_loc):
-    self.bdfname=bdfname
-    self.nastran_loc=nastra_loc
+  def __init__(self,nastran_loc):
+    self.nastran_loc=nastran_loc
 
   def sensitivity_preprocess(self,params:dict,bdfname,delta=1e-3,num_parallel=4,
                              is_aero=False,require_punch=True,working_dir='./_temp/'):
@@ -44,9 +43,11 @@ class NastranPreprocessor:
           process.join()
     #Run Nastran
     memorymax=0.8/num_parallel
-    print(bdfnames)
     def _run_bdf(bdfname):
-      command=f'{self.nastran_loc} {bdfname} out={working_dir} old=no news=no'
+      if is_aero:
+        command=f'{self.nastran_loc} {bdfname} out={working_dir} old=no news=no'
+      else:
+        command=f'{self.nastran_loc} {bdfname} out={working_dir} memorymax={memorymax} old=no news=no'
       os.system(f'{command} > nul 2>&1')
     with ThreadPoolExecutor(max_workers=num_parallel) as executor:
       futures = []
@@ -101,29 +102,54 @@ class NastranPreprocessor:
         if not 'CAERO' in key: #only process caero parameters
           continue
         scale_param=decoder.scale_param
-        d_qhh=[]
-        d_qhj=[]
+        d_ahh=[]
+        d_ahj=[]
         for i in range(len(params[key])):
           qhh_1=process_Q(f'{working_dir}{key[2:]}_qhh{i*2}.op4')
           qhh_2=process_Q(f'{working_dir}{key[2:]}_qhh{i*2+1}.op4')
           qhj_1=process_Q(f'{working_dir}{key[2:]}_qhj{i*2}.op4')
           qhj_2=process_Q(f'{working_dir}{key[2:]}_qhj{i*2+1}.op4')
-          d_qhh.append((qhh_2-qhh_1)/(2*delta*scale_param))
-          d_qhj.append((qhj_2-qhj_1)/(2*delta*scale_param))
-        out_dic['S'+key[1:]+'_QHH']=np.array(d_qhh)
-        out_dic['S'+key[1:]+'_QHJ']=np.array(d_qhj)
+          d_ahh.append((qhh_2-qhh_1)/(2*delta*scale_param))
+          d_ahj.append((qhj_2-qhj_1)/(2*delta*scale_param))
+        out_dic['S'+key[1:]+'_AHH']=np.array(d_ahh)
+        out_dic['S'+key[1:]+'_AHJ']=np.array(d_ahj)
     return out_dic
         
-  def analysis_structure(self,params:dict,bdfname,working_dir='./_temp/'):
+  def eigenvalue_analysis(self,params:dict|None,bdfname,working_dir='./_temp/'):
     bdfmodel=read_bdf(bdfname,debug=None)
-    bdfmodel=overwrite_bdf(params,bdfmodel=bdfmodel)
+    if params is not None:
+      bdfmodel=overwrite_bdf(params,bdfmodel=bdfmodel)
     os.makedirs(working_dir,exist_ok=True)
     bdfmodel.write_bdf(f'{working_dir}base.bdf')
     modify_cao(f'{working_dir}base.bdf')
-    command=f'{self.nastran_loc} {working_dir}base.bdf out={working_dir} memorymax=0.8 old=no news=no'
-    os.system(f'{command} > nul 2>&1')
+    convert_to_pch(f'{working_dir}base.bdf',f'{working_dir}basep.bdf')
+    command1=f'{self.nastran_loc} {working_dir}base.bdf out={working_dir} memorymax=0.8 old=no news=no > nul 2>&1'
+    command2=f'{self.nastran_loc} {working_dir}basep.bdf out={working_dir} memorymax=0.8 old=no news=no > nul 2>&1'
+    #parallel execute command1 and command2
+    with ThreadPoolExecutor(max_workers=2) as executor:
+      futures = []
+      for command in [command1,command2]:
+        future=executor.submit(os.system,command)
+        futures.append(future)
+      for future in as_completed(futures):
+        pass
     num_modes=50
     _write_op4modes(f"{working_dir}base.op2",num_modes,op4_name=f"{working_dir}Phi.op4")
+    self.Ka,self.Ma,nid_rom=read_pch(f"{working_dir}basep.pch")
+    op2model=read_op2(f"{working_dir}base.op2",debug=None)
+    self.eigenvalues=np.array(op2model.eigenvectors[1].eigns)
+    self.eigenvectors=op2model.eigenvectors[1].data
+    nid_full=op2model.eigenvectors[1].node_gridtype[:,0]
+    self.id_full2rom=np.where(nid_full==nid_rom[:,None])[1]
+    self.eigenvectors_rom=self.eigenvectors[:,self.id_full2rom].reshape(self.eigenvectors.shape[0],-1).T
+
+  def save_property(self,fem_dir):
+    os.makedirs(fem_dir,exist_ok=True)
+    np.save(f'{fem_dir}/Ka.npy',self.Ka)
+    np.save(f'{fem_dir}/Ma.npy',self.Ma)
+    np.save(f'{fem_dir}/eigenvals.npy',self.eigenvalues)
+    np.save(f'{fem_dir}/eigenvecs.npy',self.eigenvectors)
+
 
 def overwrite_bdf(params:dict,bdfname=None,bdfmodel=None):
   if bdfmodel is None:
@@ -132,7 +158,7 @@ def overwrite_bdf(params:dict,bdfname=None,bdfmodel=None):
   for key in keys:
     if key[:3]=='P_P': #Property entry
       #decode parameter
-      val=params['C'+key[1:]].get_val(params[key])
+      val=params['C_'+key[1:]].get_val(params[key])
       properties=list(val.keys())
       properties.remove('pid')
       #overwrite Property values

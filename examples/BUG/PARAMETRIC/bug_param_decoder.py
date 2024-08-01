@@ -3,7 +3,6 @@ Class name: '{nastran card name}'+'{arbitrary label}' (e.g. 'PSHELL'+'T')
 """
 
 import scipy as sp
-from bug_handler import *
 from composite_material import *
 
 class BUGDecoder:
@@ -14,7 +13,7 @@ class BUGDecoder:
     raise NotImplementedError('get_val must be implemented in the derived class')
 
 class PSHELLT(BUGDecoder):
-  def __init__(self,pid,bug_handler:BUGHandler,y_control=None):
+  def __init__(self,pid,bug_handler,y_control=None):
     self.idx=pid
     self.pshell_y_abs=np.abs(bug_handler.get_pshell_coordinates(pid)[:,1])
     self.coord_control=y_control
@@ -37,7 +36,7 @@ class PSHELLT(BUGDecoder):
     return out
   
 class MAT2G(BUGDecoder):
-  def __init__(self,pid,bug_handler:BUGHandler,g_lamina,y_control=None):
+  def __init__(self,pid,bug_handler,g_lamina,y_control=None):
     mid=bug_handler.get_mid_from_pid(pid)
     assert len(mid)==np.unique(mid).shape[0], 'MAT2 must be unique in given pid set'
     self.idx=pid
@@ -81,7 +80,7 @@ class MAT2G(BUGDecoder):
     return out
   
 class CONM2X1(BUGDecoder):
-  def __init__(self,eid,bug_handler:BUGHandler,y_control=None):
+  def __init__(self,eid,bug_handler,y_control=None):
     self.idx=eid
     self.bug_handler=bug_handler
     conm_y=bug_handler.get_conm_coordinates(eid)[:,1]
@@ -108,7 +107,7 @@ class CONM2X1(BUGDecoder):
     return out
     
 class CAERO1PX(BUGDecoder):
-  def __init__(self,eid,bug_handler:BUGHandler,y_control=None):
+  def __init__(self,eid,bug_handler,y_control=None):
     self.bug_handler=bug_handler
     self.idx=eid
     self.coord_control=bug_handler.get_caero_coordinates_y_abs(eid)

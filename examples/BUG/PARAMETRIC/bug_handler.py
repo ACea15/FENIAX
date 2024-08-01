@@ -6,9 +6,10 @@ from pyNastran.op2.op2 import OP2
 import plotly.graph_objects as go
 import numpy as np
 import os
+import copy
+from bug_param_decoder import *
 
 NASTRAN_LOC='cmd.exe /c C:/MSC.Software/MSC_Nastran/20182/bin/nast20182.exe'
-
 
 class BUGHandler:
   def __init__(self,fname=None,bdfmodel=None):
@@ -23,9 +24,12 @@ class BUGHandler:
     self._preprocess_nodes()
     self._preprocess_elements()
     self._preprocess_materials()
-    self.annotation_property=dict()
+    self.annotation_pbar=dict()
+    self.annotation_pshell=dict()
+    self.annotation_pbeam=dict()
     self.annotation_conm=dict()
     self.annotation_material=dict()
+    self.component_names=[]
 
   def _preprocess_properties(self):
     """
@@ -93,19 +97,23 @@ class BUGHandler:
     add annotation for pids and eids
     """
     bdfmodel=read_bdf(fname,debug=None,punch=True,xref=False)
-    if label not in self.annotation_property.keys():
-      self.annotation_property[label]=[]
-      self.annotation_conm[label]=[]
-      self.annotation_material[label]=[]
+    if label[0]=='L' or label[0]=='R':
+      label=label[1:]
     for pid in bdfmodel.properties:
-      self.annotation_property[label].append(pid)
+      ptype=bdfmodel.properties[pid].type
+      if label not in eval('self.annotation_'+ptype.lower()).keys():
+        eval('self.annotation_'+ptype.lower())[label]=[]
+      eval('self.annotation_'+ptype.lower())[label].append(pid)
     for eid in bdfmodel.masses:
+      if label not in self.annotation_conm.keys():
+        self.annotation_conm[label]=[]
       self.annotation_conm[label].append(eid)
     for mid in bdfmodel.materials:
+      if label not in self.annotation_material.keys():
+        self.annotation_material[label]=[]
       self.annotation_material[label].append(mid)
 
-
-  def add_pshell_annotation(self,seps=None):
+  def add_pshell_annotation(self):
     """
     add annotation for pshells
     """
@@ -118,27 +126,14 @@ class BUGHandler:
     msk_skin_u=((annotation_wing==2)*(pshell_norms[:,2]<0))
     self.annotation_pshell=dict()
     pids=np.array(self.pid_dict['PSHELL'])
-    self.annotation_pshell['SPAR']=pids[msk_spar]
-    self.annotation_pshell['RIB']=pids[msk_rib]
-    self.annotation_pshell['SKIN_LOWER']=pids[msk_skin_l]
-    self.annotation_pshell['SKIN_UPPER']=pids[msk_skin_u]
-    self.annotation_pshell['SKIN']=np.concatenate((pids[msk_skin_l],pids[msk_skin_u]))
-    
-    if seps is not None:
-      seps=np.sort(np.abs(seps))
-      msk_seps=[]
-      pshell_y=np.abs(pshell_center[:,1])
-      msk_seps.append(pshell_y<seps[0])
-      for i in range(len(seps)-1):
-        msk_seps.append((pshell_y>=seps[i])*(pshell_y<seps[i+1]))
-      msk_seps.append(pshell_y>=seps[-1])
-      for i in range(len(msk_seps)):
-        self.annotation_pshell[f'SPAR_{i+1}']=pids[msk_spar*msk_seps[i]]
-        self.annotation_pshell[f'RIB_{i+1}']=pids[msk_rib*msk_seps[i]]
-        self.annotation_pshell[f'SKIN_LOWER_{i+1}']=pids[msk_skin_l*msk_seps[i]]
-        self.annotation_pshell[f'SKIN_UPPER_{i+1}']=pids[msk_skin_u*msk_seps[i]]
+    self.annotation_pshell['WING_SPAR']=list(pids[msk_spar])
+    self.annotation_pshell['WING_RIB']=list(pids[msk_rib])
+    self.annotation_pshell['WING_SKIN_LOWER']=list(pids[msk_skin_l])
+    self.annotation_pshell['WING_SKIN_UPPER']=list(pids[msk_skin_u])
+    self.annotation_pshell['WING_SKIN']=list(np.concatenate((pids[msk_skin_l],pids[msk_skin_u])))
+    self.component_names+=['WING_SPAR','WING_RIB','WING_SKIN_LOWER','WING_SKIN_UPPER']
   
-  def add_caero_annotation(self,threashodx=30.0):
+  def add_caero_annotation(self,threashodx=30.0,debug=False):
     """
     add annotation for caeros
     """
@@ -146,9 +141,9 @@ class BUGHandler:
     self.annotation_caero['WING']=[]
     self.annotation_caero['RWING']=[]
     self.annotation_caero['LWING']=[]
-    self.annotation_caero['HTAIL']=[]
-    self.annotation_caero['RHTAIL']=[]
-    self.annotation_caero['LHTAIL']=[]
+    self.annotation_caero['HTP']=[]
+    self.annotation_caero['RHTP']=[]
+    self.annotation_caero['LHTP']=[]
     for caero in self.bdf.caeros:
       a=self.bdf.caeros[caero]
       coord_center=(a.p1+a.p4)/2
@@ -159,41 +154,140 @@ class BUGHandler:
         else:
           self.annotation_caero['LWING'].append(caero)
       else:
-        self.annotation_caero['HTAIL'].append(caero)
+        self.annotation_caero['HTP'].append(caero)
         if coord_center[1]>0:
-          self.annotation_caero['RHTAIL'].append(caero)
+          self.annotation_caero['RHTP'].append(caero)
         else:
-          self.annotation_caero['LHTAIL'].append(caero)
+          self.annotation_caero['LHTP'].append(caero)
+    temp_rwing=copy.copy(self.annotation_caero['RWING'])
+    coord_center_rwing=[np.abs(self.bdf.caeros[caero].p1[1]) for caero in temp_rwing]
+    idx=np.argsort(coord_center_rwing)
+    for i in range(len(temp_rwing)):
+      self.annotation_caero[f'RWING{i+1}']=[temp_rwing[idx[i]]]
+    temp_lwing=copy.copy(self.annotation_caero['LWING'])
+    coord_center_lwing=[np.abs(self.bdf.caeros[caero].p1[1]) for caero in temp_lwing]
+    idx=np.argsort(coord_center_lwing)
+    for i in range(len(temp_lwing)):
+      self.annotation_caero[f'LWING{i+1}']=[temp_lwing[idx[i]]]
+    if len(self.annotation_caero['RWING'])==len(self.annotation_caero['LWING']):
+      for i in range(len(self.annotation_caero['RWING'])):
+        self.annotation_caero[f'WING{i+1}']=[self.annotation_caero['RWING'][i],self.annotation_caero['LWING'][i]]
+    if not debug:
+      for key in list(self.annotation_caero.keys()):
+        if key[0]=='R' or key[0]=='L':
+          del self.annotation_caero[key]
 
-  def get_nodes_using_pids(self,pids):
+  def add_annotation_zone(self,label,xmin=-1e10,xmax=1e10,ymin=0.0,ymax=1e10,zmin=-1e10,zmax=1e10):
     """
-    get nids in elements that use given property ids
+    Add user-defined zone annotation
     """
-    nid_trg=[]
-    eid_trg=[]
-    for eid,elem in self.bdf.elements.items():
-      if elem.pid in pids:
-        nid_trg+=elem.nodes
-        eid_trg.append(eid)
-    nid_trg=list(set(nid_trg))
-    eid_trg=list(set(eid_trg))
-    coord=np.zeros((len(nid_trg),3))
-    for i,nid in enumerate(nid_trg):
-      coord[i]=self.bdf.nodes[nid].xyz
-    return nid_trg,coord,eid_trg
+    ymin=max(ymin,0.0)
+    #Add zone to self.annotation_conm
+    keys=list(self.annotation_conm.keys())
+    for key in keys:
+      new_key=f'{key}_{label}'
+      self.annotation_conm[new_key]=[]
+      ids=self.annotation_conm[key]
+      for i in ids:
+        coord=self.bdf.Node(self.bdf.masses[i].nid).xyz
+        if coord[0]>=xmin and coord[0]<=xmax and np.abs(coord[1])>=ymin and np.abs(coord[1])<=ymax and coord[2]>=zmin and coord[2]<=zmax:
+          self.annotation_conm[new_key].append(i)
+    #Add zone to self.annotation_pshell
+    keys=list(self.annotation_pshell.keys())
+    for key in keys:
+      new_key=f'{key}_{label}'
+      self.annotation_pshell[new_key]=[]
+      ids=self.annotation_pshell[key]
+      coords=self.get_pshell_coordinates(ids)
+      for i,coord in zip(ids,coords):
+        if coord[0]>=xmin and coord[0]<=xmax and np.abs(coord[1])>=ymin and np.abs(coord[1])<=ymax and coord[2]>=zmin and coord[2]<=zmax:
+          self.annotation_pshell[new_key].append(i)
+
+    #Add zone to self.annotation_pbar
+    keys=list(self.annotation_pbar.keys())
+    for key in keys:
+      new_key=f'{key}_{label}'
+      self.annotation_pbar[new_key]=[]
+      ids=self.annotation_pbar[key]
+      coords=self.get_pbar_coordinates(ids)
+      for i,coord in zip(ids,coords):
+        if coord[0]>=xmin and coord[0]<=xmax and np.abs(coord[1])>=ymin and np.abs(coord[1])<=ymax and coord[2]>=zmin and coord[2]<=zmax:
+          self.annotation_pbar[new_key].append(i)
+
+  def convert_design_param(self,params):
+    
+    converted_params=dict()
+    keys=[k.upper() for k in params.keys()] #capitalize letters
+    for key in keys:
+      componentName,typeName,variableName=key.split('-')
+      componentNames=componentName.split('+')
+      if variableName=='THICKNESS':  #PSHELL
+        pid=[]
+        for name in componentNames:
+          pid+=self.annotation_property[name]
+        pid=list(set(pid)) #extract unique elements
+        decoder_name='PSHELLT_'+key
+        converted_params['P_'+decoder_name]=params[key]
+        converted_params['C_'+decoder_name]=PSHELLT(pid,self)
+      elif variableName=='PLY_ANGLE': #MAT2
+        pid=[]
+        for name in componentNames:
+          pid+=self.annotation_pshell[name]
+        pid=list(set(pid))
+        decoder_name='MAT2G_'+key
+        converted_params['P_'+decoder_name]=params[key]
+        converted_params['C_'+decoder_name]=MAT2G(pid,self,self.qmat)
+      elif variableName=='MASS_X1': #CONM2
+        eid=[]
+        for name in componentNames:
+          eid+=self.annotation_conm[name]
+        eid=list(set(eid))
+        decoder_name='CONM2X1_'+key
+        converted_params['P_'+decoder_name]=params[key]
+        converted_params['C_'+decoder_name]=CONM2X1(eid,self)
+      elif variableName=='PX':
+        eid=[]
+        for name in componentNames:
+          eid+=self.annotation_caero[name]
+        eid=list(set(eid))
+        decoder_name='CAERO1PX_'+key
+        converted_params['P_'+decoder_name]=params[key]
+        converted_params['C_'+decoder_name]=CAERO1PX(eid,self)
+      elif variableName=='CHORD': #CAERO1
+        eid=[]
+        for name in componentNames:
+          eid+=self.annotation_caero[name]
+        eid=list(set(eid))
+        decoder_name='CAERO1C_'+key
+        converted_params['P_'+decoder_name]=params[key]
+        converted_params['C_'+decoder_name]=CAERO1CHORD(eid,self)
+    return converted_params
   
-  def get_pids_from_nids(self,nids):
-    """
-    get pids of elements that use given node ids
-    """
-    pids=[]
-    for eid,elem in self.bdf.elements.items():
-      for nid in elem.nodes:
-        if nid in nids:
-          pids.append(elem.pid)
-          break
-    return list(set(pids))
-  
+  def get_component_names(self):
+    out=dict()
+    pshell_keys=list(self.annotation_pshell.keys())
+    out['THICKNESS']=pshell_keys
+    valid_keys=[]
+    for key in pshell_keys:
+      if 'COMP' not in key:
+        temp=[]
+        for pid in self.annotation_pshell[key]:
+          mid=self.bdf.properties[pid].mid1
+          if self.bdf.materials[30075161].type=='MAT2':
+            temp.append(pid)
+        if len(temp)>=1:
+          self.annotation_pshell[key+'_COMP']=temp
+          valid_keys.append(key+'_COMP')
+      else:
+        if len(self.annotation_pshell[key])>=1:
+          valid_keys.append(key)
+        #valid_keys.append(key)
+    out['PLY_ANGLE']=valid_keys
+    out['MASS_X1']=list(self.annotation_conm.keys())
+    out['PX']=list(self.annotation_caero.keys())
+    out['CHORD']=list(self.annotation_caero.keys())
+    return out
+
   def plot_caeros(self,eids=None,fig=None):
     """
     plot caero elements
@@ -373,7 +467,6 @@ class BUGHandler:
     fig.update_layout(scene=dict(aspectmode='data'),margin=dict(l=0,r=0,b=0,t=10))
     return fig
 
-
   def set_trg_pids(self,pids):
     """
     set target pids for pshell elements to be design variables
@@ -413,6 +506,12 @@ class BUGHandler:
     self.gmat_ref=gmat_ref
 
     return self.trg_mids,self.center_coord_mids
+
+  def set_q_reference(self,qmat):
+    """
+    set reference Q matrix for MAT2G
+    """
+    self.qmat=qmat
 
   def set_pshell_thickness(self,thickness):
     assert len(thickness)==len(self.initial_thickness)
@@ -470,6 +569,36 @@ class BUGHandler:
     for i,mid in enumerate(mids):
       coords[i]=self.bdf.Materials([mid])[0].rho
     return coords
+
+  def get_pbar_coordinates(self,pids=None):
+    if pids is None:
+      pids=self.pid_dict['PBAR']
+    coords_center=np.zeros((len(pids),3))
+    if self.is_eid_equal_pid():
+      for i,eid in enumerate(pids):
+        nids=self.bdf.elements[eid].nodes
+        coord=np.zeros((2,3))
+        for j,nid in enumerate(nids):
+          coord[j]=self.bdf.nodes[nid].xyz
+        coords_center[i]=coord.mean(axis=0)
+      return coords_center
+    else:
+      raise NotImplementedError
+    
+  def get_pbeam_coordinates(self,pids=None):
+    if pids is None:
+      pids=self.pid_dict['PBEAM']
+    coords_center=np.zeros((len(pids),3))
+    if self.is_eid_equal_pid():
+      for i,eid in enumerate(pids):
+        nids=self.bdf.elements[eid].nodes
+        coord=np.zeros((2,3))
+        for j,nid in enumerate(nids):
+          coord[j]=self.bdf.nodes[nid].xyz
+        coords_center[i]=coord.mean(axis=0)
+      return coords_center
+    else:
+      raise NotImplementedError
 
   def get_pshell_coordinates(self,pids=None):
     if pids is None:
