@@ -136,20 +136,24 @@ https://plotly.com/python/subplots/
               scale=100./33.977, x_range=[0,4]):
       fig=None
       if labels is None:
-          labels = list(range(X))      
-      colors = ["steelblue", "orange", "green", "black"]
+          labels = list(range(X))
+      colors = ["steelblue", "steelblue", "green", "green"]
+      dashes = ["solid", "dash"]*2
       for i, Xi in enumerate(X):
           x1, y1 = putils.pickIntrinsic2D(t,
                                           Xi,
                                           fixaxis2=dict(node=node, dim=dim))
-
-          fig = uplotly.lines2d(x1, (y1 - X0[dim]) * scale, fig,
+          if i == 0:
+              y10=y1[0]
+              print(y10)
+          fig = uplotly.lines2d(x1, (y1 - X0[dim])/y10 * scale, fig,
                                 dict(name=f"NMROM-G{labels[i]}",
-                                     line=dict(color=colors[i])
+                                     line=dict(color=colors[i],
+                                               dash=dashes[i])
                                  ))
 
-      dim_dict = {0:'x', 1:'y', 2:'z', 3:'theta_x', 4:'theta_y', 5:'theta_z'}
-      fig.update_yaxes(title=r'\large $\hat{u}%s$'%dim_dict[dim])
+      dim_dict = {0:'x', 1:'y', 2:'z', 3:r'\theta_x', 4:r'\theta_y', 5:r'\theta_z'}      
+      fig.update_yaxes(title=r'$\large u_{%s}$'%dim_dict[dim])
       fig.update_xaxes(range=x_range, title='time [s]')
       return fig
 
@@ -159,22 +163,30 @@ https://plotly.com/python/subplots/
       fig=None
       if labels is None:
           labels = list(range(X))
-      colors = ["steelblue", "orange", "green", "black"]
+      colors = ["steelblue", "steelblue", "green", "green"]
+      dashes = ["solid", "dash"]*2
       for i, Xi in enumerate(X):
           x1, y1 = putils.pickIntrinsic2D(Xi,
                                           Xi,
                                           fixaxis1=dict(node=node, dim=dim1),
                                           fixaxis2=dict(node=node, dim=dim2)
                                           )
+          if i == 0:
+              x10 = x1[0]
+              y10 = y1[0]
+          if i == 2:
+              x10 = x1[0]
+              y10 = y1[0]
 
-          fig = uplotly.lines2d(x1 * scale1, y1 * scale2, fig,
+          fig = uplotly.lines2d(x1 / x10 * scale1, y1 / y10 * scale2, fig,
                                 dict(name=f"NMROM-G{labels[i]}",
-                                     line=dict(color=colors[i])
+                                     line=dict(color=colors[i],
+                                               dash=dashes[i])
                                  ))
 
-      dim_dict = {0:'x', 1:'y', 2:'z', 3:'theta_x', 4:'theta_y', 5:'theta_z'}
-      fig.update_yaxes(title=r'\large $\hat{X}%s$'%dim_dict[dim1])
-      fig.update_xaxes(title=r'\large $\hat{X}%s$'%dim_dict[dim2])
+      dim_dict = {0:'x', 1:'y', 2:'z', 3:r'\theta_x', 4:r'\theta_y', 5:r'\theta_z'}
+      fig.update_yaxes(title=r'$\large \hat{X}_{2%s}$' %dim_dict[dim1])
+      fig.update_xaxes(title=r'$\large \hat{X}_{2%s}$' %dim_dict[dim2])
       return fig
 
   def subplots_X(fun, *args, **kwargs):
@@ -227,7 +239,7 @@ https://plotly.com/python/subplots/
                             t=2,
                             b=0
                             ))
-      fig.update_layout(legend=dict(x=0.81, y=1))
+      fig.update_layout(legend=dict(x=0.1, y=1))
       #fig.update_layout(showlegend=False,row=2, col=1)
       # fig.update_layout(showlegend=False,row=2, col=2)
       #fig.update_layout(fig1.layout)
@@ -298,20 +310,26 @@ https://plotly.com/python/subplots/
   @fig_background
   def plot_trimaoa(loads, alphas, labels):
 
+      rad2grad = 180./3.141592
       colors = ['blue', 'green', 'red', 'black', 'orange', 'yellow']
+      symbols = ["circle-open", "square", "diamond-open", "circle"]
       fig = None
       for i, (alphai, labeli) in enumerate(zip(alphas, labels)):
-          fig = uplotly.lines2d(loads, alphai, fig,
+          fig = uplotly.lines2d(loads, rad2grad*alphai, fig,
                                     dict(name=labeli,
-                                         line=dict(color=colors[i])
+                                         line=dict(color=colors[i]),
+                                         marker=dict(symbol=symbols[i], size=16)
                                          ),
                                     dict())
 
       #fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
       fig.update_layout(#showlegend=False,
                         #height=800,
+                        yaxis_range=[0,20],
+                        xaxis_range=[0,4.5],
+                        legend=dict(x=0.1, y=0.9),
                         xaxis_title='Loads [n-g]',
-                        yaxis_title=r'Angle [$^o$]')
+                        yaxis_title=r'$Angle [^o$]')
       return fig
 
 #+end_src
@@ -426,9 +444,18 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 
 ** XRF1
 The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
-The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. The aerodynamic model contains \(\sim 1,500\) aerodynamic panels. The simulations are carried out with a modal resolution of 70 modes and a time step in the Runge-Kutta solver of 0.005 s.
+The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. The aerodynamic model contains \(\sim 1,500\) aerodynamic panels. The simulations are carried out with a modal resolution of 70 modes.
 This aeroelastic analysis is a requirement for certification purposes and it is one of the main drivers in sizing the wings of high aspect ratio wings. 
 *** Trim flight
+The first exercise we setup on this model is the calculation of the trim equilibrium under increasing values of the gravity acceleration as to replicate a pull-up manoeuvre.
+The aircraft 3D trim equilibrium is shown in Fig. [[fig:xrf1trim]] for a range of pull-up manoeuvres from 1g to 3.5g. The reason to go beyond regulation requirements is to check the robustness of our solvers in large-deformations scenarios and also to appreciate better the differences between linear and nonlinear analysis. Moreover, by comparing with Nastran's 144 solution on the full FE model at small displacements, we verify our implementation of the trim. The airflow conditions are a density of $\rho = 0.778 Kg/m^3$ and velocity $u_\infty = 180 m/s$. Shortening effects and follower forces become really significant as the gravity loading increases.
+
+#+NAME: fig:xrf1_trim
+#+CAPTION: XRF1 3D trim  
+#+ATTR_LATEX: :width 0.9\textwidth 
+[[file:figs_ext/xrf1_trim.png]]
+
+Next in Fig. [[fig:xrf1_trimaoa]] we show the angle of attack and elevator angles at trim obtained from our nonlinear solver and the linear Nastran solution on the full FE model. Small differences are found streaming from the nonlinearities and the different solution process. For instance, the follower aerodynamic forces mean they are less effective in counterbalancing the weight -which always points downwards- as larger deflections are present. 
 
 #+NAME: sol=xrf1trim1_4g
 #+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
@@ -474,30 +501,31 @@ This aeroelastic analysis is a requirement for certification purposes and it is 
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   fig, figname = fig_out(name)(plot_trimaoa)(loads=[1,2,3,4],
                                              alphas=[aoa,
-                                                     aoalin,
+                                                     #aoalin,
                                                      aoa_nastran,
                                                      q_elevator,
-                                                     qlin_elevator,
+                                                     #qlin_elevator,
                                                      qelevator_nastran],
                                              labels=["NLMROM-AoA",
-                                                     "LROM-AoA",
+                                                     #"LROM-AoA",
                                                      "NASTRAN-AoA",
                                                      "NLMROM-Elevator",
-                                                     "LROM-Elevator",
+                                                     #"LROM-Elevator",
                                                      "NASTRAN-Elevator"])
   figname
 #+end_src
 
+#+NAME: fig:xrf1_trimaoa
+#+CAPTION: XRF1 trim elevator and angle of attack
+#+ATTR_LATEX: :width 0.9\textwidth 
 #+RESULTS: sol=xrf1trim_plot
 [[file:figs/sol=xrf1trim_plot.png]]
 
-The aircraft trim equilibrium is shown in Fig. [[fig:xrf1trim]] for a range of pull-up manoeuvres from 1g to 3.5g. The reason to go beyond regulation requirements is to check the robustness of our solvers in large-deformations scenarios and also to appreciate better the differences between linear and nonlinear analysis. Moreover, by comparing with Nastran's 144 solution on the full FE model at small displacements, we verify our implementation of the trim.
 
-#+NAME: fig:xrf1_trim
-#+CAPTION: XRF1 3D trim  
+In addition to the static solution comparison, we verify our implementation by setting a dynamic simulation with gravity, angle of attack and the elevator angle from the static simulation as inputs. A good equilibrium state is shown in the time-domain solution as presented in Fig. [[fig:xrf1_trimflight]], i.e. the vehicle is not gaining or losing altitude but flying perfectly straight.
+#+NAME: fig:xrf1_trimflight
+#+CAPTION: XRF1 3D trim 
 #+ATTR_LATEX: :width 0.9\textwidth 
-[[file:figs_ext/xrf1_trim.png]]
-
 **** Check trim flight :noexport: 
 
 #+NAME: sol=xrf1trim1_dyn
@@ -526,9 +554,8 @@ The aircraft trim equilibrium is shown in Fig. [[fig:xrf1trim]] for a range of p
 #+RESULTS: plot=xrf1trim1_dyn
 [[file:figs/plot=xrf1trim1_dyn.png]]
 
-
 *** Gust response
-Next we look at the gust response of of the aircraft under trimmed conditions. Two high intensity gusts are imposed of the 1-g trimmed condition. 
+Next we look at the gust response of the aircraft under trimmed conditions. Two high intensity gusts are imposed on the 1-g trimmed flight. 
 #+NAME: sol=xrf1gust_load
 #+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
   solxrf1gust1= solution.IntrinsicReader("./xrf1gust1")
@@ -568,7 +595,7 @@ Fig. [[sol=xrf1gust_tip]] presents the time evolution of the wing-tip normalised
   X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
   X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
   labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
-  fig, figname = fig_out(name)(plot_Xtime)(t, X2, dim=2, labels=labels, node=4, scale=1., x_range=[0,1.5])
+  fig, figname = fig_out(name, update_layout=dict(yaxis_title=r"$\hat{X}_{2z}$",legend=dict(x=0.7, y=0.941), ))(plot_Xtime)(t, X2, dim=2, labels=labels, node=4, scale=1., x_range=[0,1.5])
   figname
 #+end_src
 
@@ -610,7 +637,7 @@ Fig. [[fig:xrf1gustcomp_root]] shows the VMT plot of the shear and torsional for
   X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
   X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
   labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
-  fig, figname = fig_out(name)(plot_Xcomponents)(X2, dim1=5, dim2=3, labels=labels, node=4, scale1=1, scale2=1)
+  fig, figname = fig_out(name)(plot_Xcomponents)(X2, dim1=4, dim2=2, labels=labels, node=4, scale1=1, scale2=1)
   figname
 #+end_src
 

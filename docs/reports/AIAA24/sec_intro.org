@@ -387,7 +387,6 @@ Rab, ra $\longleftarrow$ deconcatenate(y)
 \label{alg:strain_integration}
 \end{algorithm}
 
-\newpage
 ** COMMENT Software design
 \textit{"Supporting state-of-the-art AI research means balancing rapid prototyping and quick iteration with the ability to deploy experiments at a scale traditionally associated with production systems."}.
 Jax target inside DeepMind would also be desirable in a scientific research environment. It however entails a good amount of labour and expertise into the field of software design, whose payoffs are only realisable in the long term.    
