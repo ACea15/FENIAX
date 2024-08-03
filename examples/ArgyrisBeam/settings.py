@@ -7,6 +7,9 @@ import fem4inas.preprocessor.configuration as configuration  # import Config, du
 from fem4inas.preprocessor.inputs import Inputs
 import fem4inas.fem4inas_main
 import jax.numpy as jnp
+import jax
+#jax.config.update("jax_enable_compilation_cache", False)
+
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"

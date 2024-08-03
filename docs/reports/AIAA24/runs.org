@@ -344,7 +344,7 @@
   inp.driver.sol_path = pathlib.Path(
       f"{results_path}/{name}")
   inp.systems.sett.s2.aero.gust_profile = "mc"
-  inp.systems.sett.s2.aero.gust.intensity = 14.0732311562*2 #11.304727674272842/10000
+  inp.systems.sett.s2.aero.gust.intensity = 28.14 #14.0732311562*2 #11.304727674272842/10000
   inp.systems.sett.s2.aero.gust.length = 67.
   inp.systems.sett.s2.aero.gust.step = 1.
   inp.systems.sett.s2.aero.gust.shift = 0.
@@ -367,7 +367,7 @@
   inp.driver.sol_path = pathlib.Path(
       f"{results_path}/{name}")
   inp.systems.sett.s2.aero.gust_profile = "mc"
-  inp.systems.sett.s2.aero.gust.intensity = 15.3541764073*2
+  inp.systems.sett.s2.aero.gust.intensity = 28.14 #15.3541764073*2
   inp.systems.sett.s2.aero.gust.length = 125.
   inp.systems.sett.s2.aero.gust.step = 1.
   inp.systems.sett.s2.aero.gust.shift = 0.

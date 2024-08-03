@@ -147,7 +147,7 @@ https://plotly.com/python/subplots/
               y10=y1[0]
               print(y10)
           fig = uplotly.lines2d(x1, (y1 - X0[dim])/y10 * scale, fig,
-                                dict(name=f"NMROM-G{labels[i]}",
+                                dict(name=f"NMROM-{labels[i]}",
                                      line=dict(color=colors[i],
                                                dash=dashes[i])
                                  ))
@@ -165,6 +165,14 @@ https://plotly.com/python/subplots/
           labels = list(range(X))
       colors = ["steelblue", "steelblue", "green", "green"]
       dashes = ["solid", "dash"]*2
+      fig = uplotly.lines2d([1], [1], fig,
+                            dict(name=None,
+                                 showlegend=False,
+                                 #line=dict(color=colors[i]),
+                                 marker=dict(symbol="star", color="red",size=16)
+                                 ),
+                            dict())
+
       for i, Xi in enumerate(X):
           x1, y1 = putils.pickIntrinsic2D(Xi,
                                           Xi,
@@ -179,14 +187,15 @@ https://plotly.com/python/subplots/
               y10 = y1[0]
 
           fig = uplotly.lines2d(x1 / x10 * scale1, y1 / y10 * scale2, fig,
-                                dict(name=f"NMROM-G{labels[i]}",
+                                dict(name=f"NMROM-{labels[i]}",
                                      line=dict(color=colors[i],
                                                dash=dashes[i])
                                  ))
 
-      dim_dict = {0:'x', 1:'y', 2:'z', 3:r'\theta_x', 4:r'\theta_y', 5:r'\theta_z'}
-      fig.update_yaxes(title=r'$\large \hat{X}_{2%s}$' %dim_dict[dim1])
-      fig.update_xaxes(title=r'$\large \hat{X}_{2%s}$' %dim_dict[dim2])
+      dim_dict = {0:r'\hat{F}_x', 1:'\hat{F}_y', 2:'\hat{F}_z',
+                  3:'\hat{M}_x', 4:'\hat{M}_y', 5:'\hat{M}_x'}
+      fig.update_xaxes(title=r'$\large %s$' %dim_dict[dim1])
+      fig.update_yaxes(title=r'$\large %s$' %dim_dict[dim2])
       return fig
 
   def subplots_X(fun, *args, **kwargs):
@@ -325,20 +334,21 @@ https://plotly.com/python/subplots/
       #fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
       fig.update_layout(#showlegend=False,
                         #height=800,
-                        yaxis_range=[0,20],
-                        xaxis_range=[0,4.5],
+                        yaxis_range=[0,19],
+                        xaxis_range=[0,4.1],
                         legend=dict(x=0.1, y=0.9),
                         xaxis_title='Loads [n-g]',
-                        yaxis_title=r'$Angle [^o$]')
+                        yaxis_title=r'$Angle [^o]$')
       return fig
 
 #+end_src
 
-* Nastran runs
+* Nastran runs :noexport:
 see
 [[../../../examples/XRF1trim/NASTRAN/runs/]]
 
 [[file:~/projects/FEM4INAS/examples/XRF1trim/NASTRAN/runs/XRF1-144trim1g.f06::ID LABEL TYPE TRIM STATUS VALUE OF UX][go to f06]]
+
 
 | Load | aoa      | elevetor |
 | 1g   | 7.552e-2 | 4.632e-2 |
@@ -350,8 +360,9 @@ see
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
+Four different cases are presented to meet the following requirements: a) validate the current structural and aeroelastic implementation against results from theory and MSC Nastran; b) show the additional computational advantage of deploying the code on GPUs; c) showcase and verify the differentiable capabilities of the code. Starting with a representative aircraft without fuselage or engines, we move to two canonical test cases where rigid body dynamics are introduced and ending with an aircraft model representative of the A350 vehicle class built by Airbus for research purposes. 
 
-** Canonical case: unsupported dynamics of very flexible structure
+** Unsupported dynamics of very flexible structure
 This example exemplifies the ability of our solvers to turn a generic linear free-free finite-element model into a fully nonlinear solution that accounts for the rigid-body dynamics coupled with large elastic deformations. It has already been presented in [[cite:&PALACIOS2019]], though the novelties introduced herein are the new optimised implementation that can run on accelerators and the approach to recover the full 3D state from the reduced model.
 The beam version of this structure was first studied by Simo and Vu-Quoc [[cite:&SIMO1988]] and has served to verify several implementations of nonlinear beam dynamics with rigid body motions [[cite:&HESSE2014]].
 A straight structure of constant square cross section (side = 3, wall thickness = 3/10) is built consisting of 784 shell elements linked to 50 spanwise nodes via interpolation elements as depicted in Fig. [[fig:FFS]] together with the material properties and two types of loading: firstly, a dead-force in the x-direction and dead-moment in the z-direction that yield a planar motion in the x-y plane; and secondly, the addition of a moment in the y-direction which produces a three dimensional motion.
@@ -447,15 +458,15 @@ The studies presented in this section are based on a reference configuration dev
 The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. The aerodynamic model contains \(\sim 1,500\) aerodynamic panels. The simulations are carried out with a modal resolution of 70 modes.
 This aeroelastic analysis is a requirement for certification purposes and it is one of the main drivers in sizing the wings of high aspect ratio wings. 
 *** Trim flight
-The first exercise we setup on this model is the calculation of the trim equilibrium under increasing values of the gravity acceleration as to replicate a pull-up manoeuvre.
+The calculation of the trim equilibrium is carried out for increasing values of the gravity acceleration as to replicate a pull-up manoeuvre.
 The aircraft 3D trim equilibrium is shown in Fig. [[fig:xrf1trim]] for a range of pull-up manoeuvres from 1g to 3.5g. The reason to go beyond regulation requirements is to check the robustness of our solvers in large-deformations scenarios and also to appreciate better the differences between linear and nonlinear analysis. Moreover, by comparing with Nastran's 144 solution on the full FE model at small displacements, we verify our implementation of the trim. The airflow conditions are a density of $\rho = 0.778 Kg/m^3$ and velocity $u_\infty = 180 m/s$. Shortening effects and follower forces become really significant as the gravity loading increases.
 
 #+NAME: fig:xrf1_trim
 #+CAPTION: XRF1 3D trim  
-#+ATTR_LATEX: :width 0.9\textwidth 
+#+ATTR_LATEX: :width 1\textwidth 
 [[file:figs_ext/xrf1_trim.png]]
 
-Next in Fig. [[fig:xrf1_trimaoa]] we show the angle of attack and elevator angles at trim obtained from our nonlinear solver and the linear Nastran solution on the full FE model. Small differences are found streaming from the nonlinearities and the different solution process. For instance, the follower aerodynamic forces mean they are less effective in counterbalancing the weight -which always points downwards- as larger deflections are present. 
+Next in Fig. [[fig:xrf1_trimaoa]] we show the angle of attack and elevator angles at trim obtained from our nonlinear solver and the linear Nastran solution. Small differences are found streaming from the nonlinearities and each particular solution process. For instance, the follower effect of aerodynamic forces mean they are less effective in counterbalancing the weight -which always points downwards- as larger deflections are present. 
 
 #+NAME: sol=xrf1trim1_4g
 #+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
@@ -517,15 +528,15 @@ Next in Fig. [[fig:xrf1_trimaoa]] we show the angle of attack and elevator angle
 
 #+NAME: fig:xrf1_trimaoa
 #+CAPTION: XRF1 trim elevator and angle of attack
-#+ATTR_LATEX: :width 0.9\textwidth 
+#+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: sol=xrf1trim_plot
 [[file:figs/sol=xrf1trim_plot.png]]
 
-
-In addition to the static solution comparison, we verify our implementation by setting a dynamic simulation with gravity, angle of attack and the elevator angle from the static simulation as inputs. A good equilibrium state is shown in the time-domain solution as presented in Fig. [[fig:xrf1_trimflight]], i.e. the vehicle is not gaining or losing altitude but flying perfectly straight.
+In addition to the static solution comparison, we verify our implementation by setting a dynamic simulation with gravity, angle of attack and the elevator angle from the static simulation as inputs. A good equilibrium state is shown in the time-domain solution as presented in Fig. [[fig:xrf1_trimflight]], i.e. the vehicle is not gaining or losing altitude but flying straight.
 #+NAME: fig:xrf1_trimflight
-#+CAPTION: XRF1 3D trim 
-#+ATTR_LATEX: :width 0.9\textwidth 
+#+CAPTION: XRF1 flying at trim equilibrium
+#+ATTR_LATEX: :width 0.9\textwidth
+
 **** Check trim flight :noexport: 
 
 #+NAME: sol=xrf1trim1_dyn
@@ -555,7 +566,7 @@ In addition to the static solution comparison, we verify our implementation by s
 [[file:figs/plot=xrf1trim1_dyn.png]]
 
 *** Gust response
-Next we look at the gust response of the aircraft under trimmed conditions. Two high intensity gusts are imposed on the 1-g trimmed flight. 
+Next we look at the gust response of the aircraft under trimmed conditions. Two high intensity 1-cos gusts are imposed on the 1-g trimmed flight: one of 67 m length, labelled G1, and another of 125 m length, both with intensity of 28.14 m/s. Similar as in the trim case, this values are above regulations and we use them to push our solvers into the region of deformations where next generation of high-aspect ratio airplanes are expected to operate.   
 #+NAME: sol=xrf1gust_load
 #+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
   solxrf1gust1= solution.IntrinsicReader("./xrf1gust1")
@@ -579,10 +590,10 @@ Next we look at the gust response of the aircraft under trimmed conditions. Two 
   figname
 #+end_src
 
-Fig. [[sol=xrf1gust_tip]] presents the time evolution of the wing-tip normalised displacements and the difference between the linear and nonlinear analysis
+Fig. [[sol=xrf1gust_tip]] presents the time evolution of the wing-tip normalised displacements and the differences between the linear and nonlinear analysis.   
 #+NAME: fig:xrf1gust_tip
 #+CAPTION: Wing tip displacements for trim and gust analysis
-#+ATTR_LATEX: :width 0.5\textwidth 
+#+ATTR_LATEX: :width 0.7\textwidth 
 #+RESULTS: sol=xrf1gust_tip
 [[file:figs/sol=xrf1gust_tip.png]]
 
@@ -599,16 +610,14 @@ Fig. [[sol=xrf1gust_tip]] presents the time evolution of the wing-tip normalised
   figname
 #+end_src
 
-A more interesting metric is the loading at the root of the 
-
-The higher loads in the nonlinear analysis indicate a different response when the rigid-body dynamics are included in the simulations to the case of a clamped aircraft. We see that linear calculations can lead to nonconservative dynamic loadings, for which safety factors are in place, of course, but could be problematic in more flexible designs. Such effects have also been reported in [1], and yet, further investigations need to be carried out on this matter to properly assess the coupling of trim and dynamic disturbances, and the causes for this increment in the loads from nonlinear analysis.
+A more interesting metric to monitor is the loading at the root of the wing. As seen in Fig. [[fig:xrf1gust_root]], higher loads are found from the nonlinear analysis. This is also reported in  [[cite:&CESNIK2014]] and means that the dynamic loads from the linear analysis can be non-conservative. Safety factors are defined in part to account for those but their adequacy is not guaranteed in more flexible designs.
 #+NAME: fig:xrf1gust_root
-#+CAPTION: Wing vertical shear force time evolution
+#+CAPTION: Normalised wing vertical shear force time evolution with gust excitation
 #+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: sol=xrf1gust_root
 [[file:figs/sol=xrf1gust_root.png]]
 
-Fig. [[fig:xrf1gustcomp_root]] shows the VMT plot of the shear and torsional forces acting at the wing-root. The reason for building load envelopes that span a large set of different gusts is clear: the sharper gust produces larger shear forces whereas the gust with a bigger length induces larger torsional moments.   
+Fig. [[fig:xrf1gustcomp_root]] shows the load diagram for the normalized shear and torsional forces acting at the wing-root. This case portraits the reason for building load envelopes with a large set of defining parameters: the sharper gust produces larger shear forces whereas the gust with a bigger length induces larger torsional moments. Similar behavior is seen for the bending-shear loads in Fig. [[fig:xrf1gustcomp_root2]]. 
 #+NAME: sol=xrf1gustcomp_root
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   t = solxrf1gust1.data.dynamicsystem_s2.t
@@ -623,23 +632,20 @@ Fig. [[fig:xrf1gustcomp_root]] shows the VMT plot of the shear and torsional for
 #+end_src
 
 #+NAME: fig:xrf1gustcomp_root
-#+CAPTION: Wing root shear-torsion load diagram in response to two 1-cos gust
+#+CAPTION: Wing root torsion-shear load diagram in response to two 1-cos gust
 #+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: sol=xrf1gustcomp_root
 [[file:figs/sol=xrf1gustcomp_root.png]]
 
 #+NAME: sol=xrf1gustcomp_root2
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  t = solxrf1gust1.data.dynamicsystem_s2.t
-  X2 = []
-  X2.append(solxrf1gust1.data.dynamicsystem_s2.X2)
-  X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
-  X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
-  X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
   labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
   fig, figname = fig_out(name)(plot_Xcomponents)(X2, dim1=4, dim2=2, labels=labels, node=4, scale1=1, scale2=1)
   figname
 #+end_src
 
+#+NAME: fig:xrf1gustcomp_root2
+#+CAPTION: Wing root bending-shear load diagram in response to two 1-cos gust
+#+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: sol=xrf1gustcomp_root2
 [[file:figs/sol=xrf1gustcomp_root2.png]]
