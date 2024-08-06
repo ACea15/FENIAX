@@ -66,7 +66,25 @@
   from tabulate import tabulate
 #+end_src
 
-** Helper functions
+* Nastran runs :noexport:
+see
+[[../../../examples/XRF1trim/NASTRAN/runs/]]
+
+[[file:~/projects/FEM4INAS/examples/XRF1trim/NASTRAN/runs/XRF1-144trim1g.f06::ID LABEL TYPE TRIM STATUS VALUE OF UX][go to f06]]
+
+
+| Load | aoa      | elevetor |
+| 1g   | 7.552e-2 | 4.632e-2 |
+| 2g   | 1.511e-1 | 9.263e-2 |
+| 3g   | 2.266e-1 | 1.39e-1  |
+| 4g   | 3.021e-1 | 1.853e-1 |
+
+* Results
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
+** Helper functions :noexport:
 
 #+begin_comment
 https://plotly.com/python/subplots/
@@ -335,7 +353,7 @@ https://plotly.com/python/subplots/
       fig.update_layout(#showlegend=False,
                         #height=800,
                         yaxis_range=[0,19],
-                        xaxis_range=[0,4.1],
+                        xaxis_range=[0.5,4.1],
                         legend=dict(x=0.1, y=0.9),
                         xaxis_title='Loads [n-g]',
                         yaxis_title=r'$Angle [^o]$')
@@ -343,23 +361,8 @@ https://plotly.com/python/subplots/
 
 #+end_src
 
-* Nastran runs :noexport:
-see
-[[../../../examples/XRF1trim/NASTRAN/runs/]]
-
-[[file:~/projects/FEM4INAS/examples/XRF1trim/NASTRAN/runs/XRF1-144trim1g.f06::ID LABEL TYPE TRIM STATUS VALUE OF UX][go to f06]]
 
 
-| Load | aoa      | elevetor |
-| 1g   | 7.552e-2 | 4.632e-2 |
-| 2g   | 1.511e-1 | 9.263e-2 |
-| 3g   | 2.266e-1 | 1.39e-1  |
-| 4g   | 3.021e-1 | 1.853e-1 |
-
-* Results
-:PROPERTIES:
-:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
-:END:
 Four different cases are presented to meet the following requirements: a) validate the current structural and aeroelastic implementation against results from theory and MSC Nastran; b) show the additional computational advantage of deploying the code on GPUs; c) showcase and verify the differentiable capabilities of the code. Starting with a representative aircraft without fuselage or engines, we move to two canonical test cases where rigid body dynamics are introduced and ending with an aircraft model representative of the A350 vehicle class built by Airbus for research purposes. 
 
 ** Unsupported dynamics of very flexible structure
@@ -375,12 +378,12 @@ A straight structure of constant square cross section (side = 3, wall thickness 
 The free-flying evolution of the 3D model is shown in Fig. [[fig:FFB_2D]] for the planar motion and Fig. [[fig:FFB_3D]] for the loads giving rise to the full 3D deformations. It worth remarking the latter motion also exhibits large torsional deformations which are combined with the also large bending displacements and rigid-body modes.
 
 #+NAME: fig:FFB_2D
-#+CAPTION: Free-flying structure in the 2D plane
+#+CAPTION: Free-flying structure in the 2D-plane
 #+ATTR_LATEX: :width 0.8\textwidth 
 [[file:figs_ext/FFB_2D3.pdf]]
 
 #+NAME: fig:FFB_3D
-#+CAPTION: Free-flying structure in the 3D plane
+#+CAPTION: Free-flying structure in the 3D-plane
 #+ATTR_LATEX: :width 1.\textwidth 
 [[file:figs_ext/FFB_3D3.pdf]]
 
@@ -418,6 +421,9 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
   figname
 #+end_src
 
+#+NAME: fig:FFBtimes
+#+CAPTION: Performance CPU vs GPU comparison in free-flying structure (variable time step)
+#+ATTR_LATEX: :width 0.55\textwidth 
 #+RESULTS: FFBtimes1
 [[file:]]
 
@@ -429,14 +435,14 @@ Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error resu
 
 #+NAME: fig:FFBtimes2
 #+CAPTION: Performance CPU vs GPU comparison in free-flying structure (fixed time step)
-#+ATTR_LATEX: :width 0.5\textwidth 
+#+ATTR_LATEX: :width 0.55\textwidth 
 #+RESULTS: FFBtimes2
 [[file:figs/FFBtimes2.png]]
 
 #+NAME: FFBerror1
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   fig, figname = fig_out(name)(plot_ffb_error)(modes, err1, 'L2-norm Error')
-  figname
+  #figname
 #+end_src
 
 #+RESULTS: FFBerror1
@@ -464,7 +470,7 @@ The aircraft 3D trim equilibrium is shown in Fig. [[fig:xrf1trim]] for a range o
 #+NAME: fig:xrf1_trim
 #+CAPTION: XRF1 3D trim  
 #+ATTR_LATEX: :width 1\textwidth 
-[[file:figs_ext/xrf1_trim.png]]
+[[file:figs_ext/xrf1trim.pdf]]
 
 Next in Fig. [[fig:xrf1_trimaoa]] we show the angle of attack and elevator angles at trim obtained from our nonlinear solver and the linear Nastran solution. Small differences are found streaming from the nonlinearities and each particular solution process. For instance, the follower effect of aerodynamic forces mean they are less effective in counterbalancing the weight -which always points downwards- as larger deflections are present. 
 
@@ -535,7 +541,8 @@ Next in Fig. [[fig:xrf1_trimaoa]] we show the angle of attack and elevator angle
 In addition to the static solution comparison, we verify our implementation by setting a dynamic simulation with gravity, angle of attack and the elevator angle from the static simulation as inputs. A good equilibrium state is shown in the time-domain solution as presented in Fig. [[fig:xrf1_trimflight]], i.e. the vehicle is not gaining or losing altitude but flying straight.
 #+NAME: fig:xrf1_trimflight
 #+CAPTION: XRF1 flying at trim equilibrium
-#+ATTR_LATEX: :width 0.9\textwidth
+#+ATTR_LATEX: :width 1.\textwidth
+[[file:figs_ext/xrf1trimfree.png]]
 
 **** Check trim flight :noexport: 
 
@@ -590,7 +597,7 @@ Next we look at the gust response of the aircraft under trimmed conditions. Two 
   figname
 #+end_src
 
-Fig. [[sol=xrf1gust_tip]] presents the time evolution of the wing-tip normalised displacements and the differences between the linear and nonlinear analysis.   
+Fig. [[fig:xrf1gust_tip][[fig:xrf1gust_tip]] presents the time evolution of the wing-tip normalised displacements and the differences between the linear and nonlinear analysis.   
 #+NAME: fig:xrf1gust_tip
 #+CAPTION: Wing tip displacements for trim and gust analysis
 #+ATTR_LATEX: :width 0.7\textwidth 
@@ -649,3 +656,8 @@ Fig. [[fig:xrf1gustcomp_root]] shows the load diagram for the normalized shear a
 #+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: sol=xrf1gustcomp_root2
 [[file:figs/sol=xrf1gustcomp_root2.png]]
+
+#+NAME: fig:xrf1_trimflight
+#+CAPTION: XRF1 flying at trim equilibrium
+#+ATTR_LATEX: :width 1.\textwidth
+[[file:figs_ext/xrf1trimfree.png]]

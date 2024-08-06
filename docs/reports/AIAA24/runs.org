@@ -75,7 +75,7 @@
 
 #+end_src
 
-* RunModels
+* RunModels 
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/runs.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both :var results_path=(print results_folder)
 :END:
@@ -108,7 +108,7 @@
 
 - Models run on this exercise:
 
-** COMMENT SimoFSpaguetti
+** SimoFSpaguetti
 
 #+NAME: rrb
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
@@ -245,7 +245,7 @@
   inp.systems.sett.s1.aero.elevator_index = [-2, -1]
   inp.systems.sett.s1.aero.elevator_link = [+1, -1]
 #+end_src
-** COMMENT XRF1trim-runs
+** XRF1trim-runs
 *** XRF1trim-1_4g
 #+NAME: xrf1trim1_4g
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))

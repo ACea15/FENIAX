@@ -1,31 +1,32 @@
 #+setupfile: ./config.org
 * House keeping  :noexport: 
 #+begin_src elisp :results none :tangle no :exports none
-    (add-to-list 'org-structure-template-alist
-    '("sp" . "src python :session (print pythonShell)"))
-    (add-to-list 'org-structure-template-alist
-    '("se" . "src elisp"))
-    (setq org-confirm-babel-evaluate nil)
-    (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
-    (setq org-latex-pdf-process
-      '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
-        "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
-    ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-    (pyvenv-workon "fem4inasdev")
-    (require 'org-tempo)
-    ;; Veval_blocks -> eval blocks of latex
-    ;; Veval_blocks_run -> eval blocks to obtain results
-    (setq Veval_blocks "yes") ;; yes, no, no-export
-    (setq Vpics "png") ;; yes, no, no-export   
-    (setq Veval_blocks_run "yes")
-    (setq pythonShell "*py1*")
-    ;; export_blocks: code, results, both, none
-    (setq export_blocks  "results")  
+  (add-to-list 'org-structure-template-alist
+  '("sp" . "src python :session (print pythonShell)"))
+  (add-to-list 'org-structure-template-alist
+  '("se" . "src elisp"))
+  (setq org-confirm-babel-evaluate nil)
+  (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+  (setq org-latex-pdf-process
+    '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
+      "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
+  ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+  (pyvenv-workon "fem4inas")
+  (require 'org-tempo)
+  ;; Veval_blocks -> eval blocks of latex
+  ;; Veval_blocks_run -> eval blocks to obtain results
+  (setq Veval_blocks "yes") ;; yes, no, no-export
+  (setq Vpics "png") ;; yes, no, no-export   
+  (setq Veval_blocks_run "no-export")
+  (setq pythonShell "*py1*")
+  ;; export_blocks: code, results, both, none
+  (setq export_blocks  "results")
+  (setq results_folder ".")
 #+end_src
 
 * Load modules :noexport: 
 :PROPERTIES:
-:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both :tangle ./results/runs.py
 :END:
 
 #+begin_src python  :results none 
@@ -73,11 +74,13 @@
   import fem4inas.unastran.op2reader as op2reader
   import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
+  examples_folder = pathlib.Path.cwd() / "../../../../examples"    
+
 #+end_src
 
-* Run models
+* Run models :noexport:
 :PROPERTIES:
-:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/runs.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both :var results_path=(print results_folder)
 :END:
 
 - Models run on this exercise:
