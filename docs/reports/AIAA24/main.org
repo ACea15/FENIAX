@@ -109,6 +109,64 @@ On all of these cases we have shown how the program running the computations can
 
 \appendix
 * But how fast is JAX?
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
+#+NAME: FFBtimes1
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  import jax
+  import jax.numpy as jnp
+  import jax.random as random
+  from functools import partial
+  import time
+
+  STRIKE = 1.
+  SPOT = 100.
+  VOL = 0.3
+  RATE = 0.03
+  T = 1.
+  NUMSTEPS = 300
+  NUMPATHS = int(5E5)
+
+  @partial(jax.jit, static_argnames=["num_steps"])
+  def montecarlo_simulation(key, S0, mu, sigma, T, num_steps):
+
+      dt = T / num_steps
+      # initial_state = (S0 * jnp.ones(num_simulations), dt, mu, sigma)
+      key, subkey = random.split(key)
+      z = random.normal(subkey, shape=(num_steps,))
+
+      def montecarlo_step(carry, zi):
+          S_new = carry * jnp.exp((mu - 0.5 * sigma ** 2) * dt + sigma * jnp.sqrt(dt) * zi)
+          return S_new, S_new
+
+      _, path = jax.lax.scan(montecarlo_step, S0, z)
+
+      return path
+
+
+  # Generate random keys
+  rng_key = random.PRNGKey(0)
+  rng_keys = jax.random.split(rng_key, NUMPATHS)  # (nchains,)
+  t1 = time.time()
+  montecarlo_vmap = jax.vmap(montecarlo_simulation, in_axes=((0,) + (None,)*5), out_axes=1)
+  # Run simulation
+  S = montecarlo_vmap(rng_keys, SPOT, RATE, VOL, T, NUMSTEPS)
+
+#+end_src
+
+#+NAME: jax
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  times_jax=[2.61818,2.53457,2.57413,2.58329,2.54211]
+  times_cppcon=[2.5202,2.46557,2.4246,2.43075,2.48635]
+  times_cpp0=[17.8771,16.3803,18.0532,17.9185,17.7933]
+  times_cpp1=[7.76826,7.74667,7.53073,7.74733,7.77621]
+  times_cpp2=[6.13295,5.94719,5.93238,5.97617.5.91422]
+  times_cpp4=[5.22247,5.10841,5.08975,5.07895,5.09282]
+
+#+end_src
+
 
 bibliographystyle:plain
 # bibliography:/home/acea/Documents/Engineering.bib

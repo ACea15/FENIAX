@@ -83,6 +83,18 @@ see
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
+** run times :noexport:
+GPU:
+xrf1gust1,49.93000912666321
+xrf1gust1lin,17.80385947227478
+xrf1gust2,46.250757694244385
+xrf1gust2lin,17.578747510910034
+CPU:
+xrf1gust1,79.32493233680725
+xrf1gust1lin,31.23710012435913
+xrf1gust2,82.16147875785828
+xrf1gust2lin,33.10497808456421
+
 
 ** Helper functions :noexport:
 

@@ -12,14 +12,14 @@
         '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
           "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inasdev")
+  (pyvenv-workon "fem4inas")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
   (setq Veval_blocks "yes") ;; yes, no, no-export 
   (setq Veval_blocks_run "no-export")
   (setq pythonShell "py2")
-  (setq Vpics "pdf") ;; yes, no, no-export   
+  (setq Vpics "png") ;; yes, no, no-export   
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
 #+end_src
@@ -205,14 +205,14 @@ https://plotly.com/python/subplots/
       if nast_scale is not None:
           offset = 0. #u111m[nast_load[0],0,-1, dim]
           fig = uplotly.lines2d(t111m[nast_load[0]], (u111m[nast_load[0],:,-1, dim] - offset)*nast_scale*scale, fig,
-                                dict(name=f"FullFE-G{labels[0]}",
+                                dict(name=f"Lin. FE-G{labels[0]}",
                                      line=dict(color="black",
                                                dash="dash",
                                                width=1.5)
                                      ))
           offset2 = 0. #u111m[nast_load[1],0,-1, dim]
           fig = uplotly.lines2d(t111m[nast_load[1]], (u111m[nast_load[1],:,-1, dim] - offset2)*nast_scale*scale, fig,
-                                dict(name=f"FullFE-G{labels[1]}",
+                                dict(name=f"Lin. FE-G{labels[1]}",
                                      line=dict(color="red",
                                                dash="dot",
                                                width=1.5)
@@ -335,7 +335,7 @@ https://plotly.com/python/subplots/
                           # specs=[[{"colspan": 2}, None],
                           #       [{}, {}]]
                           )
-      
+
       # fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.1, vertical_spacing=0.1,
       #                    specs=[[{"colspan": 2}, None],
       #                           [{}, {}]])
@@ -696,7 +696,11 @@ https://plotly.com/python/subplots/
                                      ),
                                 dict())
       fig.update_xaxes(title= {'font': {'size': 20}, 'text': 'Number of modes'})#title="Number of modes",title_font=dict(size=20))
-      fig.update_yaxes(title=r"$\Large \epsilon$",type="log", tickformat= '.0e',tickfont = dict(size=13), tickvals=[2e-2, 1e-2, 7e-3,5e-3,3e-3, 2e-3, 1e-3,7e-4, 5e-4,3e-4, 2e-4, 1e-4, 7e-5, 5e-5])
+      fig.update_yaxes(title=r"$\Large \epsilon$",type="log", # tickformat= '.1r',
+                       tickfont = dict(size=12), exponentformat="power",
+                       #dtick=0.2,
+                       #tickvals=[2e-2, 1e-2, 7e-3,5e-3,3e-3, 2e-3, 1e-3,7e-4, 5e-4,3e-4, 2e-4, 1e-4, 7e-5, 5e-5]
+                       )
       #fig.update_layout(height=650)
       fig.update_layout(legend=dict(x=0.7, y=0.95), font=dict(size=20))
 
