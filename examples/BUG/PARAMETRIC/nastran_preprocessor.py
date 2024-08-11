@@ -3,19 +3,21 @@ from pyNastran.op2.op2 import read_op2
 import numpy as np
 import os
 import copy
+import threading
 from concurrent.futures import ThreadPoolExecutor,as_completed
-from multiprocessing import Process
+from multiprocessing import Process,Queue
 from nastran_tools import read_pch
 from bug_param_decoder import *
 import pyNastran.op4.op4 as op4
 from roger import *
+from grad_eig import *
 
 class NastranPreprocessor:
   def __init__(self,nastran_loc):
     self.nastran_loc=nastran_loc
 
   def sensitivity_preprocess(self,params:dict,bdfname,delta=1e-3,num_parallel=4,
-                             is_aero=False,require_punch=True,working_dir='./_temp/'):
+                             is_aero=False,require_punch=True,require_op2=True,working_dir='./_temp/'):
     
     keys=params.keys()
     base_bdf=read_bdf(bdfname,debug=None)
@@ -31,7 +33,8 @@ class NastranPreprocessor:
         scale_param=decoder.scale_param
         process_list=[]
         for i in range(len(params[key])*2):
-          bdfnames.append(f'{working_dir}{key[2:]}_{i}.bdf')
+          if require_op2:
+            bdfnames.append(f'{working_dir}{key[2:]}_{i}.bdf')
           if require_punch:
             bdfnames.append(f'{working_dir}{key[2:]}p_{i}.bdf')
           process=Process(target=_write_bdf,
@@ -57,10 +60,11 @@ class NastranPreprocessor:
       for future in as_completed(futures):
         pass
 
-  def sensitivity_structure(self,params:dict,bdfname,delta=1e-3,num_parallel=4,require_punch=False,working_dir='./_temp/'):
-    self.sensitivity_preprocess(params,bdfname,delta,num_parallel,is_aero=False,require_punch=require_punch,working_dir=working_dir)
+  def _sensitivity_structure(self,params:dict,bdfname,delta=1e-3,num_parallel=4,require_punch=False,working_dir='./_temp/',preprocess=True):
+    if preprocess:
+      self.sensitivity_preprocess(params,bdfname,delta,num_parallel,is_aero=False,require_punch=require_punch,working_dir=working_dir)
     #Read output files
-    out_dic=copy.deepcopy(params)
+    out_dic=dict()
     for key in params.keys():
       if key[0]=='P':
         decoder=params['C'+key[1:]]
@@ -71,21 +75,64 @@ class NastranPreprocessor:
         d_eval=[]
         for i in range(len(params[key])):
           op2_1=read_op2(f'{working_dir}{key[2:]}_{i*2}.op2',debug=None)
+          evec1=op2_1.eigenvectors[1].data
+          evec1=evec1.reshape((evec1.shape[0],-1)).T
+          eval1=np.array(op2_1.eigenvectors[1].eigns)
+          evec1,eval1=rectify_eigs(self.eigenvectors_rom,evec1,eval1)
           op2_2=read_op2(f'{working_dir}{key[2:]}_{i*2+1}.op2',debug=None)
-          d_evec.append((op2_2.eigenvectors[1].data-op2_1.eigenvectors[1].data)/(2*delta*scale_param))
-          d_eval.append((np.array(op2_2.eigenvectors[1].eigns)-np.array(op2_1.eigenvectors[1].eigns))/(2*delta*scale_param))
-        out_dic['S'+key[1:]+'_EVEC']=np.array(d_evec)
-        out_dic['S'+key[1:]+'_EVAL']=np.array(d_eval)
+          evec2=op2_2.eigenvectors[1].data
+          evec2=evec2.reshape((evec2.shape[0],-1)).T
+          eval2=np.array(op2_2.eigenvectors[1].eigns)
+          evec2,eval2=rectify_eigs(self.eigenvectors_rom,evec2,eval2)
+          #print(evec2.shape)
+          d_evec.append((evec2-evec1)/(2*delta*scale_param))
+          d_eval.append((eval2-eval1)/(2*delta*scale_param))
+        name='_'.join(key.split('_')[2:])
+        out_dic['EVEC_'+name]=np.array(d_evec)
+        out_dic['EVAL_'+name]=np.array(d_eval)
         if require_punch:
           d_Kaa=[]
           d_Maa=[]
           for i in range(len(params[key])):
-            Kaa1,Maa1=read_pch(f'{working_dir}{key[2:]}p_{i*2}.pch')
-            Kaa2,Maa2=read_pch(f'{working_dir}{key[2:]}p_{i*2+1}.pch')
+            Kaa1,Maa1,_=read_pch(f'{working_dir}{key[2:]}p_{i*2}.pch')
+            Kaa2,Maa2,_=read_pch(f'{working_dir}{key[2:]}p_{i*2+1}.pch')
             d_Kaa.append((Kaa2-Kaa1)/(2*delta*scale_param))
             d_Maa.append((Maa2-Maa1)/(2*delta*scale_param))
-          out_dic['S'+key[1:]+'_KAA']=np.array(d_Kaa)
-          out_dic['S'+key[1:]+'_MAA']=np.array(d_Maa)
+          name='_'.join(key.split('_')[2:])
+          out_dic['KAA_'+name]=np.array(d_Kaa)
+          out_dic['MAA_'+name]=np.array(d_Maa)
+
+    return out_dic
+  
+  def sensitivity_structure(self,params:dict,bdfname,delta=1e-3,num_parallel=4,working_dir='./_temp/',preprocess=True):
+    if preprocess:
+      self.sensitivity_preprocess(params,bdfname,delta,num_parallel,is_aero=False,require_punch=True,working_dir=working_dir,require_op2=False)
+    #Read output files
+    out_dic=dict()
+    
+    for key in params.keys():
+      if key[0]=='P':
+        decoder=params['C'+key[1:]]
+        if not decoder.is_variable:
+          continue
+        scale_param=decoder.scale_param
+        
+        d_Kaa=[]
+        d_Maa=[]
+        for i in range(len(params[key])):
+          Kaa1,Maa1,_=read_pch(f'{working_dir}{key[2:]}p_{i*2}.pch')
+          Kaa2,Maa2,_=read_pch(f'{working_dir}{key[2:]}p_{i*2+1}.pch')
+          d_Kaa.append((Kaa2-Kaa1)/(2*delta*scale_param))
+          d_Maa.append((Maa2-Maa1)/(2*delta*scale_param))
+        name='_'.join(key.split('_')[2:])
+        d_Kaa=np.array(d_Kaa)
+        d_Maa=np.array(d_Maa)
+        out_dic['KAA_'+name]=d_Kaa
+        out_dic['MAA_'+name]=d_Maa
+        #calculate sensitivity of eigenvalues and eigenvectors
+        d_evec,d_eval=grad_eig(self.Ka,self.Ma,self.eigenvalues,self.eigenvectors_rom,d_Kaa,d_Maa)
+        out_dic['EVEC_'+name]=d_evec
+        out_dic['EVAL_'+name]=d_eval
 
     return out_dic
 
@@ -158,7 +205,7 @@ def overwrite_bdf(params:dict,bdfname=None,bdfmodel=None):
   for key in keys:
     if key[:3]=='P_P': #Property entry
       #decode parameter
-      val=params['C_'+key[1:]].get_val(params[key])
+      val=params['C'+key[1:]].get_val(params[key])
       properties=list(val.keys())
       properties.remove('pid')
       #overwrite Property values
@@ -315,3 +362,28 @@ def _write_op4modes(op2_name:str,num_modes: int,op4_name: None,
     modes_reshape = modes.reshape((op2_nummodes, op2.numnodes * op2.numdim)).T
     op4_data = op4.OP4(debug=None)
     op4_data.write_op4(op4_name,{matrix_name:(2,modes_reshape)},is_binary=False)
+
+def find_close_vec(v_trg,v_ref):
+  """
+  v_trg: (ndim,nmodeT)
+  v_ref: (ndim,nmodeR)
+  """
+  norm_trg=np.linalg.norm(v_trg,axis=0) #(nmodeT,)
+  norm_ref=np.linalg.norm(v_ref,axis=0) #(nmodeR,)
+  dot=v_trg.T@v_ref #(nmodeT,nmodeR)
+  cossim=dot/norm_trg[:,None]/norm_ref[None,:] #(nmodeT,nmodeR)
+  #print(cossim.shape)
+  idx=np.argmax(np.abs(cossim),axis=1)
+  sign=np.sign(cossim[np.arange(cossim.shape[0]),idx])
+  return idx,sign
+
+def rectify_eigs(v_trg,v_ref,l_ref):
+  """
+  v_trg: (ndim,nmodeT)
+  v_ref: (ndim,nmodeR)
+  l_ref: (nmodeR,)
+  """
+  idx,sign=find_close_vec(v_trg,v_ref)
+  v_refM=v_ref[:,idx]*sign
+  l_refM=l_ref[idx]
+  return v_refM,l_refM

@@ -224,7 +224,7 @@ class BUGHandler:
       if variableName=='THICKNESS':  #PSHELL
         pid=[]
         for name in componentNames:
-          pid+=self.annotation_property[name]
+          pid+=self.annotation_pshell[name]
         pid=list(set(pid)) #extract unique elements
         decoder_name='PSHELLT_'+key
         converted_params['P_'+decoder_name]=params[key]
