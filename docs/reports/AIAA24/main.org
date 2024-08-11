@@ -107,6 +107,10 @@ A new algorithm to efficiently compute the aircraft trim equilibrium was also de
 A relevant amount of test cases accompany the software, of which two have been presented herein to illustrate the aforementioned features in the code. Firstly, a very flexible, unsupported shell structure is shown to fly through the air undergoing large, coupled rigid and flexible motions in vacuum. Secondly, the aeroelastic response of a full aircraft model built to industry standards is analysed. The trim equilibrium for various accelerations is computed and compared against the linear response provided by MSC Nastran. Next the gust response of the aircraft flying at trimmed conditions is studied, with the nonlinear analysis leading to slightly higher loads than its linear counterpart.
 On all of these cases we have shown how the program running the computations can be deployed on standard CPUs but also on modern hardware architectures such as GPUs that can lead to performance gains of over 30 times faster.
 
+* Acknowledgements
+This work has received funds from Innovate UK, under project 10002372, managed by the UK
+Aerospace Technology Institute.
+
 \appendix
 * But how fast is JAX?
 :PROPERTIES:
@@ -156,16 +160,46 @@ On all of these cases we have shown how the program running the computations can
 
 #+end_src
 
-#+NAME: jax
-#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  times_jax=[2.61818,2.53457,2.57413,2.58329,2.54211]
-  times_cppcon=[2.5202,2.46557,2.4246,2.43075,2.48635]
-  times_cpp0=[17.8771,16.3803,18.0532,17.9185,17.7933]
-  times_cpp1=[7.76826,7.74667,7.53073,7.74733,7.77621]
-  times_cpp2=[6.13295,5.94719,5.93238,5.97617.5.91422]
-  times_cpp4=[5.22247,5.10841,5.08975,5.07895,5.09282]
+#+NAME: jaxvscpp
+#+begin_src python :results raw  :var name=(org-element-property :name (org-element-context))
+  tbench = dict()
+  tbench['times_jax']=   jnp.array([2.61818,2.53457,2.57413,2.58329,2.54211])
+  tbench['times_cppcon']=jnp.array([2.5202,2.46557,2.4246,2.43075,2.48635])
+  tbench['times_cpp0']=  jnp.array([17.8771,16.3803,18.0532,17.9185,17.7933])
+  tbench['times_cpp1']=  jnp.array([7.76826,7.74667,7.53073,7.74733,7.77621])
+  tbench['times_cpp2']=  jnp.array([6.13295,5.94719,5.93238,5.97617,5.91422])
+  tbench['times_cpp4']=  jnp.array([5.22247,5.10841,5.08975,5.07895,5.09282])
 
+  tbench2 = dict()
+  for k, v in tbench.items():
+     tbench2[f"{k}_mean"] = v.mean()
+     tbench2[f"{k}_std"] = v.std()
+  tbench = tbench | tbench2
+  times = ["2.57 \pm 0.03",
+  "2.46 \pm 0.03",
+  "5.11 \pm 0.05",
+  "5.98 \pm 0.08",
+  "7.71 \pm 0.09",
+  "17.6 \pm 0.6"]
+  processor = ["JAX", "CPP-Threading", "CPP-f4","CPP-f3","CPP-f2","CPP-f1"]
+  dfb = pd.DataFrame(dict(Time=times),
+                     index=processor)
+  tabulate(zip(processor, times), headers=["Time [s]"], tablefmt='orgtbl')
 #+end_src
+
+Table [[table:jaxbenchmark]] shows
+#+CAPTION: Montecarlo simulation benchmarks
+#+NAME: table:jaxbenchmark
+#+ATTR_LATEX:  :center t :placement [h]
+#+RESULTS: jaxvscpp
+|               | Time [s]      |
+|---------------+---------------|
+| JAX           | 2.57 \pm 0.03 |
+| CPP-Threading | 2.46 \pm 0.03 |
+| CPP-f4        | 5.11 \pm 0.05 |
+| CPP-f3        | 5.98 \pm 0.08 |
+| CPP-f2        | 7.71 \pm 0.09 |
+| CPP-f1        | 17.6 \pm 0.6  |
 
 
 bibliographystyle:plain

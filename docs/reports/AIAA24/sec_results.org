@@ -299,7 +299,9 @@ https://plotly.com/python/subplots/
                                  line=dict(color="red")
                                  ),
                             dict())          
-      fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
+      fig.update_yaxes(type="log", exponentformat="power",
+                       #tickformat= '.0e',
+                       nticks=8)
       fig.update_layout(legend=dict(x=0.7, y=0.95),
                         height=650,
                         xaxis_title='Num. modes',
@@ -315,7 +317,8 @@ https://plotly.com/python/subplots/
                                      line=dict(color="blue")
                                      ),
                                 dict())
-      fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
+      fig.update_yaxes(type="log", exponentformat="power", #tickformat= '.0e',
+                       nticks=8)
       fig.update_layout(showlegend=False,
                         #height=800,
                         xaxis_title='Num. modes',
@@ -550,11 +553,7 @@ Next in Fig. [[fig:xrf1_trimaoa]] we show the angle of attack and elevator angle
 #+RESULTS: sol=xrf1trim_plot
 [[file:figs/sol=xrf1trim_plot.png]]
 
-In addition to the static solution comparison, we verify our implementation by setting a dynamic simulation with gravity, angle of attack and the elevator angle from the static simulation as inputs. A good equilibrium state is shown in the time-domain solution as presented in Fig. [[fig:xrf1_trimflight]], i.e. the vehicle is not gaining or losing altitude but flying straight.
-#+NAME: fig:xrf1_trimflight
-#+CAPTION: XRF1 flying at trim equilibrium
-#+ATTR_LATEX: :width 1.\textwidth
-[[file:figs_ext/xrf1trimfree.png]]
+In addition to the static solution comparison, we verify our implementation by setting a dynamic simulation with gravity, angle of attack and the elevator angle from the static simulation as inputs. A good equilibrium state is attained with the vehicle flying straight over the course of 10 seconds dropping less that $10^{-4}$ m.
 
 **** Check trim flight :noexport: 
 
@@ -609,7 +608,7 @@ Next we look at the gust response of the aircraft under trimmed conditions. Two 
   figname
 #+end_src
 
-Fig. [[fig:xrf1gust_tip][[fig:xrf1gust_tip]] presents the time evolution of the wing-tip normalised displacements and the differences between the linear and nonlinear analysis.   
+Fig. [[fig:xrf1gust_tip][fig:xrf1gust_tip]] presents the time evolution of the wing-tip normalised displacements and the differences between the linear and nonlinear analysis.   
 #+NAME: fig:xrf1gust_tip
 #+CAPTION: Wing tip displacements for trim and gust analysis
 #+ATTR_LATEX: :width 0.7\textwidth 
@@ -669,7 +668,8 @@ Fig. [[fig:xrf1gustcomp_root]] shows the load diagram for the normalized shear a
 #+RESULTS: sol=xrf1gustcomp_root2
 [[file:figs/sol=xrf1gustcomp_root2.png]]
 
-#+NAME: fig:xrf1_trimflight
-#+CAPTION: XRF1 flying at trim equilibrium
+Finally the trim and peek of the gust states are displayed in Fig. [[xrf1_trimgust]].
+#+NAME: fig:xrf1_trimgust
+#+CAPTION: XRF1 flying at trim equilibrium perturbed by gust G1 
 #+ATTR_LATEX: :width 1.\textwidth
-[[file:figs_ext/xrf1trimfree.png]]
+file:figs_ext/xrf1gust1free.png
