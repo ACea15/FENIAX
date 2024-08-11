@@ -34,7 +34,6 @@ def catter2library(fun: callable):
 def arg_10G1(sol: solution.IntrinsicSolution,
              system: intrinsicmodal.Dsystem,
              fem: intrinsicmodal.Dfem,
-             t: float,
              *args, **kwargs):
 
     eta_0 = kwargs['eta_0']
@@ -55,13 +54,12 @@ def arg_10G1(sol: solution.IntrinsicSolution,
             X_xdelta,
             C0ab,
             component_names, num_nodes,
-            component_nodes, component_father, t)
+            component_nodes, component_father)
 
 @catter2library
 def arg_10g11(sol: solution.IntrinsicSolution,
               system: intrinsicmodal.Dsystem,
               fem: intrinsicmodal.Dfem,
-              t: float,
               *args, **kwargs):
 
     eta_0 = kwargs['eta_0']
@@ -71,13 +69,12 @@ def arg_10g11(sol: solution.IntrinsicSolution,
     x = system.xloads.x
     force_follower = system.xloads.force_follower
     return (eta_0, gamma2, omega, phi1, x,
-            force_follower, t)
+            force_follower)
 
 @catter2library
 def arg_10g121(sol: solution.IntrinsicSolution,
                system: intrinsicmodal.Dsystem,
                fem: intrinsicmodal.Dfem,
-               t: float,
                *args, **kwargs):
 
     eta_0 = kwargs['eta_0']
@@ -98,13 +95,12 @@ def arg_10g121(sol: solution.IntrinsicSolution,
             X_xdelta,
             C0ab,
             component_names, num_nodes,
-            component_nodes, component_father, t)
+            component_nodes, component_father)
 
 @catter2library
 def arg_10G121(sol: solution.IntrinsicSolution,
                system: intrinsicmodal.Dsystem,
                fem: intrinsicmodal.Dfem,
-               t: float,
                *args, **kwargs):
 
     eta_0 = kwargs['eta_0']
@@ -126,13 +122,12 @@ def arg_10G121(sol: solution.IntrinsicSolution,
             X_xdelta,
             C0ab,
             component_names, num_nodes,
-            component_nodes, component_father, t)
+            component_nodes, component_father)
 
 @catter2library
 def arg_10g15(sol: solution.IntrinsicSolution,
               sys: intrinsicmodal.Dsystem,
               fem: intrinsicmodal.Dfem,
-              t: float,
               *args, **kwargs):
 
     eta_0 = kwargs['eta_0']
@@ -147,7 +142,6 @@ def arg_10g15(sol: solution.IntrinsicSolution,
 def arg_11G6(sol: solution.IntrinsicSolution,
              system: intrinsicmodal.Dsystem,
              fem: intrinsicmodal.Dfem,
-             t: float,
              *args, **kwargs):
 
     eta_0 = kwargs['eta_0']
@@ -177,13 +171,12 @@ def arg_11G6(sol: solution.IntrinsicSolution,
             X_xdelta,
             C0ab,
             component_names, num_nodes,
-            component_nodes, component_father, t)
+            component_nodes, component_father)
 
 @catter2library
 def arg_11G6l(sol: solution.IntrinsicSolution,
              system: intrinsicmodal.Dsystem,
              fem: intrinsicmodal.Dfem,
-             t: float,
              *args, **kwargs):
 
     eta_0 = kwargs['eta_0']
@@ -213,7 +206,7 @@ def arg_11G6l(sol: solution.IntrinsicSolution,
             X_xdelta,
             C0ab,
             component_names, num_nodes,
-            component_nodes, component_father, t)
+            component_nodes, component_father)
 
 #########################################################
 @catter2library

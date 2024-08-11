@@ -1,31 +1,32 @@
 #+setupfile: ./config.org
 * House keeping  :noexport: 
 #+begin_src elisp :results none :tangle no :exports none
-    (add-to-list 'org-structure-template-alist
-    '("sp" . "src python :session (print pythonShell)"))
-    (add-to-list 'org-structure-template-alist
-    '("se" . "src elisp"))
-    (setq org-confirm-babel-evaluate nil)
-    (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
-    (setq org-latex-pdf-process
-      '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
-        "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
-    ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-    (pyvenv-workon "fem4inasdev")
-    (require 'org-tempo)
-    ;; Veval_blocks -> eval blocks of latex
-    ;; Veval_blocks_run -> eval blocks to obtain results
-    (setq Veval_blocks "yes") ;; yes, no, no-export
-    (setq Vpics "png") ;; yes, no, no-export   
-    (setq Veval_blocks_run "yes")
-    (setq pythonShell "*py1*")
-    ;; export_blocks: code, results, both, none
-    (setq export_blocks  "results")  
+  (add-to-list 'org-structure-template-alist
+  '("sp" . "src python :session (print pythonShell)"))
+  (add-to-list 'org-structure-template-alist
+  '("se" . "src elisp"))
+  (setq org-confirm-babel-evaluate nil)
+  (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+  (setq org-latex-pdf-process
+    '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
+      "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
+  ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+  (pyvenv-workon "fem4inas")
+  (require 'org-tempo)
+  ;; Veval_blocks -> eval blocks of latex
+  ;; Veval_blocks_run -> eval blocks to obtain results
+  (setq Veval_blocks "yes") ;; yes, no, no-export
+  (setq Vpics "png") ;; yes, no, no-export   
+  (setq Veval_blocks_run "no-export")
+  (setq pythonShell "*py1*")
+  ;; export_blocks: code, results, both, none
+  (setq export_blocks  "results")
+  (setq results_folder ".")
 #+end_src
 
 * Load modules :noexport: 
 :PROPERTIES:
-:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both :tangle ./results/runs.py
 :END:
 
 #+begin_src python  :results none 
@@ -73,11 +74,13 @@
   import fem4inas.unastran.op2reader as op2reader
   import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
+  examples_folder = pathlib.Path.cwd() / "../../../../examples"    
+
 #+end_src
 
-* Run models
+* Run models :noexport:
 :PROPERTIES:
-:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/runs.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both :var results_path=(print results_folder)
 :END:
 
 - Models run on this exercise:
@@ -97,15 +100,107 @@
 #+INCLUDE: "./sec_results.org::*Results" :only-contents t
 
 * Conclusions
-This paper has presented a modal-based description that incorporates geometrically nonlinear effects due to structural slenderness onto generic FE models initially built for linear analysis. This nonlinear aeroelastic framework accounts for follower aerodynamic forces, geometric stiffening and the coupling between elastic and rigid-body DoF.
+A modal-based formulation has been presented for the dynamics of flexible aircraft that accounts for both geometrically nonlinear deformations and rigid-body motions -as well as the nonlinear interaction between them-. The approach is built on a non-intrusive reduction order process combined with a nonlinear description of the dominant dimension in slender structures. It achieves a nonlinear representation of linear aeroelastic models of arbitrary complexity in a very efficient manner and without losing the characteristics of the linear model.  
 While the underlying theory had already been introduced, a new implementation was put in-place for both high-performance and software modularity, with the numerical library JAX as the engine powering the computations. This has allowed time-domain computations in near real-time with two orders of magnitude speed-ups compared to conventional implementations.
-Three major highlights about the new implementation have been introduced in this work: 1) the propagation of derivatives in the solution process via the AD tool embedded in JAX with structural and aeroelastic examples that include static and dynamic responses; 2) show how the program running the computations can be deployed on standard CPUs but also on modern hardware architectures such as GPUs, and demonstration of performance gains with accelerations of over 30 times with respect to the CPU for large problems; 3) the ability to recover the full 3D state from the reduced-order-model was  verified against MSC Nastran full nonlinear solution.
-This completes a differentiated aeroelastic framework that can run very efficiently in modern hardware architectures while enhancing traditional FE models that can be very complex by construction but lack the physics of geometrically nonlinear effects.
+A new algorithm to efficiently compute the aircraft trim equilibrium was also devised.
 \\
-A relevant amount of test cases accompany the software, of which a subset has been presented herein to illustrate the aforementioned features in the code. They have have been arranged in order of model complexity. Firstly, a very flexible, unsupported shell structure undergoing coupled rigid and flexible motions in vacuum. Secondly, a representative model of an aircraft without engines and fuselage is employed to verify the 3D structural static and dynamic nonlinear response against MSC Nastran and their corresponding sensitivities against finite-differences. Lastly, the dynamic aeroelastic response to a gust on a full aircraft model built to industry standards is shown together with the derivatives with respect to flow and gust parameters. 
-\\
-As for future work, a strategy to compute manoeuvre and dynamic load envelopes that can also be differentiated via AD will be built. This will be enabled using parallelisation of distributed accelerators such that the thousands of loads cases are computed fast. 
-Increasing the fidelity in the load calculations to consider CFD-based aerodynamics would be an additional necessary step in order to achieve a more accurate nonlinear aeroelastic methodology. 
+A relevant amount of test cases accompany the software, of which two have been presented herein to illustrate the aforementioned features in the code. Firstly, a very flexible, unsupported shell structure is shown to fly through the air undergoing large, coupled rigid and flexible motions in vacuum. Secondly, the aeroelastic response of a full aircraft model built to industry standards is analysed. The trim equilibrium for various accelerations is computed and compared against the linear response provided by MSC Nastran. Next the gust response of the aircraft flying at trimmed conditions is studied, with the nonlinear analysis leading to slightly higher loads than its linear counterpart.
+On all of these cases we have shown how the program running the computations can be deployed on standard CPUs but also on modern hardware architectures such as GPUs that can lead to performance gains of over 30 times faster.
+
+* Acknowledgements
+This work has received funds from Innovate UK, under project 10002372, managed by the UK
+Aerospace Technology Institute.
+
+\appendix
+* But how fast is JAX?
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
+#+NAME: FFBtimes1
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  import jax
+  import jax.numpy as jnp
+  import jax.random as random
+  from functools import partial
+  import time
+
+  STRIKE = 1.
+  SPOT = 100.
+  VOL = 0.3
+  RATE = 0.03
+  T = 1.
+  NUMSTEPS = 300
+  NUMPATHS = int(5E5)
+
+  @partial(jax.jit, static_argnames=["num_steps"])
+  def montecarlo_simulation(key, S0, mu, sigma, T, num_steps):
+
+      dt = T / num_steps
+      # initial_state = (S0 * jnp.ones(num_simulations), dt, mu, sigma)
+      key, subkey = random.split(key)
+      z = random.normal(subkey, shape=(num_steps,))
+
+      def montecarlo_step(carry, zi):
+          S_new = carry * jnp.exp((mu - 0.5 * sigma ** 2) * dt + sigma * jnp.sqrt(dt) * zi)
+          return S_new, S_new
+
+      _, path = jax.lax.scan(montecarlo_step, S0, z)
+
+      return path
+
+
+  # Generate random keys
+  rng_key = random.PRNGKey(0)
+  rng_keys = jax.random.split(rng_key, NUMPATHS)  # (nchains,)
+  t1 = time.time()
+  montecarlo_vmap = jax.vmap(montecarlo_simulation, in_axes=((0,) + (None,)*5), out_axes=1)
+  # Run simulation
+  S = montecarlo_vmap(rng_keys, SPOT, RATE, VOL, T, NUMSTEPS)
+
+#+end_src
+
+#+NAME: jaxvscpp
+#+begin_src python :results raw  :var name=(org-element-property :name (org-element-context))
+  tbench = dict()
+  tbench['times_jax']=   jnp.array([2.61818,2.53457,2.57413,2.58329,2.54211])
+  tbench['times_cppcon']=jnp.array([2.5202,2.46557,2.4246,2.43075,2.48635])
+  tbench['times_cpp0']=  jnp.array([17.8771,16.3803,18.0532,17.9185,17.7933])
+  tbench['times_cpp1']=  jnp.array([7.76826,7.74667,7.53073,7.74733,7.77621])
+  tbench['times_cpp2']=  jnp.array([6.13295,5.94719,5.93238,5.97617,5.91422])
+  tbench['times_cpp4']=  jnp.array([5.22247,5.10841,5.08975,5.07895,5.09282])
+
+  tbench2 = dict()
+  for k, v in tbench.items():
+     tbench2[f"{k}_mean"] = v.mean()
+     tbench2[f"{k}_std"] = v.std()
+  tbench = tbench | tbench2
+  times = ["2.57 \pm 0.03",
+  "2.46 \pm 0.03",
+  "5.11 \pm 0.05",
+  "5.98 \pm 0.08",
+  "7.71 \pm 0.09",
+  "17.6 \pm 0.6"]
+  processor = ["JAX", "CPP-Threading", "CPP-f4","CPP-f3","CPP-f2","CPP-f1"]
+  dfb = pd.DataFrame(dict(Time=times),
+                     index=processor)
+  tabulate(zip(processor, times), headers=["Time [s]"], tablefmt='orgtbl')
+#+end_src
+
+Table [[table:jaxbenchmark]] shows
+#+CAPTION: Montecarlo simulation benchmarks
+#+NAME: table:jaxbenchmark
+#+ATTR_LATEX:  :center t :placement [h]
+#+RESULTS: jaxvscpp
+|               | Time [s]      |
+|---------------+---------------|
+| JAX           | 2.57 \pm 0.03 |
+| CPP-Threading | 2.46 \pm 0.03 |
+| CPP-f4        | 5.11 \pm 0.05 |
+| CPP-f3        | 5.98 \pm 0.08 |
+| CPP-f2        | 7.71 \pm 0.09 |
+| CPP-f1        | 17.6 \pm 0.6  |
+
 
 bibliographystyle:plain
 # bibliography:/home/acea/Documents/Engineering.bib

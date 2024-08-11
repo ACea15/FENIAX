@@ -502,8 +502,8 @@ def dq_20G546l(t, q, *args):
                                              force_gravity[-1],
                                              C0ab)
     eta_aero = xloads.eta_rogerstruct(q0, q1, ql,
-                                   A0hat, A1hat,
-                                   num_modes, num_poles)
+                                      A0hat, A1hat,
+                                      num_modes, num_poles)
     eta_gust = xloads.eta_rogergust(t, xgust, F1gust)
     F1, F2 = common.f_12l(omega, q1, q2)
     F1 += eta_aero + eta_gravity + eta_gust

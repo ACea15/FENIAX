@@ -17,7 +17,7 @@ class SingleSimulation(Simulation, cls_name="single"):
             sys.set_eta0()
             sys.set_ic(q0=None)
             sys.solve()
-            sys.build_solution()
+            #sys.build_solution()
             #self._post_run(k, sol_obj)
 
     def _post_run(self, sys_name, sol_obj):

@@ -48,15 +48,16 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
     def pre_simulation(self):
         # TODO: here the RFA for aerodynamics should be included
         # TODO: condensation methods of K and M should be included
-        if self._config.driver.compute_fem:
-            self._compute_modalshapes()
-            self._compute_modalcouplings()
-            if self._config.driver.save_fem:
-                self.sol.save_container("Modes")
-                self.sol.save_container("Couplings")
-        else:
-            self._load_modalshapes()
-            self._load_modalcouplings()
+        if not self._config.driver.ad_on:
+            if self._config.driver.compute_fem:
+                self._compute_modalshapes()
+                self._compute_modalcouplings()
+                if self._config.driver.save_fem:
+                    self.sol.save_container("Modes")
+                    self.sol.save_container("Couplings")
+            else:
+                self._load_modalshapes()
+                self._load_modalcouplings()
 
     def run_case(self):
         if self.num_systems == 0:
@@ -85,10 +86,16 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
                 cls_sys = fem4inas.systems.factory(f"{v.solution}_intrinsic")
                 self.systems[k] = cls_sys(k, v, self._config.fem, self.sol, self._config)
                 print(f"***** Initialised {v.solution}_intrinsic *****")
+        elif hasattr(self._config, "system"):
+            print("***** Initialising system sys1*****")
+            cls_sys = fem4inas.systems.factory(f"{self._config.system.solution}_intrinsic")
+            self.systems['sys1'] = cls_sys('sys1', self._config.system, self._config.fem, self.sol, self._config)
+            print(f"***** {self._config.system.solution}_intrinsic *****")
+            
         self.num_systems = len(self.systems)
 
     def _set_sol(self):
-        # Configure the simulation
+        # Configure the solution object
         self.sol = solution.IntrinsicSolution(self._config.driver.sol_path)
 
     def _compute_eigs(self):

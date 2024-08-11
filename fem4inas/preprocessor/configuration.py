@@ -63,9 +63,24 @@ class Config:
 
     def __build(self):
 
-        for k, v in self.__sett.items():
+        if self.engine == 'intrinsicmodal': # needs some specialisation here
+            k = 'fem' # initialised fem first as it will be pass to system
+            v = self.__sett[k]
             container_k = getattr(self.__container, "".join(["D", k]))
-            setattr(self, k, container_k(**v))
+            container_k_initialised = container_k(**v)
+            setattr(self, k, container_k_initialised)
+            for k, v in self.__sett.items():
+                if k != "fem":
+                    container_k = getattr(self.__container, "".join(["D", k]))
+                    if  k == 'systems' or  k == 'system': # pass Dfem
+                        container_k_initialised = container_k(**(v | dict(_fem=self.fem)))
+                    else:
+                        container_k_initialised = container_k(**v)
+                    setattr(self, k, container_k_initialised)
+        else: # not currently in used
+            for k, v in self.__sett.items():
+                container_k = getattr(self.__container, "".join(["D", k]))
+                setattr(self, k, container_k(**v))
 
     def __set_experimental(self, experimental: dict):
 

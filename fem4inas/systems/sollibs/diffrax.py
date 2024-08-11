@@ -7,33 +7,35 @@ dict_norm = dict(linalg_norm=jnp.linalg.norm)
 
 def ode(F: callable,
         args,
-        solver_name: str,
+        sett,
+        #solver_name: str,
         q0,
         t0,
         t1,
         tn,
         dt,
-        save_at=None,
+        #save_at=None,
         **kwargs) -> diffrax.Solution:
 
     solver_sett = dict()
     diffeqsolve_sett = dict()
     term = diffrax.ODETerm(F)
-    if save_at is None:
+    if sett.save_at is None:
         saveat = diffrax.SaveAt(ts=jnp.linspace(t0, t1, tn))#diffrax.SaveAt(steps=True) #
     else:
-        saveat = save_at
-    _solver = getattr(diffrax, solver_name)
-    if (root := "root_finder") in kwargs.keys():
-        _root_finder = getattr(optx, list(kwargs[root].keys())[0])
-        root_finder = _root_finder(**list(kwargs[root].values())[0])
-        solver_sett["root_finder"] = root_finder
-
+        saveat = sett.save_at
+    _solver = getattr(diffrax, sett.solver_name)
+    if (root := sett.root_finder) is not None:
+        _root_finder = getattr(optx, list(root.keys())[0])
+        root_finder = _root_finder(**list(root.values())[0])
+        solver_sett["root_finder"] = root_finder        
     solver = _solver(**solver_sett)
-    if (controller := "stepsize_controller") in kwargs.keys():
-        _stepsize_controller = getattr(diffrax, list(kwargs[controller].keys())[0])
-        stepsize_controller = _stepsize_controller(**list(kwargs[controller].values())[0])
+    
+    if (stepsize := sett.stepsize_controller) is not None:
+        _stepsize_controller = getattr(optx, list(stepsize.keys())[0])
+        stepsize_controller = _stepsize_controller(**list(stepsize.values())[0])
         diffeqsolve_sett["stepsize_controller"] = stepsize_controller
+    
     sol = diffrax.diffeqsolve(term,
                               solver,
                               t0=t0,
@@ -42,7 +44,7 @@ def ode(F: callable,
                               y0=q0,
                               args=args,
                               #throw=False,
-                              max_steps=30000,
+                              max_steps=sett.max_steps,
                               saveat=saveat,
                               **diffeqsolve_sett
                               )
@@ -80,15 +82,15 @@ def ode2(F: callable,
     return sol
 
 
-def newton(F, q0, args, rtol, atol, max_steps, kappa, norm, jac=None, **kwargs):
+def newton(F, q0, args, sett, jac=None, **kwargs):
 
-    solver = optx.Newton(rtol=rtol,
-                         atol=atol,
-                         kappa=kappa,
-                         #norm=dict_norm[norm]
+    solver = optx.Newton(rtol=sett.rtol,
+                         atol=sett.atol,
+                         kappa=sett.kappa,
+                         norm=dict_norm[sett.norm]
                          )
     # jax.debug.breakpoint()
-    sol = optx.root_find(F, solver, q0, args=args, max_steps=max_steps)
+    sol = optx.root_find(F, solver, q0, args=args, max_steps=sett.max_steps)
     #sol = solver(F, q0, args, jac)
     return sol
 

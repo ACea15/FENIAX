@@ -88,6 +88,8 @@ def save_container(path, container):
         elif isinstance(attr, (list, dict, tuple)):
             with open(attr_path, "wb") as fp:  # Pickling
                 pickle.dump(attr, fp)
+        elif attr is None:
+            pass
         else:
             raise ValueError(
                 f"Not recognised attribute {attr_name} \
