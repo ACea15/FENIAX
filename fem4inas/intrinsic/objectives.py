@@ -1,13 +1,63 @@
 import jax.numpy as jnp
+import jax
 
-def OBJ_ra(ra, node, component, *args, **kwargs):
+def factory(obj: str):
 
-    return ra[-1, component, node]
+    return __NAMES__[obj]
 
-def OBJ_raMAX(ra, node, component, *args, **kwargs):
+__NAMES__ = dict()
+def name(f, *args, **kwargs):
+    __NAMES__[f.__name__] = f
+    return f
 
-    return jnp.max(ra[:, component, node])
+def make_toarray(x):
+    """
+    Necessary for x to be an array as hstack will be applied to it
+    """
+    out = jax.lax.select(len(x.shape) > 0, x, jnp.array([x]))
+    return out
 
-def OBJ_X2(X2, node, component, axis=0, *args, **kwargs):
+@name
+def X1_VAR(X1, nodes, components, t,  *args, **kwargs):
 
-    return jnp.max(X2[:, component, node], axis=axis)
+    return X1[jnp.ix_(t, components, nodes)]
+
+@name
+def X1_MAX(X1, nodes, components, t, axis=None, *args, **kwargs):
+
+    return jnp.max(X1[jnp.ix_(t, components, nodes)], axis=axis,keepdims=True)
+
+@name
+def X1_MIN(X1, nodes, components, t, axis=None, *args, **kwargs):
+
+    return jnp.min(X1[jnp.ix_(t, components, nodes)], axis=axis,keepdims=True)
+
+@name
+def X2_VAR(X2, nodes, components, t, *args, **kwargs):
+
+    return X2[jnp.ix_(t, components, nodes)]
+
+@name
+def X2_MAX(X2, nodes, components, t, axis=None, *args, **kwargs):
+
+    return jnp.max(X2[jnp.ix_(t, components, nodes)], axis=axis,keepdims=True)
+
+@name
+def X2_MIN(X2, nodes, components, t, axis=None, *args, **kwargs):
+
+    return jnp.min(X2[jnp.ix_(t, components, nodes)], axis=axis,keepdims=True)
+
+@name
+def ra_VAR(ra, nodes, components, t, *args, **kwargs):
+
+    return ra[jnp.ix_(t, components, nodes)]
+
+@name
+def ra_MAX(ra, nodes, components, t, axis=None, *args, **kwargs):
+
+    return jnp.max(ra[jnp.ix_(t, components, nodes)], axis=axis,keepdims=True)
+
+@name
+def ra_MIN(ra, nodes, components, t, axis=None, *args, **kwargs):
+
+    return jnp.min(ra[jnp.ix_(t, components, nodes)], axis=axis,keepdims=True)

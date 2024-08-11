@@ -33,6 +33,8 @@ class DynamicSystem:
     Cab: jnp.ndarray
     ra: jnp.ndarray
     t: jnp.ndarray = None
+    jac: dict = None
+    f_ad: dict = None
     
 @dataclass(slots=True)
 class StaticSystem:
@@ -41,6 +43,8 @@ class StaticSystem:
     X3: jnp.ndarray = None
     Cab: jnp.ndarray = None
     ra: jnp.ndarray = None
+    jac: dict = None
+    f_ad: dict = None
 
 @dataclass(slots=True)
 class ModalAeroRoger:

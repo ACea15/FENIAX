@@ -41,16 +41,24 @@ class Dfiles(DataContainer):
 @dataclass(frozen=True, kw_only=True)
 class DGust(DataContainer):
     intensity: float
+    u_inf: float
+    simulation_time: jnp.array
     
 @dataclass(frozen=True, kw_only=True)
 class DGustMc(DGust):
+    u_inf: float = dfield("", default=None)
+    simulation_time: jnp.array = dfield("", default=None)    
     intensity: float = dfield("", default=None)
     step: float = dfield("", default=None)
     length: float = dfield("", default=None)
-    shift: float = dfield("", default=None)
+    shift: float = dfield("", default=0.)
     panels_dihedral: str | jnp.ndarray = dfield("", default=None)
     collocation_points: str | jnp.ndarray = dfield("", default=None)
     shape: str = dfield("", default="const")
+    totaltime: float = dfield("", init=False)
+    x: jnp.array = dfield("", init=False)
+    time: jnp.array = dfield("", init=False)
+    ntime: int = dfield("", init=False)
     
     def __post_init__(self):
 
@@ -60,7 +68,61 @@ class DGustMc(DGust):
         if isinstance(self.collocation_points, (str, pathlib.Path)):
             object.__setattr__(self, "collocation_points",
                                jnp.load(self.collocation_points))
+            
+        gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(self.intensity,
+                                                                          self.panels_dihedral,
+                                                                          self.shift,
+                                                                          self.step,
+                                                                          self.simulation_time,
+                                                                          self.length,
+                                                                          self.u_inf,
+                                                                          jnp.min(self.collocation_points[:,0]),
+                                                                          jnp.max(self.collocation_points[:,0])
+                                                                          )
+        object.__setattr__(self, "totaltime",
+                           gust_totaltime)
+        object.__setattr__(self, "x",
+                           xgust)
+        object.__setattr__(self, "time",
+                           time)
+        object.__setattr__(self, "ntime",
+                           ntime)        
+        #del self.simulation_time
+        
+    def _set_gustDiscretization(self,
+                                gust_intensity,
+                                dihedral,
+                                gust_shift,
+                                gust_step,
+                                simulation_time,
+                                gust_length,
+                                u_inf,
+                                min_collocationpoints,
+                                max_collocationpoints
+                                ):
 
+        #
+        gust_totaltime = gust_length / u_inf
+        xgust = jnp.arange(min_collocationpoints, #jnp.min(collocation_points[:,0]),
+                           max_collocationpoints +  #jnp.max(collocation_points[:,0]) +
+                           gust_length + gust_step,
+                           gust_step)
+        time_discretization = (gust_shift + xgust) / u_inf
+        if time_discretization[-1] < simulation_time[-1]:
+            time = jnp.hstack([time_discretization,
+                                    time_discretization[-1] + 1e-6,
+                                    simulation_time[-1]])
+        else:
+            time = time_discretization
+        if time[0] != 0.:
+            time = jnp.hstack([0.,
+                               time[0] - 1e-6,
+                               time])
+        ntime = len(time)
+        #npanels = len(collocation_points)
+        return gust_totaltime, xgust, time, ntime
+
+            
 @dataclass(frozen=True, kw_only=True)
 class DController(DataContainer):
     intensity: float
@@ -72,6 +134,7 @@ class Daero(DataContainer):
     rho_inf: float = dfield("", default=None)
     q_inf: float = dfield("", init=False)
     c_ref: float = dfield("", default=None)
+    time: jnp.array = dfield("", default=None)
     qalpha: jnp.ndarray = dfield("", default=None)
     qx: jnp.ndarray = dfield("", default=None)
     elevator_index: jnp.ndarray = dfield("", default=None)
@@ -108,7 +171,10 @@ class Daero(DataContainer):
         if self.gust is not None:
             gust_class = globals()[f"DGust{self.gust_profile.capitalize()}"]
             object.__setattr__(self, 'gust',
-                               initialise_Dclass(self.gust, gust_class))
+                               # initialise_Dclass(self.gust, gust_class))
+                               initialise_Dclass(self.gust, gust_class, u_inf=self.u_inf,
+                                                 simulation_time=self.time))
+            
         if self.controller_name is not None:
             controller_class = globals()[f"DController{self.controller_name.upper()}"]
             controller_obj = initialise_Dclass(self.controller_settings, controller_class)
@@ -439,10 +505,8 @@ class Ddriver(DataContainer):
     compute_fem: bool = dfield("""Compute or load presimulation data""",
                                default=True)
     save_fem: bool = dfield("""Save presimulation data""",
-                            default=True)
-    subcases: dict[str:Dxloads] = dfield("", default=None)
-    supercases: dict[str:Dfem] = dfield(
-        "", default=None)
+                            default=True)    
+    ad_on: bool = dfield("", default=False)
     def __post_init__(self):
 
         if self.sol_path is not None:
@@ -452,9 +516,11 @@ class Ddriver(DataContainer):
 class SystemSolution(Enum):
     STATIC = 1
     DYNAMIC = 2
-    STABILITY = 3    
-    MULTIBODY = 4
-    CONTROL = 5
+    STATICAD = 3
+    DYNAMICAD = 4
+    STABILITY = 5    
+    MULTIBODY = 6
+    CONTROL = 7
     
 SimulationTarget = Enum('TARGET', ['LEVEL',
                                    'TRIM',
@@ -473,10 +539,108 @@ class StateTrack:
                                         self.num_states + v)
             self.num_states += v
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
+class Dlibrary(DataContainer):
+    
+    function: str = dfield("Function wrapper calling the library",
+                           default=None)
+    
+@dataclass(frozen=True, kw_only=True)
+class DdiffraxOde(Dlibrary):
+    root_finder: dict = dfield("", default=None)
+    stepsize_controller: dict = dfield("", default=None)    
+    solver_name: str = dfield("", default="Dopri5")
+    save_at: jnp.ndarray | list = dfield("", default=None)
+    max_steps: int = dfield("", default=20000)
+    
+    def __post_init__(self):
+
+        object.__setattr__(self, "function",
+                           "ode")
+
+@dataclass(frozen=True, kw_only=True)
+class Drunge_kuttaOde(Dlibrary):
+    solver_name: str = dfield("", default="rk4")
+
+    def __post_init__(self):
+
+        object.__setattr__(self, "function",
+                           "ode")
+
+@dataclass(frozen=True, kw_only=True)
+class DdiffraxNewton(Dlibrary):
+
+    rtol: float = dfield("", default=1e-7)
+    atol: float = dfield("", default=1e-7)
+    max_steps: int = dfield("", default=100)
+    norm: str = dfield("", default="linalg_norm")
+    kappa: float = dfield("", default=0.01)
+    
+    def __post_init__(self):
+
+        object.__setattr__(self, "function",
+                           "newton")
+
+@dataclass(frozen=True, unsafe_hash=True, kw_only=True)
+class DobjectiveArgs(Dlibrary):
+
+    nodes: tuple = dfield("", default=None)
+    t: tuple = dfield("", default=None)
+    components: tuple = dfield("", default=None)
+    axis: int = dfield("", default=None)
+    _numtime: int = dfield("", default=None)
+    _numnodes: int = dfield("", default=None)
+    _numcomponents: int = dfield("", default=6)
+    
+    def __post_init__(self):
+
+        if self.nodes is None:
+            object.__setattr__(self, "nodes",
+                               tuple(range(self._numnodes)))
+        if self.t is None:
+            object.__setattr__(self, "t",
+                               tuple(range(self._numtime)))
+        if self.components is None:
+            object.__setattr__(self, "components",
+                               tuple(range(self._numcomponents))
+                               )
+        
+class ADinputType(Enum):
+    POINT_FORCES = 1
+    GUST1 = 2
+    FEM = 3
+    
+
+@dataclass(frozen=True, kw_only=True)
+class DtoAD(Dlibrary):
+
+    inputs: dict = dfield("", default=None,  yaml_save=False)
+    input_type: str  = dfield("", default=None, options=ADinputType._member_names_)
+    grad_type: str = dfield("", default=None, options=[#"grad", "value_grad",
+                                                       "jacrev", "jacfwd", "value"])
+    objective_fun: str = dfield("", default=None)
+    objective_var: str = dfield("", default=None)
+    objective_args: dict = dfield("", default=None,  yaml_save=False)
+    _numnodes: int = dfield("", default=None, yaml_save=False)
+    _numtime: int  = dfield("", default=None, yaml_save=False)
+    _numcomponents: int  = dfield("", default=6, yaml_save=False)
+    label: str = dfield("", default=None, init=False)
+    def __post_init__(self):
+        label = ADinputType[self.input_type.upper()].value
+        object.__setattr__(self, "label",
+                           label)
+
+        object.__setattr__(self, 'objective_args', initialise_Dclass(self.objective_args,
+                                                                     DobjectiveArgs,
+                                                                     _numtime=self._numtime,
+                                                                     _numnodes=self._numnodes,
+                                                                     _numcomponents=self._numcomponents))
+        
+@dataclass(frozen=True, kw_only=True)
 class Dsystem(DataContainer):
 
     name: str = dfield("System name")
+    _fem: Dfem = dfield("", default=None, yaml_save=False)
     solution: str  = dfield("Type of solution to be solved",
                             options=['static',
                                      'dynamic',
@@ -544,6 +708,8 @@ class Dsystem(DataContainer):
                                default=None)
     init_mapper: dict[str:str] = dfield("""Dictionary mapping states types to functions in initcond""",
                                         default=dict(q1="velocity", q2="force"))
+    ad: DtoAD = dfield("""Dictionary for AD""",
+                      default=None)
 
     def __post_init__(self):
 
@@ -576,11 +742,26 @@ class Dsystem(DataContainer):
                                                              Dxloads))
         if self.aero is not None:
             object.__setattr__(self, 'aero', initialise_Dclass(self.aero,
-                                                               Daero))
+                                                               Daero, time=self.t))
         #self.xloads = initialise_Dclass(self.xloads, Dxloads)
         if self.solver_settings is None:
             object.__setattr__(self, "solver_settings", dict())
-        
+
+        libsettings_class = globals()[f"D{self.solver_library}{self.solver_function.capitalize()}"]
+        object.__setattr__(self,
+                           'solver_settings',
+                           initialise_Dclass(self.solver_settings,
+                                             libsettings_class)
+                           )
+        if self.ad is not None and isinstance(self.ad, dict):
+            libsettings_class = globals()["DtoAD"]
+            object.__setattr__(self,
+                           'ad',
+                           initialise_Dclass(self.ad,
+                                             libsettings_class,
+                                             _numtime=len(self.t),
+                                             _numnodes=self._fem.num_nodes)
+                           )
         if self.label is None:
             self.build_label()
             
@@ -588,11 +769,11 @@ class Dsystem(DataContainer):
 
         tracker = StateTrack()
         # TODO: keep upgrading/ add residualise
-        if self.solution == "static":
+        if self.solution == "static" or self.solution == "staticAD":
             tracker.update(q2=num_modes)
             if self.target.lower() == "trim":
                 tracker.update(qx=1)
-        elif self.solution == "dynamic":
+        elif self.solution == "dynamic" or self.solution == "dynamicAD":
             tracker.update(q1=num_modes,
                            q2=num_modes)
             if (self.label_map['aero_sol'] and
@@ -677,7 +858,7 @@ class Dsystem(DataContainer):
                      
         # TODO: label dependent
         object.__setattr__(self, "label_map", lmap)
-        object.__setattr__(self, "label", f"dq_{label}")
+        object.__setattr__(self, "label", label) #f"dq_{label}")
 
 @dataclass(frozen=True)
 class Dsystems(DataContainer):
@@ -691,14 +872,17 @@ class Dsystems(DataContainer):
     """,
                                      default=None
                                        )
-
+    _fem: Dfem = dfield("", default=None, yaml_save=False)
+    
     def __post_init__(self):
         mapper = dict()
         counter = 0
         for k, v in self.sett.items():
             if self.borrow is None:
+                # pass self._fem to the system here, the others should already have
+                # a reference
                 mapper[k] = initialise_Dclass(
-                        v, Dsystem, name=k)
+                        v, Dsystem, name=k, _fem=self._fem)
             elif isinstance(self.borrow, str):
                 assert self.borrow in self.sett.keys(), "borrow not in system names"
                 if k == self.borrow:
