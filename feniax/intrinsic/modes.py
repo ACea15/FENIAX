@@ -3,7 +3,6 @@ import numpy as np
 import scipy
 import jax
 import jax.numpy as jnp
-import jax.scipy as jscipy
 import pathlib
 from feniax.preprocessor import configuration
 from feniax.intrinsic.functions import compute_C0ab, tilde, coordinate_transform

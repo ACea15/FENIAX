@@ -9,11 +9,11 @@ setup(
     keywords="nonlinear aeroelastic structural aerodynamic analysis",
     author="Alvaro Cea",
     author_email="alvaro_cea@outlook.com",
-    url="https://github.com/ACea15/FEM4INAS",
+    url="https://github.com/ACea15/FENIAX",
     license="GPL-3",
     packages=find_packages(
         where='./',
-        include=['fem4inas*'],
+        include=['feniax*'],
         exclude=['tests']
         ),
     python_requires=">=3.11",
