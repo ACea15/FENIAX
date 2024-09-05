@@ -6,9 +6,9 @@ import pdb
 import sys
 import datetime
 import jax.numpy as jnp
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"

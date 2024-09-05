@@ -1,10 +1,10 @@
 from pyNastran.bdf.bdf import BDF
 import pandas as pd
-from fem4inas.unastran.asetbuilder import BuildAsetModel
-from fem4inas.unastran.aero import GenDLMPanels
-import  fem4inas.unastran.matrixbuilder as matrixbuilder
-import fem4inas.aeromodal.panels as panels
-import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+from feniax.unastran.asetbuilder import BuildAsetModel
+from feniax.unastran.aero import GenDLMPanels
+import  feniax.unastran.matrixbuilder as matrixbuilder
+import feniax.aeromodal.panels as panels
+import feniax.plotools.nastranvtk.bdfdef as bdfdef
 import jax.numpy as jnp
 import jax
 

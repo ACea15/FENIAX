@@ -1,25 +1,25 @@
-from  fem4inas.systems.system import System
-import fem4inas.systems.sollibs as sollibs
-import fem4inas.intrinsic.dq_static as dq_static
-import fem4inas.intrinsic.dq_dynamic as dq_dynamic
-import fem4inas.intrinsic.postprocess as postprocess
-import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
-import fem4inas.preprocessor.solution as solution
-import fem4inas.intrinsic.initcond as initcond
-import fem4inas.intrinsic.args as libargs
-import fem4inas.intrinsic.modes as modes
-import fem4inas.intrinsic.couplings as couplings
-import fem4inas.intrinsic.dq_common as common
-import fem4inas.intrinsic.xloads as xloads
-import fem4inas.intrinsic.objectives as objectives
+from  feniax.systems.system import System
+import feniax.systems.sollibs as sollibs
+import feniax.intrinsic.dq_static as dq_static
+import feniax.intrinsic.dq_dynamic as dq_dynamic
+import feniax.intrinsic.postprocess as postprocess
+import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
+import feniax.preprocessor.solution as solution
+import feniax.intrinsic.initcond as initcond
+import feniax.intrinsic.args as libargs
+import feniax.intrinsic.modes as modes
+import feniax.intrinsic.couplings as couplings
+import feniax.intrinsic.dq_common as common
+import feniax.intrinsic.xloads as xloads
+import feniax.intrinsic.objectives as objectives
 import optimistix as optx
 from functools import partial
 import jax.numpy as jnp
 import jax
-import fem4inas.systems.sollibs.diffrax as diffrax
-import fem4inas.systems.intrinsicSys as isys
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
+import feniax.systems.sollibs.diffrax as libdiffrax
+import feniax.systems.intrinsic_system as isys
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
 import pathlib
 
 jax.config.update("jax_enable_x64", True)
@@ -59,7 +59,7 @@ def main_20g11(alpha,
     if obj_args is None:
         obj_args = dict()
 
-    config.system.build_states(config.fem.num_modes)
+    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
     q2_index = config.system.states['q2']
     q1_index = config.system.states['q1']
     eigenvals = jnp.load(config.fem.folder / config.fem.eig_names[0])
@@ -89,7 +89,8 @@ def main_20g11(alpha,
     x_forceinterpol = config.system.xloads.x
     y_forceinterpol = alpha * config.system.xloads.force_follower
     states = config.system.states
-    dq_args = (gamma1, gamma2, omega, phi1,
+    eta0 = jnp.zeros(config.fem.num_modes)
+    dq_args = (eta0, gamma1, gamma2, omega, phi1,
                x_forceinterpol,
                y_forceinterpol, states)
 
@@ -114,14 +115,14 @@ def main_20g11(alpha,
     # X2, X3, ra, Cab = recover_staticfields(q, tn, X, q2_index,
     #                                        phi2l, psi2l, X_xdelta, C0ab, config.fem)
     tn = len(q)
-    # X1, X2, X3, ra, Cab = isys.recover_fields(q1,q2,
-    #                                           tn, X,
-    #                                           phi1l, phi2l,
-    #                                           psi2l, X_xdelta,
-    #                                           C0ab, config.fem)
-    X2, X3, ra, Cab = isys.recover_staticfields(q2, tn, X,
-                                           phi2l, psi2l, X_xdelta, C0ab, config.fem)
-    X1 = jnp.zeros_like(X2)
+    X1, X2, X3, ra, Cab = isys.recover_fields(q1,q2,
+                                              tn, X,
+                                              phi1l, phi2l,
+                                              psi2l, X_xdelta,
+                                              C0ab, config)
+    # X2, X3, ra, Cab = isys.recover_staticfields(q2, tn, X,
+    #                                        phi2l, psi2l, X_xdelta, C0ab, config)
+    # X1 = jnp.zeros_like(X2)
     objective = f_obj(X1=X1, X2=X2, X3=X3, ra=ra, Cab=Cab, **obj_args)
     return objective
 
@@ -175,9 +176,9 @@ F1, F1p  =fprime(1.,
                # f_obj=objectives.OBJ_X2,
                # obj_args=dict(node=1,
                #              component=2),
-               f_obj=objectives.OBJ_ra,
-                 obj_args=dict(node=23,
-                               component=2))
+               f_obj=objectives.OBJ_raMAX,
+                 obj_args=dict(node=25,
+                               component=1))
 
 F2, F2p  =fprime(0.5,
                #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),

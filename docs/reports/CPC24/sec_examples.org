@@ -12,7 +12,7 @@
         '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
           "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "feniax.)
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -66,14 +66,14 @@
   import pandas as pd
   from plotly.subplots import make_subplots
   import numpy as np
-  import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-  from fem4inas.preprocessor.inputs import Inputs
-  import fem4inas.fem4inas_main
-  import fem4inas.plotools.uplotly as uplotly
-  import fem4inas.plotools.utils as putils
-  import fem4inas.preprocessor.solution as solution
-  import fem4inas.unastran.op2reader as op2reader
-  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+  from feniax.preprocessor.inputs import Inputs
+  import feniax.feniax_main
+  import feniax.plotools.uplotly as uplotly
+  import feniax.plotools.utils as putils
+  import feniax.preprocessor.solution as solution
+  import feniax.unastran.op2reader as op2reader
+  import feniax.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
 
 #+end_src
@@ -910,9 +910,9 @@ The static equilibrium of the aircraft under prescribed loads is first studied w
 
 \begin{listing}[!ht]
 \begin{minted}[frame=single]{python}
-import fem4inas.preprocessor.configuration as configuration
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 inp = Inputs()
 inp.fem.folder = "./FEM/"
 inp.fem.num_modes = 50
@@ -931,7 +931,7 @@ inp.systems.sett.s1.xloads.follower_interpolation =
 [0., 2e5, 2.5e5, 3.e5, 4.e5, 4.8e5, 5.3e5]]
 inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]
 config =  configuration.Config(inp)
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 \end{minted}
 \caption{FENIAX inputs for structural static simulation}
 \label{code:static}
@@ -942,7 +942,7 @@ Geometric nonlinearities are better illustrated by representing a sectional view
 
 #+NAME: SPWingsection
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  import fem4inas.preprocessor.configuration as configuration
+  import feniax.preprocessor.configuration as configuration
   config = configuration.Config.from_file("SP1/config.yaml")
   sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
   r_sp0, r_sp, r_spn, r_spnl = fn_spWingsection(sol_sp, config)
@@ -1231,7 +1231,7 @@ A verification exercise is introduced first by applying two 1-cos gust shapes at
 
 \begin{listing}[!ht]
 \begin{minted}[frame=single]{python}
-from fem4inas.preprocessor.inputs import Inputs
+from feniax.preprocessor.inputs import Inputs
 \begin{minted}[frame=single]{python}
 inp.fem.folder = "./FEM/"
 inp.fem.num_modes = 70

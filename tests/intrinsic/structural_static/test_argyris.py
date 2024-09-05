@@ -1,7 +1,7 @@
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor import solution
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor import solution
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 import jax.numpy as jnp
 import pytest
 import pathlib
@@ -43,7 +43,7 @@ class TestBeamModal:
         inp.driver.sol_path = None
         inp.simulation.typeof = "single"
         config = configuration.Config(inp)
-        obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
+        obj_sol = feniax.feniax_main.main(input_obj=config)
 
         return obj_sol
 
@@ -135,7 +135,7 @@ class TestBeamSolution:
                                                              ]
         inp.systems.sett.s1.t = [1, 2]
         config = configuration.Config(inp)
-        obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
+        obj_sol = feniax.feniax_main.main(input_obj=config)
 
         return obj_sol
 
@@ -198,7 +198,7 @@ class TestFrameModal:
         #inp.driver.sol_path = sol_path
         inp.simulation.typeof = "single"
         config = configuration.Config(inp)
-        obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
+        obj_sol = feniax.feniax_main.main(input_obj=config)
 
         return obj_sol
 
@@ -295,7 +295,7 @@ class TestFrameSolution:
 
         inp.systems.sett.s1.t = [1, 2, 3]
         config = configuration.Config(inp)
-        obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
+        obj_sol = feniax.feniax_main.main(input_obj=config)
         return obj_sol
 
     @pytest.fixture
@@ -377,7 +377,7 @@ class TestFrame3D:
         inp.systems.sett.s1.t = [1, 2, 3, 4]
 
         config = configuration.Config(inp)
-        obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
+        obj_sol = feniax.feniax_main.main(input_obj=config)
         return obj_sol
 
     @pytest.fixture

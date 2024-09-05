@@ -1,10 +1,10 @@
 from pyNastran.op2.op2 import OP2
 import pandas as pd
 import plotly.express as px
-import fem4inas.preprocessor.solution as solution
-import fem4inas.plotools.uplotly as uplotly
-import fem4inas.unastran.op2reader as op2reader
-import fem4inas.plotools.utils as putils
+import feniax.preprocessor.solution as solution
+import feniax.plotools.uplotly as uplotly
+import feniax.unastran.op2reader as op2reader
+import feniax.plotools.utils as putils
 
 nas111 = op2reader.NastranReader(op2name="./NASTRAN/runs/146-111/XRF1-146run")
 nas111.readModel()

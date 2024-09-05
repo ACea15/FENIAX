@@ -1,12 +1,12 @@
 from pyNastran.op2.op2 import OP2
-import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
-import fem4inas.plotools.interpolation as interpolation
-from fem4inas.preprocessor import solution
-import fem4inas.plotools.grid as grid
+import feniax.plotools.nastranvtk.bdfdef as bdfdef
+import feniax.plotools.interpolation as interpolation
+from feniax.preprocessor import solution
+import feniax.plotools.grid as grid
 from pyNastran.bdf.bdf import BDF
 import pandas as pd
-import fem4inas.plotools.reconstruction as rec
-import fem4inas.preprocessor.configuration as configuration
+import feniax.plotools.reconstruction as rec
+import feniax.preprocessor.configuration as configuration
 import jax.numpy as jnp
 
 results = "results4g"
@@ -18,7 +18,7 @@ tf = 250
 ra_movie = jnp.zeros((tn+1, 3))
 ra_movie = ra_movie.at[:, 0].set(-jnp.linspace(0,tf,tn+1))
 time_movie = jnp.linspace(0,tf,tn+1)
-r, u = rec.rbf_based_movie("./NASTRAN/XRF1-144trim.bdf",#"/media/acea/work/projects/FEM4INAS/examples/XRF1/NASTRAN/XRF1-146run.bdf",
+r, u = rec.rbf_based_movie("./NASTRAN/XRF1-144trim.bdf",#"/media/acea/work/projects/FENIAX/examples/XRF1/NASTRAN/XRF1-146run.bdf",
                      config.fem.X,
                      4,
                      sol.data.staticsystem_s1.ra,

@@ -1,12 +1,12 @@
-import fem4inas.plotools.grid as grid
+import feniax.plotools.grid as grid
 from pyNastran.bdf.bdf import BDF
 import pandas as pd
 import importlib
 import numpy as np
-from fem4inas.preprocessor import solution
-import fem4inas.unastran.op2reader as op2reader
-import fem4inas.plotools.interpolation as interpolation
-import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+from feniax.preprocessor import solution
+import feniax.unastran.op2reader as op2reader
+import feniax.plotools.interpolation as interpolation
+import feniax.plotools.nastranvtk.bdfdef as bdfdef
 importlib.reload(bdfdef)
 
 importlib.reload(grid)

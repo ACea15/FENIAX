@@ -1,5 +1,5 @@
-import fem4inas.plotools.streamlit.intrinsic as sti
-import fem4inas.plotools.streamlit.theory as stt
+import feniax.plotools.streamlit.intrinsic as sti
+import feniax.plotools.streamlit.theory as stt
 import importlib
 importlib.reload(sti)
 import streamlit as st

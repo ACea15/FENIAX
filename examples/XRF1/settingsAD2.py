@@ -1,33 +1,33 @@
-from  fem4inas.systems.system import System
+from  feniax.systems.system import System
 import scipy.linalg
-import fem4inas.systems.sollibs as sollibs
-import fem4inas.intrinsic.dq_static as dq_static
-import fem4inas.intrinsic.dq_dynamic as dq_dynamic
-import fem4inas.intrinsic.postprocess as postprocess
-import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
-import fem4inas.preprocessor.solution as solution
-import fem4inas.intrinsic.initcond as initcond
-import fem4inas.intrinsic.args as libargs
-import fem4inas.intrinsic.modes as modes
-import fem4inas.intrinsic.couplings as couplings
-import fem4inas.intrinsic.dq_common as common
-import fem4inas.intrinsic.xloads as xloads
-import fem4inas.intrinsic.objectives as objectives
+import feniax.systems.sollibs as sollibs
+import feniax.intrinsic.dq_static as dq_static
+import feniax.intrinsic.dq_dynamic as dq_dynamic
+import feniax.intrinsic.postprocess as postprocess
+import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
+import feniax.preprocessor.solution as solution
+import feniax.intrinsic.initcond as initcond
+import feniax.intrinsic.args as libargs
+import feniax.intrinsic.modes as modes
+import feniax.intrinsic.couplings as couplings
+import feniax.intrinsic.dq_common as common
+import feniax.intrinsic.xloads as xloads
+import feniax.intrinsic.objectives as objectives
 import optimistix as optx
 from functools import partial
 import jax.numpy as jnp
 import jax
-import fem4inas.systems.sollibs.diffrax as diffrax
-import fem4inas.systems.intrinsicSys as isys
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
+import feniax.systems.sollibs.diffrax as libdiffrax
+import feniax.systems.intrinsic_system as isys
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
 import pathlib
 import pandas as pd
 
 jax.config.update("jax_enable_x64", True)
 #jax.config.update("jax_debug_nans", True)
-import fem4inas.intrinsic.ad_common as adcommon
-import fem4inas.intrinsic.gust as igust
+import feniax.intrinsic.ad_common as adcommon
+import feniax.intrinsic.gust as igust
 
 @partial(jax.jit, static_argnames=['config', 'f_obj'])
 def main_20g21(input1, #gust_intensity, gust_length, u_inf, rho_inf,
@@ -44,7 +44,7 @@ def main_20g21(input1, #gust_intensity, gust_length, u_inf, rho_inf,
     if obj_args is None:
         obj_args = dict()
 
-    config.system.build_states(config.fem.num_modes)
+    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
     q2_index = jnp.array(range(config.fem.num_modes, 2 * config.fem.num_modes)) #config.system.states['q2']
     q1_index = jnp.array(range(config.fem.num_modes)) #config.system.states['q1']
     #eigenvals, eigenvecs = scipy.linalg.eigh(Ka, Ma)
@@ -149,7 +149,8 @@ def main_20g21(input1, #gust_intensity, gust_length, u_inf, rho_inf,
     num_poles = config.system.aero.num_poles
     num_modes = config.fem.num_modes
     states = config.system.states
-    dq_args = (gamma1, gamma2, omega, states,
+    eta0 = jnp.zeros(num_modes)
+    dq_args = (eta0, gamma1, gamma2, omega, states,
                num_modes, num_poles,
                A0hat, A1hat, A2hatinv, A3hat,
                u_inf, c_ref, poles,
@@ -185,7 +186,7 @@ def main_20g21(input1, #gust_intensity, gust_length, u_inf, rho_inf,
                                               C0ab, config)
     # X1 = jnp.zeros_like(X2)
     objective = f_obj(X1=X1, X2=X2, X3=X3, ra=ra, Cab=Cab, **obj_args)
-    return jnp.max(X2[:, :, 5], axis=0) #jnp.max(q1[:,0]) #
+    return jnp.max(ra[:, :, 0], axis=0) #jnp.max(q1[:,0]) #
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -209,12 +210,13 @@ inp.driver.sol_path = pathlib.Path(
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
 inp.system.solution = "dynamic"
-inp.system.t1 = 7.5
-inp.system.tn = 2001
+inp.system.t1 = 1
+inp.system.tn = 500
 inp.system.solver_library = "runge_kutta"
 inp.system.solver_function = "ode"
 inp.system.solver_settings = dict(solver_name="rk4")
 inp.system.xloads.modalaero_forces = True
+inp.system.xloads.gravity_forces = True
 inp.system.q0treatment = 2
 inp.system.aero.c_ref = 7.271
 inp.system.aero.u_inf = 200.
@@ -249,9 +251,9 @@ Ff = jfwd((config.system.aero.gust.intensity,
                  Ka=config.fem.Ka,
                  Ma=config.fem.Ma,
                  config=config,
-                 f_obj=objectives.OBJ_X2,
-                 obj_args=dict(node=5,
-                               component=jnp.arange(6))
+                 f_obj=objectives.X2_MAX,
+                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6),axis=0)
                  )
 
 Fr = jrev((config.system.aero.gust.intensity,
@@ -263,9 +265,9 @@ Fr = jrev((config.system.aero.gust.intensity,
                  Ka=config.fem.Ka,
                  Ma=config.fem.Ma,
                  config=config,
-                 f_obj=objectives.OBJ_X2,
-                 obj_args=dict(node=5,
-                               component=jnp.arange(6))
+                 f_obj=objectives.X2_MAX,
+                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6),axis=0)
                  )
 epsilon = 1e-4
 F11 = main_20g21((config.system.aero.gust.intensity,
@@ -277,9 +279,9 @@ F11 = main_20g21((config.system.aero.gust.intensity,
                  Ka=config.fem.Ka,
                  Ma=config.fem.Ma,
                  config=config,
-                 f_obj=objectives.OBJ_X2,
-                 obj_args=dict(node=5,
-                               component=jnp.arange(6))
+                 f_obj=objectives.X2_MAX,
+                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6),axis=0)
                  )
 F12 = main_20g21((config.system.aero.gust.intensity+epsilon,
                  config.system.aero.gust.length,
@@ -290,9 +292,9 @@ F12 = main_20g21((config.system.aero.gust.intensity+epsilon,
                  Ka=config.fem.Ka,
                  Ma=config.fem.Ma,
                  config=config,
-                 f_obj=objectives.OBJ_X2,
-                 obj_args=dict(node=5,
-                               component=jnp.arange(6))
+                 f_obj=objectives.X2_MAX,
+                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6),axis=0)
                  )
 F1dp = (F12 - F11) / epsilon
 
@@ -305,9 +307,9 @@ F22 = main_20g21((config.system.aero.gust.intensity,
                  Ka=config.fem.Ka,
                  Ma=config.fem.Ma,
                  config=config,
-                 f_obj=objectives.OBJ_X2,
-                 obj_args=dict(node=5,
-                               component=jnp.arange(6))
+                 f_obj=objectives.X2_MAX,
+                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6),axis=0)
                  )
 F2dp = (F22 - F11) / epsilon
 
@@ -322,9 +324,9 @@ F32 = main_20g21((config.system.aero.gust.intensity,
                  Ka=config.fem.Ka,
                  Ma=config.fem.Ma,
                  config=config,
-                 f_obj=objectives.OBJ_X2,
-                 obj_args=dict(node=5,
-                               component=jnp.arange(6))
+                 f_obj=objectives.X2_MAX,
+                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6),axis=0)
                  )
 F3dp = (F32 - F11) / epsilon2
 
@@ -337,13 +339,16 @@ F42 = main_20g21((config.system.aero.gust.intensity,
                  Ka=config.fem.Ka,
                  Ma=config.fem.Ma,
                  config=config,
-                 f_obj=objectives.OBJ_X2,
-                 obj_args=dict(node=5,
-                               component=jnp.arange(6))
+                 f_obj=objectives.X2_MAX,
+                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6),axis=0)
                  )
 F4dp = (F42 - F11) / epsilon
 
 
+# x = jnp.arange(24).reshape((4,3,2))
+# x[jnp.ix_(jnp.arange(4),jnp.array([0,1]), jnp.array([0]))]
+# objectives.X1_MAX(x, nodes=jnp.array([0]), components=jnp.array([0,1]), t=jnp.arange(4),axis=0)
 
 from decimal import Decimal
 

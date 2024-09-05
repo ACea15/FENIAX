@@ -3,9 +3,9 @@ import pdb
 import sys
 import numpy as np
 import datetime
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 import jax.numpy as jnp
 import jax
 #jax.config.update("jax_enable_compilation_cache", False)
@@ -58,7 +58,7 @@ inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6, 7]
 config =  configuration.Config(inp)
 #configuration.dump_to_yaml(path2config, config, with_comments=True)
 
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 
 # import pickle
 # with open('../../tests/intrinsic/structural_static/data/.pickle', 'wb') as fp:

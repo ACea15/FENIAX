@@ -4,10 +4,10 @@ import sys
 import jax.numpy as jnp
 import datetime
 
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
-import fem4inas.plotools.upyvista as upyvista
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
+import feniax.plotools.upyvista as upyvista
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -39,7 +39,7 @@ inp.systems.sett.s1.xloads.dead_interpolation = [list(range(0,3300,300))]
 inp.systems.sett.s1.t = list(range(1,11))
 config =  configuration.Config(inp)
 
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 
 
 import importlib

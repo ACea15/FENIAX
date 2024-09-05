@@ -1,6 +1,6 @@
 # Finite Element models 4 Intrinsic Nonlinear Aeroelastics in JAX [FENIAX]
 
-FEM4INAS is an aeroelastic toolbox  written and parallelized in Python, which acts as a post-processor of commercial software such as MSC Nastran. 
+FENIAX is an aeroelastic toolbox  written and parallelized in Python, which acts as a post-processor of commercial software such as MSC Nastran. 
 Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.
 
 ![XRF1](./docs/images/xrf1-model3.jpg)
@@ -23,7 +23,7 @@ pip install -e .[all]
 Although it is not necessary, If conda is being used as package manager, one can make a specific environment as,
 
 ```
-conda create -n fem4inas python=3.11
+conda create -n feniax python=3.11
 conda activate fem4inas
 ```
 
@@ -35,7 +35,7 @@ pytest tests
 
 - Thus a typical installation would comprise of these 4 steps:
 ```
-conda create -n fem4inas python=3.11
+conda create -n feniax.python=3.11
 conda activate fem4inas
 pip install -e .[all]
 pytest tests

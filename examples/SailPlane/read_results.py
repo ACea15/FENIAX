@@ -1,7 +1,7 @@
 from pyNastran.op2.op2 import OP2
 import pandas as pd
 import plotly.express as px
-import fem4inas.preprocessor.solution as solution
+import feniax.preprocessor.solution as solution
 
 # op2 = OP2()
 # op2.set_additional_matrices_to_read({b'OPHP':False})

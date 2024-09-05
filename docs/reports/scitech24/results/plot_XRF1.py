@@ -5,20 +5,20 @@ import pickle
 import jax.numpy as jnp
 import pandas as pd
 import numpy as np
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
-import fem4inas.plotools.uplotly as uplotly
-import fem4inas.plotools.utils as putils
-import fem4inas.preprocessor.solution as solution
-import fem4inas.unastran.op2reader as op2reader
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
+import feniax.plotools.uplotly as uplotly
+import feniax.plotools.utils as putils
+import feniax.preprocessor.solution as solution
+import feniax.unastran.op2reader as op2reader
 
-nastran_path = fem4inas.PATH / "../examples/XRF1/NASTRAN/146-111/"
+nastran_path = feniax.PATH / "../examples/XRF1/NASTRAN/146-111/"
 nas111 = op2reader.NastranReader(op2name=(nastran_path / "XRF1-146run.op2"))
 nas111.readModel()
 t111, u111 = nas111.displacements()
 
-nastran_pathm = fem4inas.PATH / "../examples/XRF1/NASTRAN/146-111_081"
+nastran_pathm = feniax.PATH / "../examples/XRF1/NASTRAN/146-111_081"
 nas111m = op2reader.NastranReader(op2name=(nastran_pathm / "XRF1-146run.op2"))
 nas111m.readModel()
 t111m, u111m = nas111m.displacements()
@@ -289,7 +289,7 @@ figname
 
 name=[]
 import numpy as np
-directory = fem4inas.PATH / "../Models/XRF1-2/Results_modes/"
+directory = feniax.PATH / "../Models/XRF1-2/Results_modes/"
 nmodes = 70
 #q = np.load("%s/q_%s.npy"%(directory, nmodes))
 omega = np.load("%s/../Results_modes/Omega_%s.npy"%(directory, nmodes))

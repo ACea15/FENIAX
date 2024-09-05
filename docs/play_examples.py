@@ -138,7 +138,7 @@ fuv = contraction(mf, M)
 
 ##################################
 ##################################
-import fem4inas.intrinsic.functions as functions
+import feniax.intrinsic.functions as functions
 import numpy as np
 import time
 num_modes = 80

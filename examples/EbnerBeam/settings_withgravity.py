@@ -1,9 +1,9 @@
 import pathlib
 import datetime
 
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 import jax.numpy as jnp
 
 inp = Inputs()
@@ -49,5 +49,5 @@ config = configuration.Config(inp)
 # config.systems.mapper['s1'].xloads.build_point_dead(config.fem.num_nodes)
 # config.systems.mapper['s1'].xloads.force_dead
 
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 

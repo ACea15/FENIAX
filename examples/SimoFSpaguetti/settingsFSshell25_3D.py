@@ -4,9 +4,9 @@ import sys
 import numpy as np
 import datetime
 import time 
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 import jax.numpy as jnp
 import scipy.linalg
 
@@ -43,11 +43,11 @@ inp.systems.sett.s1.xloads.dead_interpolation = [[0., 20., 0., 0.],
 config =  configuration.Config(inp)
 
 #time1 = time.time()
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 #time2 = time.time()
 
 
-import fem4inas.intrinsic.functions as functions
+import feniax.intrinsic.functions as functions
 import importlib
 importlib.reload(functions)
 
@@ -90,8 +90,8 @@ Rth = np.array([FFB25_cg3d(ti) for ti in config.systems.mapper['s1'].t])
 print(jnp.linalg.norm(R-Rth)/len(R))
 
 
-# import fem4inas.plotools.uplotly as uplotly
-# import fem4inas.plotools.utils as putils
+# import feniax.plotools.uplotly as uplotly
+# import feniax.plotools.utils as putils
 
 # x, y = putils.pickIntrinsic2D(sol.dynamicsystem_s1.t,
 #                               sol.dynamicsystem_s1.ra,

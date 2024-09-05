@@ -1,6 +1,6 @@
 output="num_modes"
 import numpy as np
-import fem4inas.unastran.aero as nasaero
+import feniax.unastran.aero as nasaero
 mach = 0.8
 Mach = str(mach).replace('.','_')
 machs = [mach]
@@ -29,8 +29,8 @@ num_poles = 5
 gust_lengths = [18.0,42.,67.,91.,116.,140.,165.0,189.,214.]
 eval(output)
 
-#from fem4inas.utils import write_op4modes
-import fem4inas.unastran.op4handler as op4handler
+#from feniax.utils import write_op4modes
+import feniax.unastran.op4handler as op4handler
 eigs, modes = op4handler.write_op4modes("./run_caof",
                              num_modes,
                              op4_name=f"./data_out/Phi{num_modes}",

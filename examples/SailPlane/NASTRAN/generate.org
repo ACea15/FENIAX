@@ -2,14 +2,14 @@
 #+begin_src elisp :results none
   (setq org-confirm-babel-evaluate nil)
   (require 'org-tempo)
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "feniax.)
 #+end_src
 
 * INPUT PARAMETERS
 #+NAME: python_parameters
 #+begin_src python :session py1 :var output="num_modes" :results value :tangle py1.py
   import numpy as np
-  import fem4inas.unastran.aero as nasaero
+  import feniax.unastran.aero as nasaero
   mach = 0.8
   Mach = str(mach).replace('.','_')
   machs = [mach]
@@ -163,8 +163,8 @@
 
 ** Build modes in OP4
 #+begin_src python :session py1  :results none 
-  #from fem4inas.utils import write_op4modes
-  import fem4inas.unastran.op4handler as op4handler
+  #from feniax.utils import write_op4modes
+  import feniax.unastran.op4handler as op4handler
   eigs, modes = op4handler.write_op4modes("./SOL103/run_cao",
                                num_modes,
                                op4_name=f"./data_out/Phi{num_modes}",
@@ -187,7 +187,7 @@
 
 ** VTK modes
 #+begin_src python :session py1 :results none :tangle py1.py
-  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  import feniax.plotools.nastranvtk.bdfdef as bdfdef
   import  importlib
   #importlib.reload(modes)
   bdfdef.vtkModes_fromop2("./SOL103/run_cao.bdf", "./SOL103/run_cao.op2", modes2plot=range(40))
@@ -195,7 +195,7 @@
 #+end_src
 
 #+begin_src python :session py1 :results none :tangle py1.py
-  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  import feniax.plotools.nastranvtk.bdfdef as bdfdef
   import  importlib
   #importlib.reload(modes)
   bdfdef.vtkModes_fromop2("./SOL103/run_cfo.bdf", "./SOL103/run_cfo.op2", modes2plot=range(40))
@@ -204,8 +204,8 @@
 
 * SOL400 (structure-only)
 #+begin_src python :session py1 :results none :tangle py1.py
-  import fem4inas.unastran.op2reader as op2reader
-  import fem4inas.plotools.nastranvtk.modes as modes
+  import feniax.unastran.op2reader as op2reader
+  import feniax.plotools.nastranvtk.modes as modes
   import  importlib
   import copy
   importlib.reload(modes)
@@ -513,7 +513,7 @@
 
 ** Plot
 #+begin_src python :session py1 :results none :tangle py1.py
-  import fem4inas.aeromodal.panels as panels
+  import feniax.aeromodal.panels as panels
   import pathlib
   grid = panels.caero2grid(components, dlm_panels.caero1)
   panels.build_gridmesh(grid, 'dlm_mesh')
@@ -569,24 +569,24 @@
 #+end_src
 
 #+begin_src python :session py1 :results none :tangle py1.py
-  import fem4inas.plotools.grid
+  import feniax.plotools.grid
   from pyNastran.bdf.bdf import BDF
   import pandas as pd
   import importlib
-  importlib.reload(fem4inas.plotools.grid)
-  aerogrid = fem4inas.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
+  importlib.reload(feniax.plotools.grid)
+  aerogrid = feniax.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
   df_grid = pd.read_csv('../FEM/structuralGrid', comment="#", sep=" ",
                       names=['x1', 'x2', 'x3', 'fe_order', 'component'])
   model = BDF(debug=True)
   model.read_bdf("./SOL103/run_cao.bdf", punch=False)
   X = df_grid[['x1','x2','x3']].to_numpy()
-  panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, set1x, X, model)
-  #collocationmodel = fem4inas.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
+  panelmodel = feniax.plotools.grid.ASETModel(aerogrid, set1x, X, model)
+  #collocationmodel = feniax.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
 #+end_src
 
 #+begin_src python :session py1 :results none :tangle py1.py
-  aerogrid_collocation = fem4inas.plotools.grid.AeroGrid.build_DLMcollocation(dlm_panels.model)
-  #collocationmodel = fem4inas.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
+  aerogrid_collocation = feniax.plotools.grid.AeroGrid.build_DLMcollocation(dlm_panels.model)
+  #collocationmodel = feniax.plotools.grid.ASETModel(aerogrid_collocation, set1x, X, model)
   collocation_points = np.vstack([aerogrid_collocation.points[i] for i in aerogrid_collocation.points.keys()])
   np.save("./data_out/collocation_points.npy", collocation_points)
 #+end_src
@@ -668,10 +668,10 @@
 #+end_src
 
 #+begin_src python :session py1 :results none :tangle py1.py
-  from fem4inas.preprocessor import solution
+  from feniax.preprocessor import solution
   ireader = solution.IntrinsicReader("../results_2023-11-13_11:25:09/")
 
-  #sol_path = "/home/ac5015/programs/FEM4INAS/examples/SailPlane/results_2023-10-25_14:30:25"
+  #sol_path = "/home/ac5015/programs/FENIAX.examples/SailPlane/results_2023-10-25_14:30:25"
   # sol = solution.IntrinsicSolution(sol_path)
   # sol.load_container("Modes")
   # sol.load_container("Couplings")
@@ -685,8 +685,8 @@
 #+end_src
 
 #+begin_src python :session py1 :results none :tangle py1.py
-  import fem4inas.plotools.interpolation as interpolation
-  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  import feniax.plotools.interpolation as interpolation
+  import feniax.plotools.nastranvtk.bdfdef as bdfdef
   importlib.reload(bdfdef)
   bdf = bdfdef.DefBdf("./SOL103/run_cao.bdf")
   bdf.plot_vtk("./paraview/results/ref.bdf")
@@ -699,8 +699,8 @@
 #+end_src
 
 #+begin_src python :session py1 :results none :tangle py1.py
-  importlib.reload(fem4inas.plotools.grid)
-  bdf_interpol = fem4inas.plotools.grid.PanelsBDFInterpol("./dlm_model.yaml",
+  importlib.reload(feniax.plotools.grid)
+  bdf_interpol = feniax.plotools.grid.PanelsBDFInterpol("./dlm_model.yaml",
                                                           "./SOL103/run_cao.bdf",
                                                           X,
                                                           "../results_2023-11-13_11:25:09/"
@@ -880,7 +880,7 @@
 perform RFA 
 #+begin_src python :session py1  :results none
   import sys
-  #sys.path.append("/media/acea/work/projects/FEM4INAS/")
+  #sys.path.append("/media/acea/work/projects/FENIAX.")
   import numpy as np
   import pdb
   import argparse
@@ -2129,7 +2129,7 @@ plot GAFs
 #+end_src
 * SOL 146
 #+begin_src python :session py1  :results none
-  import fem4inas.unastran.gustgen as gustgen
+  import feniax.unastran.gustgen as gustgen
   gust4nastran = gustgen.Gust4Nastran(h=0.,
                                       M=mach,
                                       U_inf_TAS=u_inf,
@@ -2224,7 +2224,7 @@ plot GAFs
 #+end_src
 
 #+begin_src python :session py1  :results none
-  import fem4inas.unastran.op2reader as op2reader
+  import feniax.unastran.op2reader as op2reader
   op2model = op2reader.NastranReader("./SOL146/run_cao")
   op2model.readModel()
 #+end_src
@@ -2232,7 +2232,7 @@ plot GAFs
 * VTK
 #+begin_src python :session py1  :results none :noweb yes
   import meshio
-  mesh = meshio.read("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
+  mesh = meshio.read("/media/acea/work/projects/FENIAX/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
 #+end_src
 
 * Flutter analysis

@@ -1,14 +1,14 @@
 from pyNastran.op2.op2 import OP2
-import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
-import fem4inas.plotools.interpolation as interpolation
-from fem4inas.preprocessor import solution
-import fem4inas.plotools.grid as grid
+import feniax.plotools.nastranvtk.bdfdef as bdfdef
+import feniax.plotools.interpolation as interpolation
+from feniax.preprocessor import solution
+import feniax.plotools.grid as grid
 from pyNastran.bdf.bdf import BDF
 import pandas as pd
-import fem4inas.plotools.reconstruction as rec
-import fem4inas.preprocessor.configuration as configuration
+import feniax.plotools.reconstruction as rec
+import feniax.preprocessor.configuration as configuration
 import jax.numpy as jnp
-import fem4inas.plotools.nastranvtk as nastranvtk
+import feniax.plotools.nastranvtk as nastranvtk
 
 Nastran = False
 
@@ -78,7 +78,7 @@ if OLD_rec:
     time = [0,1,2,3,4]#np.linspace(0,15000,1000,dtype=int)
 
     #bdf_def = bdfdef.DefBdf("./NASTRAN/XRF1-144trim.bdf")
-    bdf_def = bdfdef.DefBdf("/media/acea/work/projects/FEM4INAS/examples/XRF1/NASTRAN/XRF1-146run.bdf")
+    bdf_def = bdfdef.DefBdf("/media/acea/work/projects/FENIAX/examples/XRF1/NASTRAN/XRF1-146run.bdf")
     #bdf_def.plot_vtk("./generate_trim/ref.bdf")
 
     nodesX = bdf_def.get_nodes()
