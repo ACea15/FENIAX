@@ -1,24 +1,47 @@
-from dataclasses import dataclass
-from typing import Sequence
+"""
+xxxx
+"""
+
+import inspect
+import math
 import pathlib
-import jax.numpy as jnp
-import pathlib
-import pandas as pd
-from feniax.preprocessor.utils import dfield, initialise_Dclass, load_jnp
-from feniax.preprocessor.containers.data_container import DataContainer
+import sys
+from dataclasses import dataclass, fields, is_dataclass
+from enum import Enum
+from typing import Any
+
 import feniax.intrinsic.geometry as geometry
+import jax
+import jax.numpy as jnp
+import pandas as pd
 from feniax.intrinsic.functions import (
     coordinate_transform,
     label_generator,
     reshape_field,
 )
-import jax
-from enum import Enum
-import math
+from feniax.preprocessor.containers.data_container import DataContainer
+from feniax.preprocessor.utils import dfield, initialise_Dclass, load_jnp
 
 
 @dataclass(frozen=True)
 class Dconst(DataContainer):
+    """Constants in the configuration
+
+    Parameters
+    ----------
+    I3 : Array
+       3x3 Identity matrix
+    e1 : Array
+       3-component vector with beam direction in local frame
+    EMAT : Array
+       3x3 Identity matrix
+    EMATT : Array
+       Transpose EMAT
+
+    Attributes
+    ----------
+    """
+    
     I3: jnp.ndarray = dfield("3x3 Identity matrix", default=jnp.eye(3))
     e1: jnp.ndarray = dfield(
         "3-component vector with beam direction in local frame",
@@ -43,24 +66,39 @@ class Dconst(DataContainer):
         object.__setattr__(self, "EMATT", self.EMAT.T)
 
 
-@dataclass(frozen=True)
-class Dfiles(DataContainer):
-    folder_in: str | pathlib.Path
-    folder_out: str | pathlib.Path
-    config: str | pathlib.Path
-
-
 @dataclass(frozen=True, kw_only=True)
 class DGust(DataContainer):
-    intensity: float
-    u_inf: float
-    simulation_time: jnp.array
-
+    ...
 
 @dataclass(frozen=True, kw_only=True)
 class DGustMc(DGust):
+    """1-cos gust settings (specialisation from DGust)
+
+    Parameters
+    ----------
+    u_inf : float
+           
+    simulation_time : Array
+    intensity : float
+    step : float
+    length : float
+    shift : float
+    panels_dihedral : str | jax.Array
+    collocation_points : str | jax.Array
+    shape : str
+
+    Attributes
+    ----------
+    totaltime : float
+    x : Array
+    time : Array
+    ntime : int
+ 
+
+    """
+
     u_inf: float = dfield("", default=None)
-    simulation_time: jnp.array = dfield("", default=None)
+    simulation_time: jnp.ndarray = dfield("", default=None)
     intensity: float = dfield("", default=None)
     step: float = dfield("", default=None)
     length: float = dfield("", default=None)
@@ -69,8 +107,8 @@ class DGustMc(DGust):
     collocation_points: str | jnp.ndarray = dfield("", default=None)
     shape: str = dfield("", default="const")
     totaltime: float = dfield("", init=False)
-    x: jnp.array = dfield("", init=False)
-    time: jnp.array = dfield("", init=False)
+    x: jnp.ndarray = dfield("", init=False)
+    time: jnp.ndarray = dfield("", init=False)
     ntime: int = dfield("", init=False)
 
     def __post_init__(self):
@@ -148,7 +186,7 @@ class Daero(DataContainer):
     rho_inf: float = dfield("", default=None)
     q_inf: float = dfield("", init=False)
     c_ref: float = dfield("", default=None)
-    time: jnp.array = dfield("", default=None)
+    time: jnp.ndarray = dfield("", default=None)
     qalpha: jnp.ndarray = dfield("", default=None)
     qx: jnp.ndarray = dfield("", default=None)
     elevator_index: jnp.ndarray = dfield("", default=None)
@@ -228,7 +266,7 @@ class Dxloads(DataContainer):
     dead_forces: bool = dfield("Include point dead forces", default=False)
     gravity_forces: bool = dfield("Include gravity in the analysis", default=False)
     modalaero_forces: bool = dfield("Include aerodynamic forces", default=False)
-    x: jnp.array = dfield("x-axis vector for interpolation", default=None)
+    x: jnp.ndarray = dfield("x-axis vector for interpolation", default=None)
     force_follower: jnp.ndarray = dfield(
         """Point follower forces
     (len(x)x6xnum_nodes)""",
@@ -338,7 +376,6 @@ class Dxloads(DataContainer):
 #     grid: str | jnp.ndarray = dfield("Grid file or array with Nodes Coordinates, node ID in the FEM and component")
 #     connectivity: dict | list = dfield("Connectivities of components")
 #     X: jnp.ndarray = dfield("Grid coordinates", default=None)
-
 
 @dataclass(frozen=True)
 class Dfem(DataContainer):
@@ -671,8 +708,7 @@ class ADinputType(Enum):
     POINT_FORCES = 1
     GUST1 = 2
     FEM = 3
-
-
+    
 @dataclass(frozen=True, kw_only=True)
 class DtoAD(Dlibrary):
     inputs: dict = dfield("", default=None, yaml_save=False)
@@ -736,7 +772,7 @@ class Dsystem(DataContainer):
     t1: float = dfield("Final time", default=1.0)
     tn: int = dfield("Number of time steps", default=None)
     dt: float = dfield("Delta time", default=None)
-    t: jnp.array = dfield("Time vector", default=None)
+    t: jnp.ndarray = dfield("Time vector", default=None)
     solver_library: str = dfield(
         "Library solving our system of equations", default=None
     )
@@ -984,5 +1020,28 @@ class Dsimulation(DataContainer):
     )
 
 
-if __name__ == "__main__":
-    pass
+def generate_docstring(cls: Any) -> Any:
+    """
+    Generate a docstring for a data class based on its fields.
+    """
+    if not is_dataclass(cls):
+        return cls
+
+    lines = [f"{cls.__name__}:\n"]
+    for field in fields(cls):
+        field_type = field.type.__name__ if hasattr(field.type, '__name__') else str(field.type)
+        lines.append(f"    {field.name} : {field_type}")
+        # Here you could add more detailed documentation for each field if needed
+    cls.__doc__ = "\n".join(lines)
+    return cls
+
+def update_docstrings(module: Any) -> None:
+    """Update docstrings for all data classes in the given module."""
+    for name, obj in inspect.getmembers(module):
+        if inspect.isclass(obj) and is_dataclass(obj):
+            obj = generate_docstring(obj)
+            print(obj.__doc__)
+
+if (__name__ == "__main__"):
+    
+    update_docstrings(sys.modules[__name__])
