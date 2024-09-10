@@ -473,3 +473,175 @@ class FrozenDataClass:
         #self.c = self.a + self.b
 
 d1 = FrozenDataClass(3,4)
+
+import re
+
+class MyClass:
+    """
+    MyClass is an example class.
+
+    Attributes:
+    attr1 (int): Description of attr1.
+    attr2 (str): Description of attr2.
+    """
+
+    attributes = []
+    # attributes = MyClass.extract_attributes(MyClass.__doc__)
+    def __init__(self, attr1, attr2):
+        self.attr1 = attr1
+        self.attr2 = attr2
+        MyClass.extract_attributes()
+        
+    @classmethod
+    def extract_attributes(cls):
+        docstring = cls.__doc__
+        attributes = []
+        pattern = re.compile(r"(\w+) \((\w+)\): (.+)")
+        lines = docstring.splitlines()
+        in_attributes_section = False
+
+        for line in lines:
+            line = line.strip()
+            if line.startswith("Attributes:"):
+                in_attributes_section = True
+                continue
+            if in_attributes_section:
+                match = pattern.match(line)
+                if match:
+                    attribute_name = match.group(1)
+                    attribute_type = match.group(2)
+                    attribute_description = match.group(3)
+                    attributes.append(f"{attribute_name} ({attribute_type}): {attribute_description}")
+                elif line == "":  # Empty line signals end of attributes section
+                    in_attributes_section = False
+        MyClass.attributes = attributes
+
+MyClass.extract_attributes()
+for attribute in MyClass.attributes:
+    print(attribute)
+
+class MyClass:
+    """
+    MyClass is an example class.
+
+    Attributes:
+    attr1 (int): Description of attr1.
+    attr2 (str): Description of attr2.
+    """
+    attributes = []
+    _attributes_initialized = False
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._attributes_initialized:
+            cls._initialize_attributes()
+        return super().__new__(cls)
+
+    def __init__(self, attr1, attr2):
+        self.attr1 = attr1
+        self.attr2 = attr2
+
+    @classmethod
+    def _initialize_attributes(cls):
+        docstring = cls.__doc__
+        attributes = []
+        pattern = re.compile(r"(\w+) \((\w+)\): (.+)")
+        lines = docstring.splitlines()
+        in_attributes_section = False
+
+        for line in lines:
+            line = line.strip()
+            if line.startswith("Attributes:"):
+                in_attributes_section = True
+                continue
+            if in_attributes_section:
+                match = pattern.match(line)
+                if match:
+                    attribute_name = match.group(1)
+                    attribute_type = match.group(2)
+                    attribute_description = match.group(3)
+                    attributes.append(f"{attribute_name} ({attribute_type}): {attribute_description}")
+                elif line == "":  # Empty line signals end of attributes section
+                    in_attributes_section = False
+
+        cls.attributes = attributes
+        cls._attributes_initialized = True
+
+# Create an instance to trigger the initialization logic
+instance = MyClass(attr1=10, attr2="example")
+
+# Print the extracted attributes
+for attribute in MyClass.attributes:
+    print(attribute)
+
+
+import re
+from dataclasses import dataclass, field
+
+class DataC:
+    attributes = {}
+    _attributes_initialized = False    
+    def __new__(cls, *args, **kwargs):
+        if not cls._attributes_initialized:
+            cls._initialize_attributes()
+        return super().__new__(cls)
+
+    @classmethod
+    def _initialize_attributes(cls):
+        docstring = cls.__doc__
+        attributes = {}
+        in_attributes_section = False
+
+        lines = docstring.splitlines()
+        for i, line in enumerate(lines):
+            line = line.strip()
+            if line == "Attributes":
+                in_attributes_section = True
+                continue
+            if in_attributes_section and line.startswith('----'):
+                continue
+            if in_attributes_section:
+                if line == "":  # Exit section once we reach an empty line
+                    break
+                # Look ahead to pick the description
+                if i + 1 < len(lines) and re.match(r".+:", lines[i]):
+                    name_type = line.split(':')
+                    attribute_name = name_type[0].strip()
+                    attribute_type = name_type[1].strip()
+                    attribute_description = lines[i + 1].strip()
+                    #attributes.append(f"{attribute_name} ({attribute_type}): {attribute_description}")
+                    attributes[attribute_name] = attribute_description
+        cls.attributes = attributes
+        cls._attributes_initialized = True
+
+
+@dataclass
+class MyClass(DataC):
+    """
+    MyClass is an example class.
+
+    Parameters
+    ----------
+    attr1 : int
+        Description of attr1.
+    attr2 : str
+        Description of attr2.
+
+    Attributes
+    ----------
+    attr1 : int
+        Description of attr1.
+    attr2 : str
+        Description of attr2.
+    """
+    
+    attr1: int #= field(metadata=MyClass.attributes['attr1'])
+    attr2: str #= field(metadata=MyClass.attributes['attr2'])
+    # attributes: list = field(default_factory=list, init=False)
+    # _attributes_initialized: bool = field(default=False, init=False, repr=False)
+
+# Create an instance to trigger the initialization logic
+instance = MyClass(attr1=10, attr2="example")
+
+# Print the extracted attributes
+for attribute in MyClass.attributes:
+    print(attribute)

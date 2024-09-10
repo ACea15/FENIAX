@@ -106,7 +106,6 @@ class ValidateConfig:
         assert hasattr(config, "driver"), "No 'driver' attr in config object"
         assert hasattr(config, "fem"), "No 'fem' attr in config object"
 
-
 def serialize(obj: Config | DataContainer):
     dictionary = dict()
     for k, v in obj.__dict__.items():

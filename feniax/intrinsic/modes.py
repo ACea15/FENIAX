@@ -1,13 +1,16 @@
-from jax import jit
-import numpy as np
-import scipy
+import pathlib
+from functools import partial
+
 import jax
 import jax.numpy as jnp
-import pathlib
-from feniax.preprocessor import configuration
-from feniax.intrinsic.functions import compute_C0ab, tilde, coordinate_transform
-from functools import partial
+import numpy as np
+import scipy
+from jax import jit
+
 import feniax.intrinsic.couplings as couplings
+from feniax.intrinsic.functions import compute_C0ab, coordinate_transform, tilde
+from feniax.preprocessor import configuration
+
 # TODO: implement from jnp.eigh and compare with jscipy.eigh
 # https://math.stackexchange.com/questions/4518062/rewrite-generalized-eigenvalue-problem-as-standard-eigenvalue-problem
 

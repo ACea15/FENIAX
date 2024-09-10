@@ -1,10 +1,5 @@
 import jax.numpy as jnp
-import numpy as np
 import jax
-import feniax.intrinsic.xloads as xloads
-import feniax.intrinsic.postprocess as postprocess
-import feniax.intrinsic.dq_common as common
-import feniax.intrinsic.functions as functions
 from functools import partial
 import feniax.systems.intrinsic_system as isys
 import feniax.intrinsic.dq_static as dq_static

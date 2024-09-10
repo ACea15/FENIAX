@@ -1,5 +1,6 @@
-from feniax.simulations.simulation import Simulation
 import jax.numpy as jnp
+
+from feniax.simulations.simulation import Simulation
 
 
 class SerialSimulation(Simulation, cls_name="serial"):
