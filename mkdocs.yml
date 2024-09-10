@@ -1,0 +1,119 @@
+site_name: FENIAX
+site_description: Documentation for aeroelastic library FENIAX.
+site_author: Alvaro Cea
+docs_dir: docs/documentation
+
+repo_url: https://github.com/ACea15/FENIAX
+repo_name: ACea15/FENIAX
+edit_uri: ""  # No edit button, as some of our pages are in /docs and some in /examples via symlink, so it's impossible for them all to be accurate
+strict: False  # Don't allow warnings during the build process
+
+theme:
+    name: material
+    features:
+        # - navigation.sections  # Sections are included in the navigation on the left.
+        # - toc.integrate  # Table of contents is integrated on the left; does not appear separately on the right.
+        # - header.autohide  # header disappears as you scroll
+        - announce.dismiss
+        - content.action.edit
+        - content.action.view
+        - content.code.annotate
+        - content.code.copy
+        # - content.code.select
+        # - content.footnote.tooltips
+        # - content.tabs.link
+        - content.tooltips
+        # - header.autohide
+        # - navigation.expand
+        - navigation.footer
+        - navigation.indexes
+        # - navigation.instant
+        # - navigation.instant.prefetch
+        # - navigation.instant.progress
+        # - navigation.prune
+        - navigation.sections
+        - navigation.tabs
+        - navigation.tabs.sticky
+        - navigation.top
+        - navigation.tracking
+        - search.highlight
+        - search.share
+        - search.suggest
+        - toc.follow
+        # - toc.integrate        
+    palette:
+        # Light mode / dark mode
+        # We deliberately don't automatically use `media` to check a user's preferences. We default to light mode as
+        # (a) it looks more professional, and (b) is more obvious about the fact that it offers a (dark mode) toggle.
+        - scheme: default
+          primary: white
+          accent: amber
+          toggle:
+             icon: material/weather-night
+             name: Switch to dark mode
+        - scheme: slate
+          primary: black
+          accent: amber
+          toggle:
+             icon: material/weather-sunny
+             name: Switch to light mode
+    icon:
+        repo: fontawesome/brands/github  # GitHub logo in top right
+        # logo: "material/math-integral-box"  #  logo in top left
+
+markdown_extensions:
+    - pymdownx.arithmatex:  # Render LaTeX via MathJax
+        generic: true
+    - pymdownx.superfences  # Seems to enable syntax highlighting when used with the Material theme.
+    - pymdownx.details  # Allowing hidden expandable regions denoted by ???
+    - pymdownx.snippets:  # Include one Markdown file into another
+        base_path: docs
+    - admonition
+    - toc:
+        permalink: "¤"  # Adds a clickable permalink to each section heading
+        toc_depth: 4  # Prevents h5, h6 (i.e. methods) from showing up in the TOC.
+
+plugins:
+    - search  # default search plugin; needs manually re-enabling when using any other plugins
+    - autorefs  # Cross-links to headings
+    - include_exclude_files:
+        include:
+        # exclude:
+        #     - "_overrides"
+        #     - "_static/README.md"
+    - mknotebooks  # Jupyter notebooks
+    - mkdocstrings:
+        default_handler: python
+        handlers:
+            python:
+              paths: [fem4inas]
+              options:
+                docstring_style: numpy # 'google' 'numpy', 'rst', etc.
+                filters: ["!^_[^_]"]  # Exclude private members
+                show_root_full_path: true
+                # setup_commands:
+                #     - import pytkdocs_tweaks
+                #     - pytkdocs_tweaks.main()
+
+                selection:
+                    - inherited_members: true  # Allow looking up inherited methods
+                rendering:
+                    - show_root_heading: true  # actually display anything at all...
+                    - show_root_full_path: true  # display "diffrax.asdf" not just "asdf"
+                    - show_if_no_docstring: true
+                    - show_signature_annotations: true
+                    - show_source: false  # don't include source code
+                    - members_order: source  # order methods according to their order of definition in the source code, not alphabetical order
+                    - heading_level: 4  # Makes everything top-level be <h4>. Child entries will be <h5> etc., but because of toc_depth, above, (deliberately) won't appear in the TOC.
+                      
+nav:
+  - Home: index.md
+  # - Getting started
+  #     - Installation:
+  #     - Theoretical Background:
+  #     - Running:
+  #- Tutorials
+  - Examples: examples.md
+  #- Postprocessing
+  - Codes:
+      - Modes: api/modes.md
