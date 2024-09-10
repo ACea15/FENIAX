@@ -1,0 +1,103 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = ["feniax/*"]
+
+[project]
+name = "FENIAX"
+version = "0.1.0"
+description = "Nonlinear Aeroelastic solver written in JAX."
+authors = [{ name = "Alvaro Cea", email = "alvar_cea@outlook.com" }]
+readme = "README.md"
+requires-python = ">=3.10"
+#license = { file = "LICENSE" }
+keywords = [
+  "aircraft analysis",
+  "industrial aeroelasticity",
+  "nonlinear dynamics",
+  "differentiable dynamics",  
+  "jax",
+]
+classifiers = [
+  "Development Status :: 2 - Pre-Alpha",
+  #"Intended Audience :: Science/research",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)"
+  #"License :: OSI Approved :: GNU GPL3",
+  "Programming Language :: Python :: 3",
+  #"Operating System :: Unix/MacOs",
+  #"Topic :: Scientific/Engineering :: Aeroelasticity",
+]
+
+urls = {repository = "https://github.com/ACea15/FENIAX" }
+dependencies = ["numpy",
+                "scipy",
+             	"pandas",
+             	#"PyYAML",
+             	"ruamel.yaml",
+             	"jax",
+             	"jaxlib",
+        	"diffrax",
+        	"jaxopt",
+        	"tabulate",
+		"multipledispatch",
+		"pyNastran"
+	]
+
+[project.optional-dependencies]
+dev = ["pytest","pytest-cov", "pre-commit"]
+postprocessing = ["matplotlib",
+                  "plotly",
+            	  "pyvista",
+		  "streamlit",
+              	  "stpyvista",
+            	  "streamlit-pdf-viewer"
+		  ]
+all = ["pytest",
+       "pytest-cov",
+       "pre-commit",
+       "matplotlib",
+       "plotly",
+       "pyvista",
+       "streamlit",
+       "stpyvista",
+       "streamlit-pdf-viewer"
+      ]
+
+[tool.ruff]
+line-length = 100
+src = ["feniax", "tests"]
+
+[tool.ruff.lint]
+# fixable = ["I001", "F401"]
+#ignore = ["E402", "E721", "E731", "E741", "F722"]
+ignore-init-module-imports = true
+select = ["E", "F", "I", "D"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+lines-after-imports = 2
+order-by-type = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"  # Accepts: "google", "numpy", or "pep257".
+
+[tool.ruff.format]
+#quote-style = "single"
+#indent-style = "space"
+docstring-code-format = true
+
+[tool.pylsp-mypy]
+enabled = true
+live_mode = true
+strict = true
+include = ["feniax"]
+exclude = ["tests/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+omit = ["*/plotools/*"]
