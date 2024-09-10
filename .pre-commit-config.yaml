@@ -1,0 +1,24 @@
+# To install the git pre-commit hooks run:
+#   pre-commit install --install-hooks
+# To update the versions:
+#   pre-commit autoupdate
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.6.4
+  hooks:
+    # Run the linter.
+    - id: ruff
+      args: [--fix, --show-fixes]
+    # Run the formatter.
+    - id: ruff-format
+- repo: https://github.com/tox-dev/pyproject-fmt
+  rev: "1.5.2"
+  hooks:
+    - id: pyproject-fmt
+- repo: https://github.com/pre-commit/pre-commit-hooks
+  rev: v4.5.0
+  hooks:
+    - id: trailing-whitespace
+    - id: end-of-file-fixer
+      exclude: '.*\.pth$'
+    - id: debug-statements
