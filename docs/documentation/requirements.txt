@@ -1,5 +1,6 @@
 # Latest versions at time of writing.
 mkdocs           # Main documentation generator.
+mkdocstrings[python]
 mkdocs-material  # Theme
 pymdown-extensions  # Markdown extensions e.g. to handle LaTeX.
 mkdocstrings    # Autogenerate documentation from docstrings.

@@ -36,6 +36,26 @@ def f_gamma1(phi1: jnp.array, psi1: jnp.array) -> jnp.array:
 def f_gamma2(
     phi1m: jnp.array, phi2: jnp.array, psi2: jnp.array, delta_s: jnp.array
 ) -> jnp.array:
+    """Gamma1 tensor calculation.
+
+    Parameters
+    ----------
+    psi1m : jnp.array
+        Velocity modal shapes at mid-points (Nmx6xNn)    
+    phi2 : jnp.array
+        Internal force modal shapes (Nmx6xNn)
+    psi2 : jnp.array
+        Strain modal shapes (Nmx6xNn)
+    delta_s : jnp.array
+        1D differential path increments (Nn)
+    
+    Returns
+    -------
+    jnp.array
+        Gamma2 tensor (NmxNmxNm)
+
+    """
+    
     phi1mi = phi1m[:, :, 1:]
     phi2i = phi2[:, :, 1:]
     psi2i = psi2[:, :, 1:]
@@ -55,12 +75,45 @@ def f_gamma2(
 
 @jax.jit
 def f_alpha1(phi1: jnp.array, psi1: jnp.array) -> jnp.array:
+    """Gamma1 tensor calculation.
+
+    Parameters
+    ----------
+    phi1 : jnp.array
+        Velocity modal shapes (Nmx6xNn)
+    psi1 : jnp.array
+        Momentum modal shapes (Nmx6xNn)
+    Returns
+    -------
+    jnp.array
+        alpha1 tensor (NmxNm)
+
+    """
+    
     alpha1 = jnp.einsum("isn,jsn->ij", phi1, psi1)
     return alpha1
 
 
 @jax.jit
 def f_alpha2(phi2: jnp.array, psi2: jnp.array, delta_s: jnp.array) -> jnp.array:
+    """Gamma1 tensor calculation.
+
+    Parameters
+    ----------
+    phi2 : jnp.array
+        Internal force modal shapes (Nmx6xNn)
+    psi2 : jnp.array
+        Strain modal shapes (Nmx6xNn)
+    delta_s : jnp.array
+        1D differential path increments (Nn)
+    
+    Returns
+    -------
+    jnp.array
+        Alpha2 tensor (NmxNm)
+
+    """
+    
     phi2i = phi2[:, :, 1:]
     psi2i = psi2[:, :, 1:]
     delta_si = delta_s[1:]

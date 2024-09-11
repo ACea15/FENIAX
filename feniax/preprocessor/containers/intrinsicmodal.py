@@ -1,5 +1,5 @@
 """
-xxxx
+Containers for the intrinsic modal solution settings
 """
 
 import inspect
@@ -897,7 +897,12 @@ class DobjectiveArgs(Dlibrary):
         if self.components is None:
             object.__setattr__(self, "components", tuple(range(self._numcomponents)))
 
-        
+
+class ADinputType(Enum):
+    POINT_FORCES = 1
+    GUST1 = 2
+    FEM = 3
+            
 @dataclass(frozen=True, kw_only=True)
 class DtoAD(Dlibrary):
     """Algorithm differentiation settings
@@ -952,61 +957,7 @@ class DtoAD(Dlibrary):
                 _numcomponents=self._numcomponents,
             ),
         )
-        
-@dataclass(frozen=True)
-class Dsystems(DataContainer):
-    """Input setting for the range of systems in the simulation
 
-    Parameters
-    ----------
-    sett : dict
-    mapper : dict
-    borrow : dict
-    _fem : Dfem
-    
-    Attributes
-    ----------
-
-    
-    """
-
-    sett: dict[str:dict] = dfield("Settings ", yaml_save=True)
-    mapper: dict[str:Dsystem] = dfield(
-        "Dictionary with systems in the simulation", init=False
-    )
-    borrow: dict[str:str] = dfield(
-        """Borrow settings from another system:
-    if there is only one system, then inactive; otherwise default to take settings from
-    the first system unless specified.
-    """,
-        default=None,
-    )
-    _fem: Dfem = dfield("", default=None, yaml_save=False)
-
-    def __post_init__(self):
-        mapper = dict()
-        counter = 0
-        for k, v in self.sett.items():
-            if self.borrow is None:
-                # pass self._fem to the system here, the others should already have
-                # a reference
-                mapper[k] = initialise_Dclass(v, Dsystem, name=k, _fem=self._fem)
-            elif isinstance(self.borrow, str):
-                assert self.borrow in self.sett.keys(), "borrow not in system names"
-                if k == self.borrow:
-                    mapper[k] = initialise_Dclass(v, Dsystem, name=k)
-                else:
-                    v0 = self.sett[self.borrow]
-                    mapper[k] = initialise_Dclass(v0, Dsystem, name=k, **v)
-            else:
-                if k in self.borrow.keys():
-                    v0 = self.sett[self.borrow[k]]
-                    mapper[k] = initialise_Dclass(v0, Dsystem, name=k, **v)
-                else:
-                    mapper[k] = initialise_Dclass(v, Dsystem, name=k)
-
-            counter += 1
-        object.__setattr__(self, "mapper", mapper)
 
 @dataclass(frozen=True, kw_only=True)
 class Dsystem(DataContainer):
@@ -1259,11 +1210,61 @@ class Dsystem(DataContainer):
         object.__setattr__(self, "label_map", lmap)
         object.__setattr__(self, "label", label)  # f"dq_{label}")
 
+        
+@dataclass(frozen=True)
+class Dsystems(DataContainer):
+    """Input setting for the range of systems in the simulation
 
-class ADinputType(Enum):
-    POINT_FORCES = 1
-    GUST1 = 2
-    FEM = 3
+    Parameters
+    ----------
+    sett : dict
+    mapper : dict
+    borrow : dict
+    _fem : Dfem
+    
+    Attributes
+    ----------
+
+    
+    """
+
+    sett: dict[str:dict] = dfield("Settings ", yaml_save=True)
+    mapper: dict[str:Dsystem] = dfield(
+        "Dictionary with systems in the simulation", init=False
+    )
+    borrow: dict[str:str] = dfield(
+        """Borrow settings from another system:
+    if there is only one system, then inactive; otherwise default to take settings from
+    the first system unless specified.
+    """,
+        default=None,
+    )
+    _fem: Dfem = dfield("", default=None, yaml_save=False)
+
+    def __post_init__(self):
+        mapper = dict()
+        counter = 0
+        for k, v in self.sett.items():
+            if self.borrow is None:
+                # pass self._fem to the system here, the others should already have
+                # a reference
+                mapper[k] = initialise_Dclass(v, Dsystem, name=k, _fem=self._fem)
+            elif isinstance(self.borrow, str):
+                assert self.borrow in self.sett.keys(), "borrow not in system names"
+                if k == self.borrow:
+                    mapper[k] = initialise_Dclass(v, Dsystem, name=k)
+                else:
+                    v0 = self.sett[self.borrow]
+                    mapper[k] = initialise_Dclass(v0, Dsystem, name=k, **v)
+            else:
+                if k in self.borrow.keys():
+                    v0 = self.sett[self.borrow[k]]
+                    mapper[k] = initialise_Dclass(v0, Dsystem, name=k, **v)
+                else:
+                    mapper[k] = initialise_Dclass(v, Dsystem, name=k)
+
+            counter += 1
+        object.__setattr__(self, "mapper", mapper)
     
 
 def generate_docstring(cls: Any) -> Any:

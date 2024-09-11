@@ -86,7 +86,7 @@ plugins:
         default_handler: python
         handlers:
             python:
-              paths: [fem4inas]
+              paths: [feniax]
               options:
                 docstring_style: numpy # 'google' 'numpy', 'rst', etc.
                 filters: ["!^_[^_]"]  # Exclude private members
@@ -115,5 +115,8 @@ nav:
   #- Tutorials
   - Examples: examples.md
   #- Postprocessing
+  - Theoretical background: theory.md
   - Codes:
+      - Inputs: api/inputs.md
       - Modes: api/modes.md
+      - Nonlinear couplings: api/couplings.md

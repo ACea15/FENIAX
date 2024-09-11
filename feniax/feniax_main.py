@@ -1,4 +1,4 @@
-"""FEM4INAS main"""
+"""Main FENIAX"""
 
 import feniax.drivers
 import feniax.preprocessor.configuration as configuration  # Config, ValidateConfig
