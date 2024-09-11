@@ -35,11 +35,12 @@ class Dconst(DataContainer):
        3-component vector with beam direction in local frame
     EMAT : Array
        3x3 Identity matrix
-    EMATT : Array
-       Transpose EMAT
 
     Attributes
     ----------
+    EMATT : Array
+       Transpose EMAT
+    
     """
     
     I3: jnp.ndarray = dfield("3x3 Identity matrix", default=jnp.eye(3))
@@ -65,320 +66,111 @@ class Dconst(DataContainer):
     def __post_init__(self):
         object.__setattr__(self, "EMATT", self.EMAT.T)
 
-
-@dataclass(frozen=True, kw_only=True)
-class DGust(DataContainer):
-    ...
-
-@dataclass(frozen=True, kw_only=True)
-class DGustMc(DGust):
-    """1-cos gust settings (specialisation from DGust)
+@dataclass(frozen=True)
+class Dsimulation(DataContainer):
+    """Simulation settings for the management the way each system is run 
 
     Parameters
     ----------
-    u_inf : float
-           
-    simulation_time : Array
-    intensity : float
-    step : float
-    length : float
-    shift : float
-    panels_dihedral : str | jax.Array
-    collocation_points : str | jax.Array
-    shape : str
-
-    Attributes
-    ----------
-    totaltime : float
-    x : Array
-    time : Array
-    ntime : int
- 
-
+    typeof : str
+        Type of simulation ["single", "serial", "parallel"]
+    workflow : dict
+        Dictionary that defines which system is run after which.
+        The default None implies systems are run in order of the input
     """
-
-    u_inf: float = dfield("", default=None)
-    simulation_time: jnp.ndarray = dfield("", default=None)
-    intensity: float = dfield("", default=None)
-    step: float = dfield("", default=None)
-    length: float = dfield("", default=None)
-    shift: float = dfield("", default=0.0)
-    panels_dihedral: str | jnp.ndarray = dfield("", default=None)
-    collocation_points: str | jnp.ndarray = dfield("", default=None)
-    shape: str = dfield("", default="const")
-    totaltime: float = dfield("", init=False)
-    x: jnp.ndarray = dfield("", init=False)
-    time: jnp.ndarray = dfield("", init=False)
-    ntime: int = dfield("", init=False)
-
-    def __post_init__(self):
-        if isinstance(self.panels_dihedral, (str, pathlib.Path)):
-            object.__setattr__(self, "panels_dihedral", jnp.load(self.panels_dihedral))
-        if isinstance(self.collocation_points, (str, pathlib.Path)):
-            object.__setattr__(
-                self, "collocation_points", jnp.load(self.collocation_points)
-            )
-
-        gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(
-            self.intensity,
-            self.panels_dihedral,
-            self.shift,
-            self.step,
-            self.simulation_time,
-            self.length,
-            self.u_inf,
-            jnp.min(self.collocation_points[:, 0]),
-            jnp.max(self.collocation_points[:, 0]),
-        )
-        object.__setattr__(self, "totaltime", gust_totaltime)
-        object.__setattr__(self, "x", xgust)
-        object.__setattr__(self, "time", time)
-        object.__setattr__(self, "ntime", ntime)
-        # del self.simulation_time
-
-    def _set_gustDiscretization(
-        self,
-        gust_intensity,
-        dihedral,
-        gust_shift,
-        gust_step,
-        simulation_time,
-        gust_length,
-        u_inf,
-        min_collocationpoints,
-        max_collocationpoints,
-    ):
-        #
-        gust_totaltime = gust_length / u_inf
-        xgust = jnp.arange(
-            min_collocationpoints,  # jnp.min(collocation_points[:,0]),
-            max_collocationpoints  # jnp.max(collocation_points[:,0]) +
-            + gust_length
-            + gust_step,
-            gust_step,
-        )
-        time_discretization = (gust_shift + xgust) / u_inf
-        if time_discretization[-1] < simulation_time[-1]:
-            time = jnp.hstack(
-                [
-                    time_discretization,
-                    time_discretization[-1] + 1e-6,
-                    simulation_time[-1],
-                ]
-            )
-        else:
-            time = time_discretization
-        if time[0] != 0.0:
-            time = jnp.hstack([0.0, time[0] - 1e-6, time])
-        ntime = len(time)
-        # npanels = len(collocation_points)
-        return gust_totaltime, xgust, time, ntime
-
-
-@dataclass(frozen=True, kw_only=True)
-class DController(DataContainer):
-    intensity: float
-
+    
+    typeof: str = dfield(
+        "Type of simulation", default="single", options=["single", "serial", "parallel"]
+    )
+    workflow: dict = dfield(
+        """Dictionary that defines which system is run after which.
+        The default None implies systems are run in order of the input""",
+        default=None,
+    )
 
 @dataclass(frozen=True)
-class Daero(DataContainer):
-    u_inf: float = dfield("", default=None)
-    rho_inf: float = dfield("", default=None)
-    q_inf: float = dfield("", init=False)
-    c_ref: float = dfield("", default=None)
-    time: jnp.ndarray = dfield("", default=None)
-    qalpha: jnp.ndarray = dfield("", default=None)
-    qx: jnp.ndarray = dfield("", default=None)
-    elevator_index: jnp.ndarray = dfield("", default=None)
-    elevator_link: jnp.ndarray = dfield("", default=None)
-    #
-    approx: str = dfield("", default="Roger")
-    Qk_struct: list[jnp.ndarray, jnp.ndarray] = dfield(
-        """Sample frquencies and
-    corresponding AICs for the structure""",
-        default=None,
-        yaml_save=False,
+class Ddriver(DataContainer):
+    """Program initialisation settings and trigger of simulations 
+
+    Parameters
+    ----------
+    typeof : str
+    sol_path : str | pathlib.Path
+    compute_fem : bool
+    save_fem : bool
+    ad_on : bool
+    """
+    
+    typeof: str = dfield(
+        "Driver to manage the simulation", default=True, options=["intrinsic"]
     )
-    Qk_gust: list[jnp.ndarray, jnp.ndarray] = dfield("", default=None, yaml_save=False)
-    Qk_controls: list[jnp.ndarray, jnp.ndarray] = dfield(
-        "", default=None, yaml_save=False
-    )
-    Q0_rigid: jnp.ndarray = dfield("", default=None, yaml_save=False)
-    A: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
-    B: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
-    C: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
-    D: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
-    _controls: list[jnp.ndarray, jnp.ndarray] = dfield("", default=None)
-    poles: str | jnp.ndarray = dfield("", default=None)
-    num_poles: int = dfield("", default=None)
-    gust_profile: str = dfield("", default="mc", options=["mc"])
-    # gust_settings: dict = dfield("", default=None, yaml_save=False)
-    gust: dict | DGust = dfield("Gust settings", default=None)
-    controller_name: dict = dfield("", default=None)
-    controller_settings: dict = dfield("", default=None)
-    controller: DController = dfield("", init=False)
+    sol_path: str | pathlib.Path = dfield("Folder path to save results", default="./")
+    compute_fem: bool = dfield("""Compute or load presimulation data""", default=True)
+    save_fem: bool = dfield("""Save presimulation data""", default=True)
+    ad_on: bool = dfield("", default=False)
 
     def __post_init__(self):
-        object.__setattr__(self, "approx", self.approx.capitalize())
-        if self.gust is not None:
-            gust_class = globals()[f"DGust{self.gust_profile.capitalize()}"]
-            object.__setattr__(
-                self,
-                "gust",
-                # initialise_Dclass(self.gust, gust_class))
-                initialise_Dclass(
-                    self.gust, gust_class, u_inf=self.u_inf, simulation_time=self.time
-                ),
-            )
-
-        if self.controller_name is not None:
-            controller_class = globals()[f"DController{self.controller_name.upper()}"]
-            controller_obj = initialise_Dclass(
-                self.controller_settings, controller_class
-            )
-            object.__setattr__(self, "controller", controller_obj)
-        else:
-            object.__setattr__(self, "controller", None)
-        if isinstance(self.poles, (str, pathlib.Path)):
-            object.__setattr__(self, "poles", jnp.load(self.poles))
-        if self.elevator_link is not None:
-            object.__setattr__(self, "elevator_link", jnp.array(self.elevator_link))
-        if self.elevator_index is not None:
-            object.__setattr__(self, "elevator_index", jnp.array(self.elevator_index))
-        if self.poles is not None:
-            object.__setattr__(self, "num_poles", len(self.poles))
-        if self.u_inf is not None and self.rho_inf is not None:
-            q_inf = 0.5 * self.rho_inf * self.u_inf**2
-            object.__setattr__(self, "q_inf", q_inf)
-        if isinstance(self.A, (str, pathlib.Path)):
-            object.__setattr__(self, "A", jnp.load(self.A))
-        if isinstance(self.B, (str, pathlib.Path)):
-            object.__setattr__(self, "B", jnp.load(self.B))
-        if isinstance(self.C, (str, pathlib.Path)):
-            object.__setattr__(self, "C", jnp.load(self.C))
-        if isinstance(self.D, (str, pathlib.Path)):
-            object.__setattr__(self, "D", jnp.load(self.D))
-
-
-@dataclass(frozen=True)
-class Dxloads(DataContainer):
-    follower_forces: bool = dfield("Include point follower forces", default=False)
-    dead_forces: bool = dfield("Include point dead forces", default=False)
-    gravity_forces: bool = dfield("Include gravity in the analysis", default=False)
-    modalaero_forces: bool = dfield("Include aerodynamic forces", default=False)
-    x: jnp.ndarray = dfield("x-axis vector for interpolation", default=None)
-    force_follower: jnp.ndarray = dfield(
-        """Point follower forces
-    (len(x)x6xnum_nodes)""",
-        default=None,
-    )
-    force_dead: jnp.ndarray = dfield(
-        """Point follower forces
-    (len(x)x6xnum_nodes)""",
-        default=None,
-    )
-    follower_points: list[list[int, int]] = dfield(
-        "Follower force points [Node, coordinate]",
-        default=None,
-    )
-    dead_points: list[list[int, int]] = dfield(
-        "Dead force points [Node, coordinate]",
-        default=None,
-    )
-
-    follower_interpolation: list[list[float]] = dfield(
-        "(Linear) interpolation of the follower forces on t \
-        [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]",
-        default=None,
-    )
-    dead_interpolation: list[list[int]] = dfield(
-        "(Linear) interpolation of the dead forces on t \
-        [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]",
-        default=None,
-    )
-
-    gravity: float = dfield("gravity force [m/s]", default=9.807)
-    gravity_vect: jnp.ndarray = dfield("gravity vector", default=jnp.array([0, 0, -1]))
-
-    # gravity_steps: int = dfield("steps in which gravity is applied in trim simulation",
-    #                                    default=1) manage by t
-    # label: str = dfield("""Description of the loading type:
-    # '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
-    #                     init=False)
-    def __post_init__(self):
-        if self.x is not None:
-            object.__setattr__(self, "x", jnp.array(self.x))
-        else:
-            object.__setattr__(self, "x", jnp.linspace(0, 1, 2))
-        # self.label = f"{int(self.follower_forces)}\
-        # {int(self.dead_forces)}{self.gravity_forces}{self.aero_forces}"
-
-    def build_point_follower(self, num_nodes, C06ab):
-        num_interpol_points = len(self.x)
-        forces = jnp.zeros((num_interpol_points, 6, num_nodes))
-        num_forces = len(self.follower_interpolation)
-        for li in range(num_interpol_points):
-            for fi in range(num_forces):
-                fnode = self.follower_points[fi][0]
-                dim = self.follower_points[fi][1]
-                forces = forces.at[li, dim, fnode].set(
-                    self.follower_interpolation[fi][li]
-                )  # Nx_6_Nn
-        force_follower = coordinate_transform(forces, C06ab, jax.lax.Precision.HIGHEST)
-        object.__setattr__(self, "force_follower", force_follower)
-        # return self.force_follower
-
-    def build_point_dead(self, num_nodes):
-        # TODO: add gravity force, also in modes as M@g
-        num_interpol_points = len(self.x)
-        force_dead = jnp.zeros((num_interpol_points, 6, num_nodes))
-        num_forces = len(self.dead_interpolation)
-        for li in range(num_interpol_points):
-            for fi in range(num_forces):
-                fnode = self.dead_points[fi][0]
-                dim = self.dead_points[fi][1]
-                force_dead = force_dead.at[li, dim, fnode].set(
-                    self.dead_interpolation[fi][li]
-                )
-        object.__setattr__(self, "force_dead", force_dead)
-        # return self.force_dead
-
-    def build_gravity(self, Ma, Mfe_order):
-        num_nodes = Mfe_order.shape[1] // 6
-        num_nodes_out = Mfe_order.shape[0] // 6
-        if self.x is not None and len(self.x) > 1:
-            len_x = len(self.x)
-        else:
-            len_x = 2
-        # force_gravity = jnp.zeros((2, 6, num_nodes))
-        gravity = self.gravity * self.gravity_vect
-        gravity_field = jnp.hstack([jnp.hstack([gravity, 0.0, 0.0, 0.0])] * num_nodes)
-        _force_gravity = jnp.matmul(Mfe_order, Ma @ gravity_field)
-        gravity_interpol = jnp.vstack(
-            [xi * _force_gravity for xi in jnp.linspace(0, 1, len_x)]
-        ).T
-        force_gravity = reshape_field(
-            gravity_interpol, len_x, num_nodes_out
-        )  # Becomes  (len_x, 6, Nn)
-        # num_forces = len(self.dead_interpolation)
-        # for li in range(num_interpol_points):
-        #     for fi in range(num_forces):
-        #         fnode = self.dead_points[fi][0]
-        #         dim = self.dead_points[fi][1]
-        #         force_dead = force_dead.at[li, dim, fnode].set(
-        #             self.dead_interpolation[fi][li])
-        object.__setattr__(self, "force_gravity", force_gravity)
-
-
-# @dataclass(frozen=True)
-# class Dgeometry:
-
-#     grid: str | jnp.ndarray = dfield("Grid file or array with Nodes Coordinates, node ID in the FEM and component")
-#     connectivity: dict | list = dfield("Connectivities of components")
-#     X: jnp.ndarray = dfield("Grid coordinates", default=None)
+        if self.sol_path is not None:
+            object.__setattr__(self, "sol_path", pathlib.Path(self.sol_path))
 
 @dataclass(frozen=True)
 class Dfem(DataContainer):
+    """Finite Element and discretisation model settings 
+
+    Parameters
+    ----------
+    connectivity : dict | list
+    folder : str | pathlib.Path
+    Ka_name : str | pathlib.Path
+    Ma_name : str | pathlib.Path
+    Ka : Array
+    Ma : Array
+    Ka0s : Array
+    Ma0s : Array
+    num_modes : int
+    eig_type : str
+    eigenvals : Array
+    eigenvecs : Array
+    eig_cutoff : float
+    eig_names : list
+    grid : str | pathlib.Path | jax.Array | pandas.core.frame.DataFrame
+    Cab_xtol : float
+    df_grid : DataFrame
+    X : Array
+
+    Attributes
+    ----------
+    Xm : Array
+    fe_order : list[int] | jax.Array
+    fe_order_start : int
+    component_vect : list
+    dof_vect : list
+    num_nodes : int
+    component_names : list
+    component_father : dict
+    component_nodes : dict
+    component_names_int : tuple
+    component_father_int : tuple
+    component_nodes_int : tuple
+    component_chain : dict
+    clamped_nodes : list
+    freeDoF : dict
+    clampedDoF : dict
+    total_clampedDoF : int
+    constrainedDoF : int
+    prevnodes : list
+    Mavg : Array
+    Mdiff : Array
+    Mfe_order : Array
+    Mfe_order0s : Array
+    Mload_paths : Array
+    
+    Methods
+    -------
+
+    
+    """
+    
     connectivity: dict | list = dfield("Connectivities of components")
     folder: str | pathlib.Path = dfield(
         """Folder in which to find Ka, Ma,
@@ -419,13 +211,12 @@ class Dfem(DataContainer):
         and associated component""",
         default="structuralGrid",
     )
+    Cab_xtol: float = dfield("Tolerance for building the local frame", default=1e-4)    
     df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)
     X: jnp.ndarray = dfield("Grid coordinates", default=None, yaml_save=False)
     Xm: jnp.ndarray = dfield(
-        "Grid coordinates mid-points", default=None, yaml_save=False
+        "Grid coordinates mid-points", default=None, init=False
     )
-    Cab_xtol: float = dfield("Tolerance for building the local frame", default=1e-4)
-    num_nodes: int = dfield("Number of nodes", init=False)
     fe_order: list[int] | jnp.ndarray = dfield("node ID in the FEM", default=None)
     fe_order_start: int = dfield("fe_order starting with this index", default=0)
     component_vect: list[str] = dfield(
@@ -434,6 +225,7 @@ class Dfem(DataContainer):
     dof_vect: list[str] = dfield(
         "Array with DoF associated to each node (for constrained systems)", default=None
     )
+    num_nodes: int = dfield("Number of nodes", init=False)
     num_nodes: int = dfield("Number of nodes", init=False)
     component_names: list = dfield(
         "Name of components defining the structure", init=False
@@ -598,6 +390,378 @@ class Dfem(DataContainer):
         setobj("component_names_int", component_names_int)
         setobj("component_nodes_int", component_nodes_int)
         setobj("component_father_int", component_father_int)
+            
+@dataclass(frozen=True, kw_only=True)
+class DGust(DataContainer):
+    ...
+
+@dataclass(frozen=True, kw_only=True)
+class DGustMc(DGust):
+    """1-cos gust settings (specialisation from DGust)
+
+    Parameters
+    ----------
+    u_inf : float
+           
+    simulation_time : Array
+    intensity : float
+    step : float
+    length : float
+    shift : float
+    panels_dihedral : str | jax.Array
+    collocation_points : str | jax.Array
+    shape : str
+
+    Attributes
+    ----------
+    totaltime : float
+    x : Array
+    time : Array
+    ntime : int
+ 
+
+    """
+
+    u_inf: float = dfield("", default=None)
+    simulation_time: jnp.ndarray = dfield("", default=None)
+    intensity: float = dfield("", default=None)
+    step: float = dfield("", default=None)
+    length: float = dfield("", default=None)
+    shift: float = dfield("", default=0.0)
+    panels_dihedral: str | jnp.ndarray = dfield("", default=None)
+    collocation_points: str | jnp.ndarray = dfield("", default=None)
+    shape: str = dfield("", default="const")
+    totaltime: float = dfield("", init=False)
+    x: jnp.ndarray = dfield("", init=False)
+    time: jnp.ndarray = dfield("", init=False)
+    ntime: int = dfield("", init=False)
+
+    def __post_init__(self):
+        if isinstance(self.panels_dihedral, (str, pathlib.Path)):
+            object.__setattr__(self, "panels_dihedral", jnp.load(self.panels_dihedral))
+        if isinstance(self.collocation_points, (str, pathlib.Path)):
+            object.__setattr__(
+                self, "collocation_points", jnp.load(self.collocation_points)
+            )
+
+        gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(
+            self.intensity,
+            self.panels_dihedral,
+            self.shift,
+            self.step,
+            self.simulation_time,
+            self.length,
+            self.u_inf,
+            jnp.min(self.collocation_points[:, 0]),
+            jnp.max(self.collocation_points[:, 0]),
+        )
+        object.__setattr__(self, "totaltime", gust_totaltime)
+        object.__setattr__(self, "x", xgust)
+        object.__setattr__(self, "time", time)
+        object.__setattr__(self, "ntime", ntime)
+        # del self.simulation_time
+
+    def _set_gustDiscretization(
+        self,
+        gust_intensity,
+        dihedral,
+        gust_shift,
+        gust_step,
+        simulation_time,
+        gust_length,
+        u_inf,
+        min_collocationpoints,
+        max_collocationpoints,
+    ):
+        #
+        gust_totaltime = gust_length / u_inf
+        xgust = jnp.arange(
+            min_collocationpoints,  # jnp.min(collocation_points[:,0]),
+            max_collocationpoints  # jnp.max(collocation_points[:,0]) +
+            + gust_length
+            + gust_step,
+            gust_step,
+        )
+        time_discretization = (gust_shift + xgust) / u_inf
+        if time_discretization[-1] < simulation_time[-1]:
+            time = jnp.hstack(
+                [
+                    time_discretization,
+                    time_discretization[-1] + 1e-6,
+                    simulation_time[-1],
+                ]
+            )
+        else:
+            time = time_discretization
+        if time[0] != 0.0:
+            time = jnp.hstack([0.0, time[0] - 1e-6, time])
+        ntime = len(time)
+        # npanels = len(collocation_points)
+        return gust_totaltime, xgust, time, ntime
+
+
+@dataclass(frozen=True, kw_only=True)
+class DController(DataContainer):
+    ...
+
+
+@dataclass(frozen=True)
+class Daero(DataContainer):
+    """Modal aerodynamic settings for each system
+
+    Parameters
+    ----------
+    u_inf : float
+    rho_inf : float
+    q_inf : float
+    c_ref : float
+    time : Array
+    qalpha : Array
+    qx : Array
+    elevator_index : Array
+    elevator_link : Array
+    approx : str
+    Qk_struct : list
+    Qk_gust : list
+    Qk_controls : list
+    Q0_rigid : Array
+    A : str | jax.Array
+    B : str | jax.Array
+    C : str | jax.Array
+    D : str | jax.Array
+    _controls : list
+    poles : str | jax.Array
+    num_poles : int
+    gust_profile : str
+    gust : dict | __main__.DGust
+    controller_name : dict
+    controller_settings : dict
+    controller : DController
+
+    """
+    
+    u_inf: float = dfield("", default=None)
+    rho_inf: float = dfield("", default=None)
+    q_inf: float = dfield("", init=False)
+    c_ref: float = dfield("", default=None)
+    time: jnp.ndarray = dfield("", default=None)
+    qalpha: jnp.ndarray = dfield("", default=None)
+    qx: jnp.ndarray = dfield("", default=None)
+    elevator_index: jnp.ndarray = dfield("", default=None)
+    elevator_link: jnp.ndarray = dfield("", default=None)
+    #
+    approx: str = dfield("", default="Roger")
+    Qk_struct: list[jnp.ndarray, jnp.ndarray] = dfield(
+        """Sample frquencies and
+    corresponding AICs for the structure""",
+        default=None,
+        yaml_save=False,
+    )
+    Qk_gust: list[jnp.ndarray, jnp.ndarray] = dfield("", default=None, yaml_save=False)
+    Qk_controls: list[jnp.ndarray, jnp.ndarray] = dfield(
+        "", default=None, yaml_save=False
+    )
+    Q0_rigid: jnp.ndarray = dfield("", default=None, yaml_save=False)
+    A: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
+    B: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
+    C: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
+    D: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
+    _controls: list[jnp.ndarray, jnp.ndarray] = dfield("", default=None)
+    poles: str | jnp.ndarray = dfield("", default=None)
+    num_poles: int = dfield("", default=None)
+    gust_profile: str = dfield("", default="mc", options=["mc"])
+    # gust_settings: dict = dfield("", default=None, yaml_save=False)
+    gust: dict | DGust = dfield("Gust settings", default=None)
+    controller_name: dict = dfield("", default=None)
+    controller_settings: dict = dfield("", default=None)
+    controller: DController = dfield("", init=False)
+
+    def __post_init__(self):
+        object.__setattr__(self, "approx", self.approx.capitalize())
+        if self.gust is not None:
+            gust_class = globals()[f"DGust{self.gust_profile.capitalize()}"]
+            object.__setattr__(
+                self,
+                "gust",
+                # initialise_Dclass(self.gust, gust_class))
+                initialise_Dclass(
+                    self.gust, gust_class, u_inf=self.u_inf, simulation_time=self.time
+                ),
+            )
+
+        if self.controller_name is not None:
+            controller_class = globals()[f"DController{self.controller_name.upper()}"]
+            controller_obj = initialise_Dclass(
+                self.controller_settings, controller_class
+            )
+            object.__setattr__(self, "controller", controller_obj)
+        else:
+            object.__setattr__(self, "controller", None)
+        if isinstance(self.poles, (str, pathlib.Path)):
+            object.__setattr__(self, "poles", jnp.load(self.poles))
+        if self.elevator_link is not None:
+            object.__setattr__(self, "elevator_link", jnp.array(self.elevator_link))
+        if self.elevator_index is not None:
+            object.__setattr__(self, "elevator_index", jnp.array(self.elevator_index))
+        if self.poles is not None:
+            object.__setattr__(self, "num_poles", len(self.poles))
+        if self.u_inf is not None and self.rho_inf is not None:
+            q_inf = 0.5 * self.rho_inf * self.u_inf**2
+            object.__setattr__(self, "q_inf", q_inf)
+        if isinstance(self.A, (str, pathlib.Path)):
+            object.__setattr__(self, "A", jnp.load(self.A))
+        if isinstance(self.B, (str, pathlib.Path)):
+            object.__setattr__(self, "B", jnp.load(self.B))
+        if isinstance(self.C, (str, pathlib.Path)):
+            object.__setattr__(self, "C", jnp.load(self.C))
+        if isinstance(self.D, (str, pathlib.Path)):
+            object.__setattr__(self, "D", jnp.load(self.D))
+
+
+@dataclass(frozen=True)
+class Dxloads(DataContainer):
+    """External loads settings for each system
+
+    Parameters
+    ----------
+    follower_forces : bool
+    dead_forces : bool
+    gravity_forces : bool
+    modalaero_forces : bool
+    x : Array
+    force_follower : Array
+    force_dead : Array
+    follower_points : list
+    dead_points : list
+    follower_interpolation : list
+    dead_interpolation : list
+    gravity : float
+    gravity_vect : Array
+
+    Attributes
+    ----------
+
+    Methods
+    -------
+    build_point_follower
+    build_point_dead
+    build_gravity
+    
+    """
+    follower_forces: bool = dfield("Include point follower forces", default=False)
+    dead_forces: bool = dfield("Include point dead forces", default=False)
+    gravity_forces: bool = dfield("Include gravity in the analysis", default=False)
+    modalaero_forces: bool = dfield("Include aerodynamic forces", default=False)
+    x: jnp.ndarray = dfield("x-axis vector for interpolation", default=None)
+    force_follower: jnp.ndarray = dfield(
+        """Point follower forces
+    (len(x)x6xnum_nodes)""",
+        default=None,
+    )
+    force_dead: jnp.ndarray = dfield(
+        """Point follower forces
+    (len(x)x6xnum_nodes)""",
+        default=None,
+    )
+    follower_points: list[list[int, int]] = dfield(
+        "Follower force points [Node, coordinate]",
+        default=None,
+    )
+    dead_points: list[list[int, int]] = dfield(
+        "Dead force points [Node, coordinate]",
+        default=None,
+    )
+
+    follower_interpolation: list[list[float]] = dfield(
+        "(Linear) interpolation of the follower forces on t \
+        [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]",
+        default=None,
+    )
+    dead_interpolation: list[list[int]] = dfield(
+        "(Linear) interpolation of the dead forces on t \
+        [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]",
+        default=None,
+    )
+
+    gravity: float = dfield("gravity force [m/s]", default=9.807)
+    gravity_vect: jnp.ndarray = dfield("gravity vector", default=jnp.array([0, 0, -1]))
+
+    # gravity_steps: int = dfield("steps in which gravity is applied in trim simulation",
+    #                                    default=1) manage by t
+    # label: str = dfield("""Description of the loading type:
+    # '1001' = follower point forces, no dead forces, no gravity, aerodynamic forces""",
+    #                     init=False)
+    def __post_init__(self):
+        if self.x is not None:
+            object.__setattr__(self, "x", jnp.array(self.x))
+        else:
+            object.__setattr__(self, "x", jnp.linspace(0, 1, 2))
+        # self.label = f"{int(self.follower_forces)}\
+        # {int(self.dead_forces)}{self.gravity_forces}{self.aero_forces}"
+
+    def build_point_follower(self, num_nodes, C06ab):
+        num_interpol_points = len(self.x)
+        forces = jnp.zeros((num_interpol_points, 6, num_nodes))
+        num_forces = len(self.follower_interpolation)
+        for li in range(num_interpol_points):
+            for fi in range(num_forces):
+                fnode = self.follower_points[fi][0]
+                dim = self.follower_points[fi][1]
+                forces = forces.at[li, dim, fnode].set(
+                    self.follower_interpolation[fi][li]
+                )  # Nx_6_Nn
+        force_follower = coordinate_transform(forces, C06ab, jax.lax.Precision.HIGHEST)
+        object.__setattr__(self, "force_follower", force_follower)
+        # return self.force_follower
+
+    def build_point_dead(self, num_nodes):
+        # TODO: add gravity force, also in modes as M@g
+        num_interpol_points = len(self.x)
+        force_dead = jnp.zeros((num_interpol_points, 6, num_nodes))
+        num_forces = len(self.dead_interpolation)
+        for li in range(num_interpol_points):
+            for fi in range(num_forces):
+                fnode = self.dead_points[fi][0]
+                dim = self.dead_points[fi][1]
+                force_dead = force_dead.at[li, dim, fnode].set(
+                    self.dead_interpolation[fi][li]
+                )
+        object.__setattr__(self, "force_dead", force_dead)
+        # return self.force_dead
+
+    def build_gravity(self, Ma, Mfe_order):
+        num_nodes = Mfe_order.shape[1] // 6
+        num_nodes_out = Mfe_order.shape[0] // 6
+        if self.x is not None and len(self.x) > 1:
+            len_x = len(self.x)
+        else:
+            len_x = 2
+        # force_gravity = jnp.zeros((2, 6, num_nodes))
+        gravity = self.gravity * self.gravity_vect
+        gravity_field = jnp.hstack([jnp.hstack([gravity, 0.0, 0.0, 0.0])] * num_nodes)
+        _force_gravity = jnp.matmul(Mfe_order, Ma @ gravity_field)
+        gravity_interpol = jnp.vstack(
+            [xi * _force_gravity for xi in jnp.linspace(0, 1, len_x)]
+        ).T
+        force_gravity = reshape_field(
+            gravity_interpol, len_x, num_nodes_out
+        )  # Becomes  (len_x, 6, Nn)
+        # num_forces = len(self.dead_interpolation)
+        # for li in range(num_interpol_points):
+        #     for fi in range(num_forces):
+        #         fnode = self.dead_points[fi][0]
+        #         dim = self.dead_points[fi][1]
+        #         force_dead = force_dead.at[li, dim, fnode].set(
+        #             self.dead_interpolation[fi][li])
+        object.__setattr__(self, "force_gravity", force_gravity)
+
+
+# @dataclass(frozen=True)
+# class Dgeometry:
+
+#     grid: str | jnp.ndarray = dfield("Grid file or array with Nodes Coordinates, node ID in the FEM and component")
+#     connectivity: dict | list = dfield("Connectivities of components")
+#     X: jnp.ndarray = dfield("Grid coordinates", default=None)
 
 
 # @dataclass(frozen=True)
@@ -606,22 +770,6 @@ class Dfem(DataContainer):
 #     load: bool = dfield("""Load presimulation data vs
 #     load from solution_path""",
 #                                          default=True)
-
-
-@dataclass(frozen=True)
-class Ddriver(DataContainer):
-    typeof: str = dfield(
-        "Driver to manage the simulation", default=True, options=["intrinsic"]
-    )
-    sol_path: str | pathlib.Path = dfield("Folder path to save results", default="./")
-    compute_fem: bool = dfield("""Compute or load presimulation data""", default=True)
-    save_fem: bool = dfield("""Save presimulation data""", default=True)
-    ad_on: bool = dfield("", default=False)
-
-    def __post_init__(self):
-        if self.sol_path is not None:
-            object.__setattr__(self, "sol_path", pathlib.Path(self.sol_path))
-
 
 class SystemSolution(Enum):
     STATIC = 1
@@ -636,7 +784,6 @@ class SystemSolution(Enum):
 SimulationTarget = Enum("TARGET", ["LEVEL", "TRIM", "MANOEUVRE", "TURBULENCE"])
 BoundaryCond = Enum("BC1", ["CLAMPED", "FREE", "PRESCRIBED"])
 
-
 class StateTrack:
     def __init__(self):
         self.states = dict()
@@ -650,11 +797,24 @@ class StateTrack:
 
 @dataclass(frozen=True, kw_only=True)
 class Dlibrary(DataContainer):
+    """Solution library"""
     function: str = dfield("Function wrapper calling the library", default=None)
 
 
 @dataclass(frozen=True, kw_only=True)
 class DdiffraxOde(Dlibrary):
+    """Settings for Diffrax ODE solvers
+
+    Parameters
+    ----------
+    root_finder : dict
+    stepsize_controller : dict
+    solver_name : str
+    save_at : jax.Array | list
+    max_steps : int
+
+    """
+    
     root_finder: dict = dfield("", default=None)
     stepsize_controller: dict = dfield("", default=None)
     solver_name: str = dfield("", default="Dopri5")
@@ -667,6 +827,12 @@ class DdiffraxOde(Dlibrary):
 
 @dataclass(frozen=True, kw_only=True)
 class Drunge_kuttaOde(Dlibrary):
+    """Solution settings for Runge-Kutta in-house solvers
+
+    Parameters
+    ----------
+    solver_name : str
+    """
     solver_name: str = dfield("", default="rk4")
 
     def __post_init__(self):
@@ -675,6 +841,18 @@ class Drunge_kuttaOde(Dlibrary):
 
 @dataclass(frozen=True, kw_only=True)
 class DdiffraxNewton(Dlibrary):
+    """Settings for Diffrax Newton solver
+
+    Parameters
+    ----------
+    rtol : float
+    atol : float
+    max_steps : int
+    norm : str
+    kappa : float
+
+    """
+    
     rtol: float = dfield("", default=1e-7)
     atol: float = dfield("", default=1e-7)
     max_steps: int = dfield("", default=100)
@@ -687,6 +865,22 @@ class DdiffraxNewton(Dlibrary):
 
 @dataclass(frozen=True, unsafe_hash=True, kw_only=True)
 class DobjectiveArgs(Dlibrary):
+    """Settings for the objective function in the AD
+
+    Parameters
+    ----------
+    function : str
+    nodes : tuple
+    t : tuple
+    components : tuple
+    axis : int
+    _numtime : int
+    _numnodes : int
+    _numcomponents : int
+
+    """
+
+    
     nodes: tuple = dfield("", default=None)
     t: tuple = dfield("", default=None)
     components: tuple = dfield("", default=None)
@@ -703,14 +897,27 @@ class DobjectiveArgs(Dlibrary):
         if self.components is None:
             object.__setattr__(self, "components", tuple(range(self._numcomponents)))
 
-
-class ADinputType(Enum):
-    POINT_FORCES = 1
-    GUST1 = 2
-    FEM = 3
-    
+        
 @dataclass(frozen=True, kw_only=True)
 class DtoAD(Dlibrary):
+    """Algorithm differentiation settings
+
+    Parameters
+    ----------
+    function : str
+    inputs : dict
+    input_type : str
+    grad_type : str
+    objective_fun : str
+    objective_var : str
+    objective_args : dict
+    _numnodes : int
+    _numtime : int
+    _numcomponents : int
+    label : str
+
+    """
+    
     inputs: dict = dfield("", default=None, yaml_save=False)
     input_type: str = dfield("", default=None, options=ADinputType._member_names_)
     grad_type: str = dfield(
@@ -724,7 +931,7 @@ class DtoAD(Dlibrary):
     )
     objective_fun: str = dfield("", default=None)
     objective_var: str = dfield("", default=None)
-    objective_args: dict = dfield("", default=None, yaml_save=False)
+    objective_args: dict | DobjectiveArgs  = dfield("", default=None, yaml_save=False)
     _numnodes: int = dfield("", default=None, yaml_save=False)
     _numtime: int = dfield("", default=None, yaml_save=False)
     _numcomponents: int = dfield("", default=6, yaml_save=False)
@@ -745,10 +952,99 @@ class DtoAD(Dlibrary):
                 _numcomponents=self._numcomponents,
             ),
         )
+        
+@dataclass(frozen=True)
+class Dsystems(DataContainer):
+    """Input setting for the range of systems in the simulation
 
+    Parameters
+    ----------
+    sett : dict
+    mapper : dict
+    borrow : dict
+    _fem : Dfem
+    
+    Attributes
+    ----------
+
+    
+    """
+
+    sett: dict[str:dict] = dfield("Settings ", yaml_save=True)
+    mapper: dict[str:Dsystem] = dfield(
+        "Dictionary with systems in the simulation", init=False
+    )
+    borrow: dict[str:str] = dfield(
+        """Borrow settings from another system:
+    if there is only one system, then inactive; otherwise default to take settings from
+    the first system unless specified.
+    """,
+        default=None,
+    )
+    _fem: Dfem = dfield("", default=None, yaml_save=False)
+
+    def __post_init__(self):
+        mapper = dict()
+        counter = 0
+        for k, v in self.sett.items():
+            if self.borrow is None:
+                # pass self._fem to the system here, the others should already have
+                # a reference
+                mapper[k] = initialise_Dclass(v, Dsystem, name=k, _fem=self._fem)
+            elif isinstance(self.borrow, str):
+                assert self.borrow in self.sett.keys(), "borrow not in system names"
+                if k == self.borrow:
+                    mapper[k] = initialise_Dclass(v, Dsystem, name=k)
+                else:
+                    v0 = self.sett[self.borrow]
+                    mapper[k] = initialise_Dclass(v0, Dsystem, name=k, **v)
+            else:
+                if k in self.borrow.keys():
+                    v0 = self.sett[self.borrow[k]]
+                    mapper[k] = initialise_Dclass(v0, Dsystem, name=k, **v)
+                else:
+                    mapper[k] = initialise_Dclass(v, Dsystem, name=k)
+
+            counter += 1
+        object.__setattr__(self, "mapper", mapper)
 
 @dataclass(frozen=True, kw_only=True)
 class Dsystem(DataContainer):
+    """System settings for the corresponding equations to be solved
+
+    Parameters
+    ----------
+    name : str
+    _fem : Dfem
+    solution : str
+    target : str
+    bc1 : str
+    save : bool
+    xloads : dict | __main__.Dxloads
+    aero : dict | __main__.Daero
+    t0 : float
+    t1 : float
+    tn : int
+    dt : float
+    t : Array
+    solver_library : str
+    solver_function : str
+    solver_settings : str
+    q0treatment : int
+    rb_treatment : int
+    nonlinear : bool
+    residualise : bool
+    residual_modes : int
+    label : str
+    label_map : dict
+    states : dict
+    num_states : int
+    init_states : dict
+    init_mapper : dict
+    ad : DtoAD
+
+    """
+    
     name: str = dfield("System name")
     _fem: Dfem = dfield("", default=None, yaml_save=False)
     solution: str = dfield(
@@ -873,7 +1169,7 @@ class Dsystem(DataContainer):
         if self.label is None:
             self.build_label()
 
-    def build_states(self, num_modes, num_nodes):
+    def build_states(self, num_modes: int, num_nodes: int):
         tracker = StateTrack()
         # TODO: keep upgrading/ add residualise
         if self.solution == "static" or self.solution == "staticAD":
@@ -964,61 +1260,11 @@ class Dsystem(DataContainer):
         object.__setattr__(self, "label", label)  # f"dq_{label}")
 
 
-@dataclass(frozen=True)
-class Dsystems(DataContainer):
-    sett: dict[str:dict] = dfield("Settings ", yaml_save=True)
-    mapper: dict[str:Dsystem] = dfield(
-        "Dictionary with systems in the simulation", init=False
-    )
-    borrow: dict[str:str] = dfield(
-        """Borrow settings from another system:
-    if there is only one system, then inactive; otherwise default to take settings from
-    the first system unless specified.
-    """,
-        default=None,
-    )
-    _fem: Dfem = dfield("", default=None, yaml_save=False)
-
-    def __post_init__(self):
-        mapper = dict()
-        counter = 0
-        for k, v in self.sett.items():
-            if self.borrow is None:
-                # pass self._fem to the system here, the others should already have
-                # a reference
-                mapper[k] = initialise_Dclass(v, Dsystem, name=k, _fem=self._fem)
-            elif isinstance(self.borrow, str):
-                assert self.borrow in self.sett.keys(), "borrow not in system names"
-                if k == self.borrow:
-                    mapper[k] = initialise_Dclass(v, Dsystem, name=k)
-                else:
-                    v0 = self.sett[self.borrow]
-                    mapper[k] = initialise_Dclass(v0, Dsystem, name=k, **v)
-            else:
-                if k in self.borrow.keys():
-                    v0 = self.sett[self.borrow[k]]
-                    mapper[k] = initialise_Dclass(v0, Dsystem, name=k, **v)
-                else:
-                    mapper[k] = initialise_Dclass(v, Dsystem, name=k)
-
-            counter += 1
-        object.__setattr__(self, "mapper", mapper)
-
-
-@dataclass(frozen=True)
-class Dsimulation(DataContainer):
-    typeof: str = dfield(
-        "Type of simulation", default="single", options=["single", "serial", "parallel"]
-    )
-    workflow: dict = dfield(
-        """Dictionary that defines which system is run after which.
-        The default None implies systems are run in order of the input""",
-        default=None,
-    )
-    save_objs: bool = dfield(
-        """Saves the objects output by the solution""", default=False
-    )
-
+class ADinputType(Enum):
+    POINT_FORCES = 1
+    GUST1 = 2
+    FEM = 3
+    
 
 def generate_docstring(cls: Any) -> Any:
     """
