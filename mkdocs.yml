@@ -117,7 +117,9 @@ nav:
   #     - Theoretical Background:
   #     - Running:
   #- Tutorials
-  - Examples: examples.md
+  - Examples:
+      - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
+      - CPC_examples: examples/cpc_examples.md
   #- Postprocessing
   - Theoretical background:
       - Intrinsic modal description: theory_intrinsic.md

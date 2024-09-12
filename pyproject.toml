@@ -52,6 +52,7 @@ postprocessing = ["matplotlib",
                   "plotly",
             	  "pyvista",
 		  "streamlit",
+		  "kaleido",
               	  "stpyvista",
             	  "streamlit-pdf-viewer"
 		  ]
@@ -62,6 +63,7 @@ all = ["pytest",
        "plotly",
        "pyvista",
        "streamlit",
+       "kaleido",
        "stpyvista",
        "streamlit-pdf-viewer"
       ]

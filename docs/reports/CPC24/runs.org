@@ -79,7 +79,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (setq export_blocks  "results")  
 #+end_src
 
-* Load modules :noexport: 
+* Load modules 
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
@@ -133,7 +133,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 
 #+end_src
 
-* Run models :noexport:  
+* Run models 
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
 :END:
@@ -731,7 +731,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   run(inp, label=name)
 #+end_src
 
-*** XRF7
+*** COMMENT XRF7
 #+NAME: XRF7
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
@@ -755,7 +755,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
   run(inp, label=name)
 #+end_src
-*** XRF8
+*** COMMENT XRF8
 #+NAME: XRF8
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 

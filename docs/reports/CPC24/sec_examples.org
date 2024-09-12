@@ -1,6 +1,6 @@
 #+setupfile: ./config.org
 # https://stackoverflow.com/questions/44414584/how-to-export-a-org-mode-table-to-latex-with-the-correct-placement-h
-* House keeping  :noexport: 
+* House keeping  
 #+begin_src elisp :results none :tangle no :exports none
   (add-to-list 'org-structure-template-alist
   '("sp" . "src python :session (print pythonShell)"))
@@ -12,19 +12,19 @@
         '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
           "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "feniax.)
+  (pyvenv-workon "feniax")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
   (setq Veval_blocks "yes") ;; yes, no, no-export 
-  (setq Veval_blocks_run "no-export")
+  (setq Veval_blocks_run "yes")
   (setq pythonShell "py2")
   (setq Vpics "png") ;; yes, no, no-export   
   ;; export_blocks: code, results, both, none
-  (setq export_blocks  "results")  
+  (setq export_blocks  "both")  
 #+end_src
 
-* Load modules :noexport: 
+* Load modules 
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
@@ -77,7 +77,8 @@
   from tabulate import tabulate
 
 #+end_src
-* Plotting :noexport: 
+
+* Plotting 
 :PROPERTIES:
 :header-args:  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
@@ -954,7 +955,7 @@ Geometric nonlinearities are better illustrated by representing a sectional view
 #+CAPTION: Static geometrically-nonlinear effects on the aircraft main wing 
 #+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: SPWingsection
-[[file:figs/SPWingsection.png]]
+[[file:]]
 
 The tolerance in the Newton solver was set to $10^{-6}$ in all cases.
 A convergence analysis with the number of modes in the solution is presented in Fig. [[SPstatic_convergence]].
