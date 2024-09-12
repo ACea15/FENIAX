@@ -119,11 +119,19 @@ nav:
   #- Tutorials
   - Examples:
       # - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
-      - CPC_examples: examples/cpc_examples.md
+      - Sail Plane static response: examples/SailPlane/main.md
+      - Wing nonlinear dynamics: examples/wingSP/main.md
+      - Free flying shell structure: examples/SimoFS/main.md
+      - Full aircraft (clamped) gust verification: examples/XRF1/main.md
+      - Full aircraft trim + dynamic loads: examples/XRF1trim/main.md
   #- Postprocessing
   - Theoretical background:
       - Intrinsic modal description: theory_intrinsic.md
-  - Codes:
+  - Architecture:
+      - JAX: JAX.md
+      - UML description: UML.md
+      - Program inputs: inputs.md 
+  - Code Base:
       - Inputs: api/inputs.md
       - Modes: api/modes.md
       - Nonlinear couplings: api/couplings.md
