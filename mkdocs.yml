@@ -61,13 +61,17 @@ theme:
         repo: fontawesome/brands/github  # GitHub logo in top right
         # logo: "material/math-integral-box"  #  logo in top left
 
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+        
 markdown_extensions:
-    - pymdownx.arithmatex:  # Render LaTeX via MathJax
-        generic: true
+    - mdx_math                      
+    # - pymdownx.arithmatex:  # Render LaTeX via MathJax
+    #     generic: true
     - pymdownx.superfences  # Seems to enable syntax highlighting when used with the Material theme.
     - pymdownx.details  # Allowing hidden expandable regions denoted by ???
     - pymdownx.snippets:  # Include one Markdown file into another
-        base_path: docs
+        base_path: docs/documentation
     - admonition
     - toc:
         permalink: "¤"  # Adds a clickable permalink to each section heading
@@ -105,7 +109,7 @@ plugins:
                     - show_source: false  # don't include source code
                     - members_order: source  # order methods according to their order of definition in the source code, not alphabetical order
                     - heading_level: 4  # Makes everything top-level be <h4>. Child entries will be <h5> etc., but because of toc_depth, above, (deliberately) won't appear in the TOC.
-                      
+
 nav:
   - Home: index.md
   # - Getting started
@@ -115,7 +119,8 @@ nav:
   #- Tutorials
   - Examples: examples.md
   #- Postprocessing
-  - Theoretical background: theory.md
+  - Theoretical background:
+      - Intrinsic modal description: theory_intrinsic.md
   - Codes:
       - Inputs: api/inputs.md
       - Modes: api/modes.md
