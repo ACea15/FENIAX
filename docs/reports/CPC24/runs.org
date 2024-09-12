@@ -68,7 +68,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "feniax.)
+  (pyvenv-workon "feniax")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -76,7 +76,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (setq Veval_blocks_run "yes")
   (setq pythonShell "py2")
   ;; export_blocks: code, results, both, none
-  (setq export_blocks  "results")  
+  (setq export_blocks  "both")  
 #+end_src
 
 * Load modules 

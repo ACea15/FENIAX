@@ -118,7 +118,7 @@ nav:
   #     - Running:
   #- Tutorials
   - Examples:
-      - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
+      # - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
       - CPC_examples: examples/cpc_examples.md
   #- Postprocessing
   - Theoretical background:
