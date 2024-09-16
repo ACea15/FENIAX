@@ -1,7 +1,4 @@
-# #+TITLE: JAX-based Aeroelastic Simulation Engine for Differentiable Aircraft Dynamics
 #+TITLE: JAX-based Aeroelastic Simulation Engine for Differentiable Aircraft Dynamics
-# #+TITLE: JAX-based Simulation Engine for Differentiable Dynamics of Flexible Aircraft
-# #A Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture Based on JAX
 #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+BIBLIOGRAPHY:~/Documents/Engineering.bib
 :LATEX_PROPERTIES:
@@ -25,37 +22,8 @@
 #+LATEX_HEADER: \usepackage{amsfonts}
 #+LATEX_HEADER: \usepackage{enumitem}
 #+LATEX_HEADER: \usepackage{mathalpha}
-#+LATEX_HEADER: \renewcommand{\figurename}{\bf \small Figure}
-#+LATEX_HEADER: \renewcommand{\tablename}{\bf \small Table}
-#+LATEX_HEADER: \newcommand{\de}{\delta}
-#+LATEX_HEADER: \newcommand{\ve}{\text{v}}
-#+LATEX_HEADER: \newcommand{\lo}{\mathcal{L}}
-#+LATEX_HEADER: \newcommand{\vt}{\overline{\delta\bm{\theta}}}
-#+LATEX_HEADER: \newcommand{\vu}{\overline{\delta\bm{u}}}
-#+LATEX_HEADER: \newcommand{\e}{\bm{\mathfrak{e}}}
-#+LATEX_HEADER: \newcommand{\E}{\bm{\mathbb{E}}}
-#+LATEX_HEADER: \newcommand{\T}{\bm{\mathcal{T}}}
-#+LATEX_HEADER: \newcommand{\fra}{(\mathtt{1})}
-#+LATEX_HEADER: \newcommand{\frb}{(\mathtt{2})}
-#+LATEX_HEADER: \newcommand{\fri}{(\mathfrak{i})}
-#+LATEX_HEADER: \newcommand{\bs}[1]{\boldsymbol{#1}}
-#+LATEX_HEADER: \newcommand{\rhoinf}{\rho}	
-#+LATEX_HEADER: \newcommand{\Vinf}{U}
-#+LATEX_HEADER: \newcommand{\Cl}[1]{c_{l_{#1}}}
-#+LATEX_HEADER: \newcommand{\barCl}[1]{\bar{c}_{l_{#1}}}
-#+LATEX_HEADER: \newcommand{\Cm}[1]{c_{m_{#1}}}
-#+LATEX_HEADER: \newcommand{\barCm}[1]{\bar{c}_{m_{#1}}}
-#+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
-
 :END:
 
-#+begin_abstract
-A novel methodology is presented in this paper for the structural and aeroelastic analysis of large engineering systems with slender components, such as aircraft.
-Leveraging on the numerical library JAX, a nonlinear formulation based on velocities and strains enables a highly vectorised codebase that is especially suitable for the integration of aerodynamic loads which naturally appear as follower forces. On top of that, JAX automatic differentiation capabilities lead to a differentiable software that can be embedded into broader multidisciplinary frameworks. 
-The general solution starts from a linear Finite-Element (FE) model of arbitrary complexity, on which a structural model order reduction is performed. A nonlinear description of the reduced model follows with the corresponding reconstruction of the full 3D dynamics. Both highly accurate and efficient solutions for representative aircraft models are shown. An extensive verification has been carried out by comparison with MSC Nastran full-FE linear and nonlinear solutions.
-Furthermore the nonlinear gust response of an industrial configuration with over half a million degrees-of-freedom is computed, and it is faster than its frequency-based, linear equivalent as implemented by commercial packages. Therefore this could be harnessed by aircraft loads engineers to add geometrically nonlinear effects to their existing workflows at no extra computational effort.
-Finally, automatic differentiation on both static and dynamic problems is validated against finite-differences, which combined with a near real-time performance of the solvers opens new possibilities for aeroelastic studies and design optimisation.
-#+end_abstract
 # https://stackoverflow.com/questions/44414584/how-to-export-a-org-mode-table-to-latex-with-the-correct-placement-h
 * House keeping  :noexport: 
 #+begin_src elisp :results none :tangle no :exports none
@@ -72,8 +40,8 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "yes") ;; yes, no, no-export 
-  (setq Veval_blocks_run "yes")
+  (setq Veval_blocks "no-export") ;; yes, no, no-export 
+  (setq Veval_blocks_run "no-export")
   (setq pythonShell "py2")
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "both")  
@@ -114,21 +82,15 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 #+NAME: PYTHONMODULES
 #+begin_src python  :results none  :tangle ./results/run.py
   import pathlib
-  import plotly.express as px
   import pickle
   import jax.numpy as jnp
   import jax
   import pandas as pd
-  from plotly.subplots import make_subplots
-  import numpy as np
   import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
   from feniax.preprocessor.inputs import Inputs
   import feniax.feniax_main
-  import feniax.plotools.uplotly as uplotly
-  import feniax.plotools.utils as putils
   import feniax.preprocessor.solution as solution
   import feniax.unastran.op2reader as op2reader
-  import feniax.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
 
 #+end_src
@@ -137,7 +99,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
 :END:
-
+** Helper functions
 #+begin_src python :results none
 
   import time
@@ -165,7 +127,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 #+end_src
 
 
-- Models run on this exercise:
+** Models run on this exercise:
 
   | Label | Model         | NumModes | Solver                      |     tol/dt | settings       |
   |-------+---------------+----------+-----------------------------+------------+----------------|
@@ -208,7 +170,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 #+end_comment
 
 ** SailPlane
-*** Runs
+
 #+NAME: SP
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
   SP_folder = feniax.PATH / "../examples/SailPlane"
@@ -324,7 +286,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
 #+end_src
 
 ** wingSP
-*** Runs
+
 #+NAME: wingSP
 #+begin_src python :results none :eval (print Veval_blocks_run)
 
@@ -340,7 +302,7 @@ Finally, automatic differentiation on both static and dynamic problems is valida
   inp.simulation.typeof = "single"
   inp.systems.sett.s1.solution = "dynamic"
   inp.systems.sett.s1.t1 = 15.
-  inp.systems.sett.s1.solver_settings = dict(solver_name="Dopri5")#, max_steps=) #"rk4")
+  inp.systems.sett.s1.solver_settings = dict(solver_name="Dopri5", max_steps=30000) #"rk4")
   inp.systems.sett.s1.solver_library = "diffrax"
   inp.systems.sett.s1.solver_function = "ode"
   inp.systems.sett.s1.xloads.follower_forces = True
@@ -553,7 +515,7 @@ Read Nastran
   figname
 #+end_src
 
-** XRF1
+** XRF
 :PROPERTIES:
 :header-args+: 
 :END:
@@ -731,7 +693,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
   run(inp, label=name)
 #+end_src
 
-*** COMMENT XRF7
+*** XRF7
 #+NAME: XRF7
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 
@@ -755,7 +717,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
   run(inp, label=name)
 #+end_src
-*** COMMENT XRF8
+*** XRF8
 #+NAME: XRF8
 #+begin_src python  :noweb yes :results none :var name=(org-element-property :name (org-element-context))
 

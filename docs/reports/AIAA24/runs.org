@@ -15,9 +15,9 @@
   ;; Veval_blocks_run -> eval blocks to obtain results
   (setq Veval_blocks "yes") ;; yes, no, no-export 
   (setq Veval_blocks_run "yes")
-  (setq pythonShell "py1org")
+  (setq pythonShell "pyAIAA24")
   ;; export_blocks: code, results, both, none
-  (setq export_blocks  "results")
+  (setq export_blocks  "both")
   (setq results_folder ".")
 #+end_src
 
@@ -165,7 +165,7 @@
                                                  ]
   run(inp, label=name)
 #+end_src
-*** COMMENT 50 nodes
+*** 50 nodes
 50 node discretization of asets
 **** 2D_300m
 

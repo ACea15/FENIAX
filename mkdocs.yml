@@ -63,12 +63,30 @@ theme:
 
 extra_javascript:
   - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML
-        
+
 markdown_extensions:
+    - tables
+    - pymdownx.extra:
+        pymdownx.superfences:
+          custom_fences:
+           - name: mermaid
+             class: mermaid
+             format: !!python/name:pymdownx.superfences.fence_code_format  
+  
     - mdx_math                      
     # - pymdownx.arithmatex:  # Render LaTeX via MathJax
     #     generic: true
-    - pymdownx.superfences  # Seems to enable syntax highlighting when used with the Material theme.
+    # - pymdownx.superfences:
+        # make exceptions to highlighting of code:
+      # custom_fences:
+      #   - name: mermaid
+      #     class: mermaid
+          #format: !!python/name:mermaid2.fence_mermaid_custom    
+    # - pymdownx.superfences:
+    #   custom_fences:
+    #     - name: mermaid
+    #     - class: mermaid
+    #     - format: !!python/name:pymdownx.superfences.fence_code_format      
     - pymdownx.details  # Allowing hidden expandable regions denoted by ???
     - pymdownx.snippets:  # Include one Markdown file into another
         base_path: docs/documentation
@@ -76,7 +94,6 @@ markdown_extensions:
     - toc:
         permalink: "¤"  # Adds a clickable permalink to each section heading
         toc_depth: 4  # Prevents h5, h6 (i.e. methods) from showing up in the TOC.
-
 plugins:
     - search  # default search plugin; needs manually re-enabling when using any other plugins
     - autorefs  # Cross-links to headings
@@ -86,6 +103,8 @@ plugins:
         #     - "_overrides"
         #     - "_static/README.md"
     - mknotebooks  # Jupyter notebooks
+    #- mkdocs-jupyter:
+    #      ignore_h1_titles: True    
     - mkdocstrings:
         default_handler: python
         handlers:
@@ -118,11 +137,13 @@ nav:
   #     - Running:
   #- Tutorials
   - Examples:
-      # - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
-      - Sail Plane static response: examples/SailPlane/main.md
-      - Wing nonlinear dynamics: examples/wingSP/main.md
+      # - Structural and aeroelastic response of clamped Aircraft: 
+      # - Free-flying ultra flexible structure
+    # - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
+      - Sail Plane static response: examples/SailPlane/sailplane_nb.md
+      - Wing nonlinear dynamics: examples/wingSP/wingSP_nb.md
       - Free flying shell structure: examples/SimoFS/main.md
-      - Full aircraft (clamped) gust verification: examples/XRF1/main.md
+      - Full aircraft (clamped) gust verification: examples/XRF1/xrf1_nb.md
       - Full aircraft trim + dynamic loads: examples/XRF1trim/main.md
   #- Postprocessing
   - Theoretical background:
