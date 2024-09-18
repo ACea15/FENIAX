@@ -1,6 +1,6 @@
 # Getting Started
 
-Welcome to the `Getting Started` guide for **My Project**.
+Welcome to the `Getting Started` guide for **FENIAX**.
 
 ## Installation
 

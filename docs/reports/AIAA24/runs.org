@@ -9,7 +9,7 @@
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "feniax.ev")
+  (pyvenv-workon "feniax")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -34,7 +34,7 @@
   import datetime
   import os
   import shutil
-  REMOVE_RESULTS = False
+  REMOVE_RESULTS = True
   #   for root, dirs, files in os.walk('/path/to/folder'):
   #       for f in files:
   #           os.unlink(os.path.join(root, f))
@@ -108,7 +108,7 @@
 
 - Models run on this exercise:
 
-** SimoFSpaguetti
+** COMMENT SimoFSpaguetti
 
 #+NAME: rrb
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))

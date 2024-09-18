@@ -71,8 +71,7 @@ markdown_extensions:
           custom_fences:
            - name: mermaid
              class: mermaid
-             format: !!python/name:pymdownx.superfences.fence_code_format  
-  
+             format: !!python/name:pymdownx.superfences.fence_code_format
     - mdx_math                      
     # - pymdownx.arithmatex:  # Render LaTeX via MathJax
     #     generic: true
@@ -131,15 +130,11 @@ plugins:
 
 nav:
   - Home: index.md
-  # - Getting started
-  #     - Installation:
-  #     - Theoretical Background:
-  #     - Running:
-  #- Tutorials
+  - Getting started: getting_started.md
   - Examples:
       # - Structural and aeroelastic response of clamped Aircraft: 
       # - Free-flying ultra flexible structure
-    # - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
+      # - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
       - Sail Plane static response: examples/SailPlane/sailplane_nb.md
       - Wing nonlinear dynamics: examples/wingSP/wingSP_nb.md
       - Free flying shell structure: examples/SimoFS/main.md
@@ -152,7 +147,7 @@ nav:
       - JAX: JAX.md
       - UML description: UML.md
       - Program inputs: inputs.md 
-  - Code Base:
+  - Code base:
       - Inputs: api/inputs.md
       - Modes: api/modes.md
       - Nonlinear couplings: api/couplings.md

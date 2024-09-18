@@ -41,6 +41,8 @@ pip install -e .[all]
 pytest tests
 ```
 
+## Documentation
+Available at https://acea15.github.io/FENIAX/
 ## Examples
 
 The folder examples contains various instances with models, input files and postprocessing of the results. See each README.org for for more info.
