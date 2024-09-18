@@ -132,7 +132,8 @@ def serialize(obj: Config | DataContainer):
                     ):
                         dictionary[k] = [
                             v,
-                            obj.__dataclass_fields__[k].metadata["description"],
+                            # obj.__dataclass_fields__[k].metadata["description"],
+                            obj.attributes.get(k, "No description available")
                         ]
                 else:
                     dictionary[k] = [v, " "]

@@ -5,8 +5,10 @@ Containers for the intrinsic modal solution settings
 import inspect
 import math
 import pathlib
+import re
 import sys
-from dataclasses import dataclass, fields, is_dataclass
+import dataclasses
+from dataclasses import dataclass, fields, is_dataclass, field
 from enum import Enum
 from typing import Any
 
@@ -21,9 +23,37 @@ from feniax.intrinsic.functions import (
 )
 from feniax.preprocessor.containers.data_container import DataContainer
 from feniax.preprocessor.utils import dfield, initialise_Dclass, load_jnp
+from functools import wraps
 
+def filter_kwargs(cls):
+    @wraps(cls)
+    def wrapper(*args, **kwargs):
+        # Ensure the class is a dataclass
+        if not is_dataclass(cls):
+            raise TypeError(f"{cls.__name__} is not a dataclass")
+        
+        # Retrieve the field names for the target dataclass
+        dataclass_field_names = {f.name for f in fields(cls)}
+        
+        # Separate the valid arguments and extra keyword arguments
+        valid_kwargs = {k: v for k, v in kwargs.items() if k in dataclass_field_names}
+        # extra_kwargs = {k: v for k, v in kwargs.items() if k not in dataclass_field_names}
+        
+        # Create an instance of the dataclass with the valid arguments
+        instance = cls(*args, **valid_kwargs)
+        
+        # If the dataclass includes an extra_kwargs field, set it
+        # if 'extra_kwargs' in dataclass_field_names:
+        #     setattr(instance, 'extra_kwargs', extra_kwargs)
+        
+        return instance
+    return wrapper
 
-@dataclass(frozen=True)
+def Ddataclass(cls):
+    return dataclass(cls, frozen=True, kw_only=True)
+
+@filter_kwargs
+@Ddataclass
 class Dconst(DataContainer):
     """Constants in the configuration
 
@@ -40,10 +70,10 @@ class Dconst(DataContainer):
     ----------
     EMATT : Array
        Transpose EMAT
-    
+
     """
-    
-    I3: jnp.ndarray = dfield("3x3 Identity matrix", default=jnp.eye(3))
+
+    I3: jnp.ndarray = dfield("", default=jnp.eye(3))
     e1: jnp.ndarray = dfield(
         "3-component vector with beam direction in local frame",
         default=jnp.array([1.0, 0.0, 0.0]),
@@ -65,11 +95,13 @@ class Dconst(DataContainer):
 
     def __post_init__(self):
         object.__setattr__(self, "EMATT", self.EMAT.T)
+        self._initialize_attributes()
 
-@dataclass(frozen=True)
+
+@Ddataclass
 class Dsimulation(DataContainer):
-    """Simulation settings for the management the way each system is run 
-
+    """Simulation settings for the management the way each system is run.
+    
     Parameters
     ----------
     typeof : str
@@ -78,202 +110,220 @@ class Dsimulation(DataContainer):
         Dictionary that defines which system is run after which.
         The default None implies systems are run in order of the input
     """
-    
+
     typeof: str = dfield(
-        "Type of simulation", default="single", options=["single", "serial", "parallel"]
+        "", default="single", options=["single", "serial", "parallel"]
     )
-    workflow: dict = dfield(
-        """Dictionary that defines which system is run after which.
-        The default None implies systems are run in order of the input""",
+    workflow: dict = dfield("",
         default=None,
     )
 
-@dataclass(frozen=True)
+    def __post_init__(self):
+        self._initialize_attributes()
+
+
+@Ddataclass
 class Ddriver(DataContainer):
-    """Program initialisation settings and trigger of simulations 
+    """Program initialisation settings and trigger of simulations.
 
     Parameters
     ----------
     typeof : str
+        Driver to manage the simulation options=["intrinsic"]
     sol_path : str | pathlib.Path
+        Folder path to save results   
     compute_fem : bool
+        Compute or load presimulation data
     save_fem : bool
+        Save presimulation data
     ad_on : bool
+        Algorithm differentiation ON
     """
-    
-    typeof: str = dfield(
-        "Driver to manage the simulation", default=True, options=["intrinsic"]
-    )
-    sol_path: str | pathlib.Path = dfield("Folder path to save results", default="./")
-    compute_fem: bool = dfield("""Compute or load presimulation data""", default=True)
-    save_fem: bool = dfield("""Save presimulation data""", default=True)
+
+    typeof: str = dfield("", default=True, options=["intrinsic"])
+    sol_path: str | pathlib.Path = dfield("", default="./")
+    compute_fem: bool = dfield("", default=True)
+    save_fem: bool = dfield("", default=True)
     ad_on: bool = dfield("", default=False)
 
     def __post_init__(self):
         if self.sol_path is not None:
             object.__setattr__(self, "sol_path", pathlib.Path(self.sol_path))
+        self._initialize_attributes()
 
-@dataclass(frozen=True)
+
+@Ddataclass
 class Dfem(DataContainer):
-    """Finite Element and discretisation model settings 
+    """Finite Element and discretisation model settings.
 
     Parameters
     ----------
     connectivity : dict | list
+        Connectivities between components
     folder : str | pathlib.Path
+        Folder in which to find Ka, Ma, and grid data (with those names)
     Ka_name : str | pathlib.Path
+        Condensed stiffness matrix name
     Ma_name : str | pathlib.Path
+        Condensed mass matrix name
     Ka : Array
+        Condensed stiffness matrix
     Ma : Array
+        Condensed mass matrix 
     Ka0s : Array
+        Condensed stiffness matrix augmented with 0s
     Ma0s : Array
+        Condensed mass matrix augmented with 0s
     num_modes : int
+        Number of modes in the solution
     eig_type : str
+        Calculation of eigenvalues/vectors options=["scipy", "jax_custom", "inputs, input_memory"]
     eigenvals : Array
+        EigenValues
     eigenvecs : Array
+        EigenVectors
     eig_cutoff : float
+        Cut-off frequency such that eigenvalues smaller than this are set to 0
     eig_names : list
+        name to load eigenvalues/vectors in `folder`
     grid : str | pathlib.Path | jax.Array | pandas.core.frame.DataFrame
+        Grid file or array with Nodes Coordinates, node ID in the FEM, and associated component
     Cab_xtol : float
-    df_grid : DataFrame
-    X : Array
+        Tolerance for building the local frame
 
     Attributes
     ----------
+    df_grid : DataFrame
+        Data Frame associated to Grid file
+    X : Array
+        Grid coordinates    
     Xm : Array
+        Grid coordinates mid-points
     fe_order : list[int] | jax.Array
+        node ID in the FEM
     fe_order_start : int
+        fe_order starting with this index
     component_vect : list
+        Array with component associated to each node
     dof_vect : list
+        Array with DoF associated to each node (for constrained systems)
     num_nodes : int
+        Number of nodes 
     component_names : list
+        Name of components defining the structure
     component_father : dict
+        Map between each component and its father
     component_nodes : dict
+        Node indexes of the component
     component_names_int : tuple
+        Name of components defining the structure as integers
     component_father_int : tuple
+        Map between each component and its father with integers
     component_nodes_int : tuple
+        Node indexes of the component
     component_chain : dict
+        Dictionary mapping each component to all the components in the load path equilibrium 
     clamped_nodes : list
+        List of clamped or multibody nodes
     freeDoF : dict
     clampedDoF : dict
     total_clampedDoF : int
     constrainedDoF : int
     prevnodes : list
+        Immediate previous node following 
     Mavg : Array
+        Matrix for tensor average between adjent nodes
     Mdiff : Array
+        Matrix for tensor difference between nodes
     Mfe_order : Array
+        Matrix with 1s and 0s that reorders quantities such as eigenvectors in the FE model; nodes in horizontal arrangement.    
     Mfe_order0s : Array
     Mload_paths : Array
-    
-    Methods
-    -------
+        Matrix with with 1s and 0s for the load paths that each node, in vertical arrangement, need to transverse to sum up to a free-end.
 
-    
     """
-    
-    connectivity: dict | list = dfield("Connectivities of components")
+
+    connectivity: dict | list = dfield("")
     folder: str | pathlib.Path = dfield(
-        """Folder in which to find Ka, Ma,
-    and grid data (with those names)""",
+        "",
         default=None,
     )  # yaml_save=False)
-    Ka_name: str | pathlib.Path = dfield("Condensed stiffness matrix", default="Ka.npy")
-    Ma_name: str | pathlib.Path = dfield("Condensed mass matrix", default="Ma.npy")
-    Ka: jnp.ndarray = dfield(
-        "Condensed stiffness matrix", default=None, yaml_save=False
-    )
-    Ma: jnp.ndarray = dfield("Condensed mass matrix", default=None, yaml_save=False)
+    Ka_name: str | pathlib.Path = dfield("", default="Ka.npy")
+    Ma_name: str | pathlib.Path = dfield("", default="Ma.npy")
+    Ka: jnp.ndarray = dfield("", default=None, yaml_save=False)
+    Ma: jnp.ndarray = dfield("", default=None, yaml_save=False)
     Ka0s: jnp.ndarray = dfield(
-        "Condensed stiffness matrix augmented with 0s", default=None, yaml_save=False
+        "", default=None, yaml_save=False
     )
     Ma0s: jnp.ndarray = dfield(
-        "Condensed mass matrix augmented with 0s", default=None, yaml_save=False
+        "", default=None, yaml_save=False
     )
-    num_modes: int = dfield("Number of modes in the solution", default=None)
+    num_modes: int = dfield("", default=None)
     eig_type: str = dfield(
-        "Calculation of eigenvalues/vectors",
+        "",
         default="scipy",
         options=["scipy", "jax_custom", "inputs, input_memory"],
     )
-    eigenvals: jnp.ndarray = dfield("EigenValues", default=None, yaml_save=False)
-    eigenvecs: jnp.ndarray = dfield("EigenVectors", default=None, yaml_save=False)
+    eigenvals: jnp.ndarray = dfield("", default=None, yaml_save=False)
+    eigenvecs: jnp.ndarray = dfield("", default=None, yaml_save=False)
     eig_cutoff: float = dfield(
-        "cut-off frequency such that eigenvalues smaller than this are set to 0",
+        "",
         default=1e-2,
     )  # -jnp.inf?
     eig_names: list[str | pathlib.Path] = dfield(
-        """name to load
-    eigenvalues/vectors in folder""",
+        "",
         default=["eigenvals.npy", "eigenvecs.npy"],
     )
     grid: str | pathlib.Path | jnp.ndarray | pd.DataFrame = dfield(
-        """Grid file or array with Nodes Coordinates, node ID in the FEM,
-        and associated component""",
+        "",
         default="structuralGrid",
     )
-    Cab_xtol: float = dfield("Tolerance for building the local frame", default=1e-4)    
-    df_grid: pd.DataFrame = dfield("""Data Frame associated to Grid file""", init=False)
-    X: jnp.ndarray = dfield("Grid coordinates", default=None, yaml_save=False)
-    Xm: jnp.ndarray = dfield(
-        "Grid coordinates mid-points", default=None, init=False
-    )
-    fe_order: list[int] | jnp.ndarray = dfield("node ID in the FEM", default=None)
-    fe_order_start: int = dfield("fe_order starting with this index", default=0)
-    component_vect: list[str] = dfield(
-        "Array with component associated to each node", default=None
-    )
+    Cab_xtol: float = dfield("", default=1e-4)
+    df_grid: pd.DataFrame = dfield("", init=False)
+    X: jnp.ndarray = dfield("", default=None, yaml_save=False)
+    Xm: jnp.ndarray = dfield("", default=None, init=False)
+    fe_order: list[int] | jnp.ndarray = dfield("", default=None)
+    fe_order_start: int = dfield("", default=0, yaml_save=False)
+    component_vect: list[str] = dfield("", default=None, yaml_save=False)
     dof_vect: list[str] = dfield(
-        "Array with DoF associated to each node (for constrained systems)", default=None
+        "", default=None, yaml_save=False
     )
-    num_nodes: int = dfield("Number of nodes", init=False)
-    num_nodes: int = dfield("Number of nodes", init=False)
-    component_names: list = dfield(
-        "Name of components defining the structure", init=False
-    )
+    num_nodes: int = dfield("", init=False)
+    component_names: list = dfield("", init=False)
     component_father: dict[str:str] = dfield(
-        "Map between each component and its father", init=False
+        "", init=False
     )
-    component_nodes: dict[str : list[int]] = dfield(
-        "Node indexes of the component", init=False
-    )
+    component_nodes: dict[str : list[int]] = dfield("", init=False)
     component_names_int: tuple[int] = dfield(
-        "Name of components defining the structure", init=False
+        "", init=False
     )
     component_father_int: tuple[int] = dfield(
-        "Map between each component and its father", init=False
+        "", init=False
     )
-    component_nodes_int: tuple[list[int]] = dfield(
-        "Node indexes of the component", init=False
-    )
+    component_nodes_int: tuple[list[int]] = dfield("", init=False)
 
-    component_chain: dict[str : list[str]] = dfield(" ", init=False)
-    #
-    clamped_nodes: list[int] = dfield("List of clamped or multibody nodes", init=False)
-    freeDoF: dict[str:list] = dfield("Grid coordinates", init=False)
-    clampedDoF: dict[str:list] = dfield("Grid coordinates", init=False)
-    total_clampedDoF: int = dfield("Grid coordinates", init=False)
+    component_chain: dict[str : list[str]] = dfield("", init=False)
+    clamped_nodes: list[int] = dfield("", init=False)
+    freeDoF: dict[str:list] = dfield("", init=False)
+    clampedDoF: dict[str:list] = dfield("", init=False)
+    total_clampedDoF: int = dfield("", init=False)
     constrainedDoF: int = dfield(
-        "whether the analysis presents nodes with some DoF clamped", init=False
+        "", init=False
     )
     #
-    prevnodes: list[int] = dfield("""Immediate previous node following """, init=False)
-    Mavg: jnp.ndarray = dfield("Matrix for tensor average between nodes", init=False)
-    Mdiff: jnp.ndarray = dfield(
-        "Matrix for tensor difference between nodes", init=False
-    )
+    prevnodes: list[int] = dfield("", init=False)
+    Mavg: jnp.ndarray = dfield("", init=False)
+    Mdiff: jnp.ndarray = dfield("", init=False)
     Mfe_order: jnp.ndarray = dfield(
-        """Matrix with 1s and 0s that reorders quantities
-    such as eigenvectors in the FE model; nodes in horizontal arrangement.""",
+        "",
         init=False,
     )
     Mfe_order0s: jnp.ndarray = dfield(
-        """Matrix with 1s and 0s that reorders quantities
-    such as eigenvectors in the FE model; nodes in horizontal arrangement.""",
+        "",
         init=False,
     )
     Mload_paths: jnp.ndarray = dfield(
-        """Matrix with with 1s and 0s for the load paths
-    that each node, in vertical arrangement, need to transverse to sum up to a free-end.""",
+        "",
         init=False,
     )
 
@@ -329,9 +379,7 @@ class Dfem(DataContainer):
         setobj("dof_vect", dof_vect)
         num_nodes = len(self.X)
         setobj("num_nodes", num_nodes)
-        component_names, component_father = geometry.compute_component_father(
-            self.connectivity
-        )
+        component_names, component_father = geometry.compute_component_father(self.connectivity)
         setobj("component_names", component_names)
         setobj("component_father", component_father)
         setobj("component_nodes", geometry.compute_component_nodes(self.component_vect))
@@ -390,35 +438,51 @@ class Dfem(DataContainer):
         setobj("component_names_int", component_names_int)
         setobj("component_nodes_int", component_nodes_int)
         setobj("component_father_int", component_father_int)
-            
-@dataclass(frozen=True, kw_only=True)
+        self._initialize_attributes()
+
+
+# @Ddataclass
 class DGust(DataContainer):
     ...
 
-@dataclass(frozen=True, kw_only=True)
+
+@Ddataclass
 class DGustMc(DGust):
     """1-cos gust settings (specialisation from DGust)
 
     Parameters
     ----------
     u_inf : float
-           
+         Flow velocity     
     simulation_time : Array
+         Time array for the simulation
     intensity : float
+         Gust intensity
     step : float
+         Gust discretisation in x-direction -gust dx
+    time_epsilon: float
+         Epsilon time between the gust first hitting the AC and the next interpolation point
     length : float
+         Gust length
     shift : float
+         Shift gust position
     panels_dihedral : str | jax.Array
+         Proportional array with cosines for dihedral 
     collocation_points : str | jax.Array
+         Collocation points coordinates
     shape : str
-
+         Span-wise shape
+    
     Attributes
     ----------
     totaltime : float
+        gust_length / u_inf
     x : Array
+        Discretisation in flow direction
     time : Array
+        Times at which gust quantities are interpolated (driven by step and u_inf) 
     ntime : int
- 
+        len(time)
 
     """
 
@@ -426,6 +490,7 @@ class DGustMc(DGust):
     simulation_time: jnp.ndarray = dfield("", default=None)
     intensity: float = dfield("", default=None)
     step: float = dfield("", default=None)
+    time_epsilon: float = dfield("", default=1e-6)
     length: float = dfield("", default=None)
     shift: float = dfield("", default=0.0)
     panels_dihedral: str | jnp.ndarray = dfield("", default=None)
@@ -440,9 +505,7 @@ class DGustMc(DGust):
         if isinstance(self.panels_dihedral, (str, pathlib.Path)):
             object.__setattr__(self, "panels_dihedral", jnp.load(self.panels_dihedral))
         if isinstance(self.collocation_points, (str, pathlib.Path)):
-            object.__setattr__(
-                self, "collocation_points", jnp.load(self.collocation_points)
-            )
+            object.__setattr__(self, "collocation_points", jnp.load(self.collocation_points))
 
         gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(
             self.intensity,
@@ -460,6 +523,7 @@ class DGustMc(DGust):
         object.__setattr__(self, "time", time)
         object.__setattr__(self, "ntime", ntime)
         # del self.simulation_time
+        self._initialize_attributes()
 
     def _set_gustDiscretization(
         self,
@@ -487,7 +551,7 @@ class DGustMc(DGust):
             time = jnp.hstack(
                 [
                     time_discretization,
-                    time_discretization[-1] + 1e-6,
+                    time_discretization[-1] + self.time_epsilon,
                     simulation_time[-1],
                 ]
             )
@@ -500,28 +564,34 @@ class DGustMc(DGust):
         return gust_totaltime, xgust, time, ntime
 
 
-@dataclass(frozen=True, kw_only=True)
-class DController(DataContainer):
-    ...
+@Ddataclass
+class DController(DataContainer): ...
 
 
-@dataclass(frozen=True)
+@Ddataclass
 class Daero(DataContainer):
     """Modal aerodynamic settings for each system
 
     Parameters
     ----------
     u_inf : float
+        Flow velocity
     rho_inf : float
+        Flow density
     q_inf : float
+        Flow dynamic pressure
     c_ref : float
+        Reference chord
     time : Array
+        Simulation time array
     qalpha : Array
     qx : Array
     elevator_index : Array
     elevator_link : Array
     approx : str
+        Aero approximation Options = Roger
     Qk_struct : list
+        Sample frequencies and corresponding AICs for the structure
     Qk_gust : list
     Qk_controls : list
     Q0_rigid : Array
@@ -531,9 +601,13 @@ class Daero(DataContainer):
     D : str | jax.Array
     _controls : list
     poles : str | jax.Array
+         Poles array
     num_poles : int
+         Number of poles
     gust_profile : str
+        Gust name options=["mc"]
     gust : dict | __main__.DGust
+        Gust settings 
     controller_name : dict
     controller_settings : dict
     controller : DController
@@ -544,7 +618,7 @@ class Daero(DataContainer):
     rho_inf: float = dfield("", default=None)
     q_inf: float = dfield("", init=False)
     c_ref: float = dfield("", default=None)
-    time: jnp.ndarray = dfield("", default=None)
+    time: jnp.ndarray = dfield("", default=None, yaml_save=False)
     qalpha: jnp.ndarray = dfield("", default=None)
     qx: jnp.ndarray = dfield("", default=None)
     elevator_index: jnp.ndarray = dfield("", default=None)
@@ -552,15 +626,12 @@ class Daero(DataContainer):
     #
     approx: str = dfield("", default="Roger")
     Qk_struct: list[jnp.ndarray, jnp.ndarray] = dfield(
-        """Sample frquencies and
-    corresponding AICs for the structure""",
+        "",
         default=None,
         yaml_save=False,
     )
     Qk_gust: list[jnp.ndarray, jnp.ndarray] = dfield("", default=None, yaml_save=False)
-    Qk_controls: list[jnp.ndarray, jnp.ndarray] = dfield(
-        "", default=None, yaml_save=False
-    )
+    Qk_controls: list[jnp.ndarray, jnp.ndarray] = dfield("", default=None, yaml_save=False)
     Q0_rigid: jnp.ndarray = dfield("", default=None, yaml_save=False)
     A: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
     B: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
@@ -591,9 +662,7 @@ class Daero(DataContainer):
 
         if self.controller_name is not None:
             controller_class = globals()[f"DController{self.controller_name.upper()}"]
-            controller_obj = initialise_Dclass(
-                self.controller_settings, controller_class
-            )
+            controller_obj = initialise_Dclass(self.controller_settings, controller_class)
             object.__setattr__(self, "controller", controller_obj)
         else:
             object.__setattr__(self, "controller", None)
@@ -617,14 +686,17 @@ class Daero(DataContainer):
         if isinstance(self.D, (str, pathlib.Path)):
             object.__setattr__(self, "D", jnp.load(self.D))
 
+        self._initialize_attributes()
 
-@dataclass(frozen=True)
+
+@Ddataclass
 class Dxloads(DataContainer):
     """External loads settings for each system
 
     Parameters
     ----------
     follower_forces : bool
+        Include point follower forces
     dead_forces : bool
     gravity_forces : bool
     modalaero_forces : bool
@@ -646,10 +718,11 @@ class Dxloads(DataContainer):
     build_point_follower
     build_point_dead
     build_gravity
-    
+
     """
-    follower_forces: bool = dfield("Include point follower forces", default=False)
-    dead_forces: bool = dfield("Include point dead forces", default=False)
+
+    follower_forces: bool = dfield("", default=False)
+    dead_forces: bool = dfield("", default=False)
     gravity_forces: bool = dfield("Include gravity in the analysis", default=False)
     modalaero_forces: bool = dfield("Include aerodynamic forces", default=False)
     x: jnp.ndarray = dfield("x-axis vector for interpolation", default=None)
@@ -698,6 +771,7 @@ class Dxloads(DataContainer):
             object.__setattr__(self, "x", jnp.linspace(0, 1, 2))
         # self.label = f"{int(self.follower_forces)}\
         # {int(self.dead_forces)}{self.gravity_forces}{self.aero_forces}"
+        self._initialize_attributes()
 
     def build_point_follower(self, num_nodes, C06ab):
         num_interpol_points = len(self.x)
@@ -723,9 +797,7 @@ class Dxloads(DataContainer):
             for fi in range(num_forces):
                 fnode = self.dead_points[fi][0]
                 dim = self.dead_points[fi][1]
-                force_dead = force_dead.at[li, dim, fnode].set(
-                    self.dead_interpolation[fi][li]
-                )
+                force_dead = force_dead.at[li, dim, fnode].set(self.dead_interpolation[fi][li])
         object.__setattr__(self, "force_dead", force_dead)
         # return self.force_dead
 
@@ -740,9 +812,7 @@ class Dxloads(DataContainer):
         gravity = self.gravity * self.gravity_vect
         gravity_field = jnp.hstack([jnp.hstack([gravity, 0.0, 0.0, 0.0])] * num_nodes)
         _force_gravity = jnp.matmul(Mfe_order, Ma @ gravity_field)
-        gravity_interpol = jnp.vstack(
-            [xi * _force_gravity for xi in jnp.linspace(0, 1, len_x)]
-        ).T
+        gravity_interpol = jnp.vstack([xi * _force_gravity for xi in jnp.linspace(0, 1, len_x)]).T
         force_gravity = reshape_field(
             gravity_interpol, len_x, num_nodes_out
         )  # Becomes  (len_x, 6, Nn)
@@ -756,7 +826,7 @@ class Dxloads(DataContainer):
         object.__setattr__(self, "force_gravity", force_gravity)
 
 
-# @dataclass(frozen=True)
+# @Ddataclass
 # class Dgeometry:
 
 #     grid: str | jnp.ndarray = dfield("Grid file or array with Nodes Coordinates, node ID in the FEM and component")
@@ -764,12 +834,13 @@ class Dxloads(DataContainer):
 #     X: jnp.ndarray = dfield("Grid coordinates", default=None)
 
 
-# @dataclass(frozen=True)
+# @Ddataclass
 # class Dpresimulation(DataContainer):
 
 #     load: bool = dfield("""Load presimulation data vs
 #     load from solution_path""",
 #                                          default=True)
+
 
 class SystemSolution(Enum):
     STATIC = 1
@@ -784,6 +855,7 @@ class SystemSolution(Enum):
 SimulationTarget = Enum("TARGET", ["LEVEL", "TRIM", "MANOEUVRE", "TURBULENCE"])
 BoundaryCond = Enum("BC1", ["CLAMPED", "FREE", "PRESCRIBED"])
 
+
 class StateTrack:
     def __init__(self):
         self.states = dict()
@@ -795,13 +867,14 @@ class StateTrack:
             self.num_states += v
 
 
-@dataclass(frozen=True, kw_only=True)
+@Ddataclass
 class Dlibrary(DataContainer):
     """Solution library"""
+
     function: str = dfield("Function wrapper calling the library", default=None)
 
-
-@dataclass(frozen=True, kw_only=True)
+@filter_kwargs
+@Ddataclass
 class DdiffraxOde(Dlibrary):
     """Settings for Diffrax ODE solvers
 
@@ -814,18 +887,19 @@ class DdiffraxOde(Dlibrary):
     max_steps : int
 
     """
-    
+
     root_finder: dict = dfield("", default=None)
     stepsize_controller: dict = dfield("", default=None)
     solver_name: str = dfield("", default="Dopri5")
     save_at: jnp.ndarray | list = dfield("", default=None)
     max_steps: int = dfield("", default=20000)
 
-    def __post_init__(self):
+    def __post_init__(self, **kwargs):
         object.__setattr__(self, "function", "ode")
+        self._initialize_attributes()
 
 
-@dataclass(frozen=True, kw_only=True)
+@Ddataclass
 class Drunge_kuttaOde(Dlibrary):
     """Solution settings for Runge-Kutta in-house solvers
 
@@ -833,13 +907,15 @@ class Drunge_kuttaOde(Dlibrary):
     ----------
     solver_name : str
     """
+
     solver_name: str = dfield("", default="rk4")
 
     def __post_init__(self):
         object.__setattr__(self, "function", "ode")
+        self._initialize_attributes()
 
 
-@dataclass(frozen=True, kw_only=True)
+@Ddataclass
 class DdiffraxNewton(Dlibrary):
     """Settings for Diffrax Newton solver
 
@@ -852,7 +928,7 @@ class DdiffraxNewton(Dlibrary):
     kappa : float
 
     """
-    
+
     rtol: float = dfield("", default=1e-7)
     atol: float = dfield("", default=1e-7)
     max_steps: int = dfield("", default=100)
@@ -861,9 +937,10 @@ class DdiffraxNewton(Dlibrary):
 
     def __post_init__(self):
         object.__setattr__(self, "function", "newton")
+        self._initialize_attributes()
 
 
-@dataclass(frozen=True, unsafe_hash=True, kw_only=True)
+@Ddataclass
 class DobjectiveArgs(Dlibrary):
     """Settings for the objective function in the AD
 
@@ -880,7 +957,6 @@ class DobjectiveArgs(Dlibrary):
 
     """
 
-    
     nodes: tuple = dfield("", default=None)
     t: tuple = dfield("", default=None)
     components: tuple = dfield("", default=None)
@@ -896,14 +972,16 @@ class DobjectiveArgs(Dlibrary):
             object.__setattr__(self, "t", tuple(range(self._numtime)))
         if self.components is None:
             object.__setattr__(self, "components", tuple(range(self._numcomponents)))
+        self._initialize_attributes()
 
 
 class ADinputType(Enum):
     POINT_FORCES = 1
     GUST1 = 2
     FEM = 3
-            
-@dataclass(frozen=True, kw_only=True)
+
+
+@Ddataclass
 class DtoAD(Dlibrary):
     """Algorithm differentiation settings
 
@@ -922,7 +1000,7 @@ class DtoAD(Dlibrary):
     label : str
 
     """
-    
+
     inputs: dict = dfield("", default=None, yaml_save=False)
     input_type: str = dfield("", default=None, options=ADinputType._member_names_)
     grad_type: str = dfield(
@@ -936,7 +1014,7 @@ class DtoAD(Dlibrary):
     )
     objective_fun: str = dfield("", default=None)
     objective_var: str = dfield("", default=None)
-    objective_args: dict | DobjectiveArgs  = dfield("", default=None, yaml_save=False)
+    objective_args: dict | DobjectiveArgs = dfield("", default=None, yaml_save=False)
     _numnodes: int = dfield("", default=None, yaml_save=False)
     _numtime: int = dfield("", default=None, yaml_save=False)
     _numcomponents: int = dfield("", default=6, yaml_save=False)
@@ -957,9 +1035,10 @@ class DtoAD(Dlibrary):
                 _numcomponents=self._numcomponents,
             ),
         )
+        self._initialize_attributes()
 
 
-@dataclass(frozen=True, kw_only=True)
+@Ddataclass
 class Dsystem(DataContainer):
     """System settings for the corresponding equations to be solved
 
@@ -995,7 +1074,7 @@ class Dsystem(DataContainer):
     ad : DtoAD
 
     """
-    
+
     name: str = dfield("System name")
     _fem: Dfem = dfield("", default=None, yaml_save=False)
     solution: str = dfield(
@@ -1020,9 +1099,7 @@ class Dsystem(DataContainer):
     tn: int = dfield("Number of time steps", default=None)
     dt: float = dfield("Delta time", default=None)
     t: jnp.ndarray = dfield("Time vector", default=None)
-    solver_library: str = dfield(
-        "Library solving our system of equations", default=None
-    )
+    solver_library: str = dfield("Library solving our system of equations", default=None)
     solver_function: str = dfield(
         "Name for the solver of the previously defined library", default=None
     )
@@ -1052,9 +1129,7 @@ class Dsystem(DataContainer):
         "average the higher frequency eqs and make them algebraic", default=False
     )
     residual_modes: int = dfield("number of modes to residualise", default=0)
-    label: str = dfield(
-        """System label that maps to the solution functional""", default=None
-    )
+    label: str = dfield("""System label that maps to the solution functional""", default=None)
     label_map: dict = dfield("""label dictionary assigning """, default=None)
 
     states: dict = dfield("""Dictionary with the state variables.""", default=None)
@@ -1082,24 +1157,18 @@ class Dsystem(DataContainer):
             elif self.tn is not None and self.t1 is not None:
                 object.__setattr__(self, "dt", (self.t1 - self.t0) / (self.tn - 1))
             elif self.t1 is not None and self.dt is not None:
-                object.__setattr__(
-                    self, "tn", math.ceil((self.t1 - self.t0) / self.dt + 1)
-                )
+                object.__setattr__(self, "tn", math.ceil((self.t1 - self.t0) / self.dt + 1))
                 object.__setattr__(self, "t1", self.t0 + (self.tn - 1) * self.dt)
             object.__setattr__(self, "t", jnp.linspace(self.t0, self.t1, self.tn))
 
         object.__setattr__(self, "xloads", initialise_Dclass(self.xloads, Dxloads))
         if self.aero is not None:
-            object.__setattr__(
-                self, "aero", initialise_Dclass(self.aero, Daero, time=self.t)
-            )
+            object.__setattr__(self, "aero", initialise_Dclass(self.aero, Daero, time=self.t))
         # self.xloads = initialise_Dclass(self.xloads, Dxloads)
         if self.solver_settings is None:
             object.__setattr__(self, "solver_settings", dict())
 
-        libsettings_class = globals()[
-            f"D{self.solver_library}{self.solver_function.capitalize()}"
-        ]
+        libsettings_class = globals()[f"D{self.solver_library}{self.solver_function.capitalize()}"]
         object.__setattr__(
             self,
             "solver_settings",
@@ -1119,6 +1188,7 @@ class Dsystem(DataContainer):
             )
         if self.label is None:
             self.build_label()
+        self._initialize_attributes()
 
     def build_states(self, num_modes: int, num_nodes: int):
         tracker = StateTrack()
@@ -1210,8 +1280,8 @@ class Dsystem(DataContainer):
         object.__setattr__(self, "label_map", lmap)
         object.__setattr__(self, "label", label)  # f"dq_{label}")
 
-        
-@dataclass(frozen=True)
+
+@Ddataclass
 class Dsystems(DataContainer):
     """Input setting for the range of systems in the simulation
 
@@ -1221,17 +1291,15 @@ class Dsystems(DataContainer):
     mapper : dict
     borrow : dict
     _fem : Dfem
-    
+
     Attributes
     ----------
 
-    
+
     """
 
     sett: dict[str:dict] = dfield("Settings ", yaml_save=True)
-    mapper: dict[str:Dsystem] = dfield(
-        "Dictionary with systems in the simulation", init=False
-    )
+    mapper: dict[str:Dsystem] = dfield("Dictionary with systems in the simulation", init=False)
     borrow: dict[str:str] = dfield(
         """Borrow settings from another system:
     if there is only one system, then inactive; otherwise default to take settings from
@@ -1265,7 +1333,8 @@ class Dsystems(DataContainer):
 
             counter += 1
         object.__setattr__(self, "mapper", mapper)
-    
+        self._initialize_attributes()
+
 
 def generate_docstring(cls: Any) -> Any:
     """
@@ -1276,11 +1345,12 @@ def generate_docstring(cls: Any) -> Any:
 
     lines = [f"{cls.__name__}:\n"]
     for field in fields(cls):
-        field_type = field.type.__name__ if hasattr(field.type, '__name__') else str(field.type)
+        field_type = field.type.__name__ if hasattr(field.type, "__name__") else str(field.type)
         lines.append(f"    {field.name} : {field_type}")
         # Here you could add more detailed documentation for each field if needed
     cls.__doc__ = "\n".join(lines)
     return cls
+
 
 def update_docstrings(module: Any) -> None:
     """Update docstrings for all data classes in the given module."""
@@ -1289,6 +1359,9 @@ def update_docstrings(module: Any) -> None:
             obj = generate_docstring(obj)
             print(obj.__doc__)
 
-if (__name__ == "__main__"):
-    
-    update_docstrings(sys.modules[__name__])
+
+if __name__ == "__main__":
+    ...
+    # run to generate docstring of data and types
+    # update_docstrings(sys.modules[__name__])
+    #update_docstrings(sys.modules[__name__])
