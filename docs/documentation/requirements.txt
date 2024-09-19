@@ -9,3 +9,4 @@ mkdocstrings    # Autogenerate documentation from docstrings.
 mknotebooks     # Turn Jupyter Lab notebooks into webpages.
 pytkdocs_tweaks  # Tweaks mkdocstrings to improve various aspects
 mkdocs_include_exclude_files # Allow for customising which files get included
+mkdocs-autorefs # links to docs 

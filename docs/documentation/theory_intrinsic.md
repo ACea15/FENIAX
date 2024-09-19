@@ -1,7 +1,14 @@
+# Description
+
+## High level physical assumptions
+
+![Physical model](./img/reality2NMROM2.png "Physical assumptions")
+
+## Solution process
 
 ![Solution process](./img/aircraft_process2.png "Solution process")
 
-## Reduction to Load paths
+### Reduction to Load paths
 
 The full FE linear model is splitted into active (ASETs) nodes and ommited nodes such that,
 
@@ -39,7 +46,7 @@ After calculation of \(\pmb{T}_{oa}\), the transformation from the active set an
 \end{split}
 \end{equation}
 
-## Intrinsic modes
+### Intrinsic modes
 Let \(\pmb{\Phi}_{a}\) be the solution of the eigenvalue problem using the condensed matrices, \(\pmb{M}_a\) and \(\pmb{K}_a\). \(\pmb{\Phi}_{a}\) includes the full set of modes in the condensed system written as displacement and linear rotations at the nodes along the load-paths. Those mode shapes also define velocity and strain distributions. Standard FE solvers yield results in the global reference frame while the intrinsic modes are defined in the initial local configuration (with the convention of the \(x\)-direction running along the local beam). Therefore, a matrix \(\pmb{\Xi}_{0}(s) = [\pmb{R}^{ba}(s,0), \pmb{0} ; \pmb{0} , \pmb{R}^{ba}(s,0)]\) is introduced to rotate the 6-component vectors from the global to the local initial frame, \(\pmb{R}^{ba}(s,0)\) calculated from the structural nodes position.
 
 The discrete velocity mode is defined as \(\pmb{\Phi}_{1j} = \pmb{\Phi}_{0j}\) and a linear interpolation is sought for the continuous displacement, \(\pmb{\phi}_0(s)\), and velocities modes, \(\pmb{\phi}_1(s)\):
@@ -66,7 +73,7 @@ The strain modes \(\pmb{\psi}_{2}\) are obtained from spatial derivatives of the
 \pmb{\psi}_{2j}(s) = -\frac{\pmb{\phi}_{1j}(s_{i+1})-\pmb{\phi}_{1j}(s_{i})}{\Delta s_{i}}+ \pmb{E}^\top\frac{\pmb{\phi}_{1j}(s_{i+1})+\pmb{\phi}_{1j}(s_{i})}{2} 
 \end{align}
 
-## Nonlinear couplings
+### Nonlinear couplings
 After a Galerkin projection of the equations, the following tensors need to be approximated:
 - Alphas must equal the identity matrix
 \begin{align}
@@ -81,7 +88,7 @@ After a Galerkin projection of the equations, the following tensors need to be a
 \Gamma_{2}^{jkl} & = \langle \pmb{\phi}_{1j}, \mathcal{L}_2(\pmb{\phi}_{2k})\pmb{\psi}_{2l}\rangle,
 \end{align}
 
-## Aeroelastic system
+### Aeroelastic system
 
 Systems of equations
 Different systems of equations are assembled depending on options: 

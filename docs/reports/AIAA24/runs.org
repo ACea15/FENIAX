@@ -21,7 +21,7 @@
   (setq results_folder ".")
 #+end_src
 
-* Load modules :noexport: 
+* Load modules
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both :tangle ./results/runs.py
 :END:
@@ -34,7 +34,7 @@
   import datetime
   import os
   import shutil
-  REMOVE_RESULTS = True
+  REMOVE_RESULTS = False
   #   for root, dirs, files in os.walk('/path/to/folder'):
   #       for f in files:
   #           os.unlink(os.path.join(root, f))
@@ -80,6 +80,7 @@
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/runs.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both :var results_path=(print results_folder)
 :END:
 
+** Helper functions
 #+begin_src python :results none
 
   import time
@@ -108,7 +109,7 @@
 
 - Models run on this exercise:
 
-** COMMENT SimoFSpaguetti
+** SimoFSpaguetti
 
 #+NAME: rrb
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
@@ -284,7 +285,7 @@
   inp.systems.sett.s2.bc1 = 'free'
   inp.systems.sett.s2.solver_library = "diffrax"#"runge_kutta"
   inp.systems.sett.s2.solver_function = "ode"
-  inp.systems.sett.s2.solver_settings = dict(solver_name="Dopri5")#"rk4")
+  inp.systems.sett.s2.solver_settings = dict(solver_name="Dopri5", max_steps=int(5e4))#"rk4")
   inp.systems.sett.s2.q0treatment = 1
   inp.systems.sett.s2.t = None
   inp.systems.sett.s2.t1 = 1.
@@ -326,7 +327,7 @@
   inp.systems.sett.s2.q0treatment = 1
   inp.systems.sett.s2.solver_library = "diffrax"#"runge_kutta"
   inp.systems.sett.s2.solver_function = "ode"
-  inp.systems.sett.s2.solver_settings = dict(solver_name="Dopri5")#"rk4")
+  inp.systems.sett.s2.solver_settings = dict(solver_name="Dopri5", max_steps=int(5e4))#"rk4")
   inp.systems.sett.s2.xloads.modalaero_forces = True
   inp.systems.sett.s2.xloads.gravity_forces = True
   inp.systems.sett.s2.t = None

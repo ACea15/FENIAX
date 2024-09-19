@@ -97,7 +97,7 @@
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
 
-#+INCLUDE: "./sec_results.org::*Results" :only-contents t
+#+INCLUDE: "./sec_examples.org::*Results" :only-contents t
 
 * Conclusions
 A modal-based formulation has been presented for the dynamics of flexible aircraft that accounts for both geometrically nonlinear deformations and rigid-body motions -as well as the nonlinear interaction between them-. The approach is built on a non-intrusive reduction order process combined with a nonlinear description of the dominant dimension in slender structures. It achieves a nonlinear representation of linear aeroelastic models of arbitrary complexity in a very efficient manner and without losing the characteristics of the linear model.  
