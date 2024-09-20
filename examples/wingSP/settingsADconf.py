@@ -31,7 +31,7 @@ inp.system.tn = 1001
 inp.system.solver_library = "diffrax"
 # inp.system.solver_library = "runge_kutta"
 inp.system.solver_function = "ode"
-inp.system.solver_settings = dict(solver_name="") #Dopri5
+inp.system.solver_settings = dict(solver_name="Dopri5") #Dopri5
 inp.system.xloads.follower_forces = True
 inp.system.xloads.follower_points = [[23, 0],
                                      [23, 2]]
@@ -82,4 +82,4 @@ inp.system.ad = dict(inputs=dict(Ka=jnp.load("./FEM/Ka.npy"),
                      )
 config = configuration.Config(inp)
 sol = feniax.feniax_main.main(input_obj=config)
-sol.staticsystem_sys1.jac
+sol.dynamicsystem_sys1.jac

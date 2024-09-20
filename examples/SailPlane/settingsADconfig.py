@@ -159,4 +159,4 @@ inp.system.ad = dict(inputs=dict(Ka=jnp.load("./FEM/Ka.npy"),
                      )
 config =  configuration.Config(inp)
 sol = feniax.feniax_main.main(input_obj=config)
-sol.dynamicsystem_sys1.jac
+sol.staticsystem_sys1.jac

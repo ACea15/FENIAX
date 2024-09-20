@@ -96,7 +96,7 @@ def main_30g11_3(
     **kwargs,
 ):
     Ka = inputs["Ka"]
-    Ma = inputs["Ka"]
+    Ma = inputs["Ma"]
     eigenvals = inputs[
         "eigenvals"
     ]  # jnp.load(config.fem.folder / config.fem.eig_names[0])

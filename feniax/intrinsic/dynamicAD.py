@@ -121,7 +121,7 @@ def main_40g11_3(
 ):
     # alpha = inputs["alpha"]
     Ka = inputs["Ka"]
-    Ma = inputs["Ka"]
+    Ma = inputs["Ma"]
     eigenvals = inputs[
         "eigenvals"
     ]  # jnp.load(config.fem.folder / config.fem.eig_names[0])
