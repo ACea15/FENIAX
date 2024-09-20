@@ -132,6 +132,7 @@ nav:
   - Home: index.md
   - Getting started: getting_started.md
   - Examples:
+      - Summary: ./examples.md
       # - Structural and aeroelastic response of clamped Aircraft: 
       # - Free-flying ultra flexible structure
       # - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
