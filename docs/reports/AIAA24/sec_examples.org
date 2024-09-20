@@ -1,0 +1,896 @@
+#+setupfile: ./config.org
+* House keeping  :noexport: 
+#+begin_src elisp :results none :tangle no :exports none
+  (add-to-list 'org-structure-template-alist
+  '("sp" . "src python :session (print pythonShell)"))
+  (add-to-list 'org-structure-template-alist
+  '("se" . "src elisp"))
+  (setq org-confirm-babel-evaluate nil)
+  (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+  (setq org-latex-pdf-process
+    '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
+      "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
+  ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+  (pyvenv-workon "feniax.ev")
+  (require 'org-tempo)
+  ;; Veval_blocks -> eval blocks of latex
+  ;; Veval_blocks_run -> eval blocks to obtain results
+  (setq Veval_blocks "yes") ;; yes, no, no-export
+  (setq Vpics "png") ;; yes, no, no-export   
+  (setq pythonShell "*py_results*")
+  ;; export_blocks: code, results, both, none
+  (setq export_blocks  "results")  
+#+end_src
+* Load modules :noexport: 
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both :tangle ./results/examples.py :var figfmt=(print Vpics)
+:END:
+
+#+NAME: PYTHONMODULES
+#+begin_src python  :results none  :tangle ./results/run.py
+  import plotly.express as px
+  import pyNastran.op4.op4 as op4
+  import matplotlib.pyplot as plt
+  import pdb
+  import datetime
+  import os
+  import shutil
+  REMOVE_RESULTS = False
+  if os.getcwd().split('/')[-1] != 'results':
+      if not os.path.isdir("./figs"):
+          os.mkdir("./figs")
+      if REMOVE_RESULTS:
+          if os.path.isdir("./results"):
+              shutil.rmtree("./results")
+      if not os.path.isdir("./results"):
+          print("***** creating results folder ******")
+          os.mkdir("./results")
+      os.chdir("./results")
+
+  import pathlib
+  import plotly.express as px
+  import pickle
+  import jax.numpy as jnp
+  import jax
+  import pandas as pd
+  import numpy as np
+  from plotly.subplots import make_subplots
+  import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+  from feniax.preprocessor.inputs import Inputs
+  import feniax.feniax_main
+  import feniax.plotools.uplotly as uplotly
+  import feniax.plotools.utils as putils
+  import feniax.preprocessor.solution as solution
+  import feniax.unastran.op2reader as op2reader
+  import feniax.plotools.nastranvtk.bdfdef as bdfdef
+  from tabulate import tabulate
+#+end_src
+
+* Nastran runs :noexport:
+see
+[[../../../examples/XRF1trim/NASTRAN/runs/]]
+
+[[file:~/projects/FENIAX.examples/XRF1trim/NASTRAN/runs/XRF1-144trim1g.f06::ID LABEL TYPE TRIM STATUS VALUE OF UX][go to f06]]
+
+
+| Load | aoa      | elevetor |
+| 1g   | 7.552e-2 | 4.632e-2 |
+| 2g   | 1.511e-1 | 9.263e-2 |
+| 3g   | 2.266e-1 | 1.39e-1  |
+| 4g   | 3.021e-1 | 1.853e-1 |
+
+* Results
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
+Four different cases are presented to meet the following requirements: a) validate the current structural and aeroelastic implementation against results from theory and MSC Nastran; b) show the additional computational advantage of deploying the code on GPUs; c) showcase and verify the differentiable capabilities of the code. Starting with a representative aircraft without fuselage or engines, we move to two canonical test cases where rigid body dynamics are introduced and ending with an aircraft model representative of the A350 vehicle class built by Airbus for research purposes. 
+
+** run times :noexport:
+GPU:
+xrf1gust1,49.93000912666321
+xrf1gust1lin,17.80385947227478
+xrf1gust2,46.250757694244385
+xrf1gust2lin,17.578747510910034
+CPU:
+xrf1gust1,79.32493233680725
+xrf1gust1lin,31.23710012435913
+xrf1gust2,82.16147875785828
+xrf1gust2lin,33.10497808456421
+
+
+** Helper functions
+
+#+begin_comment
+https://plotly.com/python/subplots/
+#+end_comment
+
+*** Common functions
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+
+  scale_quality = 6
+  print(f"Format for figures: {figfmt}")
+  print(f"Image quality: {scale_quality}")  
+  def fig_out(name, figformat=figfmt, update_layout=None):
+      def inner_decorator(func):
+          def inner(*args, **kwargs):
+              fig = func(*args, **kwargs)
+              if update_layout is not None:
+                  fig.update_layout(**update_layout)
+              fig.show()
+              figname = f"figs/{name}.{figformat}"
+              fig.write_image(f"../{figname}", scale=scale_quality)
+              return fig, figname
+          return inner
+      return inner_decorator
+
+  def fig_background(func):
+
+      def inner(*args, **kwargs):
+          fig = func(*args, **kwargs)
+          # if fig.data[0].showlegend is None:
+          #     showlegend = True
+          # else:
+          #     showlegend = fig.data[0].showlegend
+
+          fig.update_xaxes(
+                         titlefont=dict(size=20),
+                         tickfont = dict(size=20),
+                         mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+              #zeroline=True,
+          #zerolinewidth=2,
+              #zerolinecolor='LightPink',
+                         gridcolor='lightgrey')
+          fig.update_yaxes(tickfont = dict(size=20),
+                         titlefont=dict(size=20),
+                         zeroline=True,
+                         mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+                         gridcolor='lightgrey')
+          fig.update_layout(plot_bgcolor='white',
+                            yaxis=dict(zerolinecolor='lightgrey'),
+                            showlegend=True, #showlegend,
+                            margin=dict(
+                                autoexpand=True,
+                                l=0,
+                                r=0,
+                                t=2,
+                                b=0
+                            ))
+          return fig
+      return inner
+
+  @fig_background
+  def plot_Xtime(t, X,  dim, X0=[0.,0.,0., 0.,0.,0.], labels=None, node=150,
+              scale=100./33.977, x_range=[0,4]):
+      fig=None
+      if labels is None:
+          labels = list(range(X))
+      colors = ["steelblue", "steelblue", "green", "green"]
+      dashes = ["solid", "dash"]*2
+      for i, Xi in enumerate(X):
+          x1, y1 = putils.pickIntrinsic2D(t,
+                                          Xi,
+                                          fixaxis2=dict(node=node, dim=dim))
+          if i == 0:
+              y10=y1[0]
+              print(y10)
+          fig = uplotly.lines2d(x1, (y1 - X0[dim])/y10 * scale, fig,
+                                dict(name=f"NMROM-{labels[i]}",
+                                     line=dict(color=colors[i],
+                                               dash=dashes[i])
+                                 ))
+
+      dim_dict = {0:'x', 1:'y', 2:'z', 3:r'\theta_x', 4:r'\theta_y', 5:r'\theta_z'}      
+      fig.update_yaxes(title=r'$\large u_{%s}$'%dim_dict[dim])
+      fig.update_xaxes(range=x_range, title='time [s]')
+      return fig
+
+  @fig_background
+  def plot_Xcomponents(X,  dim1, dim2, labels=None, node=150,
+              scale1=1, scale2=1):
+      fig=None
+      if labels is None:
+          labels = list(range(X))
+      colors = ["steelblue", "steelblue", "green", "green"]
+      dashes = ["solid", "dash"]*2
+      fig = uplotly.lines2d([1], [1], fig,
+                            dict(name=None,
+                                 showlegend=False,
+                                 #line=dict(color=colors[i]),
+                                 marker=dict(symbol="star", color="red",size=16)
+                                 ),
+                            dict())
+
+      for i, Xi in enumerate(X):
+          x1, y1 = putils.pickIntrinsic2D(Xi,
+                                          Xi,
+                                          fixaxis1=dict(node=node, dim=dim1),
+                                          fixaxis2=dict(node=node, dim=dim2)
+                                          )
+          if i == 0:
+              x10 = x1[0]
+              y10 = y1[0]
+          if i == 2:
+              x10 = x1[0]
+              y10 = y1[0]
+
+          fig = uplotly.lines2d(x1 / x10 * scale1, y1 / y10 * scale2, fig,
+                                dict(name=f"NMROM-{labels[i]}",
+                                     line=dict(color=colors[i],
+                                               dash=dashes[i])
+                                 ))
+
+      dim_dict = {0:r'\hat{F}_x', 1:'\hat{F}_y', 2:'\hat{F}_z',
+                  3:'\hat{M}_x', 4:'\hat{M}_y', 5:'\hat{M}_x'}
+      fig.update_xaxes(title=r'$\large %s$' %dim_dict[dim1])
+      fig.update_yaxes(title=r'$\large %s$' %dim_dict[dim2])
+      return fig
+
+  def subplots_X(fun, *args, **kwargs):
+
+      fig1 = fun(*args, dim=0, **kwargs)
+      fig2 = fun(*args, dim=1, **kwargs)
+      fig3 = fun(*args, dim=2, **kwargs)
+      fig3.update_xaxes(title=None)
+      fig2.update_xaxes(title=None)
+      fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.135, vertical_spacing=0.1,
+                          # specs=[[{"colspan": 2}, None],
+                          #       [{}, {}]]
+                          )
+      for i, f3i in enumerate(fig3.data):
+          fig.add_trace(f3i,
+                        row=1, col=1
+                        )
+      for i, f1i in enumerate(fig1.data):
+          f1inew = f1i
+          f1inew.showlegend = False          
+          fig.add_trace(f1inew,
+                        row=2, col=1
+                        )
+      for i, f2i in enumerate(fig2.data):
+          f2inew = f2i
+          f2inew.showlegend = False          
+          fig.add_trace(f2inew,
+                        row=3, col=1
+                        )
+
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig1.layout.xaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig1.layout.yaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_layout(plot_bgcolor='white',
+                        yaxis=dict(zerolinecolor='lightgrey'),
+                        showlegend=True, #showlegend,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=2,
+                            b=0
+                            ))
+      fig.update_layout(legend=dict(x=0.1, y=1))
+      #fig.update_layout(showlegend=False,row=2, col=1)
+      # fig.update_layout(showlegend=False,row=2, col=2)
+      #fig.update_layout(fig1.layout)
+      return fig
+
+  @fig_background
+  def plot_ffb_times(modes, y1, y2, label1, label2):
+
+      fig = None
+      fig = uplotly.lines2d(modes, y1, fig,
+                                dict(name=label1,
+                                     line=dict(color="blue")
+                                     ),
+                                dict())
+
+      fig = uplotly.lines2d(modes, y2, fig,
+                            dict(name=label2,
+                                 line=dict(color="red")
+                                 ),
+                            dict())          
+      fig.update_yaxes(type="log", exponentformat="power",
+                       #tickformat= '.0e',
+                       nticks=8)
+      fig.update_layout(legend=dict(x=0.7, y=0.95),
+                        height=650,
+                        xaxis_title='Num. modes',
+                        yaxis_title='Computational times [s]')
+      return fig
+
+  @fig_background
+  def plot_ffb_error(modes, y1, label1):
+
+      fig = None
+      fig = uplotly.lines2d(modes, y1, fig,
+                                dict(name=label1,
+                                     line=dict(color="blue")
+                                     ),
+                                dict())
+      fig.update_yaxes(type="log", exponentformat="power", #tickformat= '.0e',
+                       nticks=8)
+      fig.update_layout(showlegend=False,
+                        #height=800,
+                        xaxis_title='Num. modes',
+                        yaxis_title='Cg error')
+      return fig
+
+  def get_trimaoa_ti(ti, q, omega, phi1):
+      q2= q[ti, 0:-1]
+      q0i = - q2[2:]/ omega[2:]
+      q0 = jnp.hstack([q2[:2], q0i])
+      X0 = jnp.tensordot(phi1, q0, axes=(0, 0))
+      return X0[4,0]
+
+  def get_trimaoa(q, omega, phi1):
+
+      q_len = len(q)
+      aoa = [get_trimaoa_ti(i,
+                           q,
+                           omega,
+                           phi1) for i in range(q_len)]
+      return jnp.array(aoa)
+
+  def get_trimelevator(q, ti=None):
+      q_len = len(q)
+      if ti is None:
+          q_elevator = [q[i, -1] for i in range(q_len)]
+      else:
+          q_elevator= q[ti, -1]
+      return jnp.array(q_elevator)
+
+  @fig_background
+  def plot_trimaoa(loads, alphas, labels):
+
+      rad2grad = 180./3.141592
+      colors = ['blue', 'green', 'red', 'black', 'orange', 'yellow']
+      symbols = ["circle-open", "square", "diamond-open", "circle"]
+      fig = None
+      for i, (alphai, labeli) in enumerate(zip(alphas, labels)):
+          fig = uplotly.lines2d(loads, rad2grad*alphai, fig,
+                                    dict(name=labeli,
+                                         line=dict(color=colors[i]),
+                                         marker=dict(symbol=symbols[i], size=16)
+                                         ),
+                                    dict())
+
+      #fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
+      fig.update_layout(#showlegend=False,
+                        #height=800,
+                        yaxis_range=[0,19],
+                        xaxis_range=[0.5,4.1],
+                        legend=dict(x=0.1, y=0.9),
+                        xaxis_title='Loads [n-g]',
+                        yaxis_title=r'$Angle [^o]$')
+      return fig
+
+#+end_src
+*** H-simoFS
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+
+  @fig_background
+  def plot_ffb_times(modes, y1, y2, label1, label2):
+
+      fig = None
+      fig = uplotly.lines2d(modes, y1, fig,
+                                dict(name=label1,
+                                     line=dict(color="blue")
+                                     ),
+                                dict())
+
+      fig = uplotly.lines2d(modes, y2, fig,
+                            dict(name=label2,
+                                 line=dict(color="red")
+                                 ),
+                            dict())          
+      fig.update_yaxes(type="log", exponentformat="power",
+                       #tickformat= '.0e',
+                       nticks=8)
+      fig.update_layout(legend=dict(x=0.7, y=0.95),
+                        height=650,
+                        xaxis_title='Num. modes',
+                        yaxis_title='Computational times [s]')
+      return fig
+
+  @fig_background
+  def plot_ffb_error(modes, y1, label1):
+
+      fig = None
+      fig = uplotly.lines2d(modes, y1, fig,
+                                dict(name=label1,
+                                     line=dict(color="blue")
+                                     ),
+                                dict())
+      fig.update_yaxes(type="log", exponentformat="power", #tickformat= '.0e',
+                       nticks=8)
+      fig.update_layout(showlegend=False,
+                        #height=800,
+                        xaxis_title='Num. modes',
+                        yaxis_title='Cg error')
+      return fig
+
+#+end_src
+
+*** H-xrf1
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+
+  @fig_background
+  def plot_Xtime(t, X,  dim, X0=[0.,0.,0., 0.,0.,0.], labels=None, node=150,
+              scale=100./33.977, x_range=[0,4]):
+      fig=None
+      if labels is None:
+          labels = list(range(X))
+      colors = ["steelblue", "steelblue", "green", "green"]
+      dashes = ["solid", "dash"]*2
+      for i, Xi in enumerate(X):
+          x1, y1 = putils.pickIntrinsic2D(t,
+                                          Xi,
+                                          fixaxis2=dict(node=node, dim=dim))
+          if i == 0:
+              y10=y1[0]
+              print(y10)
+          fig = uplotly.lines2d(x1, (y1 - X0[dim])/y10 * scale, fig,
+                                dict(name=f"NMROM-{labels[i]}",
+                                     line=dict(color=colors[i],
+                                               dash=dashes[i])
+                                 ))
+
+      dim_dict = {0:'x', 1:'y', 2:'z', 3:r'\theta_x', 4:r'\theta_y', 5:r'\theta_z'}      
+      fig.update_yaxes(title=r'$\large u_{%s}$'%dim_dict[dim])
+      fig.update_xaxes(range=x_range, title='time [s]')
+      return fig
+
+  @fig_background
+  def plot_Xcomponents(X,  dim1, dim2, labels=None, node=150,
+              scale1=1, scale2=1):
+      fig=None
+      if labels is None:
+          labels = list(range(X))
+      colors = ["steelblue", "steelblue", "green", "green"]
+      dashes = ["solid", "dash"]*2
+      fig = uplotly.lines2d([1], [1], fig,
+                            dict(name=None,
+                                 showlegend=False,
+                                 #line=dict(color=colors[i]),
+                                 marker=dict(symbol="star", color="red",size=16)
+                                 ),
+                            dict())
+
+      for i, Xi in enumerate(X):
+          x1, y1 = putils.pickIntrinsic2D(Xi,
+                                          Xi,
+                                          fixaxis1=dict(node=node, dim=dim1),
+                                          fixaxis2=dict(node=node, dim=dim2)
+                                          )
+          if i == 0:
+              x10 = x1[0]
+              y10 = y1[0]
+          if i == 2:
+              x10 = x1[0]
+              y10 = y1[0]
+
+          fig = uplotly.lines2d(x1 / x10 * scale1, y1 / y10 * scale2, fig,
+                                dict(name=f"NMROM-{labels[i]}",
+                                     line=dict(color=colors[i],
+                                               dash=dashes[i])
+                                 ))
+
+      dim_dict = {0:r'\hat{F}_x', 1:'\hat{F}_y', 2:'\hat{F}_z',
+                  3:'\hat{M}_x', 4:'\hat{M}_y', 5:'\hat{M}_x'}
+      fig.update_xaxes(title=r'$\large %s$' %dim_dict[dim1])
+      fig.update_yaxes(title=r'$\large %s$' %dim_dict[dim2])
+      return fig
+
+  def subplots_X(fun, *args, **kwargs):
+
+      fig1 = fun(*args, dim=0, **kwargs)
+      fig2 = fun(*args, dim=1, **kwargs)
+      fig3 = fun(*args, dim=2, **kwargs)
+      fig3.update_xaxes(title=None)
+      fig2.update_xaxes(title=None)
+      fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.135, vertical_spacing=0.1,
+                          # specs=[[{"colspan": 2}, None],
+                          #       [{}, {}]]
+                          )
+      for i, f3i in enumerate(fig3.data):
+          fig.add_trace(f3i,
+                        row=1, col=1
+                        )
+      for i, f1i in enumerate(fig1.data):
+          f1inew = f1i
+          f1inew.showlegend = False          
+          fig.add_trace(f1inew,
+                        row=2, col=1
+                        )
+      for i, f2i in enumerate(fig2.data):
+          f2inew = f2i
+          f2inew.showlegend = False          
+          fig.add_trace(f2inew,
+                        row=3, col=1
+                        )
+
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig1.layout.xaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig1.layout.yaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_layout(plot_bgcolor='white',
+                        yaxis=dict(zerolinecolor='lightgrey'),
+                        showlegend=True, #showlegend,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=2,
+                            b=0
+                            ))
+      fig.update_layout(legend=dict(x=0.1, y=1))
+      #fig.update_layout(showlegend=False,row=2, col=1)
+      # fig.update_layout(showlegend=False,row=2, col=2)
+      #fig.update_layout(fig1.layout)
+      return fig
+
+  def get_trimaoa_ti(ti, q, omega, phi1):
+      q2= q[ti, 0:-1]
+      q0i = - q2[2:]/ omega[2:]
+      q0 = jnp.hstack([q2[:2], q0i])
+      X0 = jnp.tensordot(phi1, q0, axes=(0, 0))
+      return X0[4,0]
+
+  def get_trimaoa(q, omega, phi1):
+
+      q_len = len(q)
+      aoa = [get_trimaoa_ti(i,
+                           q,
+                           omega,
+                           phi1) for i in range(q_len)]
+      return jnp.array(aoa)
+
+  def get_trimelevator(q, ti=None):
+      q_len = len(q)
+      if ti is None:
+          q_elevator = [q[i, -1] for i in range(q_len)]
+      else:
+          q_elevator= q[ti, -1]
+      return jnp.array(q_elevator)
+
+  @fig_background
+  def plot_trimaoa(loads, alphas, labels):
+
+      rad2grad = 180./3.141592
+      colors = ['blue', 'green', 'red', 'black', 'orange', 'yellow']
+      symbols = ["circle-open", "square", "diamond-open", "circle"]
+      fig = None
+      for i, (alphai, labeli) in enumerate(zip(alphas, labels)):
+          fig = uplotly.lines2d(loads, rad2grad*alphai, fig,
+                                    dict(name=labeli,
+                                         line=dict(color=colors[i]),
+                                         marker=dict(symbol=symbols[i], size=16)
+                                         ),
+                                    dict())
+
+      #fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
+      fig.update_layout(#showlegend=False,
+                        #height=800,
+                        yaxis_range=[0,19],
+                        xaxis_range=[0.5,4.1],
+                        legend=dict(x=0.1, y=0.9),
+                        xaxis_title='Loads [n-g]',
+                        yaxis_title=r'$Angle [^o]$')
+      return fig
+
+#+end_src
+** Unsupported dynamics of very flexible structure
+This example exemplifies the ability of our solvers to turn a generic linear free-free finite-element model into a fully nonlinear solution that accounts for the rigid-body dynamics coupled with large elastic deformations. It has already been presented in [[cite:&PALACIOS2019]], though the novelties introduced herein are the new optimised implementation that can run on accelerators and the approach to recover the full 3D state from the reduced model.
+The beam version of this structure was first studied by Simo and Vu-Quoc [[cite:&SIMO1988]] and has served to verify several implementations of nonlinear beam dynamics with rigid body motions [[cite:&HESSE2014]].
+A straight structure of constant square cross section (side = 3, wall thickness = 3/10) is built consisting of 784 shell elements linked to 50 spanwise nodes via interpolation elements as depicted in Fig. [[fig:FFS]] together with the material properties and two types of loading: firstly, a dead-force in the x-direction and dead-moment in the z-direction that yield a planar motion in the x-y plane; and secondly, the addition of a moment in the y-direction which produces a three dimensional motion.
+
+#+NAME: fig:FFS
+#+CAPTION: FFS geometry, material properties and load cases
+#+ATTR_LATEX: :width 0.7\textwidth 
+[[file:figs_ext/ffbw10.pdf]]
+
+The free-flying evolution of the 3D model is shown in Fig. [[fig:FFB_2D]] for the planar motion and Fig. [[fig:FFB_3D]] for the loads giving rise to the full 3D deformations. It worth remarking the latter motion also exhibits large torsional deformations which are combined with the also large bending displacements and rigid-body modes.
+
+#+NAME: fig:FFB_2D
+#+CAPTION: Free-flying structure in the 2D-plane
+#+ATTR_LATEX: :width 0.8\textwidth 
+[[file:figs_ext/FFB_2D3.pdf]]
+
+#+NAME: fig:FFB_3D
+#+CAPTION: Free-flying structure in the 3D-plane
+#+ATTR_LATEX: :width 1.\textwidth 
+[[file:figs_ext/FFB_3D3.pdf]]
+
+Because the applied load is a dead force we can track the position of the center-of-gravity (CG) analytically as a verification exercise. Furthermore, the highly nonlinear nature of this problem makes it a good example to showcase the strength of accelerators for large problems and to gain insights as to when it might be better to deploy the codes in standard CPUs instead. Therefore we perform a sweep with the number of modes kept in the solution from 50 to 300, which determines the size of the system to be solved. The full modal basis is employed at 300 modes and due to the nonlinear cubic term this entails operations of the order of $O(10^7)$ at every time step of the solution, making it a good case for accelerators. The increase in the number of modes also restricts the incremental time step used in the explicit solver to preserve stability. Table [[table:FFB_times]] shows both computational time and CG error for the planar case in two scenarios: linking  the integration time-step to the largest eigenvalue $\lambda$ in the solution $dt=\lambda^{-0.5}$; and fixing it to $dt=10^{-3}$.
+The error metric is defined as the L-2 norm divided by the time steps.
+Computations have been carried out in AMD EPYC 7742 CPU processors and Nvidia GPU RTX 6000 at the Imperial College cluster.
+
+# time steps = 0.001, 0.0028, 0.0061
+
+#+NAME: table:FFB_times
+#+CAPTION: FFB computational times in seconds and CG error
+#+ATTR_LATEX: :center t
+| Nmodes      | CPU (time/err) | GPU (time/err) | CPU (time/err) | GPU (time/err) |
+|-------------+----------------+----------------+----------------+----------------|
+| 50          | 7/1.3e-1       | 9.9/1.3e-1     | 42/2.1e-2      | 58/2.1e-2      |
+| 100         | 9.3/5.7e-2     | 10.4/5.7e-2    | 184/1.2e-2     | 65/1.2e-2      |
+| 150         | 34/2.2e-2      | 14/2.2e-2      | 287/5.6e-3     | 67/5.6e-3      |
+| 200         | 79/2e-3        | 22/2e-3        | 421/7.2e-4     | 76/7.2e-4      |
+| 250         | 474/5.3e-4     | 38/5.3e-4      | 893/2.7e-4     | 94/2.7e-4      |
+| 300         | 1869/2.54e-5   | 111/2.54e-5    | 1869/2.54e-5   | 111/2.54e-5    |
+|-------------+----------------+----------------+----------------+----------------|
+
+Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error results in the table for the second case with fixed time step. The gain in performance from the GPU is is more impressive the larger the system to solve, and for the full modal basis the CPU takes more than 31 minutes versus the less than 2 minutes in the GPU. Computational times in the 3D problem are similar and the error on the CG position is slightly higher: for the 300 modes case, the error is $6.9e-5$ versus the $2.54e-5$ of the planar case.  
+
+#+NAME: FFBtimes1
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  modes = [50,100,150,200,250,300]
+  err1 = [1.3e-1, 5.7e-2, 2.2e-2, 2e-3, 5.3e-4, 2.54e-5]
+  err2 = [2.1e-2, 1.2e-2, 5.6e-3, 7.2e-4, 2.7e-4, 2.54e-5]
+  gpu_times1 = [9.9, 10.4, 14, 22, 38, 111]
+  cpu_times1 = [7, 9.3, 34, 79, 474, 1869]
+  gpu_times2 = [58, 65, 67, 76, 94, 111]
+  cpu_times2 = [42, 184, 287, 421, 893, 1869]
+  fig, figname = fig_out(name)(plot_ffb_times)(modes, gpu_times1, cpu_times1, "GPU", "CPU")
+  figname
+#+end_src
+
+#+NAME: fig:FFBtimes
+#+CAPTION: Performance CPU vs GPU comparison in free-flying structure (variable time step)
+#+ATTR_LATEX: :width 0.55\textwidth 
+#+RESULTS: FFBtimes1
+[[file:]]
+
+#+NAME: FFBtimes2
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_ffb_times)(modes, gpu_times2, cpu_times2, "GPU", "CPU")
+  figname
+#+end_src
+
+#+NAME: fig:FFBtimes2
+#+CAPTION: Performance CPU vs GPU comparison in free-flying structure (fixed time step)
+#+ATTR_LATEX: :width 0.55\textwidth 
+#+RESULTS: FFBtimes2
+[[file:figs/FFBtimes2.png]]
+
+#+NAME: FFBerror1
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_ffb_error)(modes, err1, 'L2-norm Error')
+  #figname
+#+end_src
+
+#+RESULTS: FFBerror1
+
+#+NAME: FFBerror2
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name, update_layout=dict(showlegend=False))(plot_ffb_error)(modes, err2, 'L2-norm Error')
+  figname
+#+end_src
+
+#+NAME: fig:FFBerror2
+#+CAPTION: Error metric CG position for planar case
+#+ATTR_LATEX: :width 0.5\textwidth 
+#+RESULTS: FFBerror2
+[[file:]]
+
+** XRF1
+The studies presented in this section are based on a reference configuration developed to industry standards known as XRF1, which is representative of a long-range wide-body transport airplane. The version with a wing-tip extension in \cite{CEA2023} is employed to verify a gust response against NASTRAN linear solution.
+The FE model contains a total of around 177400 nodes, which are condensed into 176 active nodes along the reference load axes through interpolation elements. A Guyan or static condensation approach is used for the reduction. The aerodynamic model contains \(\sim 1,500\) aerodynamic panels. The simulations are carried out with a modal resolution of 70 modes.
+This aeroelastic analysis is a requirement for certification purposes and it is one of the main drivers in sizing the wings of high aspect ratio wings. 
+*** Trim flight
+The calculation of the trim equilibrium is carried out for increasing values of the gravity acceleration as to replicate a pull-up manoeuvre.
+The aircraft 3D trim equilibrium is shown in Fig. [[fig:xrf1trim]] for a range of pull-up manoeuvres from 1g to 3.5g. The reason to go beyond regulation requirements is to check the robustness of our solvers in large-deformations scenarios and also to appreciate better the differences between linear and nonlinear analysis. Moreover, by comparing with Nastran's 144 solution on the full FE model at small displacements, we verify our implementation of the trim. The airflow conditions are a density of $\rho = 0.778 Kg/m^3$ and velocity $u_\infty = 180 m/s$. Shortening effects and follower forces become really significant as the gravity loading increases.
+
+#+NAME: fig:xrf1_trim
+#+CAPTION: XRF1 3D trim  
+#+ATTR_LATEX: :width 1\textwidth 
+[[file:figs_ext/xrf1trim.pdf]]
+
+Next in Fig. [[fig:xrf1_trimaoa]] we show the angle of attack and elevator angles at trim obtained from our nonlinear solver and the linear Nastran solution. Small differences are found streaming from the nonlinearities and each particular solution process. For instance, the follower effect of aerodynamic forces mean they are less effective in counterbalancing the weight -which always points downwards- as larger deflections are present. 
+
+#+NAME: sol=xrf1trim1_4g
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
+  sol1= solution.IntrinsicReader("./xrf1trim1_4g")
+  aoa = get_trimaoa(sol1.data.staticsystem_s1.q,
+                    sol1.data.modes.omega,
+                    sol1.data.modes.phi1)
+  q_elevator = get_trimelevator(sol1.data.staticsystem_s1.q)
+#+end_src
+
+#+RESULTS: sol=xrf1trim1_4g
+
+#+NAME: sol=xrf1trimlin1_4g
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
+  sol1lin= solution.IntrinsicReader("./xrf1trim1lin_4g")
+  aoalin = get_trimaoa(sol1lin.data.staticsystem_s1.q,
+                    sol1lin.data.modes.omega,
+                    sol1lin.data.modes.phi1)
+  qlin_elevator = get_trimelevator(sol1lin.data.staticsystem_s1.q)
+#+end_src
+
+#+RESULTS: sol=xrf1trimlin1_4g
+
+#+NAME: sol=xrf1trim_nastran
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context))
+
+  aoa_nastran = jnp.array([7.552e-2,
+                 1.511e-1,
+                 2.266e-1,
+                 3.021e-1,
+                 ])
+  qelevator_nastran = jnp.array([4.632e-2,
+                       9.263e-2,
+                       1.39e-1, 
+                       1.853e-1
+                       ])
+
+#+end_src
+
+#+RESULTS: sol=xrf1trim_nastran
+
+#+NAME: sol=xrf1trim_plot
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_trimaoa)(loads=[1,2,3,4],
+                                             alphas=[aoa,
+                                                     #aoalin,
+                                                     aoa_nastran,
+                                                     q_elevator,
+                                                     #qlin_elevator,
+                                                     qelevator_nastran],
+                                             labels=["NLMROM-AoA",
+                                                     #"LROM-AoA",
+                                                     "NASTRAN-AoA",
+                                                     "NLMROM-Elevator",
+                                                     #"LROM-Elevator",
+                                                     "NASTRAN-Elevator"])
+  figname
+#+end_src
+
+#+NAME: fig:xrf1_trimaoa
+#+CAPTION: XRF1 trim elevator and angle of attack
+#+ATTR_LATEX: :width 0.5\textwidth 
+#+RESULTS: sol=xrf1trim_plot
+[[file:figs/sol=xrf1trim_plot.png]]
+
+In addition to the static solution comparison, we verify our implementation by setting a dynamic simulation with gravity, angle of attack and the elevator angle from the static simulation as inputs. A good equilibrium state is attained with the vehicle flying straight over the course of 10 seconds dropping less that $10^{-4}$ m.
+
+**** Check trim flight :noexport: 
+
+#+NAME: sol=xrf1trim1_dyn
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
+  solxrf1trim1_dyn= solution.IntrinsicReader("./xrf1trim1_dynNl")
+  solxrf1trim1l_dyn= solution.IntrinsicReader("./xrf1trim1_dynLin")
+#+end_src
+
+#+RESULTS: sol=xrf1trim1_dyn
+
+
+#+NAME: plot=xrf1trim1_dyn
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  t = solxrf1trim1_dyn.data.dynamicsystem_s2.t
+  ra = []
+  ra.append(solxrf1trim1_dyn.data.dynamicsystem_s2.ra)
+  ra.append(solxrf1trim1l_dyn.data.dynamicsystem_s2.ra)
+  # X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
+  # X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
+  # X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name)(plot_ra)(t, ra, dim=2, labels=labels, node=0, scale=1., x_range=[0,1])
+  figname
+#+end_src
+
+#+RESULTS: plot=xrf1trim1_dyn
+[[file:figs/plot=xrf1trim1_dyn.png]]
+
+*** Gust response
+Next we look at the gust response of the aircraft under trimmed conditions. Two high intensity 1-cos gusts are imposed on the 1-g trimmed flight: one of 67 m length, labelled G1, and another of 125 m length, both with intensity of 28.14 m/s. Similar as in the trim case, this values are above regulations and we use them to push our solvers into the region of deformations where next generation of high-aspect ratio airplanes are expected to operate.   
+#+NAME: sol=xrf1gust_load
+#+begin_src python :results None  :var name=(org-element-property :name (org-element-context)) 
+  solxrf1gust1= solution.IntrinsicReader("./xrf1gust1")
+  solxrf1gust1l= solution.IntrinsicReader("./xrf1gust1lin")
+  solxrf1gust2= solution.IntrinsicReader("./xrf1gust2")
+  solxrf1gust2l= solution.IntrinsicReader("./xrf1gust2lin")
+#+end_src
+
+#+RESULTS: sol=xrf1gust_load
+
+#+NAME: sol=xrf1gust_tip
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  t = solxrf1gust1.data.dynamicsystem_s2.t
+  ra = []
+  ra.append(solxrf1gust1.data.dynamicsystem_s2.ra)
+  ra.append(solxrf1gust1l.data.dynamicsystem_s2.ra)
+  ra.append(solxrf1gust2.data.dynamicsystem_s2.ra)
+  ra.append(solxrf1gust2l.data.dynamicsystem_s2.ra)
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name)(subplots_X)(plot_Xtime, t, ra, labels=labels, node=150, scale=1./33.977, x_range=[0,1.5])
+  figname
+#+end_src
+
+Fig. [[fig:xrf1gust_tip][fig:xrf1gust_tip]] presents the time evolution of the wing-tip normalised displacements and the differences between the linear and nonlinear analysis.   
+#+NAME: fig:xrf1gust_tip
+#+CAPTION: Wing tip displacements for trim and gust analysis
+#+ATTR_LATEX: :width 0.7\textwidth 
+#+RESULTS: sol=xrf1gust_tip
+[[file:figs/sol=xrf1gust_tip.png]]
+
+#+NAME: sol=xrf1gust_root
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  t = solxrf1gust1.data.dynamicsystem_s2.t
+  X2 = []
+  X2.append(solxrf1gust1.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name, update_layout=dict(yaxis_title=r"$\hat{X}_{2z}$",legend=dict(x=0.7, y=0.941), ))(plot_Xtime)(t, X2, dim=2, labels=labels, node=4, scale=1., x_range=[0,1.5])
+  figname
+#+end_src
+
+A more interesting metric to monitor is the loading at the root of the wing. As seen in Fig. [[fig:xrf1gust_root]], higher loads are found from the nonlinear analysis. This is also reported in  [[cite:&CESNIK2014]] and means that the dynamic loads from the linear analysis can be non-conservative. Safety factors are defined in part to account for those but their adequacy is not guaranteed in more flexible designs.
+#+NAME: fig:xrf1gust_root
+#+CAPTION: Normalised wing vertical shear force time evolution with gust excitation
+#+ATTR_LATEX: :width 0.5\textwidth 
+#+RESULTS: sol=xrf1gust_root
+[[file:figs/sol=xrf1gust_root.png]]
+
+Fig. [[fig:xrf1gustcomp_root]] shows the load diagram for the normalized shear and torsional forces acting at the wing-root. This case portraits the reason for building load envelopes with a large set of defining parameters: the sharper gust produces larger shear forces whereas the gust with a bigger length induces larger torsional moments. Similar behavior is seen for the bending-shear loads in Fig. [[fig:xrf1gustcomp_root2]]. 
+#+NAME: sol=xrf1gustcomp_root
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  t = solxrf1gust1.data.dynamicsystem_s2.t
+  X2 = []
+  X2.append(solxrf1gust1.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
+  X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name)(plot_Xcomponents)(X2, dim1=3, dim2=2, labels=labels, node=4, scale1=1, scale2=1)
+  figname
+#+end_src
+
+#+NAME: fig:xrf1gustcomp_root
+#+CAPTION: Wing root torsion-shear load diagram in response to two 1-cos gust
+#+ATTR_LATEX: :width 0.5\textwidth 
+#+RESULTS: sol=xrf1gustcomp_root
+[[file:figs/sol=xrf1gustcomp_root.png]]
+
+#+NAME: sol=xrf1gustcomp_root2
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  fig, figname = fig_out(name)(plot_Xcomponents)(X2, dim1=4, dim2=2, labels=labels, node=4, scale1=1, scale2=1)
+  figname
+#+end_src
+
+#+NAME: fig:xrf1gustcomp_root2
+#+CAPTION: Wing root bending-shear load diagram in response to two 1-cos gust
+#+ATTR_LATEX: :width 0.5\textwidth 
+#+RESULTS: sol=xrf1gustcomp_root2
+[[file:figs/sol=xrf1gustcomp_root2.png]]
+
+Finally the trim and peek of the gust states are displayed in Fig. [[xrf1_trimgust]].
+#+NAME: fig:xrf1_trimgust
+#+CAPTION: XRF1 flying at trim equilibrium perturbed by gust G1 
+#+ATTR_LATEX: :width 1.\textwidth
+file:figs_ext/xrf1gust1free.png

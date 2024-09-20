@@ -4,9 +4,9 @@ import sys
 import numpy as np
 import datetime
 import time 
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 import jax.numpy as jnp
 
 inp = Inputs()
@@ -35,5 +35,5 @@ inp.systems.sett.s1.init_states = dict(q1=["axial_parabolic",
 #inp.systems.sett.s1.label = 'dq_101'
 config =  configuration.Config(inp)
 time1 = time.time()
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 time2 = time.time()

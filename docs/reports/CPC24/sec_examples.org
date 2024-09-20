@@ -1,6 +1,6 @@
 #+setupfile: ./config.org
 # https://stackoverflow.com/questions/44414584/how-to-export-a-org-mode-table-to-latex-with-the-correct-placement-h
-* House keeping  :noexport: 
+* House keeping :noexport:
 #+begin_src elisp :results none :tangle no :exports none
   (add-to-list 'org-structure-template-alist
   '("sp" . "src python :session (print pythonShell)"))
@@ -12,19 +12,18 @@
         '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
           "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "feniax")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
   (setq Veval_blocks "yes") ;; yes, no, no-export 
-  (setq Veval_blocks_run "no-export")
-  (setq pythonShell "py2")
+  (setq pythonShell "py_examples")
   (setq Vpics "png") ;; yes, no, no-export   
   ;; export_blocks: code, results, both, none
-  (setq export_blocks  "results")  
+  (setq export_blocks  "both")  
 #+end_src
 
-* Load modules :noexport: 
+* Load modules 
 :PROPERTIES:
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
@@ -66,27 +65,25 @@
   import pandas as pd
   from plotly.subplots import make_subplots
   import numpy as np
-  import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-  from fem4inas.preprocessor.inputs import Inputs
-  import fem4inas.fem4inas_main
-  import fem4inas.plotools.uplotly as uplotly
-  import fem4inas.plotools.utils as putils
-  import fem4inas.preprocessor.solution as solution
-  import fem4inas.unastran.op2reader as op2reader
-  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+  from feniax.preprocessor.inputs import Inputs
+  import feniax.feniax_main
+  import feniax.plotools.uplotly as uplotly
+  import feniax.plotools.utils as putils
+  import feniax.preprocessor.solution as solution
+  import feniax.unastran.op2reader as op2reader
+  import feniax.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
 
 #+end_src
-* Plotting :noexport: 
+
+* Plotting 
 :PROPERTIES:
 :header-args:  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
 ** Helper functions
 
-#+begin_comment
-https://plotly.com/python/subplots/
-#+end_comment
-
+*** Common functions
 #+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
   print(f"Format for figures: {figfmt}")
   def fig_out(name, figformat=figfmt, update_layout=None):
@@ -143,424 +140,10 @@ https://plotly.com/python/subplots/
                             ))
           return fig
       return inner
+#+end_src
+*** H-SailPlane
 
-  @fig_background
-  def plot_ffb_times(modes, y1, y2, label1, label2):
-
-      fig = None
-      fig = uplotly.lines2d(modes, y1, fig,
-                                dict(name=label1,
-                                     line=dict(color="blue")
-                                     ),
-                                dict())
-
-      fig = uplotly.lines2d(modes, y2, fig,
-                            dict(name=label2,
-                                 line=dict(color="red")
-                                 ),
-                            dict())          
-      fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
-      fig.update_layout(legend=dict(x=0.7, y=0.95),
-                        height=650,
-                        xaxis_title='Num. modes',
-                        yaxis_title='Computational times [s]')
-      return fig
-
-  @fig_background
-  def plot_ffb_error(modes, y1, label1):
-
-      fig = None
-      fig = uplotly.lines2d(modes, y1, fig,
-                                dict(name=label1,
-                                     line=dict(color="blue")
-                                     ),
-                                dict())
-      fig.update_yaxes(type="log", tickformat= '.0e', nticks=8)
-      fig.update_layout(showlegend=False,
-                        #height=800,
-                        xaxis_title='Num. modes',
-                        yaxis_title='Cg error')
-      return fig
-
-  @fig_background
-  def xrf1_wingtip2(sol1, sol2, dim, labels=None,nast_scale=None, nast_load=None):
-      scale = 1./33.977
-      fig=None
-      x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
-                                    sol1.data.dynamicsystem_s1.ra,
-                                    fixaxis2=dict(node=150, dim=dim))
-      x2, y2 = putils.pickIntrinsic2D(sol2.data.dynamicsystem_s1.t,
-                                    sol2.data.dynamicsystem_s1.ra,
-                                    fixaxis2=dict(node=150, dim=dim))
-
-      fig = uplotly.lines2d(x1[:], (y1[:]-y1[0])*scale, fig,
-                            dict(name=f"NMROM-G{labels[0]}",
-                                 line=dict(color="orange")
-                                 ))
-      fig = uplotly.lines2d(x2[1:], (y2[:-1]-y2[0])*scale, fig,
-                            dict(name=f"NMROM-G{labels[1]}",
-                                 line=dict(color="steelblue")
-                                 ))
-
-      if nast_scale is not None:
-          offset = 0. #u111m[nast_load[0],0,-1, dim]
-          fig = uplotly.lines2d(t111m[nast_load[0]], (u111m[nast_load[0],:,-1, dim] - offset)*nast_scale*scale, fig,
-                                dict(name=f"Lin. FE-G{labels[0]}",
-                                     line=dict(color="black",
-                                               dash="dash",
-                                               width=1.5)
-                                     ))
-          offset2 = 0. #u111m[nast_load[1],0,-1, dim]
-          fig = uplotly.lines2d(t111m[nast_load[1]], (u111m[nast_load[1],:,-1, dim] - offset2)*nast_scale*scale, fig,
-                                dict(name=f"Lin. FE-G{labels[1]}",
-                                     line=dict(color="red",
-                                               dash="dot",
-                                               width=1.5)
-                                     ))
-      dim_dict = {0:'x', 1:'y', 2:'z'}
-      fig.update_yaxes(title=r'$\large u_%s / l$'%dim_dict[dim])
-      fig.update_xaxes(range=[0, 4], title=r'$\large time \; [s]$')
-      return fig
-
-  def subplots_wtips(fun, *args, **kwargs):
-
-      fig1 = fun(*args, dim=0, **kwargs)
-      fig2 = fun(*args, dim=1, **kwargs)
-      fig3 = fun(*args, dim=2, **kwargs)
-      fig3.update_xaxes(title=None)
-      fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.135, vertical_spacing=0.1,
-                          specs=[[{"colspan": 2}, None],
-                                 [{}, {}]])
-      for i, f3i in enumerate(fig3.data):
-          fig.add_trace(f3i,
-                        row=1, col=1
-                        )
-      for i, f1i in enumerate(fig1.data):
-          f1inew = f1i
-          f1inew.showlegend = False          
-          fig.add_trace(f1inew,
-                        row=2, col=1
-                        )
-      for i, f2i in enumerate(fig2.data):
-          f2inew = f2i
-          f2inew.showlegend = False          
-          fig.add_trace(f2inew,
-                        row=2, col=2
-                        )
-
-      fig.update_xaxes(fig1.layout.xaxis,row=2, col=1)
-      fig.update_yaxes(fig1.layout.yaxis,row=2, col=1)
-      fig.update_xaxes(fig2.layout.xaxis,row=2, col=2)
-      fig.update_yaxes(fig2.layout.yaxis,row=2, col=2)
-      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1)
-      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1)
-      fig.update_layout(plot_bgcolor='white',
-                        yaxis=dict(zerolinecolor='lightgrey'),
-                        showlegend=True, #showlegend,
-                        margin=dict(
-                            autoexpand=True,
-                            l=0,
-                            r=0,
-                            t=2,
-                            b=0
-                            ))
-      #fig.update_layout(showlegend=False,row=2, col=1)
-      # fig.update_layout(showlegend=False,row=2, col=2)
-      #fig.update_layout(fig1.layout)
-      return fig
-
-  def subplots_wtips2(fun, *args, **kwargs):
-
-      fig1 = fun(*args, dim=0, **kwargs)
-      fig2 = fun(*args, dim=1, **kwargs)
-      fig3 = fun(*args, dim=2, **kwargs)
-      fig3.update_xaxes(title=None)
-      fig2.update_xaxes(title=None)
-      fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.135, vertical_spacing=0.1,
-                          # specs=[[{"colspan": 2}, None],
-                          #       [{}, {}]]
-                          )
-      for i, f3i in enumerate(fig3.data):
-          fig.add_trace(f3i,
-                        row=1, col=1
-                        )
-      for i, f1i in enumerate(fig1.data):
-          f1inew = f1i
-          f1inew.showlegend = False          
-          fig.add_trace(f1inew,
-                        row=2, col=1
-                        )
-      for i, f2i in enumerate(fig2.data):
-          f2inew = f2i
-          f2inew.showlegend = False          
-          fig.add_trace(f2inew,
-                        row=3, col=1
-                        )
-
-      fig.update_xaxes(fig2.layout.xaxis,row=2, col=1,titlefont=dict(size=15),
-                         tickfont = dict(size=15))
-      fig.update_yaxes(fig2.layout.yaxis,row=2, col=1,titlefont=dict(size=15),
-                         tickfont = dict(size=15))
-      fig.update_xaxes(fig1.layout.xaxis,row=3, col=1,titlefont=dict(size=15),
-                         tickfont = dict(size=15))
-      fig.update_yaxes(fig1.layout.yaxis,row=3, col=1,titlefont=dict(size=15),
-                         tickfont = dict(size=15))
-      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1,titlefont=dict(size=15),
-                         tickfont = dict(size=15))
-      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1,titlefont=dict(size=15),
-                         tickfont = dict(size=15))
-      fig.update_layout(plot_bgcolor='white',
-                        yaxis=dict(zerolinecolor='lightgrey'),
-                        showlegend=True, #showlegend,
-                        margin=dict(
-                            autoexpand=True,
-                            l=0,
-                            r=0,
-                            t=2,
-                            b=0
-                            ))
-      fig.update_layout(legend=dict(x=0.81, y=1))
-      #fig.update_layout(showlegend=False,row=2, col=1)
-      # fig.update_layout(showlegend=False,row=2, col=2)
-      #fig.update_layout(fig1.layout)
-      return fig
-
-
-  def subplots_xrf1wtips(sol1, sol2, labels=None, nast_scale=None, nast_load=None):
-
-      fig1 = xrf1_wingtip2(sol1, sol2, 0, labels,nast_scale, nast_load)
-      fig2 = xrf1_wingtip2(sol1, sol2, 1, labels,nast_scale, nast_load)
-      fig3 = xrf1_wingtip2(sol1, sol2, 2, labels,nast_scale, nast_load)
-      fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.135, vertical_spacing=0.1,
-                          # specs=[[{"colspan": 2}, None],
-                          #       [{}, {}]]
-                          )
-
-      # fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.1, vertical_spacing=0.1,
-      #                    specs=[[{"colspan": 2}, None],
-      #                           [{}, {}]])
-      for i, f3i in enumerate(fig3.data):
-          fig.add_trace(f3i,
-                        row=1, col=1
-                        )
-      for i, f1i in enumerate(fig1.data):
-          f1inew = f1i
-          f1inew.showlegend = False          
-          fig.add_trace(f1inew,
-                        row=2, col=1
-                        )
-      for i, f2i in enumerate(fig2.data):
-          f2inew = f2i
-          f2inew.showlegend = False          
-          fig.add_trace(f2inew,
-                        row=3, col=1
-                        )
-
-      fig.update_xaxes(fig1.layout.xaxis,row=2, col=1)
-      fig.update_yaxes(fig1.layout.yaxis,row=2, col=1)
-      fig.update_xaxes(fig2.layout.xaxis,row=2, col=2)
-      fig.update_yaxes(fig2.layout.yaxis,row=2, col=2)
-      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1)
-      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1)
-      fig.update_layout(plot_bgcolor='white',
-                        yaxis=dict(zerolinecolor='lightgrey'),
-                        showlegend=True, #showlegend,
-                        margin=dict(
-                            autoexpand=True,
-                            l=0,
-                            r=0,
-                            t=2,
-                            b=0
-                            ))
-      #fig.update_layout(showlegend=False,row=2, col=1)
-      # fig.update_layout(showlegend=False,row=2, col=2)
-      #fig.update_layout(fig1.layout)
-      return fig
-
-  @fig_background
-  def xrf1_wingtip4(sol1, sol2, sol3, sol4, dim, labels=None,nast_scale=None, nast_load=None):
-      scale = 1./33.977
-      fig=None
-      x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
-                                      sol1.data.dynamicsystem_s1.ra,
-                                      fixaxis2=dict(node=150, dim=dim))
-      x2, y2 = putils.pickIntrinsic2D(sol2.data.dynamicsystem_s1.t,
-                                      sol2.data.dynamicsystem_s1.ra,
-                                      fixaxis2=dict(node=150, dim=dim))
-      x3, y3 = putils.pickIntrinsic2D(sol3.data.dynamicsystem_s1.t,
-                                      sol3.data.dynamicsystem_s1.ra,
-                                      fixaxis2=dict(node=150, dim=dim))
-      x4, y4 = putils.pickIntrinsic2D(sol4.data.dynamicsystem_s1.t,
-                                      sol4.data.dynamicsystem_s1.ra,
-                                      fixaxis2=dict(node=150, dim=dim))
-
-      fig = uplotly.lines2d(x1[1:], (y1[:-1]-y1[0])*scale, fig,
-                            dict(name=f"NMROM-{labels[0]}",
-                                 line=dict(color="orange",
-                                           dash="solid")
-                                 ))
-      fig = uplotly.lines2d(x2[:], (y2[:]-y2[0])*scale, fig,
-                            dict(name=f"NMROM-{labels[1]}",
-                                 line=dict(color="blue", dash="dot")
-                                 ))
-      fig = uplotly.lines2d(x3[:], (y3[:]-y3[0])*scale, fig,
-                            dict(name=f"NMROM-{labels[2]}",
-                                 line=dict(color="red")
-                                 ))
-      fig = uplotly.lines2d(x4[:], (y4[:]-y4[0])*scale, fig,
-                            dict(name=f"NMROM-{labels[3]}",
-                                 line=dict(color="grey", dash="dash")
-                                 ))
-
-      dim_dict = {0:'x', 1:'y', 2:'z'}
-      fig.update_yaxes(title=r'$\large u_%s / l$'%dim_dict[dim])
-      fig.update_xaxes(range=[0, 4], title=r'$\large time \; [s]$')
-      return fig
-
-  @fig_background
-  def wsp_wingtip(sol_list, dim, labels=None, nast_load=None, axes=None,
-                  modes = [5, 15, 30, 50, 100],scale = 1./28.8):
-
-      fig = None
-      colors=["red", "darkgreen",
-              "steelblue", "magenta", "blue"]
-      dash = ['dash', 'dot', 'dashdot']
-
-      for i, si in enumerate(sol_list):
-          x, y = putils.pickIntrinsic2D(si.data.dynamicsystem_s1.t,
-                                        si.data.dynamicsystem_s1.ra,
-                                        fixaxis2=dict(node=23, dim=dim))
-          if i != len(sol_list) - 1:
-            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
-                                  dict(name=f"NMROM-{modes[i]}",
-                                       line=dict(color=colors[i],
-                                                 dash=dash[i % 3])
-                                       ),
-                                  dict())
-          else:
-            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
-                                  dict(name=f"NMROM-{modes[i]}",
-                                       line=dict(color=colors[i])
-                                       ),
-                                  dict())              
-      if nast_load is not None:
-          fig = uplotly.lines2d(t_wsp[nast_load], u_wsp[nast_load,:,-4, dim]* scale, fig,
-                                dict(name="FullFE-NL",
-                                     line=dict(color="black",
-                                               dash="dash")
-                                     ))
-          fig = uplotly.lines2d(t_wspl[nast_load], u_wspl[nast_load,:,-4, dim]* scale, fig,
-                                dict(name="FullFE-Lin",
-                                     line=dict(color="orange",
-                                               #dash="dash"
-                                               )
-                                     ))
-      dim_dict = {0:'x', 1:'y', 2:'z'}
-      if axes is None:
-          fig.update_yaxes(title=r'$\Large u_%s / l$'%dim_dict[dim])
-          fig.update_xaxes(range=[0, 15], title='$\large time \; [s]$')
-      else:
-          fig.update_yaxes(range=axes[1], title=r'$\large u_%s / l$'%dim_dict[dim])
-          fig.update_xaxes(range=axes[0], title='$\large time \; [s]$')
-
-      return fig
-
-  @fig_background
-  def wsp_rootload(sol_list, dim,
-                   labels = ['0.5', '1.', '1.5'], nodei=2, scale = 1e-3):
-
-      fig = None
-      colors=["red", "darkgreen",
-              "steelblue", "magenta", "blue"]
-      dash = ['dash', 'dot', 'dashdot']
-
-      for i, si in enumerate(sol_list):
-          x, y = putils.pickIntrinsic2D(si.data.dynamicsystem_s1.t,
-                                        si.data.dynamicsystem_s1.X2,
-                                        fixaxis2=dict(node=nodei, dim=dim))
-          if i != len(sol_list) - 1:
-            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
-                                  dict(name=f"NMROM-{labels[i]}",
-                                       line=dict(color=colors[i],
-                                                 dash=dash[i % 3])
-                                       ),
-                                  dict())
-          else:
-            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
-                                  dict(name=f"NMROM-{labels[i]}",
-                                       line=dict(color=colors[i])
-                                       ),
-                                  dict())              
-      dim_dict = {0:'x', 1:'y', 2:'z'}
-      fig.update_yaxes(title=r'$\large f_%s \; [MN/m]$'%(dim+1))
-      fig.update_xaxes(range=[0, 10], title='$\large time \; [s]$')
-
-      return fig
-
-  def subplots_wsp(sol_list, labels=None, nast_load=None, axes=None):
-
-      fig1 = wsp_wingtip(sol_list, 0, labels, nast_load, axes)
-      fig2 = wsp_wingtip(sol_list, 1, labels, nast_load, axes)
-      fig3 = wsp_wingtip(sol_list, 2, labels, nast_load, axes)
-      fig = make_subplots(rows=2, cols=2, horizontal_spacing=1, vertical_spacing=5,
-                          specs=[[{"colspan": 2}, None],
-                                 [{}, {}]])
-      for i, f3i in enumerate(fig3.data):
-          fig.add_trace(f3i,
-                        row=1, col=1
-                        )
-      for i, f1i in enumerate(fig1.data):
-          f1inew = f1i
-          f1inew.showlegend = False          
-          fig.add_trace(f1inew,
-                        row=2, col=1
-                        )
-      for i, f2i in enumerate(fig2.data):
-          f2inew = f2i
-          f2inew.showlegend = False          
-          fig.add_trace(f2inew,
-                        row=2, col=2
-                        )
-
-      fig.update_xaxes(fig1.layout.xaxis,row=2, col=1)
-      fig.update_yaxes(fig1.layout.yaxis,row=2, col=1)
-      fig.update_xaxes(fig2.layout.xaxis,row=2, col=2)
-      fig.update_yaxes(fig2.layout.yaxis,row=2, col=2)
-      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1)
-      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1)
-      fig.update_layout(plot_bgcolor='white',
-                        yaxis=dict(zerolinecolor='lightgrey'),
-                        showlegend=True, #showlegend,
-                        margin=dict(
-                            autoexpand=True,
-                            l=0,
-                            r=0,
-                            t=2,
-                            b=0
-                            ))
-      #fig.update_layout(showlegend=False,row=2, col=1)
-      # fig.update_layout(showlegend=False,row=2, col=2)
-      #fig.update_layout(fig1.layout)
-      return fig
-
-  def fn_spErrorold(sol_list, config, print_info=True):
-
-    sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
-    err = {f"M{i}_L{j}": 0. for i in range(1,6) for j in range(6)}
-    for li in range(6): # loads
-      for mi in range(1,6):  # modes
-        count = 0  
-        for index, row in config.fem.df_grid.iterrows():
-          r_spn = u_sp[li, row.fe_order,:3] + config.fem.X[index]
-          r_sp = sol_sp[mi - 1].data.staticsystem_s1.ra[li,:,index]
-          err[f"M{mi}_L{li}"] += jnp.linalg.norm(r_spn - r_sp) #/ jnp.linalg.norm(r_spn)
-          # print(f"nas = {r_spn}  ,  {r_sp}")
-          count += 1
-        err[f"M{mi}_L{li}"] /= count
-        if print_info:
-            print(f"**** LOAD: {li}, NumModes: {mi} ****")
-            print(err[f"M{mi}_L{li}"])
-    return err
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
 
   def fn_spError(sol_list, config, print_info=True):
 
@@ -757,6 +340,194 @@ https://plotly.com/python/subplots/
       )
 
       return fig
+#+end_src
+
+*** H-wingSP
+
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+
+  def subplots_wtips2(fun, *args, **kwargs):
+
+      fig1 = fun(*args, dim=0, **kwargs)
+      fig2 = fun(*args, dim=1, **kwargs)
+      fig3 = fun(*args, dim=2, **kwargs)
+      fig3.update_xaxes(title=None)
+      fig2.update_xaxes(title=None)
+      fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.135, vertical_spacing=0.1,
+                          # specs=[[{"colspan": 2}, None],
+                          #       [{}, {}]]
+                          )
+      for i, f3i in enumerate(fig3.data):
+          fig.add_trace(f3i,
+                        row=1, col=1
+                        )
+      for i, f1i in enumerate(fig1.data):
+          f1inew = f1i
+          f1inew.showlegend = False          
+          fig.add_trace(f1inew,
+                        row=2, col=1
+                        )
+      for i, f2i in enumerate(fig2.data):
+          f2inew = f2i
+          f2inew.showlegend = False          
+          fig.add_trace(f2inew,
+                        row=3, col=1
+                        )
+
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig1.layout.xaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig1.layout.yaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_layout(plot_bgcolor='white',
+                        yaxis=dict(zerolinecolor='lightgrey'),
+                        showlegend=True, #showlegend,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=2,
+                            b=0
+                            ))
+      fig.update_layout(legend=dict(x=0.81, y=1))
+      #fig.update_layout(showlegend=False,row=2, col=1)
+      # fig.update_layout(showlegend=False,row=2, col=2)
+      #fig.update_layout(fig1.layout)
+      return fig
+
+  @fig_background
+  def wsp_wingtip(sol_list, dim, labels=None, nast_load=None, axes=None,
+                  modes = [5, 15, 30, 50, 100],scale = 1./28.8):
+
+      fig = None
+      colors=["red", "darkgreen",
+              "steelblue", "magenta", "blue"]
+      dash = ['dash', 'dot', 'dashdot']
+
+      for i, si in enumerate(sol_list):
+          x, y = putils.pickIntrinsic2D(si.data.dynamicsystem_s1.t,
+                                        si.data.dynamicsystem_s1.ra,
+                                        fixaxis2=dict(node=23, dim=dim))
+          if i != len(sol_list) - 1:
+            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
+                                  dict(name=f"NMROM-{modes[i]}",
+                                       line=dict(color=colors[i],
+                                                 dash=dash[i % 3])
+                                       ),
+                                  dict())
+          else:
+            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
+                                  dict(name=f"NMROM-{modes[i]}",
+                                       line=dict(color=colors[i])
+                                       ),
+                                  dict())              
+      if nast_load is not None:
+          fig = uplotly.lines2d(t_wsp[nast_load], u_wsp[nast_load,:,-4, dim]* scale, fig,
+                                dict(name="FullFE-NL",
+                                     line=dict(color="black",
+                                               dash="dash")
+                                     ))
+          fig = uplotly.lines2d(t_wspl[nast_load], u_wspl[nast_load,:,-4, dim]* scale, fig,
+                                dict(name="FullFE-Lin",
+                                     line=dict(color="orange",
+                                               #dash="dash"
+                                               )
+                                     ))
+      dim_dict = {0:'x', 1:'y', 2:'z'}
+      if axes is None:
+          fig.update_yaxes(title=r'$\Large u_%s / l$'%dim_dict[dim])
+          fig.update_xaxes(range=[0, 15], title='$\large time \; [s]$')
+      else:
+          fig.update_yaxes(range=axes[1], title=r'$\large u_%s / l$'%dim_dict[dim])
+          fig.update_xaxes(range=axes[0], title='$\large time \; [s]$')
+
+      return fig
+
+  @fig_background
+  def wsp_rootload(sol_list, dim,
+                   labels = ['0.5', '1.', '1.5'], nodei=2, scale = 1e-3):
+
+      fig = None
+      colors=["red", "darkgreen",
+              "steelblue", "magenta", "blue"]
+      dash = ['dash', 'dot', 'dashdot']
+
+      for i, si in enumerate(sol_list):
+          x, y = putils.pickIntrinsic2D(si.data.dynamicsystem_s1.t,
+                                        si.data.dynamicsystem_s1.X2,
+                                        fixaxis2=dict(node=nodei, dim=dim))
+          if i != len(sol_list) - 1:
+            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
+                                  dict(name=f"NMROM-{labels[i]}",
+                                       line=dict(color=colors[i],
+                                                 dash=dash[i % 3])
+                                       ),
+                                  dict())
+          else:
+            fig = uplotly.lines2d(x, (y - y[0]) * scale, fig,
+                                  dict(name=f"NMROM-{labels[i]}",
+                                       line=dict(color=colors[i])
+                                       ),
+                                  dict())              
+      dim_dict = {0:'x', 1:'y', 2:'z'}
+      fig.update_yaxes(title=r'$\large f_%s \; [MN/m]$'%(dim+1))
+      fig.update_xaxes(range=[0, 10], title='$\large time \; [s]$')
+
+      return fig
+
+  def subplots_wsp(sol_list, labels=None, nast_load=None, axes=None):
+
+      fig1 = wsp_wingtip(sol_list, 0, labels, nast_load, axes)
+      fig2 = wsp_wingtip(sol_list, 1, labels, nast_load, axes)
+      fig3 = wsp_wingtip(sol_list, 2, labels, nast_load, axes)
+      fig = make_subplots(rows=2, cols=2, horizontal_spacing=1, vertical_spacing=5,
+                          specs=[[{"colspan": 2}, None],
+                                 [{}, {}]])
+      for i, f3i in enumerate(fig3.data):
+          fig.add_trace(f3i,
+                        row=1, col=1
+                        )
+      for i, f1i in enumerate(fig1.data):
+          f1inew = f1i
+          f1inew.showlegend = False          
+          fig.add_trace(f1inew,
+                        row=2, col=1
+                        )
+      for i, f2i in enumerate(fig2.data):
+          f2inew = f2i
+          f2inew.showlegend = False          
+          fig.add_trace(f2inew,
+                        row=2, col=2
+                        )
+
+      fig.update_xaxes(fig1.layout.xaxis,row=2, col=1)
+      fig.update_yaxes(fig1.layout.yaxis,row=2, col=1)
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=2)
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=2)
+      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1)
+      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1)
+      fig.update_layout(plot_bgcolor='white',
+                        yaxis=dict(zerolinecolor='lightgrey'),
+                        showlegend=True, #showlegend,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=2,
+                            b=0
+                            ))
+      #fig.update_layout(showlegend=False,row=2, col=1)
+      # fig.update_layout(showlegend=False,row=2, col=2)
+      #fig.update_layout(fig1.layout)
+      return fig
+
 
   def fn_wspError(sol_list):
       error_dict = dict()
@@ -818,11 +589,156 @@ https://plotly.com/python/subplots/
                         xaxis_title=r'$\Large time [s]$',
                         yaxis_title=r'$\Large \epsilon$')
       return fig
+#+end_src
+
+*** H-XRF1
+
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+ 
+  @fig_background
+  def xrf1_wingtip2(sol1, sol2, dim, labels=None,nast_scale=None, nast_load=None):
+      scale = 1./33.977
+      fig=None
+      x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
+                                    sol1.data.dynamicsystem_s1.ra,
+                                    fixaxis2=dict(node=150, dim=dim))
+      x2, y2 = putils.pickIntrinsic2D(sol2.data.dynamicsystem_s1.t,
+                                    sol2.data.dynamicsystem_s1.ra,
+                                    fixaxis2=dict(node=150, dim=dim))
+
+      fig = uplotly.lines2d(x1[:], (y1[:]-y1[0])*scale, fig,
+                            dict(name=f"NMROM-G{labels[0]}",
+                                 line=dict(color="orange")
+                                 ))
+      fig = uplotly.lines2d(x2[1:], (y2[:-1]-y2[0])*scale, fig,
+                            dict(name=f"NMROM-G{labels[1]}",
+                                 line=dict(color="steelblue")
+                                 ))
+
+      if nast_scale is not None:
+          offset = 0. #u111m[nast_load[0],0,-1, dim]
+          fig = uplotly.lines2d(t111m[nast_load[0]], (u111m[nast_load[0],:,-1, dim] - offset)*nast_scale*scale, fig,
+                                dict(name=f"Lin. FE-G{labels[0]}",
+                                     line=dict(color="black",
+                                               dash="dash",
+                                               width=1.5)
+                                     ))
+          offset2 = 0. #u111m[nast_load[1],0,-1, dim]
+          fig = uplotly.lines2d(t111m[nast_load[1]], (u111m[nast_load[1],:,-1, dim] - offset2)*nast_scale*scale, fig,
+                                dict(name=f"Lin. FE-G{labels[1]}",
+                                     line=dict(color="red",
+                                               dash="dot",
+                                               width=1.5)
+                                     ))
+      dim_dict = {0:'x', 1:'y', 2:'z'}
+      fig.update_yaxes(title=r'$\large u_%s / l$'%dim_dict[dim])
+      fig.update_xaxes(range=[0, 4], title=r'$\large time \; [s]$')
+      return fig
+
+  def subplots_wtips2(fun, *args, **kwargs):
+
+      fig1 = fun(*args, dim=0, **kwargs)
+      fig2 = fun(*args, dim=1, **kwargs)
+      fig3 = fun(*args, dim=2, **kwargs)
+      fig3.update_xaxes(title=None)
+      fig2.update_xaxes(title=None)
+      fig = make_subplots(rows=3, cols=1, horizontal_spacing=0.135, vertical_spacing=0.1,
+                          # specs=[[{"colspan": 2}, None],
+                          #       [{}, {}]]
+                          )
+      for i, f3i in enumerate(fig3.data):
+          fig.add_trace(f3i,
+                        row=1, col=1
+                        )
+      for i, f1i in enumerate(fig1.data):
+          f1inew = f1i
+          f1inew.showlegend = False          
+          fig.add_trace(f1inew,
+                        row=2, col=1
+                        )
+      for i, f2i in enumerate(fig2.data):
+          f2inew = f2i
+          f2inew.showlegend = False          
+          fig.add_trace(f2inew,
+                        row=3, col=1
+                        )
+
+      fig.update_xaxes(fig2.layout.xaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig2.layout.yaxis,row=2, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig1.layout.xaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig1.layout.yaxis,row=3, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_xaxes(fig3.layout.xaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_yaxes(fig3.layout.yaxis,row=1, col=1,titlefont=dict(size=15),
+                         tickfont = dict(size=15))
+      fig.update_layout(plot_bgcolor='white',
+                        yaxis=dict(zerolinecolor='lightgrey'),
+                        showlegend=True, #showlegend,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=2,
+                            b=0
+                            ))
+      fig.update_layout(legend=dict(x=0.81, y=1))
+      #fig.update_layout(showlegend=False,row=2, col=1)
+      # fig.update_layout(showlegend=False,row=2, col=2)
+      #fig.update_layout(fig1.layout)
+      return fig
+
+
+
+  @fig_background
+  def xrf1_wingtip4(sol1, sol2, sol3, sol4, dim, labels=None,nast_scale=None, nast_load=None):
+      scale = 1./33.977
+      fig=None
+      x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
+                                      sol1.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+      x2, y2 = putils.pickIntrinsic2D(sol2.data.dynamicsystem_s1.t,
+                                      sol2.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+      x3, y3 = putils.pickIntrinsic2D(sol3.data.dynamicsystem_s1.t,
+                                      sol3.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+      x4, y4 = putils.pickIntrinsic2D(sol4.data.dynamicsystem_s1.t,
+                                      sol4.data.dynamicsystem_s1.ra,
+                                      fixaxis2=dict(node=150, dim=dim))
+
+      fig = uplotly.lines2d(x1[1:], (y1[:-1]-y1[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[0]}",
+                                 line=dict(color="orange",
+                                           dash="solid")
+                                 ))
+      fig = uplotly.lines2d(x2[:], (y2[:]-y2[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[1]}",
+                                 line=dict(color="blue", dash="dot")
+                                 ))
+      fig = uplotly.lines2d(x3[:], (y3[:]-y3[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[2]}",
+                                 line=dict(color="red")
+                                 ))
+      fig = uplotly.lines2d(x4[:], (y4[:]-y4[0])*scale, fig,
+                            dict(name=f"NMROM-{labels[3]}",
+                                 line=dict(color="grey", dash="dash")
+                                 ))
+
+      dim_dict = {0:'x', 1:'y', 2:'z'}
+      fig.update_yaxes(title=r'$\large u_%s / l$'%dim_dict[dim])
+      fig.update_xaxes(range=[0, 4], title=r'$\large time \; [s]$')
+      return fig
 
 #+end_src
 
 ** NASTRAN data
 Read data from Nastran simulations
+
+*** N-SailPlane
 #+begin_src python  :results none 
 
   <<PYTHONMODULES>>
@@ -845,6 +761,14 @@ Read data from Nastran simulations
 
   op2modell.readModel()
   t_spl, u_spl = op2modell.displacements()
+  sp_error3d = jnp.load(examples_path/ "SailPlane/sp_err.npy")
+
+#+end_src
+*** N-wingSP
+#+begin_src python  :results none 
+
+  <<PYTHONMODULES>>
+  examples_path = pathlib.Path("../../../../examples")
 
   ####### wingSP ###########
   wingSP_folder = examples_path / "wingSP"
@@ -858,6 +782,15 @@ Read data from Nastran simulations
                                      bdfname=(nastran_path / "wing_109b.bdf"))
   nas_wsp.readModel()
   t_wsp, u_wsp = nas_wsp.displacements()
+  wsp_error3d = jnp.load(examples_path/ "wingSP/wsp_err.npy")
+
+#+end_src
+*** N-XRF1
+#+begin_src python  :results none 
+
+  # <<PYTHONMODULES>>
+  examples_path = pathlib.Path("../../../../examples")
+  
   ####### XRF1 ###########
   nastran_path = examples_path / "XRF1/NASTRAN/146-111/"
   nas111 = op2reader.NastranReader(op2name=(nastran_path / "XRF1-146run.op2"))
@@ -868,9 +801,6 @@ Read data from Nastran simulations
   nas111m = op2reader.NastranReader(op2name=(nastran_pathm / "XRF1-146run.op2"))
   nas111m.readModel()
   t111m, u111m = nas111m.displacements()
-
-  sp_error3d = jnp.load(examples_path/ "SailPlane/sp_err.npy")
-  wsp_error3d = jnp.load(examples_path/ "wingSP/wsp_err.npy")
 
 #+end_src
 
@@ -910,9 +840,9 @@ The static equilibrium of the aircraft under prescribed loads is first studied w
 
 \begin{listing}[!ht]
 \begin{minted}[frame=single]{python}
-import fem4inas.preprocessor.configuration as configuration
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 inp = Inputs()
 inp.fem.folder = "./FEM/"
 inp.fem.num_modes = 50
@@ -931,7 +861,7 @@ inp.systems.sett.s1.xloads.follower_interpolation =
 [0., 2e5, 2.5e5, 3.e5, 4.e5, 4.8e5, 5.3e5]]
 inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]
 config =  configuration.Config(inp)
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 \end{minted}
 \caption{FENIAX inputs for structural static simulation}
 \label{code:static}
@@ -942,7 +872,7 @@ Geometric nonlinearities are better illustrated by representing a sectional view
 
 #+NAME: SPWingsection
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  import fem4inas.preprocessor.configuration as configuration
+  import feniax.preprocessor.configuration as configuration
   config = configuration.Config.from_file("SP1/config.yaml")
   sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
   r_sp0, r_sp, r_spn, r_spnl = fn_spWingsection(sol_sp, config)
@@ -954,7 +884,7 @@ Geometric nonlinearities are better illustrated by representing a sectional view
 #+CAPTION: Static geometrically-nonlinear effects on the aircraft main wing 
 #+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: SPWingsection
-[[file:figs/SPWingsection.png]]
+[[file:]]
 
 The tolerance in the Newton solver was set to $10^{-6}$ in all cases.
 A convergence analysis with the number of modes in the solution is presented in Fig. [[SPstatic_convergence]].
@@ -1168,7 +1098,7 @@ It is worth noting the high frequency dynamics  excited after the ramping load i
 #+ATTR_LATEX: :width 0.55\textwidth 
 #+CAPTION: Span-normalised wing-tip \(z\)-displacement for load profiles with $\alpha = 0.5, 1, 1.5$
 #+RESULTS: WSP_adz
-[[file:]]
+[[file:figs/WSP_adz.png]]
 
 #+NAME: WSP_adx2
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -1231,7 +1161,7 @@ A verification exercise is introduced first by applying two 1-cos gust shapes at
 
 \begin{listing}[!ht]
 \begin{minted}[frame=single]{python}
-from fem4inas.preprocessor.inputs import Inputs
+from feniax.preprocessor.inputs import Inputs
 \begin{minted}[frame=single]{python}
 inp.fem.folder = "./FEM/"
 inp.fem.num_modes = 70

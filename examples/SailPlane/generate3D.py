@@ -1,14 +1,14 @@
-import fem4inas.plotools.grid as grid
+import feniax.plotools.grid as grid
 from pyNastran.bdf.bdf import BDF
 from pyNastran.op2.op2 import OP2
 import pandas as pd
 import importlib
 import numpy as np
 import jax.numpy as jnp
-from fem4inas.preprocessor import solution
-import fem4inas.plotools.interpolation as interpolation
-import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
-import fem4inas.unastran.op2reader as op2reader
+from feniax.preprocessor import solution
+import feniax.plotools.interpolation as interpolation
+import feniax.plotools.nastranvtk.bdfdef as bdfdef
+import feniax.unastran.op2reader as op2reader
 importlib.reload(bdfdef)
 importlib.reload(grid)
 
@@ -76,11 +76,11 @@ jnp.save("./sp_err.npy",err)
 # op2_model = OP2()
 # op2_model.set_additional_matrices_to_read({b'OPHP':False, b'OUG1':False, b'OUGV1': False})
 
-# op2_model.read_op2("/Users/ac5015/pCloud Drive/Imperial/Computations/FEM4INAS/Models/SailPlane/SP400/SailPlane_MakeMatc.op2", skip_undefined_matrices=True, combine=False)
+# op2_model.read_op2("/Users/ac5015/pCloud Drive/Imperial/Computations/FENIAX.Models/SailPlane/SP400/SailPlane_MakeMatc.op2", skip_undefined_matrices=True, combine=False)
 # #op2_model.read_op2("./NASTRAN/wing400d.op2", skip_undefined_matrices=True)
 
-# op2model = op2reader.NastranReader("/Users/ac5015/pCloud Drive/Imperial/Computations/FEM4INAS/Models/SailPlane/SP400/SailPlane_MakeMatc.op2",
-#                                    "/Users/ac5015/pCloud Drive/Imperial/Computations/FEM4INAS/Models/SailPlane/SP400/SailPlane_MakeMatc.bdf",
+# op2model = op2reader.NastranReader("/Users/ac5015/pCloud Drive/Imperial/Computations/FENIAX/Models/SailPlane/SP400/SailPlane_MakeMatc.op2",
+#                                    "/Users/ac5015/pCloud Drive/Imperial/Computations/FENIAX/Models/SailPlane/SP400/SailPlane_MakeMatc.bdf",
 #                                    static=True)
 # op2model.readModel()
 # tnastran, unastran = op2model.displacements()

@@ -1,6 +1,6 @@
-import fem4inas.plotools.streamlit.intrinsic as sti
-from fem4inas.preprocessor import solution
-import fem4inas.preprocessor.configuration as configuration
+import feniax.plotools.streamlit.intrinsic as sti
+from feniax.preprocessor import solution
+import feniax.preprocessor.configuration as configuration
 
 import streamlit as st
 import importlib

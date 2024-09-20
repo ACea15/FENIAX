@@ -3,11 +3,11 @@ import jax.numpy as jnp
 import pdb
 import sys
 import datetime
-import fem4inas.plotools.upyvista as upyvista
-import fem4inas.plotools.utils as putils
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.plotools.upyvista as upyvista
+import feniax.plotools.utils as putils
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -62,7 +62,7 @@ path2config = pathlib.Path("./config.yaml")
 #config =  configuration.Config(inp)
 #configuration.dump_to_yaml(path2config, config)
 
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 
 
 import importlib

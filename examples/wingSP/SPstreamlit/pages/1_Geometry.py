@@ -1,6 +1,6 @@
-import fem4inas.plotools.streamlit.intrinsic as sti
+import feniax.plotools.streamlit.intrinsic as sti
 import streamlit as st
-import fem4inas.plotools.streamlit.theory as stt
+import feniax.plotools.streamlit.theory as stt
 
 st.set_page_config(
     page_title="Initial model geometry",

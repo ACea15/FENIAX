@@ -4,9 +4,9 @@ import sys
 import numpy as np
 import datetime
 import time 
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 import jax.numpy as jnp
 import scipy.linalg
 
@@ -68,10 +68,10 @@ inp.systems.sett.s1.xloads.gravity_forces = True
 config =  configuration.Config(inp)
 
 #time1 = time.time()
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 #time2 = time.time()
 
-import fem4inas.unastran.op2reader as op2reader
+import feniax.unastran.op2reader as op2reader
 import importlib
 importlib.reload(op2reader)
 
@@ -81,8 +81,8 @@ op2.readModel()
 tnastran, unastran = op2.displacements()
 tnastran, rnastran = op2.position()
 
-import fem4inas.plotools.uplotly as uplotly
-import fem4inas.plotools.utils as putils
+import feniax.plotools.uplotly as uplotly
+import feniax.plotools.utils as putils
 
 x0, y0 = putils.pickIntrinsic2D(sol.dynamicsystem_s1.t,
                               sol.dynamicsystem_s1.ra,

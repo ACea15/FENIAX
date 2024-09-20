@@ -3,9 +3,9 @@ import pdb
 import sys
 import datetime
 import jax.numpy as jnp
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 import pyNastran.op4.op4 as op4
 
 
@@ -72,5 +72,5 @@ inp.systems.sett.s2.aero.poles = f"./NASTRAN/AERO/Poles000_8r{inp.fem.num_modes}
 config =  configuration.Config(inp)
 #configuration.dump_to_yaml(path2config, config, with_comments=True)
 
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 

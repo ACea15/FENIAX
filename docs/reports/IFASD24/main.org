@@ -70,7 +70,7 @@ Furthermore, the nonlinear gust response of an industrial configuration with ove
       '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
         "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
     ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-    (pyvenv-workon "fem4inas")
+    (pyvenv-workon "feniax.)
     (require 'org-tempo)
     ;; Veval_blocks -> eval blocks of latex
     ;; Veval_blocks_run -> eval blocks to obtain results
@@ -124,14 +124,14 @@ Furthermore, the nonlinear gust response of an industrial configuration with ove
   import pandas as pd
   from plotly.subplots import make_subplots
   import numpy as np
-  import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-  from fem4inas.preprocessor.inputs import Inputs
-  import fem4inas.fem4inas_main
-  import fem4inas.plotools.uplotly as uplotly
-  import fem4inas.plotools.utils as putils
-  import fem4inas.preprocessor.solution as solution
-  import fem4inas.unastran.op2reader as op2reader
-  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+  from feniax.preprocessor.inputs import Inputs
+  import feniax.feniax_main
+  import feniax.plotools.uplotly as uplotly
+  import feniax.plotools.utils as putils
+  import feniax.preprocessor.solution as solution
+  import feniax.unastran.op2reader as op2reader
+  import feniax.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
 
 #+end_src
@@ -154,7 +154,7 @@ Furthermore, the nonlinear gust response of an industrial configuration with ove
       label = kwargs.get('label', 'default')
       t1 = time.time()
       config =  configuration.Config(input1)
-      sol = fem4inas.fem4inas_main.main(input_obj=config)
+      sol = feniax.feniax_main.main(input_obj=config)
       t2 = time.time()
       TIMES_DICT[label] = t2 - t1      
       SOL[label] = sol
@@ -214,7 +214,7 @@ Furthermore, the nonlinear gust response of an industrial configuration with ove
 *** Runs
 #+NAME: SP
 #+begin_src python :results none :var name=(org-element-property :name (org-element-context))
-  SP_folder = fem4inas.PATH / "../examples/SailPlane"
+  SP_folder = feniax.PATH / "../examples/SailPlane"
   inp = Inputs()
   inp.engine = "intrinsicmodal"
   inp.fem.eig_type = "inputs"
@@ -331,7 +331,7 @@ Furthermore, the nonlinear gust response of an industrial configuration with ove
 #+NAME: wingSP
 #+begin_src python :results none :eval (print Veval_blocks_run)
 
-  wingSP_folder = fem4inas.PATH / "../examples/wingSP"
+  wingSP_folder = feniax.PATH / "../examples/wingSP"
   inp = Inputs()
   inp.engine = "intrinsicmodal"
   inp.fem.connectivity = {'c1': None}
@@ -500,7 +500,7 @@ V0_g                         11.3047276743,14.0732311562,15.4214195361,16.354176
 
 #+NAME: XRF
 #+begin_src python :results none
-  xrf1_folder = fem4inas.PATH / "../examples/XRF1/"
+  xrf1_folder = feniax.PATH / "../examples/XRF1/"
   inp = Inputs()
   inp.engine = "intrinsicmodal"
   inp.fem.eig_type = "input_memory"
@@ -1914,7 +1914,7 @@ Geometric nonlinearities are better illustrated by representing a sectional view
 
 #+NAME: SPWingsection
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  import fem4inas.preprocessor.configuration as configuration
+  import feniax.preprocessor.configuration as configuration
   config = configuration.Config.from_file("SP1/config.yaml")
   sol_sp= [solution.IntrinsicReader(f"./SP{i}") for i in range(1,6)]
   r_sp0, r_sp, r_spn, r_spnl = fn_spWingsection(sol_sp, config)

@@ -4,10 +4,10 @@ import sys
 import jax.numpy as jnp
 import datetime
 import numpy as np
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
-import fem4inas.plotools.upyvista as upyvista
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
+import feniax.plotools.upyvista as upyvista
 
 # ka = "Ka.npy"
 # lk = list(pathlib.Path('./FEM/').glob("**/*Ka.npy*"))
@@ -53,12 +53,12 @@ path2config = pathlib.Path("./config.yaml")
 configuration.dump_to_yaml(path2config, config, with_comments=True)
 
 
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 
 
 import importlib
 importlib.reload(upyvista)
-import fem4inas.plotools.utils as putils
+import feniax.plotools.utils as putils
 istruct = putils.IntrinsicStruct(config.fem)
 istruct.add_solution(sol.staticsystem_s1.ra)
 pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)

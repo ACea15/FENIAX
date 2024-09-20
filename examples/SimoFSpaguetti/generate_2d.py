@@ -1,6 +1,6 @@
-import fem4inas.plotools.reconstruction as rec
-import fem4inas.preprocessor.solution as solution
-import fem4inas.preprocessor.configuration as configuration
+import feniax.plotools.reconstruction as rec
+import feniax.preprocessor.solution as solution
+import feniax.preprocessor.configuration as configuration
 
 results = "results2D_50n"
 config = configuration.Config.from_file(f"./{results}/config.yaml")

@@ -5,15 +5,15 @@ import pickle
 import jax.numpy as jnp
 import pandas as pd
 import numpy as np
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
-import fem4inas.plotools.uplotly as uplotly
-import fem4inas.plotools.utils as putils
-import fem4inas.preprocessor.solution as solution
-import fem4inas.unastran.op2reader as op2reader
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
+import feniax.plotools.uplotly as uplotly
+import feniax.plotools.utils as putils
+import feniax.preprocessor.solution as solution
+import feniax.unastran.op2reader as op2reader
 
-argyrisbeam_folder = fem4inas.PATH / "../examples/ArgyrisBeam"
+argyrisbeam_folder = feniax.PATH / "../examples/ArgyrisBeam"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.connectivity = [[]]
@@ -47,4 +47,4 @@ inp.systems.sett.s1.xloads.follower_interpolation = [[0.,
                                                      ]
 inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6, 7]
 config_argy =  configuration.Config(inp)
-sol_argy = fem4inas.fem4inas_main.main(input_obj=config_argy)
+sol_argy = feniax.feniax_main.main(input_obj=config_argy)

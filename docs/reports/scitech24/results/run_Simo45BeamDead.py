@@ -5,15 +5,15 @@ import pickle
 import jax.numpy as jnp
 import pandas as pd
 import numpy as np
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
-import fem4inas.plotools.uplotly as uplotly
-import fem4inas.plotools.utils as putils
-import fem4inas.preprocessor.solution as solution
-import fem4inas.unastran.op2reader as op2reader
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
+import feniax.plotools.uplotly as uplotly
+import feniax.plotools.utils as putils
+import feniax.preprocessor.solution as solution
+import feniax.unastran.op2reader as op2reader
 
-simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
+simo45beam_folder = feniax.PATH / "../examples/Simo45Beam"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'Beam1':None}
@@ -39,4 +39,4 @@ inp.systems.sett.s1.xloads.x = list(range(11))
 inp.systems.sett.s1.xloads.dead_interpolation = [[float(li) for li in np.arange(0.,3300.,300)]]
 inp.systems.sett.s1.t = list(range(1,11))
 config_simo45d =  configuration.Config(inp)
-sol_simodead = fem4inas.fem4inas_main.main(input_obj=config_simo45d)
+sol_simodead = feniax.feniax_main.main(input_obj=config_simo45d)

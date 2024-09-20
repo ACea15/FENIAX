@@ -1,16 +1,16 @@
-from  fem4inas.systems.system import System
-import fem4inas.systems.sollibs as sollibs
-import fem4inas.intrinsic.dq_static as dq_static
-import fem4inas.intrinsic.dq_dynamic as dq_dynamic
-import fem4inas.intrinsic.postprocess as postprocess
-import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
-import fem4inas.preprocessor.solution as solution
-import fem4inas.intrinsic.initcond as initcond
-import fem4inas.intrinsic.args as libargs
-import fem4inas.intrinsic.modes as modes
-import fem4inas.intrinsic.couplings as couplings
-import fem4inas.intrinsic.dq_common as common
-import fem4inas.intrinsic.xloads as xloads
+from  feniax.systems.system import System
+import feniax.systems.sollibs as sollibs
+import feniax.intrinsic.dq_static as dq_static
+import feniax.intrinsic.dq_dynamic as dq_dynamic
+import feniax.intrinsic.postprocess as postprocess
+import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
+import feniax.preprocessor.solution as solution
+import feniax.intrinsic.initcond as initcond
+import feniax.intrinsic.args as libargs
+import feniax.intrinsic.modes as modes
+import feniax.intrinsic.couplings as couplings
+import feniax.intrinsic.dq_common as common
+import feniax.intrinsic.xloads as xloads
 import optimistix as optx
 from functools import partial
 import jax.numpy as jnp
@@ -274,8 +274,8 @@ def main_10g11(t,
 #         #self._set_generator()
 #         #self._set_solver()
 
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
 import pathlib
 
 inp = Inputs()
@@ -296,14 +296,14 @@ inp.fem.connectivity = dict(FuselageFront=['RWingInner',
                             Fin=None
                             )
 
-inp.fem.folder = pathlib.Path('/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/')
+inp.fem.folder = pathlib.Path('/home/ac5015/programs/FENIAX.examples/SailPlane/FEM/')
 inp.fem.num_modes = 50
 inp.driver.typeof = "intrinsic"
 
 #inp.driver.sol_path = pathlib.Path(
 #    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    '/home/ac5015/programs/FEM4INAS/examples/SailPlane/resultsAD')
+    '/home/ac5015/programs/FENIAX.examples/SailPlane/resultsAD')
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
 inp.system.solution = "static"

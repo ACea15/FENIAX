@@ -1,7 +1,7 @@
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor import solution
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor import solution
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 import jax.numpy as jnp
 import pytest
 import pathlib
@@ -39,7 +39,7 @@ class TestWingSP:
                                                              [0.05 * 6e5, 1 * 6e5,  0., 0.]
                                                              ]
         config = configuration.Config(inp)
-        obj_sol = fem4inas.fem4inas_main.main(input_obj=config)
+        obj_sol = feniax.feniax_main.main(input_obj=config)
         return obj_sol
 
     @pytest.fixture

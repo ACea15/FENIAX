@@ -1,32 +1,32 @@
-from  fem4inas.systems.system import System
+from  feniax.systems.system import System
 import scipy.linalg
-import fem4inas.systems.sollibs as sollibs
-import fem4inas.intrinsic.dq_static as dq_static
-import fem4inas.intrinsic.dq_dynamic as dq_dynamic
-import fem4inas.intrinsic.postprocess as postprocess
-import fem4inas.preprocessor.containers.intrinsicmodal as intrinsicmodal
-import fem4inas.preprocessor.solution as solution
-import fem4inas.intrinsic.initcond as initcond
-import fem4inas.intrinsic.args as libargs
-import fem4inas.intrinsic.modes as modes
-import fem4inas.intrinsic.couplings as couplings
-import fem4inas.intrinsic.dq_common as common
-import fem4inas.intrinsic.xloads as xloads
-import fem4inas.intrinsic.objectives as objectives
+import feniax.systems.sollibs as sollibs
+import feniax.intrinsic.dq_static as dq_static
+import feniax.intrinsic.dq_dynamic as dq_dynamic
+import feniax.intrinsic.postprocess as postprocess
+import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
+import feniax.preprocessor.solution as solution
+import feniax.intrinsic.initcond as initcond
+import feniax.intrinsic.args as libargs
+import feniax.intrinsic.modes as modes
+import feniax.intrinsic.couplings as couplings
+import feniax.intrinsic.dq_common as common
+import feniax.intrinsic.xloads as xloads
+import feniax.intrinsic.objectives as objectives
 import optimistix as optx
 from functools import partial
 import jax.numpy as jnp
 import jax
-import fem4inas.systems.sollibs.diffrax as diffrax
-import fem4inas.systems.intrinsicSys as isys
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
+import feniax.systems.sollibs.diffrax as libdiffrax
+import feniax.systems.intrinsicSys as isys
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
 import pathlib
 
 jax.config.update("jax_enable_x64", True)
 # jax.config.update("jax_debug_nans", True)
-import fem4inas.intrinsic.ad_common as adcommon
-import fem4inas.intrinsic.gust as igust
+import feniax.intrinsic.ad_common as adcommon
+import feniax.intrinsic.gust as igust
 
 @partial(jax.jit, static_argnames=['config', 'f_obj'])
 def main_20g21(gust_intensity, gust_length, u_inf, rho_inf,

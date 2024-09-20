@@ -3,9 +3,9 @@ import jax.numpy as jnp
 import pdb
 import sys
 import datetime
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -44,7 +44,7 @@ inp.systems.sett.s1.xloads.follower_interpolation = [[0.05 * -2e5, 1 * -2e5, 0.,
                                                      [0.05 * 6e5, 1 * 6e5,  0., 0.]
                                                      ]
 config =  configuration.Config(inp)
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 
 
 

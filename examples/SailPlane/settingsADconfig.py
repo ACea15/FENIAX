@@ -3,9 +3,9 @@ import pdb
 import sys
 import datetime
 import jax.numpy as jnp
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -71,7 +71,7 @@ inp.system.ad = dict(inputs=dict(t=1.5),
                      objective_args=dict(t=(-1,), nodes=(25,), components=(2,))
                      )
 config =  configuration.Config(inp)
-sol11 = fem4inas.fem4inas_main.main(input_obj=config)
+sol11 = feniax.feniax_main.main(input_obj=config)
 
 epsilon = 1e-3
 inp.system.ad = dict(inputs=dict(t=1.5+epsilon),
@@ -82,7 +82,7 @@ inp.system.ad = dict(inputs=dict(t=1.5+epsilon),
                      objective_args=dict(t=(-1,), nodes=(25,), components=(2,))
                      )
 config2 =  configuration.Config(inp)
-sol12 = fem4inas.fem4inas_main.main(input_obj=config2)
+sol12 = feniax.feniax_main.main(input_obj=config2)
 
 jac1 = sol11.staticsystem_sys1.jac['t']
 jac1_fd = (sol12.staticsystem_sys1.f_ad - sol11.staticsystem_sys1.f_ad) / epsilon
@@ -98,7 +98,7 @@ inp.system.ad = dict(inputs=dict(t=3.5),
                      objective_args=dict(t=(-1,), nodes=(25,), components=(2,))
                      )
 config =  configuration.Config(inp)
-sol21 = fem4inas.fem4inas_main.main(input_obj=config)
+sol21 = feniax.feniax_main.main(input_obj=config)
 
 epsilon = 1e-3
 inp.system.ad = dict(inputs=dict(t=3.5+epsilon),
@@ -109,7 +109,7 @@ inp.system.ad = dict(inputs=dict(t=3.5+epsilon),
                      objective_args=dict(t=(-1,), nodes=(25,), components=(2,))
                      )
 config2 =  configuration.Config(inp)
-sol22 = fem4inas.fem4inas_main.main(input_obj=config2)
+sol22 = feniax.feniax_main.main(input_obj=config2)
 
 jac2 = sol21.staticsystem_sys1.jac['t']
 jac2_fd = (sol22.staticsystem_sys1.f_ad - sol21.staticsystem_sys1.f_ad) / epsilon
@@ -125,7 +125,7 @@ inp.system.ad = dict(inputs=dict(t=5.5),
                      objective_args=dict(t=(-1,), nodes=(25,), components=(2,))
                      )
 config =  configuration.Config(inp)
-sol31 = fem4inas.fem4inas_main.main(input_obj=config)
+sol31 = feniax.feniax_main.main(input_obj=config)
 
 epsilon = 1e-3
 inp.system.ad = dict(inputs=dict(t=5.5+epsilon),
@@ -136,7 +136,7 @@ inp.system.ad = dict(inputs=dict(t=5.5+epsilon),
                      objective_args=dict(t=(-1,), nodes=(25,), components=(2,))
                      )
 config2 =  configuration.Config(inp)
-sol32 = fem4inas.fem4inas_main.main(input_obj=config2)
+sol32 = feniax.feniax_main.main(input_obj=config2)
 
 jac3 = sol31.staticsystem_sys1.jac['t']
 jac3_fd = (sol32.staticsystem_sys1.f_ad - sol31.staticsystem_sys1.f_ad) / epsilon
@@ -158,5 +158,5 @@ inp.system.ad = dict(inputs=dict(Ka=jnp.load("./FEM/Ka.npy"),
                      objective_args=dict(t=(-1,), nodes=(25,), components=(2,))
                      )
 config =  configuration.Config(inp)
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 sol.dynamicsystem_sys1.jac

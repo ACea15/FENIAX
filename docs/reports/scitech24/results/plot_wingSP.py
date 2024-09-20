@@ -5,15 +5,15 @@ import pickle
 import jax.numpy as jnp
 import pandas as pd
 import numpy as np
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
-import fem4inas.plotools.uplotly as uplotly
-import fem4inas.plotools.utils as putils
-import fem4inas.preprocessor.solution as solution
-import fem4inas.unastran.op2reader as op2reader
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
+import feniax.plotools.uplotly as uplotly
+import feniax.plotools.utils as putils
+import feniax.preprocessor.solution as solution
+import feniax.unastran.op2reader as op2reader
 
-wingSP_folder = fem4inas.PATH / "../examples/wingSP"
+wingSP_folder = feniax.PATH / "../examples/wingSP"
 nastran_path = wingSP_folder / "NASTRAN/"
 nas_wspl = op2reader.NastranReader(op2name=(nastran_path / "wing_109d.op2"),
                                    bdfname=(nastran_path / "wing_109b.bdf"))

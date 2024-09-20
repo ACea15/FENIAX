@@ -11,7 +11,7 @@
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
       "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "fem4inas")
+  (pyvenv-workon "feniax.)
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -65,14 +65,14 @@
   import jax
   import pandas as pd
   import numpy as np
-  import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-  from fem4inas.preprocessor.inputs import Inputs
-  import fem4inas.fem4inas_main
-  import fem4inas.plotools.uplotly as uplotly
-  import fem4inas.plotools.utils as putils
-  import fem4inas.preprocessor.solution as solution
-  import fem4inas.unastran.op2reader as op2reader
-  import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+  import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+  from feniax.preprocessor.inputs import Inputs
+  import feniax.feniax_main
+  import feniax.plotools.uplotly as uplotly
+  import feniax.plotools.utils as putils
+  import feniax.preprocessor.solution as solution
+  import feniax.unastran.op2reader as op2reader
+  import feniax.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
   examples_folder = pathlib.Path.cwd() / "../../../../examples"    
 
@@ -97,7 +97,7 @@
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
 
-#+INCLUDE: "./sec_results.org::*Results" :only-contents t
+#+INCLUDE: "./sec_examples.org::*Results" :only-contents t
 
 * Conclusions
 A modal-based formulation has been presented for the dynamics of flexible aircraft that accounts for both geometrically nonlinear deformations and rigid-body motions -as well as the nonlinear interaction between them-. The approach is built on a non-intrusive reduction order process combined with a nonlinear description of the dominant dimension in slender structures. It achieves a nonlinear representation of linear aeroelastic models of arbitrary complexity in a very efficient manner and without losing the characteristics of the linear model.  

@@ -1,0 +1,55 @@
+* House keeping                                                    :noexport: 
+#+begin_src elisp :results none :tangle no :exports none
+  (add-to-list 'org-structure-template-alist
+  '("sp" . "src python :session (print pythonShell)"))
+  (add-to-list 'org-structure-template-alist
+  '("se" . "src elisp"))
+  (setq org-confirm-babel-evaluate nil)
+  (define-key org-mode-map (kbd "C-c ]") 'org-ref-insert-link)
+  (setq org-latex-pdf-process
+        '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
+          "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
+  ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
+  (pyvenv-workon "feniax")
+  (setq org-export-with-broken-links t)
+  (require 'org-tempo)
+  ;; Veval_blocks -> eval blocks of latex
+  ;; Veval_blocks_run -> eval blocks to obtain results
+  (setq Veval_blocks "yes") ;; yes, no, no-export 
+  (setq Veval_blocks_run "yes")
+  (setq Vpics "png") ;; yes, no, no-export   
+  (setq pythonShell "*xrf1trim_nb*")
+  ;; export_blocks: code, results, both, none
+  (setq export_blocks  "both")  
+#+end_src
+
+* XRF1 
+
+Verifying the nonlinear structural dynamics  on a clamped configuration.
+** Load modules 
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
+#+INCLUDE: "./runs.org::*Load modules" :only-contents t
+** Run cases
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
+:END:
+
+#+INCLUDE: "./runs.org::*Helper functions" :only-contents t
+#+INCLUDE: "./runs.org::*XRF1trim1" :only-contents t
+#+INCLUDE: "./runs.org::*XRF1trim-runs" :only-contents t
+#+INCLUDE: "./runs.org::*XRF1-gust" :only-contents t
+#+INCLUDE: "./runs.org::*Wrap up" :only-contents t
+
+** Postprocessing
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
+*** Plotting functions
+#+INCLUDE: "./sec_examples.org::*Common functions" :only-contents t
+#+INCLUDE: "./sec_examples.org::*H-xrf1" :only-contents t
+*** Aeroelastic dynamic loads on an industrial configuration
+#+INCLUDE: "./sec_examples.org::*XRF1" :only-contents t

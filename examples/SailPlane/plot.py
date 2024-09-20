@@ -1,6 +1,6 @@
 import seaborn as sns
 import pathlib
-from fem4inas.preprocessor import solution
+from feniax.preprocessor import solution
 #Import the required Libraries
 import streamlit as st
 import pyvista as pv
@@ -13,8 +13,8 @@ import plotly.express as px
 # Apply the default theme
 #sns.set_theme()
 
-BDF_FILE = "/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf"
-OP2_FILE = "/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.op2"
+BDF_FILE = "/media/acea/work/projects/FENIAX.examples/SailPlane/NASTRAN/SOL103/run_cao.bdf"
+OP2_FILE = "/media/acea/work/projects/FENIAX.examples/SailPlane/NASTRAN/SOL103/run_cao.op2"
 SCALE_MODES = 100.
 
 sol_path =  "./results_2023-11-09_07:47:53"
@@ -115,15 +115,15 @@ elif options == 'Solution':
 
 
 
-import fem4inas.unastran.aero as nasaero
+import feniax.unastran.aero as nasaero
 from pyNastran.bdf.bdf import BDF
 import pandas as pd
 import importlib
-importlib.reload(fem4inas.plotools.grid)
-import fem4inas.plotools.grid.AeroGrid
+importlib.reload(feniax.plotools.grid)
+import feniax.plotools.grid.AeroGrid
 
 
-fem4inas_file = '../FEM/structuralGrid'
+feniax.file = '../FEM/structuralGrid'
 dlm_file = "./NASTRAN/dlm_model.yaml"
 nastran_file = "./NASTRAN/SOL103/run_cao.bdf"
 
@@ -131,14 +131,14 @@ dlm_panels= nasaero.GenDLMPanels.from_file(dlm_file)
 bdf_model = BDF(debug=True)
 bdf_model.read_bdf(nastran_file, punch=False)
 
-df_grid = pd.read_csv(fem4inas_file, comment="#", sep=" ",
+df_grid = pd.read_csv(feniax.file, comment="#", sep=" ",
                     names=['x1', 'x2', 'x3', 'fe_order', 'component'])
 X = df_grid[['x1','x2','x3']].to_numpy()
 
-aerogrid = fem4inas.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
-panelmodel = fem4inas.plotools.grid.ASETModel(aerogrid, dlm_panels.set1x, X, bdf_model)
+aerogrid = feniax.plotools.grid.AeroGrid.build_DLMgrid(dlm_panels.model)
+panelmodel = feniax.plotools.grid.ASETModel(aerogrid, dlm_panels.set1x, X, bdf_model)
 
-sol_path = "/media/acea/work/projects/FEM4INAS/examples/SailPlane/results_2023-10-23_08:48:10/"
+sol_path = "/media/acea/work/projects/FENIAX.examples/SailPlane/results_2023-10-23_08:48:10/"
 sol = solution.IntrinsicSolution(sol_path)
 sol.load_container("Modes")
 sol.load_container("Couplings")
@@ -152,10 +152,10 @@ panelmodel.mesh_plot(folder_path="./paraview/results/data_mx",
                      data_name= "data_mx")
 
 bdfdef.vtk_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None)
-import fem4inas.plotools.interpolation as interpolation
-import fem4inas.plotools.nastranvtk.bdfdef as bdfdef
+import feniax.plotools.interpolation as interpolation
+import feniax.plotools.nastranvtk.bdfdef as bdfdef
 
-bdf = bdfdef.DefBdf("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
+bdf = bdfdef.DefBdf("/media/acea/work/projects/FENIAX.examples/SailPlane/NASTRAN/SOL103/run_cao.bdf")
 bdf.plot_vtk("./paraview/results/ref.bdf")
 nodesX = bdf.get_nodes()
 disp, coord = interpolation.compute(panelmodel.datam1_merged,
@@ -174,10 +174,10 @@ bdf.plot_vtk("./paraview/results/def.bdf")
 import pyvista
 pl = pyvista.Plotter()
 
-reader1 = pyvista.get_reader("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/paraview/results/ref.vtk/CQUAD4.vtu")
+reader1 = pyvista.get_reader("/media/acea/work/projects/FENIAX/examples/SailPlane/NASTRAN/paraview/results/ref.vtk/CQUAD4.vtu")
 mesh1 = reader1.read()
 pl.add_mesh(mesh1)
-reader2 = pyvista.get_reader("/media/acea/work/projects/FEM4INAS/examples/SailPlane/NASTRAN/paraview/results/ref.vtk/CBAR.vtu")
+reader2 = pyvista.get_reader("/media/acea/work/projects/FENIAX/examples/SailPlane/NASTRAN/paraview/results/ref.vtk/CBAR.vtu")
 mesh2 = reader2.read()
 pl.add_mesh(mesh2)
 pl.show()

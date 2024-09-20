@@ -3,9 +3,9 @@ import jax.numpy as jnp
 import pdb
 import sys
 import datetime
-import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-from fem4inas.preprocessor.inputs import Inputs
-import fem4inas.fem4inas_main
+import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+from feniax.preprocessor.inputs import Inputs
+import feniax.feniax_main
 import jax
 jax.config.update("jax_enable_x64", True)
 
@@ -47,7 +47,7 @@ inp.system.ad = dict(inputs=dict(alpha=1.),
                      objective_args=dict(nodes=(1,), components=(2,))
                      )
 config =  configuration.Config(inp)
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+sol = feniax.feniax_main.main(input_obj=config)
 
 
 # this time compute only the value of the objective with + epsilon
@@ -61,7 +61,7 @@ inp.system.ad = dict(inputs=dict(alpha=1.+epsilon),
                      )
 
 config =  configuration.Config(inp)
-sol2 = fem4inas.fem4inas_main.main(input_obj=config)
+sol2 = feniax.feniax_main.main(input_obj=config)
 jac = sol.dynamicsystem_sys1.jac['alpha']
 jac_fd = (sol2.dynamicsystem_sys1.f_ad - sol.dynamicsystem_sys1.f_ad) / epsilon
 
@@ -80,6 +80,6 @@ inp.system.ad = dict(inputs=dict(Ka=jnp.load("./FEM/Ka.npy"),
                      objective_var="X2",
                      objective_args=dict(nodes=(1,), components=(2,))
                      )
-config =  configuration.Config(inp)
-sol = fem4inas.fem4inas_main.main(input_obj=config)
+config = configuration.Config(inp)
+sol = feniax.feniax_main.main(input_obj=config)
 sol.staticsystem_sys1.jac

@@ -1,11 +1,11 @@
 #Import the required Libraries
 import streamlit as st
-from fem4inas.preprocessor import solution
-import fem4inas.preprocessor.configuration as configuration
+from feniax.preprocessor import solution
+import feniax.preprocessor.configuration as configuration
 import importlib
-import fem4inas.plotools.streamlit.intrinsic as sti
+import feniax.plotools.streamlit.intrinsic as sti
 importlib.reload(sti)
-import fem4inas
+import feniax
 
 st.set_page_config(
     page_title="Home page",
@@ -17,7 +17,7 @@ sti.home()
 st.divider()
 st.title("Sail Plane wing")
 st.markdown("This is a simplified box wing made of composite shells, lumped masses along the load paths and interpolation elements (RBE3s) connecting those to the main structure.")
-wingsp_path = str(fem4inas.PATH / "../docs/images/wingSP5b.png")
+wingsp_path = str(feniax.PATH / "../docs/images/wingSP5b.png")
 st.image(wingsp_path, caption="Wing box FE model")
 
 

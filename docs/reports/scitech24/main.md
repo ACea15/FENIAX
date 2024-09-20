@@ -70,13 +70,13 @@ An extensive verification has been carried out and is presented herein, starting
     import jax.numpy as jnp
     import pandas as pd
     import numpy as np
-    import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-    from fem4inas.preprocessor.inputs import Inputs
-    import fem4inas.fem4inas_main
-    import fem4inas.plotools.uplotly as uplotly
-    import fem4inas.plotools.utils as putils
-    import fem4inas.preprocessor.solution as solution
-    import fem4inas.unastran.op2reader as op2reader
+    import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+    from feniax.preprocessor.inputs import Inputs
+    import feniax.feniax_main
+    import feniax.plotools.uplotly as uplotly
+    import feniax.plotools.utils as putils
+    import feniax.preprocessor.solution as solution
+    import feniax.unastran.op2reader as op2reader
 
 
 <a id="org7edee0d"></a>
@@ -99,15 +99,15 @@ An extensive verification has been carried out and is presented herein, starting
     import jax.numpy as jnp
     import pandas as pd
     import numpy as np
-    import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-    from fem4inas.preprocessor.inputs import Inputs
-    import fem4inas.fem4inas_main
-    import fem4inas.plotools.uplotly as uplotly
-    import fem4inas.plotools.utils as putils
-    import fem4inas.preprocessor.solution as solution
-    import fem4inas.unastran.op2reader as op2reader
+    import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+    from feniax.preprocessor.inputs import Inputs
+    import feniax.feniax_main
+    import feniax.plotools.uplotly as uplotly
+    import feniax.plotools.utils as putils
+    import feniax.preprocessor.solution as solution
+    import feniax.unastran.op2reader as op2reader
     
-    argyrisbeam_folder = fem4inas.PATH / "../examples/ArgyrisBeam"
+    argyrisbeam_folder = feniax.PATH / "../examples/ArgyrisBeam"
     inp = Inputs()
     inp.engine = "intrinsicmodal"
     inp.fem.connectivity = [[]]
@@ -141,7 +141,7 @@ An extensive verification has been carried out and is presented herein, starting
                                                          ]
     inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6, 7]
     config_argy =  configuration.Config(inp)
-    sol_argy = fem4inas.fem4inas_main.main(input_obj=config_argy)
+    sol_argy = feniax.feniax_main.main(input_obj=config_argy)
 
 
 <a id="org57465e6"></a>
@@ -154,15 +154,15 @@ An extensive verification has been carried out and is presented herein, starting
     import jax.numpy as jnp
     import pandas as pd
     import numpy as np
-    import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-    from fem4inas.preprocessor.inputs import Inputs
-    import fem4inas.fem4inas_main
-    import fem4inas.plotools.uplotly as uplotly
-    import fem4inas.plotools.utils as putils
-    import fem4inas.preprocessor.solution as solution
-    import fem4inas.unastran.op2reader as op2reader
+    import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+    from feniax.preprocessor.inputs import Inputs
+    import feniax.feniax_main
+    import feniax.plotools.uplotly as uplotly
+    import feniax.plotools.utils as putils
+    import feniax.preprocessor.solution as solution
+    import feniax.unastran.op2reader as op2reader
     
-    with open (fem4inas.PATH / "../examples/ArgyrisBeam" / "argyris_new.pickle", 'rb') as fp:
+    with open (feniax.PATH / "../examples/ArgyrisBeam" / "argyris_new.pickle", 'rb') as fp:
         argypickle  = pickle.load(fp)
     argypickle['c'][10][0] = argypickle['c'][10][0][6:]
     argypickle['c'][10][1] = argypickle['c'][10][1][6:]
@@ -262,7 +262,7 @@ An extensive verification has been carried out and is presented herein, starting
 
 ## Simo45Beam
 
-    simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
+    simo45beam_folder = feniax.PATH / "../examples/Simo45Beam"
     inp = Inputs()
     inp.engine = "intrinsicmodal"
     inp.fem.connectivity = {'Beam1':None}
@@ -294,15 +294,15 @@ An extensive verification has been carried out and is presented herein, starting
         import jax.numpy as jnp
         import pandas as pd
         import numpy as np
-        import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-        from fem4inas.preprocessor.inputs import Inputs
-        import fem4inas.fem4inas_main
-        import fem4inas.plotools.uplotly as uplotly
-        import fem4inas.plotools.utils as putils
-        import fem4inas.preprocessor.solution as solution
-        import fem4inas.unastran.op2reader as op2reader
+        import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+        from feniax.preprocessor.inputs import Inputs
+        import feniax.feniax_main
+        import feniax.plotools.uplotly as uplotly
+        import feniax.plotools.utils as putils
+        import feniax.preprocessor.solution as solution
+        import feniax.unastran.op2reader as op2reader
         
-        simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
+        simo45beam_folder = feniax.PATH / "../examples/Simo45Beam"
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = {'Beam1':None}
@@ -328,7 +328,7 @@ An extensive verification has been carried out and is presented herein, starting
         inp.systems.sett.s1.xloads.follower_interpolation = [[float(li) for li in np.arange(0.,3300.,300)]]
         inp.systems.sett.s1.t = list(range(1,11))
         config_simo45f = configuration.Config(inp)
-        sol_simofoll = fem4inas.fem4inas_main.main(input_obj=config_simo45f)
+        sol_simofoll = feniax.feniax_main.main(input_obj=config_simo45f)
 
 2.  Plot
 
@@ -339,15 +339,15 @@ An extensive verification has been carried out and is presented herein, starting
         import jax.numpy as jnp
         import pandas as pd
         import numpy as np
-        import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-        from fem4inas.preprocessor.inputs import Inputs
-        import fem4inas.fem4inas_main
-        import fem4inas.plotools.uplotly as uplotly
-        import fem4inas.plotools.utils as putils
-        import fem4inas.preprocessor.solution as solution
-        import fem4inas.unastran.op2reader as op2reader
+        import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+        from feniax.preprocessor.inputs import Inputs
+        import feniax.feniax_main
+        import feniax.plotools.uplotly as uplotly
+        import feniax.plotools.utils as putils
+        import feniax.preprocessor.solution as solution
+        import feniax.unastran.op2reader as op2reader
         
-        simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
+        simo45beam_folder = feniax.PATH / "../examples/Simo45Beam"
         u1=pd.read_csv(simo45beam_folder / "validationdata/u1.csv", names=["f","disp"])
         u2=pd.read_csv(simo45beam_folder / "validationdata/u2.csv", names=["f","disp"])
         u3=pd.read_csv(simo45beam_folder / "validationdata/u3.csv", names=["f","disp"])
@@ -506,15 +506,15 @@ An extensive verification has been carried out and is presented herein, starting
         import jax.numpy as jnp
         import pandas as pd
         import numpy as np
-        import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-        from fem4inas.preprocessor.inputs import Inputs
-        import fem4inas.fem4inas_main
-        import fem4inas.plotools.uplotly as uplotly
-        import fem4inas.plotools.utils as putils
-        import fem4inas.preprocessor.solution as solution
-        import fem4inas.unastran.op2reader as op2reader
+        import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+        from feniax.preprocessor.inputs import Inputs
+        import feniax.feniax_main
+        import feniax.plotools.uplotly as uplotly
+        import feniax.plotools.utils as putils
+        import feniax.preprocessor.solution as solution
+        import feniax.unastran.op2reader as op2reader
         
-        simo45beam_folder = fem4inas.PATH / "../examples/Simo45Beam"
+        simo45beam_folder = feniax.PATH / "../examples/Simo45Beam"
         inp = Inputs()
         inp.engine = "intrinsicmodal"
         inp.fem.connectivity = {'Beam1':None}
@@ -540,7 +540,7 @@ An extensive verification has been carried out and is presented herein, starting
         inp.systems.sett.s1.xloads.dead_interpolation = [[float(li) for li in np.arange(0.,3300.,300)]]
         inp.systems.sett.s1.t = list(range(1,11))
         config_simo45d =  configuration.Config(inp)
-        sol_simodead = fem4inas.fem4inas_main.main(input_obj=config_simo45d)
+        sol_simodead = feniax.feniax_main.main(input_obj=config_simo45d)
 
 2.  Plot
 
@@ -550,13 +550,13 @@ An extensive verification has been carried out and is presented herein, starting
         import jax.numpy as jnp
         import pandas as pd
         import numpy as np
-        import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-        from fem4inas.preprocessor.inputs import Inputs
-        import fem4inas.fem4inas_main
-        import fem4inas.plotools.uplotly as uplotly
-        import fem4inas.plotools.utils as putils
-        import fem4inas.preprocessor.solution as solution
-        import fem4inas.unastran.op2reader as op2reader
+        import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+        from feniax.preprocessor.inputs import Inputs
+        import feniax.feniax_main
+        import feniax.plotools.uplotly as uplotly
+        import feniax.plotools.utils as putils
+        import feniax.preprocessor.solution as solution
+        import feniax.unastran.op2reader as op2reader
         
         figname = "figs/s45dead.png"
         sol_s45d = solution.IntrinsicReader("./Simo45Dead")
@@ -641,15 +641,15 @@ An extensive verification has been carried out and is presented herein, starting
     import jax.numpy as jnp
     import pandas as pd
     import numpy as np
-    import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-    from fem4inas.preprocessor.inputs import Inputs
-    import fem4inas.fem4inas_main
-    import fem4inas.plotools.uplotly as uplotly
-    import fem4inas.plotools.utils as putils
-    import fem4inas.preprocessor.solution as solution
-    import fem4inas.unastran.op2reader as op2reader
+    import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+    from feniax.preprocessor.inputs import Inputs
+    import feniax.feniax_main
+    import feniax.plotools.uplotly as uplotly
+    import feniax.plotools.utils as putils
+    import feniax.preprocessor.solution as solution
+    import feniax.unastran.op2reader as op2reader
     
-    wingSP_folder = fem4inas.PATH / "../examples/wingSP"
+    wingSP_folder = feniax.PATH / "../examples/wingSP"
     inp = Inputs()
     inp.engine = "intrinsicmodal"
     inp.fem.connectivity = {'c1': None}
@@ -676,7 +676,7 @@ An extensive verification has been carried out and is presented herein, starting
                                                          [0.05 * 6e5, 1 * 6e5,  0., 0.]
                                                          ]
     config_wsp =  configuration.Config(inp)
-    sol_wsp = fem4inas.fem4inas_main.main(input_obj=config_wsp)
+    sol_wsp = feniax.feniax_main.main(input_obj=config_wsp)
 
 
 <a id="orgbd55218"></a>
@@ -691,15 +691,15 @@ Read Nastran
     import jax.numpy as jnp
     import pandas as pd
     import numpy as np
-    import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-    from fem4inas.preprocessor.inputs import Inputs
-    import fem4inas.fem4inas_main
-    import fem4inas.plotools.uplotly as uplotly
-    import fem4inas.plotools.utils as putils
-    import fem4inas.preprocessor.solution as solution
-    import fem4inas.unastran.op2reader as op2reader
+    import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+    from feniax.preprocessor.inputs import Inputs
+    import feniax.feniax_main
+    import feniax.plotools.uplotly as uplotly
+    import feniax.plotools.utils as putils
+    import feniax.preprocessor.solution as solution
+    import feniax.unastran.op2reader as op2reader
     
-    wingSP_folder = fem4inas.PATH / "../examples/wingSP"
+    wingSP_folder = feniax.PATH / "../examples/wingSP"
     nastran_path = wingSP_folder / "NASTRAN/"
     nas_wspl = op2reader.NastranReader(op2name=(nastran_path / "wing_109d.op2"),
                                        bdfname=(nastran_path / "wing_109b.bdf"))
@@ -793,7 +793,7 @@ Read Nastran
     |     4 | Gl1i1c1u0r0m1 | 67 (l1)     | 14.0732311562 (i1)  | 2 (c0)             | 200 (u0) | 1.225 (r0) | 0.81 (m0) |
     |     5 |               |             |                     |                    |          |            |           |
 
-    xrf1_folder = fem4inas.PATH / "../examples/XRF1/"
+    xrf1_folder = feniax.PATH / "../examples/XRF1/"
     inp = Inputs()
     inp.engine = "intrinsicmodal"
     inp.fem.eig_type = "input_memory"
@@ -841,15 +841,15 @@ Read Nastran
     import jax.numpy as jnp
     import pandas as pd
     import numpy as np
-    import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-    from fem4inas.preprocessor.inputs import Inputs
-    import fem4inas.fem4inas_main
-    import fem4inas.plotools.uplotly as uplotly
-    import fem4inas.plotools.utils as putils
-    import fem4inas.preprocessor.solution as solution
-    import fem4inas.unastran.op2reader as op2reader
+    import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+    from feniax.preprocessor.inputs import Inputs
+    import feniax.feniax_main
+    import feniax.plotools.uplotly as uplotly
+    import feniax.plotools.utils as putils
+    import feniax.preprocessor.solution as solution
+    import feniax.unastran.op2reader as op2reader
     
-    xrf1_folder = fem4inas.PATH / "../examples/XRF1/"
+    xrf1_folder = feniax.PATH / "../examples/XRF1/"
     inp = Inputs()
     inp.engine = "intrinsicmodal"
     inp.fem.eig_type = "input_memory"
@@ -890,7 +890,7 @@ Read Nastran
     inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
     inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
     config_gust =  configuration.Config(inp)
-    sol_gust1 = fem4inas.fem4inas_main.main(input_obj=config_gust)
+    sol_gust1 = feniax.feniax_main.main(input_obj=config_gust)
 
 
 <a id="org4d4aa4e"></a>
@@ -903,15 +903,15 @@ Read Nastran
     import jax.numpy as jnp
     import pandas as pd
     import numpy as np
-    import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-    from fem4inas.preprocessor.inputs import Inputs
-    import fem4inas.fem4inas_main
-    import fem4inas.plotools.uplotly as uplotly
-    import fem4inas.plotools.utils as putils
-    import fem4inas.preprocessor.solution as solution
-    import fem4inas.unastran.op2reader as op2reader
+    import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+    from feniax.preprocessor.inputs import Inputs
+    import feniax.feniax_main
+    import feniax.plotools.uplotly as uplotly
+    import feniax.plotools.utils as putils
+    import feniax.preprocessor.solution as solution
+    import feniax.unastran.op2reader as op2reader
     
-    xrf1_folder = fem4inas.PATH / "../examples/XRF1/"
+    xrf1_folder = feniax.PATH / "../examples/XRF1/"
     inp = Inputs()
     inp.engine = "intrinsicmodal"
     inp.fem.eig_type = "input_memory"
@@ -952,7 +952,7 @@ Read Nastran
     inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
     inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
     config_gust2 =  configuration.Config(inp)
-    sol_gust2 = fem4inas.fem4inas_main.main(input_obj=config_gust2)
+    sol_gust2 = feniax.feniax_main.main(input_obj=config_gust2)
 
 
 <a id="orgaacea69"></a>
@@ -965,15 +965,15 @@ Read Nastran
     import jax.numpy as jnp
     import pandas as pd
     import numpy as np
-    import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-    from fem4inas.preprocessor.inputs import Inputs
-    import fem4inas.fem4inas_main
-    import fem4inas.plotools.uplotly as uplotly
-    import fem4inas.plotools.utils as putils
-    import fem4inas.preprocessor.solution as solution
-    import fem4inas.unastran.op2reader as op2reader
+    import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+    from feniax.preprocessor.inputs import Inputs
+    import feniax.feniax_main
+    import feniax.plotools.uplotly as uplotly
+    import feniax.plotools.utils as putils
+    import feniax.preprocessor.solution as solution
+    import feniax.unastran.op2reader as op2reader
     
-    xrf1_folder = fem4inas.PATH / "../examples/XRF1/"
+    xrf1_folder = feniax.PATH / "../examples/XRF1/"
     inp = Inputs()
     inp.engine = "intrinsicmodal"
     inp.fem.eig_type = "input_memory"
@@ -1014,7 +1014,7 @@ Read Nastran
     inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
     inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
     config_gust3 =  configuration.Config(inp)
-    sol_gust3 = fem4inas.fem4inas_main.main(input_obj=config_gust3)
+    sol_gust3 = feniax.feniax_main.main(input_obj=config_gust3)
 
 
 <a id="orgf71ba00"></a>
@@ -1027,15 +1027,15 @@ Read Nastran
     import jax.numpy as jnp
     import pandas as pd
     import numpy as np
-    import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-    from fem4inas.preprocessor.inputs import Inputs
-    import fem4inas.fem4inas_main
-    import fem4inas.plotools.uplotly as uplotly
-    import fem4inas.plotools.utils as putils
-    import fem4inas.preprocessor.solution as solution
-    import fem4inas.unastran.op2reader as op2reader
+    import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+    from feniax.preprocessor.inputs import Inputs
+    import feniax.feniax_main
+    import feniax.plotools.uplotly as uplotly
+    import feniax.plotools.utils as putils
+    import feniax.preprocessor.solution as solution
+    import feniax.unastran.op2reader as op2reader
     
-    xrf1_folder = fem4inas.PATH / "../examples/XRF1/"
+    xrf1_folder = feniax.PATH / "../examples/XRF1/"
     inp = Inputs()
     inp.engine = "intrinsicmodal"
     inp.fem.eig_type = "input_memory"
@@ -1076,7 +1076,7 @@ Read Nastran
     inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
     inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
     config_gust4 =  configuration.Config(inp)
-    sol_gust4 = fem4inas.fem4inas_main.main(input_obj=config_gust4)
+    sol_gust4 = feniax.feniax_main.main(input_obj=config_gust4)
 
 
 <a id="orga52a234"></a>
@@ -1100,20 +1100,20 @@ Read Nastran
         import jax.numpy as jnp
         import pandas as pd
         import numpy as np
-        import fem4inas.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-        from fem4inas.preprocessor.inputs import Inputs
-        import fem4inas.fem4inas_main
-        import fem4inas.plotools.uplotly as uplotly
-        import fem4inas.plotools.utils as putils
-        import fem4inas.preprocessor.solution as solution
-        import fem4inas.unastran.op2reader as op2reader
+        import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+        from feniax.preprocessor.inputs import Inputs
+        import feniax.feniax_main
+        import feniax.plotools.uplotly as uplotly
+        import feniax.plotools.utils as putils
+        import feniax.preprocessor.solution as solution
+        import feniax.unastran.op2reader as op2reader
         
-        nastran_path = fem4inas.PATH / "../examples/XRF1/NASTRAN/146-111/"
+        nastran_path = feniax.PATH / "../examples/XRF1/NASTRAN/146-111/"
         nas111 = op2reader.NastranReader(op2name=(nastran_path / "XRF1-146run.op2"))
         nas111.readModel()
         t111, u111 = nas111.displacements()
         
-        nastran_pathm = fem4inas.PATH / "../examples/XRF1/NASTRAN/146-111_081"
+        nastran_pathm = feniax.PATH / "../examples/XRF1/NASTRAN/146-111_081"
         nas111m = op2reader.NastranReader(op2name=(nastran_pathm / "XRF1-146run.op2"))
         nas111m.readModel()
         t111m, u111m = nas111m.displacements()
@@ -1381,7 +1381,7 @@ Read Nastran
 3.  Plot alphas
 
         import numpy as np
-        directory = fem4inas.PATH / "../Models/XRF1-2/Results_modes/"
+        directory = feniax.PATH / "../Models/XRF1-2/Results_modes/"
         nmodes = 70
         #q = np.load("%s/q_%s.npy"%(directory, nmodes))
         omega = np.load("%s/../Results_modes/Omega_%s.npy"%(directory, nmodes))
