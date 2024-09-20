@@ -14,11 +14,11 @@
       
       
       
-        <link rel="next" href="examples/cpc_examples/">
+        <link rel="next" href="getting_started/">
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.34">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.35">
     
     
       
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#finite-element-models-4-intrinsic-nonlinear-aeroelastics-in-jax-feniax" class="md-skip">
+        <a href="#finite-element-models-4-intrinsic-nonlinear-aeroelastics-in-jax" class="md-skip">
           Skip to content
         </a>
       
@@ -244,10 +244,27 @@
   
   
   
+    <li class="md-tabs__item">
+      <a href="getting_started/" class="md-tabs__link">
+        
+  
+    
+  
+  Getting started
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
     
     
       <li class="md-tabs__item">
-        <a href="examples/cpc_examples/" class="md-tabs__link">
+        <a href="examples/" class="md-tabs__link">
           
   
     
@@ -287,12 +304,32 @@
     
     
       <li class="md-tabs__item">
+        <a href="JAX/" class="md-tabs__link">
+          
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
         <a href="api/inputs/" class="md-tabs__link">
           
   
     
   
-  Codes
+  Code base
 
         </a>
       </li>
@@ -404,19 +441,65 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#t1" class="md-nav__link">
+  <a href="#getting-started" class="md-nav__link">
     <span class="md-ellipsis">
-      t1
+      Getting started
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="t1">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#t3" class="md-nav__link">
+  <a href="#nonlinear-structural-static-results" class="md-nav__link">
     <span class="md-ellipsis">
-      t3
+      Nonlinear structural static results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wing-free-dynamics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Wing free dynamics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#free-flying-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Free flying structure
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Free flying structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#2d-dynamics" class="md-nav__link">
+    <span class="md-ellipsis">
+      2D dynamics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3d-dynamics" class="md-nav__link">
+    <span class="md-ellipsis">
+      3D dynamics
     </span>
   </a>
   
@@ -424,6 +507,71 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#industrial-aircraft-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Industrial Aircraft model
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Industrial Aircraft model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gust-clamped-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gust clamped model
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gust-trimmed-flight" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gust trimmed flight
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#theoretical-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      Theoretical background
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-base" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code base
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      License
+    </span>
+  </a>
   
 </li>
       
@@ -441,8 +589,38 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="getting_started/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting started
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
     
     
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
       
         
       
@@ -458,10 +636,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -472,8 +650,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_2">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Examples
           </label>
@@ -486,11 +664,116 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/cpc_examples/" class="md-nav__link">
+      <a href="examples/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    CPC_examples
+    Summary
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/SailPlane/sailplane_nb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Sail Plane static response
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/wingSP/wingSP_nb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Wing nonlinear dynamics
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/SimoFS/main/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Free flying shell structure
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/XRF1/xrf1_nb/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Full aircraft (clamped) gust verification
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/XRF1trim/main/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Full aircraft trim + dynamic loads
   </span>
   
 
@@ -530,10 +813,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   <span class="md-ellipsis">
@@ -544,8 +827,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Theoretical background
           </label>
@@ -606,24 +889,142 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   <span class="md-ellipsis">
-    Codes
+    Architecture
   </span>
   
 
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
-            Codes
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="JAX/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    JAX
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="UML/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    UML description
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="inputs.md" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Program inputs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Code base
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Code base
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -724,19 +1125,65 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#t1" class="md-nav__link">
+  <a href="#getting-started" class="md-nav__link">
     <span class="md-ellipsis">
-      t1
+      Getting started
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="t1">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#t3" class="md-nav__link">
+  <a href="#nonlinear-structural-static-results" class="md-nav__link">
     <span class="md-ellipsis">
-      t3
+      Nonlinear structural static results
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wing-free-dynamics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Wing free dynamics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#free-flying-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Free flying structure
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Free flying structure">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#2d-dynamics" class="md-nav__link">
+    <span class="md-ellipsis">
+      2D dynamics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3d-dynamics" class="md-nav__link">
+    <span class="md-ellipsis">
+      3D dynamics
     </span>
   </a>
   
@@ -744,6 +1191,71 @@
         
       </ul>
     </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#industrial-aircraft-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Industrial Aircraft model
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Industrial Aircraft model">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#gust-clamped-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gust clamped model
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gust-trimmed-flight" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gust trimmed flight
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#theoretical-background" class="md-nav__link">
+    <span class="md-ellipsis">
+      Theoretical background
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-base" class="md-nav__link">
+    <span class="md-ellipsis">
+      Code base
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      License
+    </span>
+  </a>
   
 </li>
       
@@ -762,12 +1274,77 @@
                   
 
 
-<h1 id="finite-element-models-4-intrinsic-nonlinear-aeroelastics-in-jax-feniax">Finite Element models 4 Intrinsic Nonlinear Aeroelastics in JAX [FENIAX]<a class="headerlink" href="#finite-element-models-4-intrinsic-nonlinear-aeroelastics-in-jax-feniax" title="Permanent link">¤</a></h1>
-<p>FEM4INAS is an aeroelastic toolbox  written and parallelized in Python, which acts as a post-processor of commercial software such as MSC Nastran. 
-Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.</p>
-<h2 id="t1">t1<a class="headerlink" href="#t1" title="Permanent link">¤</a></h2>
-<p>fsdf</p>
-<h3 id="t3">t3<a class="headerlink" href="#t3" title="Permanent link">¤</a></h3>
+<h1 id="finite-element-models-4-intrinsic-nonlinear-aeroelastics-in-jax">Finite Element models 4 Intrinsic Nonlinear Aeroelastics in JAX<a class="headerlink" href="#finite-element-models-4-intrinsic-nonlinear-aeroelastics-in-jax" title="Permanent link">¤</a></h1>
+<p>FENIAX is an aeroelastic toolbox  written in Python using JAX. It acts as a post-processor of commercial software such as MSC Nastran. </p>
+<ul>
+<li>Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.</li>
+<li>Nonlinear solutions run very fast, at or close to real time.</li>
+<li>Algorithmic differentiation (AD) of the response is available via JAX. The code is carefully crafted to perform all computations on tensor data structures and via algorithms available for AD, much like Machine Learning models are built.</li>
+<li>The code can be run on modern hardware architectures such as GPUs.</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The software is in beta, and while it has been thoroughly tested, new features keep being added and it is likely features for your analysis might be missing. Get in touch if you encounter problems.</p>
+</div>
+<h2 id="getting-started">Getting started<a class="headerlink" href="#getting-started" title="Permanent link">¤</a></h2>
+<p>If you just want to start running the code, navigate to the <a href="getting_started/">Getting started</a></p>
+<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">¤</a></h2>
+<p>The most relevant examples in the code base are shown here, these and more can be found in the folder <code>/examples</code>
+They are also part of a large test suite that is integrated into the development using CI/CD.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Navigate to the code of the various examples, including the simulation input settings and postprocessing of the simulation --exactly as it was used for the articles backing the software. See <a href="examples/">examples</a></p>
+</div>
+<h3 id="nonlinear-structural-static-results">Nonlinear structural static results<a class="headerlink" href="#nonlinear-structural-static-results" title="Permanent link">¤</a></h3>
+<div class="admonition success">
+<p class="admonition-title">Success</p>
+<ul>
+<li>Validated with MSC Nastran nonlinear solution (sol 400)</li>
+<li>AD differentiation of the response verified against finite-differences</li>
+</ul>
+</div>
+<p><a href="examples/SailPlane/sailplane_nb/">Notebook</a></p>
+<p><img alt="Sail Plane static" src="img/SailPlane3D_front.png" /></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Take a liner FE model of arbitrary complexity from your favourite FE solver, and turn it into a fully geometrically nonlinear model. You just need a condensation step into the main load paths and the resulting linear stiffness and mass matrices.  </p>
+</div>
+<h3 id="wing-free-dynamics">Wing free dynamics<a class="headerlink" href="#wing-free-dynamics" title="Permanent link">¤</a></h3>
+<div class="admonition success">
+<p class="admonition-title">Success</p>
+<ul>
+<li>Validated with MSC Nastran nonlinear solution (sol 400)</li>
+<li>Runs over x100 faster than Nastran </li>
+<li>AD differentiation of the response verified against finite-differences</li>
+</ul>
+</div>
+<p><a href="examples/wingSP/wingSP_nb/">Notebook</a></p>
+<p><img alt="Wing free dynamics" src="media/wingSP_optimized.gif" /></p>
+<h3 id="free-flying-structure">Free flying structure<a class="headerlink" href="#free-flying-structure" title="Permanent link">¤</a></h3>
+<p>This example first appeared in the work of Juan Carlos Simo (see <a href="https://mechanics.stanford.edu/simo">Bio</a>)
+, a pioneer in the field of computational structural mechanics and the </p>
+<p><a href="examples/wingSP/wingSP_nb/">Notebook</a></p>
+<h4 id="2d-dynamics">2D dynamics<a class="headerlink" href="#2d-dynamics" title="Permanent link">¤</a></h4>
+<p><img alt="Free flying structure 2D" src="media/SimoFFB2D_optimized.gif" /></p>
+<h4 id="3d-dynamics">3D dynamics<a class="headerlink" href="#3d-dynamics" title="Permanent link">¤</a></h4>
+<p><img alt="Free flying structure 3D" src="media/SimoFFB3D_optimized.gif" /></p>
+<h3 id="industrial-aircraft-model">Industrial Aircraft model<a class="headerlink" href="#industrial-aircraft-model" title="Permanent link">¤</a></h3>
+<div class="admonition success">
+<p class="admonition-title">Success</p>
+<ul>
+<li>Linear response validated with MSC Nastran linear aeroelastic solution (sol 146)</li>
+<li>Nonlinear response in our solvers takes similar times to the linear Nastran solution!! </li>
+</ul>
+</div>
+<h4 id="gust-clamped-model">Gust clamped model<a class="headerlink" href="#gust-clamped-model" title="Permanent link">¤</a></h4>
+<p><a href="examples/XRF1/xrf1_nb/">Notebook</a></p>
+<p><img alt="XRF1-gustclamped" src="media/xrf1_gust_optimized.gif" /></p>
+<h4 id="gust-trimmed-flight">Gust trimmed flight<a class="headerlink" href="#gust-trimmed-flight" title="Permanent link">¤</a></h4>
+<p><img alt="XRF1-Trim+gust" src="media/xrf1_trimgust_optimized.gif" /></p>
+<h2 id="theoretical-background">Theoretical background<a class="headerlink" href="#theoretical-background" title="Permanent link">¤</a></h2>
+<h2 id="code-base">Code base<a class="headerlink" href="#code-base" title="Permanent link">¤</a></h2>
+<h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">¤</a></h2>
+<p>Please see the <a href="LICENSE/">project license</a> for further details.</p>
 
 
 
@@ -804,13 +1381,13 @@ Arbitrary FE models built for linear aeroelastic analysis are enhanced with geom
         
         
           
-          <a href="examples/cpc_examples/" class="md-footer__link md-footer__link--next" aria-label="Next: CPC_examples">
+          <a href="getting_started/" class="md-footer__link md-footer__link--next" aria-label="Next: Getting started">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                CPC_examples
+                Getting started
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -844,7 +1421,7 @@ Arbitrary FE models built for linear aeroelastic analysis are enhanced with geom
     </div>
     
     
-    <script id="__config" type="application/json">{"base": ".", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "assets/javascripts/workers/search.07f07601.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": ".", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="assets/javascripts/bundle.56dfad97.min.js"></script>
