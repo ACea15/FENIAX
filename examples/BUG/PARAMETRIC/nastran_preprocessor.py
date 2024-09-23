@@ -5,6 +5,7 @@ import os
 import copy
 from concurrent.futures import ThreadPoolExecutor,as_completed
 from importlib import reload
+import multiprocessing
 from multiprocessing import Process,Queue
 from nastran_tools import read_pch
 from bug_param_decoder import *
@@ -346,12 +347,13 @@ class NastranPreprocessor:
     for i,param in enumerate(params):
       dir_name=f'{self.parametric_dir}/case{i}'
       os.makedirs(dir_name,exist_ok=True)
+      os.makedirs(dir_name+'/nastran_files',exist_ok=True)
       with open(f'{self.parametric_dir}/case{i}/param.pkl','wb') as f:
         pickle.dump(param,f)
-      process=Process(target=_write_bdf_p,args=(self.bdfname,param,dir_name,True))
-      bdfnames.append(f'{dir_name}/main.bdf')
-      bdfnames.append(f'{dir_name}/main_p.bdf')
-      dirnames.append(dir_name);dirnames.append(dir_name)
+      process=Process(target=_write_bdf_p,args=(self.bdfname,param,dir_name+'/nastran_files',True))
+      bdfnames.append(f'{dir_name}/nastran_files/main.bdf')
+      bdfnames.append(f'{dir_name}/nastran_files/main_p.bdf')
+      dirnames.append(dir_name+'/nastran_files');dirnames.append(dir_name+'/nastran_files')
       process.start()
       process_list.append(process)
     for process in process_list:
@@ -369,23 +371,24 @@ class NastranPreprocessor:
       for future in as_completed(futures):
         pass
     self.bdfnames=bdfnames
-    #read output files and execute feniax
-    for i,param in enumerate(params):
+    #read output files
+
+    for i in range(len(params)):
       dir_name=f'{self.parametric_dir}/case{i}'
       os.makedirs(dir_name+'/FEM',exist_ok=True)
-      self.Ka,self.Ma,nid_rom=read_pch(f"{dir_name}/main_p.pch")
-      op2model=read_op2(f"{dir_name}/main.op2",debug=None)
-      _Ma=shift_mat(self.Ma)
-      eigenvalues,eigenvectors_rom=sp.linalg.eigh(self.Ka,_Ma)
+      Ka,Ma,nid_rom=read_pch(f"{dir_name}/nastran_files/main_p.pch")
+      op2model=read_op2(f"{dir_name}/nastran_files/main.op2",debug=None)
+      _Ma=shift_mat(Ma)
+      eigenvalues,eigenvectors_rom=sp.linalg.eigh(Ka,_Ma)
       eigenvalues_ns=np.array(op2model.eigenvectors[1].eigns,dtype=np.float64)
       eigenvalues[:len(eigenvalues_ns)]=eigenvalues_ns
-      self.eigenvectors=(op2model.eigenvectors[1].data).astype(np.float64)
+      eigenvectors=(op2model.eigenvectors[1].data).astype(np.float64)
       nid_full=op2model.eigenvectors[1].node_gridtype[:,0]
       id_full2rom=np.where(nid_full==nid_rom[:,None])[1]
-      eigenvectors_rom_ns=self.eigenvectors[:,id_full2rom].reshape(self.eigenvectors.shape[0],-1).T #(ndim,nmode)
+      eigenvectors_rom_ns=eigenvectors[:,id_full2rom].reshape(eigenvectors.shape[0],-1).T #(ndim,nmode)
       eigenvectors_rom[:,:eigenvectors_rom_ns.shape[1]]=eigenvectors_rom_ns
-      np.save(f'{dir_name}/FEM/Ka.npy',self.Ka)
-      np.save(f'{dir_name}/FEM/Ma.npy',self.Ma)
+      np.save(f'{dir_name}/FEM/Ka.npy',Ka)
+      np.save(f'{dir_name}/FEM/Ma.npy',Ma)
       np.save(f'{dir_name}/FEM/eigenvals.npy',eigenvalues)
       np.save(f'{dir_name}/FEM/eigenvecs.npy',eigenvectors_rom)
       shutil.copy(fname_grid,f'{dir_name}/FEM/structuralGrid')
