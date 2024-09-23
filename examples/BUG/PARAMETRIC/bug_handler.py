@@ -235,7 +235,7 @@ class BUGHandler:
           pid+=self.annotation_pshell[name]
         pid=list(set(pid))
         decoder_name='MAT2G_'+key
-        converted_params['P_'+decoder_name]=params[key]
+        converted_params['P_'+decoder_name]=params[key].flatten()
         converted_params['C_'+decoder_name]=MAT2G(pid,self,self.qmat)
       elif variableName=='MASS_X1': #CONM2
         eid=[]
@@ -287,6 +287,12 @@ class BUGHandler:
     out['PX']=list(self.annotation_caero.keys())
     out['CHORD']=list(self.annotation_caero.keys())
     return out
+  
+  def get_rom_dof(self):
+    """
+    get number of degrees of freedom for ROM
+    """
+    return len(self.bdf.asets[0].ids)*6
 
   def plot_caeros(self,eids=None,fig=None):
     """
@@ -678,14 +684,12 @@ class BUGHandler:
       raise NotImplementedError
   
   def is_eid_equal_pid(self):
-    for eid in self.eid_dict['CQUAD4']:
-      if eid-self.bdf.elements[eid].pid!=0:
-        print(eid,self.bdf.elements[eid].pid)
-        return False
-    for eid in self.eid_dict['CTRIA3']:
-      if eid-self.bdf.elements[eid].pid!=0:
-        print(eid,self.bdf.elements[eid].pid)
-        return False
+    for key in self.eid_dict.keys():
+      if key in ['CQUAD4','CTRIA3']:
+        for eid in self.eid_dict[key]:
+          if eid-self.bdf.elements[eid].pid!=0:
+            print(eid,self.bdf.elements[eid].pid)
+            return False
     return True
 
   def run_nastran(self,thickness,out_dir):

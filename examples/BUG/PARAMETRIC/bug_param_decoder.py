@@ -55,13 +55,14 @@ class MAT2G(BUGDecoder):
       alpha : stacking angle [0,+alpha,-alpha,90]s in degree
     """
     self.scale_param=180.0
-    nparam=len(param)
+    _param=param.reshape(-1,2)
+    nparam=len(_param)
     if self.coord_control is None:
       self.coord_control=np.linspace(self.pshell_y_abs.min(),self.pshell_y_abs.max(),nparam)
     #interpolate angles using PchipInterpolator
-    theta=sp.interpolate.PchipInterpolator(self.coord_control,param[:,0])(self.pshell_y_abs)
+    theta=sp.interpolate.PchipInterpolator(self.coord_control,_param[:,0])(self.pshell_y_abs)
     theta=self.pshell_y_sgn*theta*np.pi/180
-    alpha=sp.interpolate.PchipInterpolator(self.coord_control,param[:,1])(self.pshell_y_abs)
+    alpha=sp.interpolate.PchipInterpolator(self.coord_control,_param[:,1])(self.pshell_y_abs)
     alpha=alpha*np.pi/180
     
     #calculate Q matrix

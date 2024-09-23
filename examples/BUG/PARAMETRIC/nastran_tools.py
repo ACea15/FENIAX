@@ -29,4 +29,6 @@ def read_pch(fname):
     if idx[i][1]==1:
       nid_rom.append(idx[i][0])
   nid_rom=np.array(nid_rom)
+  Kaa=Kaa.astype(np.float64)
+  Maa=Maa.astype(np.float64)
   return Kaa,Maa,nid_rom

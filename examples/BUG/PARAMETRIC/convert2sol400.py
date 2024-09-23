@@ -1,8 +1,8 @@
 from pyNastran.bdf.bdf import read_bdf,BDF
 import numpy as np
 
-def convert_followingz_static(dbfname_in,bdfname_out,loading_gids,load,nstep):
-  bdfmodel=read_bdf(dbfname_in,debug=None)
+def convert_followingz_static(bdfname_in,bdfname_out,loading_gids,load,nstep):
+  bdfmodel=read_bdf(bdfname_in,debug=None)
   bdfmodel.sol=400
   bdfmodel.case_control_deck.create_new_subcase(1)
   bdfmodel.case_control_deck.add_parameter_to_local_subcase(1,'SUBTITLE=load1')
@@ -16,7 +16,7 @@ def convert_followingz_static(dbfname_in,bdfname_out,loading_gids,load,nstep):
   bdfmodel.add_param('LGDISP',1)
   bdfmodel.add_param('POST',-1)
   #bdfmodel.add_param('AUTOMSET','YES')
-  arg=['NLSTEP',1]+[None]*7+['GENERAL',50,2,40]+[None]*4+['FIXED',nstep]
+  arg=['NLSTEP',1]+[None]*7+['GENERAL',100,2,40]+[None]*4+['FIXED',nstep]
   bdfmodel.add_card(arg,'NLSTEP')
   nids=[]
   for nid in bdfmodel.nodes:
@@ -60,8 +60,8 @@ def convert_followingz_static(dbfname_in,bdfname_out,loading_gids,load,nstep):
 from pyNastran.bdf.bdf import read_bdf,BDF
 import numpy as np
 
-def convert_followingz_dynamic(dbfname_in,bdfname_out,loading_gids,load_x,load_y,nstep):
-  bdfmodel=read_bdf(dbfname_in,debug=None)
+def convert_followingz_dynamic(bdfname_in,bdfname_out,loading_gids,load_x,load_y,nstep):
+  bdfmodel=read_bdf(bdfname_in,debug=None)
   bdfmodel.sol=400
   bdfmodel.case_control_deck.create_new_subcase(1)
   bdfmodel.case_control_deck.add_parameter_to_local_subcase(1,'SUBTITLE=load1')
