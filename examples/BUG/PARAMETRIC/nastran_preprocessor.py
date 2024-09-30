@@ -49,13 +49,14 @@ class NastranPreprocessor:
     if self.require_nastran_eig:
       commands.append(f'{self.nastran_loc} {self.working_dir}/base.bdf out={self.working_dir} old=no news=no > nul 2>&1')
     #parallel execute command1 and command2
-    process_list=[]
-    for command in commands:
-      process=Process(target=os.system,args=(command,))
-      process.start()
-      process_list.append(process)
-    for process in process_list:
-      process.join()
+    with ThreadPoolExecutor(max_workers=2) as executor:
+      futures = []
+      for command in commands:
+        future=executor.submit(os.system,command)
+        futures.append(future)
+      for future in as_completed(futures):
+        pass
+
     self.Ka,self.Ma,nid_rom=read_pch(f"{self.working_dir}/basep.pch")
     op2model=read_op2(f"{self.working_dir}/base.op2",debug=None)
     _Ma=shift_mat(self.Ma)
@@ -67,7 +68,6 @@ class NastranPreprocessor:
     self.id_full2rom=np.where(nid_full==nid_rom[:,None])[1]
     eigenvectors_rom_ns=self.eigenvectors[:,self.id_full2rom].reshape(self.eigenvectors.shape[0],-1).T #(ndim,nmode)
     eigenvectors_rom[:,:eigenvectors_rom_ns.shape[1]]=eigenvectors_rom_ns
-    print('done')
     _write_op4modes_mod(self.eigenvectors[:self.num_modes_aero],op4_name=f"{self.working_dir}/Phi.op4")
     self.eigenvalues=eigenvalues
     self.eigenvectors_rom=eigenvectors_rom
@@ -92,7 +92,7 @@ class NastranPreprocessor:
             bdfnames.append(f'{self.working_dir}/{key[2:]}_{i}.bdf')
           if require_punch:
             bdfnames.append(f'{self.working_dir}/{key[2:]}p_{i}.bdf')
-          process=Process(target=_write_bdf,
+          process=Process(target=_write_bdf_fd,
                           args=(base_bdf,self.params,i,key,scale_param,self.delta,
                                 self.working_dir,is_aero,require_punch))
           process.start()
@@ -351,11 +351,11 @@ class NastranPreprocessor:
       with open(f'{self.parametric_dir}/case{i}/param.pkl','wb') as f:
         pickle.dump(param,f)
       process=Process(target=_write_bdf_p,args=(self.bdfname,param,dir_name+'/nastran_files',True))
+      process.start()
+      process_list.append(process)
       bdfnames.append(f'{dir_name}/nastran_files/main.bdf')
       bdfnames.append(f'{dir_name}/nastran_files/main_p.bdf')
       dirnames.append(dir_name+'/nastran_files');dirnames.append(dir_name+'/nastran_files')
-      process.start()
-      process_list.append(process)
     for process in process_list:
       process.join()
     #run nastran
@@ -372,7 +372,6 @@ class NastranPreprocessor:
         pass
     self.bdfnames=bdfnames
     #read output files
-
     for i in range(len(params)):
       dir_name=f'{self.parametric_dir}/case{i}'
       os.makedirs(dir_name+'/FEM',exist_ok=True)
@@ -412,46 +411,23 @@ def overwrite_bdf(params:dict,bdfname=None,bdfmodel=None):
     bdfmodel=read_bdf(bdfname,debug=None)
   keys=params.keys()
   for key in keys:
-    if key[:3]=='P_P': #Property entry
-      #decode parameter
-      val=params['C'+key[1:]].get_val(params[key])
-      properties=list(val.keys())
-      properties.remove('pid')
-      #overwrite Property values
-      for property in properties:
-        for i,pid in enumerate(val['pid']):
-          exec(f'bdfmodel.properties[pid].{property}=val[property][i]')
-
-    elif key[:6]=='P_CONM':
-      #decode parameter
-      val=params['C'+key[1:]].get_val(params[key])
-      properties=list(val.keys())
-      properties.remove('eid')
-      #overwrite CONM values
-      for property in properties:
-        for i,eid in enumerate(val['eid']):
-          exec(f'bdfmodel.masses[eid].{property}=val[property][i]')
-    
-    elif key[:5]=='P_MAT':
-      #decode parameter
-      val=params['C'+key[1:]].get_val(params[key])
-      properties=list(val.keys())
-      properties.remove('mid')
-      #overwrite MAT values
-      for property in properties:
-        for i,mid in enumerate(val['mid']):
-          exec(f'bdfmodel.materials[mid].{property}=val[property][i]')
-
-    elif key[:5]=='P_CAE':
-      #decode parameter
-      val=params['C'+key[1:]].get_val(params[key])
-      properties=list(val.keys())
-      properties.remove('eid')
-      #overwrite CAERO values
-      for property in properties:
-        for i,eid in enumerate(val['eid']):
-          exec(f'bdfmodel.caeros[eid].{property}=val[property][i]')
-  
+    if key[0]=='C':
+      continue
+    #decode parameter
+    val=params['C'+key[1:]].get_val(params[key])
+    properties=list(val.keys())
+    properties.remove('idx')
+    #overwrite Property values
+    for prop in properties:
+      for i,idx in enumerate(val['idx']):
+        if key[:3]=='P_P': #Property entry
+          exec(f'bdfmodel.properties[idx].{prop}=val[prop][i]')
+        elif key[:6]=='P_CONM': #CONM entry
+          exec(f'bdfmodel.masses[idx].{prop}=val[prop][i]')
+        elif key[:5]=='P_MAT': #MAT entry
+          exec(f'bdfmodel.materials[idx].{prop}=val[prop][i]')
+        elif key[:5]=='P_CAE': #CAERO entry
+          exec(f'bdfmodel.caeros[idx].{prop}=val[prop][i]')
   return bdfmodel
 
 #def run_bdfmodel(bdfmodel,bdfname,working_dir,memorymax=0.3):
@@ -518,7 +494,7 @@ def modify_cao(fname):
   f.writelines(lines)
   f.close()
 
-def _write_bdf(bdfmodel,params,idx,key,scale_param,delta,working_dir,is_aero,require_punch):
+def _write_bdf_fd(bdfmodel,params,idx,key,scale_param,delta,working_dir,is_aero,require_punch):
   i=idx//2
   sgn=1.0 if (idx%2==1) else -1.0
   _params=copy.deepcopy(params)

@@ -9,8 +9,8 @@ class SensitivityHandler:
     self.preprocessor=NastranPreprocessor(nastran_loc)
     self.working_dir=working_dir
     
-  def forward_analysis(self,param,aero=False):
-    param_c=self.model_handler.convert_design_param(param)
+  def forward_analysis(self,param,y_control=None,aero=False):
+    param_c=self.model_handler.convert_design_param(param,y_control)
     self.preprocessor.set_params(param_c)
     self.preprocessor.eigenvalue_analysis()
     if aero:

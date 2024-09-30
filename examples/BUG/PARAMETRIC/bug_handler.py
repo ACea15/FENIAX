@@ -25,9 +25,11 @@ class BUGHandler:
     self._preprocess_elements()
     self._preprocess_materials()
     self.annotation_pbar=dict()
+    self.annotation_pcomp=dict()
     self.annotation_pshell=dict()
     self.annotation_pbeam=dict()
     self.annotation_conm=dict()
+    self.annotation_caero=dict()
     self.annotation_material=dict()
     self.component_names=[]
 
@@ -112,6 +114,25 @@ class BUGHandler:
       if label not in self.annotation_material.keys():
         self.annotation_material[label]=[]
       self.annotation_material[label].append(mid)
+
+  def add_pcomp_annotation(self):
+    """
+    add annotation for pshells
+    """
+    pids=np.array(self.pid_dict['PCOMP'])
+    pcomp_norms=self.get_pcomp_norms(pids)
+    annotation_wing=np.argmax(np.abs(pcomp_norms),axis=1)
+    msk_spar=(annotation_wing==0)
+    msk_rib=(annotation_wing==1)
+    msk_skin_l=((annotation_wing==2)*(pcomp_norms[:,2]>0))
+    msk_skin_u=((annotation_wing==2)*(pcomp_norms[:,2]<0))
+    self.annotation_pcomp=dict()
+    self.annotation_pcomp['WING_SPAR']=list(pids[msk_spar])
+    self.annotation_pcomp['WING_RIB']=list(pids[msk_rib])
+    self.annotation_pcomp['WING_SKIN_LOWER']=list(pids[msk_skin_l])
+    self.annotation_pcomp['WING_SKIN_UPPER']=list(pids[msk_skin_u])
+    self.annotation_pcomp['WING_SKIN']=list(np.concatenate((pids[msk_skin_l],pids[msk_skin_u])))
+    self.component_names+=['WING_SPAR','WING_RIB','WING_SKIN_LOWER','WING_SKIN_UPPER']
 
   def add_pshell_annotation(self):
     """
@@ -214,8 +235,7 @@ class BUGHandler:
         if coord[0]>=xmin and coord[0]<=xmax and np.abs(coord[1])>=ymin and np.abs(coord[1])<=ymax and coord[2]>=zmin and coord[2]<=zmax:
           self.annotation_pbar[new_key].append(i)
 
-  def convert_design_param(self,params):
-    
+  def convert_design_param(self,params,y_controls=None):
     converted_params=dict()
     keys=[k.upper() for k in params.keys()] #capitalize letters
     for key in keys:
@@ -228,7 +248,21 @@ class BUGHandler:
         pid=list(set(pid)) #extract unique elements
         decoder_name='PSHELLT_'+key
         converted_params['P_'+decoder_name]=params[key]
-        converted_params['C_'+decoder_name]=PSHELLT(pid,self)
+        if y_controls is not None:
+          converted_params['C_'+decoder_name]=PSHELLT(pid,self,y_controls[key])
+        else:
+          converted_params['C_'+decoder_name]=PSHELLT(pid,self)
+      elif variableName=='THICKNESSES':  #PCOMP
+        pid=[]
+        for name in componentNames:
+          pid+=self.annotation_pcomp[name]
+        pid=list(set(pid)) #extract unique elements
+        decoder_name='PCOMPT_'+key
+        converted_params['P_'+decoder_name]=params[key]
+        if y_controls is not None:
+          converted_params['C_'+decoder_name]=PCOMPT(pid,self,y_controls[key])
+        else:
+          converted_params['C_'+decoder_name]=PCOMPT(pid,self)
       elif variableName=='PLY_ANGLE': #MAT2
         pid=[]
         for name in componentNames:
@@ -236,7 +270,10 @@ class BUGHandler:
         pid=list(set(pid))
         decoder_name='MAT2G_'+key
         converted_params['P_'+decoder_name]=params[key].flatten()
-        converted_params['C_'+decoder_name]=MAT2G(pid,self,self.qmat)
+        if y_controls is not None:
+          converted_params['C_'+decoder_name]=MAT2G(pid,self,y_controls[key])
+        else:
+          converted_params['C_'+decoder_name]=MAT2G(pid,self,self.qmat)
       elif variableName=='MASS_X1': #CONM2
         eid=[]
         for name in componentNames:
@@ -244,7 +281,10 @@ class BUGHandler:
         eid=list(set(eid))
         decoder_name='CONM2X1_'+key
         converted_params['P_'+decoder_name]=params[key]
-        converted_params['C_'+decoder_name]=CONM2X1(eid,self)
+        if y_controls is not None:
+          converted_params['C_'+decoder_name]=CONM2X1(eid,self,y_controls[key])
+        else:  
+          converted_params['C_'+decoder_name]=CONM2X1(eid,self)
       elif variableName=='PX':
         eid=[]
         for name in componentNames:
@@ -252,7 +292,10 @@ class BUGHandler:
         eid=list(set(eid))
         decoder_name='CAERO1PX_'+key
         converted_params['P_'+decoder_name]=params[key]
-        converted_params['C_'+decoder_name]=CAERO1PX(eid,self)
+        if y_controls is not None:
+          converted_params['C_'+decoder_name]=CAERO1PX(eid,self,y_controls[key])
+        else:
+          converted_params['C_'+decoder_name]=CAERO1PX(eid,self)
       elif variableName=='CHORD': #CAERO1
         eid=[]
         for name in componentNames:
@@ -260,17 +303,21 @@ class BUGHandler:
         eid=list(set(eid))
         decoder_name='CAERO1C_'+key
         converted_params['P_'+decoder_name]=params[key]
-        converted_params['C_'+decoder_name]=CAERO1CHORD(eid,self)
+        if y_controls is not None:
+          converted_params['C_'+decoder_name]=CAERO1CHORD(eid,self,y_controls[key])
+        else:
+          converted_params['C_'+decoder_name]=CAERO1CHORD(eid,self)
     return converted_params
   
-  def get_component_names(self):
+  def set_component_names(self):
     out=dict()
-    pshell_keys=list(self.annotation_pshell.keys())
+    pshell_keys=list(self.annotation_pshell.keys())+list(self.annotation_pcomp.keys())
     thickness_keys=[]
     for key in pshell_keys:
       if 'COMP' not in key:
         thickness_keys.append(key)
     out['THICKNESS']=thickness_keys
+    pshell_keys=list(self.annotation_pshell.keys())
     valid_keys=[]
     for key in pshell_keys:
       if 'COMP' not in key:
@@ -282,10 +329,13 @@ class BUGHandler:
         if len(temp)>=1:
           self.annotation_pshell[key+'_COMP']=temp
           valid_keys.append(key+'_COMP')
-    out['PLY_ANGLE']=valid_keys
-    out['MASS_X1']=list(self.annotation_conm.keys())
-    out['PX']=list(self.annotation_caero.keys())
-    out['CHORD']=list(self.annotation_caero.keys())
+    if len(valid_keys)!=0:
+      out['PLY_ANGLE']=valid_keys
+    if len(self.annotation_conm.keys())!=0:
+      out['MASS_X1']=list(self.annotation_conm.keys())
+    if len(self.annotation_caero.keys())!=0:
+      out['PX']=list(self.annotation_caero.keys())
+      out['CHORD']=list(self.annotation_caero.keys())
     return out
   
   def get_rom_dof(self):
@@ -635,6 +685,35 @@ class BUGHandler:
     for i,pid in enumerate(pids):
       thickness[i]=self.bdf.properties[pid].t
     return thickness
+  
+  def get_pcomp_thickness(self,pids=None):
+    """
+    get thickness of pcomp elements
+    """
+    if pids is None:
+      pids=self.pid_dict['PSHELL']
+    thickness=[]
+    for pid in pids:
+      thickness.append(self.bdf.properties[pid].thicknesses)
+    return thickness
+  
+  def get_pcomp_norms(self,pids=None):
+    """
+    get normal vectors of pshell elements
+    """
+    if pids is None:
+      pids=self.pid_dict['PCOMP']
+    norms=np.zeros((len(pids),3))
+    if self.is_eid_equal_pid():
+      for i,eid in enumerate(pids):
+        nids=self.bdf.elements[eid].nodes
+        v1=self.bdf.nodes[nids[1]].xyz-self.bdf.nodes[nids[0]].xyz
+        v2=self.bdf.nodes[nids[2]].xyz-self.bdf.nodes[nids[0]].xyz
+        norms[i]=np.cross(v1,v2)
+      norms=norms/np.linalg.norm(norms,axis=1,keepdims=True)
+      return norms
+    else:
+      raise NotImplementedError
 
   def get_pshell_norms(self,pids=None):
     """
@@ -653,6 +732,7 @@ class BUGHandler:
       return norms
     else:
       raise NotImplementedError
+      
   
   def get_mat_info_variable(self):
     mids=[]

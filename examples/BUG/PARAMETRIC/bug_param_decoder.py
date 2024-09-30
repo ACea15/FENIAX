@@ -31,8 +31,34 @@ class PSHELLT(BUGDecoder):
     thickness=thick_ratio*self.bug_handler.get_pshell_thickness(self.idx)
     #return dictionary
     out=dict()
-    out['pid']=self.idx
+    out['idx']=self.idx
     out['t']=thickness
+    return out
+  
+class PCOMPT(BUGDecoder):
+  def __init__(self,pid,bug_handler,y_control=None):
+    self.idx=pid
+    self.pshell_y_abs=np.abs(bug_handler.get_pshell_coordinates(pid)[:,1])
+    self.coord_control=y_control
+    self.bug_handler=bug_handler
+  
+  def get_val(self,param):
+    """
+    param : thickness ratio at control points (nparam,)
+    """
+    nparam=len(param)
+    if self.coord_control is None:
+      self.coord_control=np.linspace(self.pshell_y_abs.min(),self.pshell_y_abs.max(),nparam)
+    #interpolate thickness using PchipInterpolator
+    thick_ratio=sp.interpolate.PchipInterpolator(self.coord_control,param)(self.pshell_y_abs)
+    thickness_original=self.bug_handler.get_pcomp_thickness(self.idx)
+    thickness=[]
+    for t,r in zip(thickness_original,thick_ratio):
+      thickness.append([_t*r for _t in t])
+    #return dictionary
+    out=dict()
+    out['idx']=self.idx
+    out['thicknesses']=thickness
     return out
   
 class MAT2G(BUGDecoder):
@@ -50,7 +76,7 @@ class MAT2G(BUGDecoder):
   
   def get_val(self,param):
     """
-    param : theta and alpha at control points (nparam,2)
+    param : theta and alpha at control points (nparam*2)
       theta : angle between x-axis and material principle axis in deree
       alpha : stacking angle [0,+alpha,-alpha,90]s in degree
     """
@@ -71,7 +97,7 @@ class MAT2G(BUGDecoder):
     self.theta=theta
     #return dictionary
     out=dict()
-    out['mid']=self.mid
+    out['idx']=self.mid
     out['G11']=gmat[:,0,0]
     out['G12']=gmat[:,0,1]
     out['G13']=gmat[:,0,2]
@@ -103,7 +129,7 @@ class CONM2X1(BUGDecoder):
     offset[:,0]+=x
     #return dictionary
     out=dict()
-    out['eid']=self.idx
+    out['idx']=self.idx
     out['X']=offset
     return out
     
@@ -120,7 +146,7 @@ class CAERO1PX(BUGDecoder):
     assert len(param)==len(self.coord_control), f'param must have the same length as y_control {self.coord_control.shape}'
     #return dictionary
     out=dict()
-    out['eid']=self.idx
+    out['idx']=self.idx
     out['p1']=[]
     out['p4']=[]
     interpolator=sp.interpolate.PchipInterpolator(self.coord_control,param)
@@ -133,7 +159,7 @@ class CAERO1PX(BUGDecoder):
       offsetx4=interpolator(np.abs(p4[1]))
       p4[0]+=offsetx4
       out['p4'].append(p4)
-    out['eid']=np.array(out['eid'])
+    out['idx']=np.array(out['idx'])
     out['p1']=np.array(out['p1'])
     out['p4']=np.array(out['p4'])
     return out
@@ -145,7 +171,7 @@ class CAERO1CHORD(CAERO1PX):
     """
     #return dictionary
     out=dict()
-    out['eid']=self.idx
+    out['idx']=self.idx
     out['x12']=[]
     out['x43']=[]
     interpolator=sp.interpolate.PchipInterpolator(self.coord_control,param)
@@ -158,7 +184,7 @@ class CAERO1CHORD(CAERO1PX):
       x43=self.bug_handler.bdf.caeros[e].x43
       x43+=interpolator(np.abs(p4[1]))
       out['x43'].append(x43)
-    out['eid']=np.array(out['eid'])
+    out['idx']=np.array(out['idx'])
     out['x12']=np.array(out['x12'])
     out['x43']=np.array(out['x43'])
     return out
