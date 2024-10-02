@@ -1,22 +1,14 @@
 """Main FENIAX."""
 
-import feniax.drivers
-import feniax.preprocessor.configuration as configuration  # Config, ValidateConfig
-
-# from jax.config import config;
-import jax
-from feniax.drivers.driver import Driver
-from feniax.preprocessor.solution import Solution
-
-
-jax.config.update("jax_enable_x64", True)
-
 def main(
     input_file: str = None,
     input_dict: dict = None,
     input_obj: configuration.Config = None,
-    return_driver: bool = False) -> Solution | Driver:
+    return_driver: bool = False,
+    device_count: int = None
+) -> Solution | Driver:
     """Main ``FEM4INAS`` routine
+
 
     Parameters
     ----------
@@ -35,6 +27,19 @@ def main(
         process.
 
     """
+    if device_count is not None:
+        import os
+        os.environ["XLA_FLAGS"] = f"--xla_force_host_platform_device_count={device_count}"
+
+    import feniax.drivers
+    import feniax.preprocessor.configuration as configuration  # Config, ValidateConfig
+    from feniax.drivers.driver import Driver
+    from feniax.preprocessor.solution import Solution
+
+    # from jax.config import config;
+    import jax
+    jax.config.update("jax_enable_x64", True)
+        
     config = configuration.initialise_config(input_file, input_dict, input_obj)
     if config.driver.sol_path is not None:
         configuration.dump_to_yaml(

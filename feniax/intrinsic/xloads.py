@@ -1,7 +1,8 @@
 import jax.numpy as jnp
 import jax
 from functools import partial
-
+import feniax.intrinsic.functions as functions
+import itertools
 
 def redirect_to(another_function):
     def decorator(original_function):
@@ -241,65 +242,140 @@ def lags_rogergust(t, xgust, Flgust):
 #     eta = D0hat @ wgust + D1hat @ wgust_dot + D2hat @ wgust_ddot
 #     return eta
 
-
 ########################
-def eta_000001(t, phi1, x, force_follower):
-    f = linear_interpolation(t, x, force_follower)
-    eta = jnp.tensordot(phi1, f, axes=([1, 2], [0, 1]))
-    return eta
+
+def build_point_follower(x, follower_points, follower_interpolation,  num_nodes, C06ab):
+    num_interpol_points = len(x)
+    forces = jnp.zeros((num_interpol_points, 6, num_nodes))
+    num_forces = len(follower_interpolation)
+    for li in range(num_interpol_points):
+        for fi in range(num_forces):
+            fnode = follower_points[fi][0]
+            dim = follower_points[fi][1]
+            forces = forces.at[li, dim, fnode].set(
+                follower_interpolation[fi][li]
+            )  # Nx_6_Nn
+    force_follower = functions.coordinate_transform(forces, C06ab)
+
+    return force_follower
+
+def shard_point_follower(x, follower_points, follower_interpolation,  num_nodes, C06ab):
+
+    def _mapfollower(points, interpolation):
+
+        force_follower = build_point_follower(x,
+                                              points,
+                                              interpolation,
+                                              num_nodes,
+                                              C06ab)
+        return force_follower
+
+    vmapfollower = jax.vmap(_mapfollower, in_axes=(0, 0))
+    shardforce_follower = vmapfollower(follower_points, follower_interpolation)
+
+    return shardforce_follower #Ns_Nx_6_Nn
 
 
-@redirect_to(eta_000001)
-def eta_001001(*args, **kwargs):
-    pass
+def build_point_dead(x, dead_points, dead_interpolation, num_nodes):
+    
+    num_interpol_points = len(x)
+    force_dead = jnp.zeros((num_interpol_points, 6, num_nodes))
+    num_forces = len(dead_interpolation)
+    for li in range(num_interpol_points):
+        for fi in range(num_forces):
+            fnode = dead_points[fi][0]
+            dim = dead_points[fi][1]
+            force_dead = force_dead.at[li, dim, fnode].set(dead_interpolation[fi][li])
 
+    return force_dead
 
-@jax.jit
-def eta_00101(t, phi1, x, force_dead, Rab):
-    f1 = jax.vmap(
-        lambda R, x: jnp.vstack(
-            [jnp.hstack([R.T, jnp.zeros((3, 3))]), jnp.hstack([jnp.zeros((3, 3)), R.T])]
-        )
-        @ x,
-        in_axes=(2, 1),
-        out_axes=1,
-    )
-    f = linear_interpolation(t, x, force_dead)
-    f_fd = f1(Rab, f)
-    eta = jnp.tensordot(phi1, f_fd, axes=([1, 2], [0, 1]))
-    return eta
+def shard_point_dead(x, dead_points, dead_interpolation,  num_nodes):
 
+    def _mapdead(points, interpolation):
 
-def eta_0011(
-    q0: jnp.ndarray,
-    qalpha: jnp.ndarray,
-    u_inf: float,
-    rho_inf: float,
-    A0: jnp.ndarray,
-    C0: jnp.ndarray,
-):
-    eta = 0.5 * rho_inf * u_inf**2 * (A0 @ q0 + C0 @ qalpha)
-    return eta
+        force_dead = build_point_dead(x,
+                                      points,
+                                      interpolation,
+                                      num_nodes
+                                      )
+        return force_dead
 
+    vmapdead = jax.vmap(_mapdead, in_axes=(0, 0))
+    shardforce_dead = vmapdead(dead_points, dead_interpolation)
 
-@redirect_to(eta_000001)
-def eta_101001(*args, **kwargs):
-    pass
+    return shardforce_dead #Ns_Nx_6_Nn
 
+def build_gravity(x, gravity, gravity_vect, Ma, Mfe_order):
+    num_nodes = Mfe_order.shape[1] // 6
+    num_nodes_out = Mfe_order.shape[0] // 6
+    if x is not None and len(x) > 1:
+        len_x = len(x)
+    else:
+        len_x = 2
+    # force_gravity = jnp.zeros((2, 6, num_nodes))
+    gravity = gravity * gravity_vect
+    gravity_field = jnp.hstack([jnp.hstack([gravity, 0.0, 0.0, 0.0])] * num_nodes)
+    _force_gravity = jnp.matmul(Mfe_order, Ma @ gravity_field)
+    gravity_interpol = jnp.vstack([xi * _force_gravity for xi in jnp.linspace(0, 1, len_x)]).T
+    force_gravity = functions.reshape_field(
+        gravity_interpol, len_x, num_nodes_out
+    )  # Becomes  (len_x, 6, Nn)
+    # num_forces = len(dead_interpolation)
+    # for li in range(num_interpol_points):
+    #     for fi in range(num_forces):
+    #         fnode = dead_points[fi][0]
+    #         dim = dead_points[fi][1]
+    #         force_dead = force_dead.at[li, dim, fnode].set(
+    #             dead_interpolation[fi][li])
+    return force_gravity
 
-@redirect_to(eta_000001)
-def eta_100001(*args, **kwargs):
-    pass
+def shard_gravity(x, gravity, gravity_vect, Ma, Mfe_order):
 
+    def _mapgravity(points_gravity, points_gravity_vect):
 
-@redirect_to(eta_001001)
-def eta_10101(*args, **kwargs):
-    pass
+        force_gravity = build_gravity(x,
+                                      points_gravity,
+                                      points_gravity_vect,
+                                      Ma,
+                                      Mfe_order)
+        return force_gravity
 
+    vmapgravity = jax.vmap(_mapgravity, in_axes=(0, 0))
+    shardforce_gravity = vmapgravity(gravity, gravity_vect)
 
-def project_phi1(force, phi1):
-    eta = jnp.tensordot(phi1, force, axes=([1, 2], [0, 1]))
-    return eta
+    return shardforce_gravity #Ns_Nx_6_Nn
 
+def shard_gust(inputs) -> jnp.ndarray:
 
-def eta_gust(): ...
+    prod_list = []
+    for k, v in inputs.__dict__.items():
+        if v is not None:
+            prod_list.append(v)
+    prod = list(itertools.product(prod_list))
+    return jnp.array(prod)
+            
+    
+    
+
+if __name__ == "__main__":
+
+    # NumShards_NumForces_2(node x component)
+    dead_points = jnp.array([[[9, 2], [18, 2]],
+                             [[9, 1], [18, 1]]
+                   ])
+    # NumShards_NumForces_NumInterpolationPoints
+    dead_interpolation = jnp.array([[[0, 1, 2],
+                                     [0, 1, 2]
+                                     ],
+                                    [[0,1,2],
+                                     [0,2,5]]
+                                    ])
+    x = jnp.array([0, 1, 2])
+    num_nodes = 20
+    #Ns_Nx_6_Nn
+    shard_dead = shard_point_dead(x, dead_points, dead_interpolation,  num_nodes)
+    dead0 = build_point_dead(x, dead_points[0], dead_interpolation[0], num_nodes)
+    (dead0 == shard_dead[0]).all()
+    dead1 = build_point_dead(x, dead_points[1], dead_interpolation[1], num_nodes)
+    (dead1 == shard_dead[1]).all()
+    

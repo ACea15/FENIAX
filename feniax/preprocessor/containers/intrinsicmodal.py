@@ -5,11 +5,9 @@ Containers for the intrinsic modal solution settings
 import inspect
 import math
 import pathlib
-import re
-import sys
-import dataclasses
-from dataclasses import dataclass, fields, is_dataclass, field
+from dataclasses import dataclass, fields, is_dataclass
 from enum import Enum
+from functools import wraps
 from typing import Any
 
 import feniax.intrinsic.geometry as geometry
@@ -23,7 +21,7 @@ from feniax.intrinsic.functions import (
 )
 from feniax.preprocessor.containers.data_container import DataContainer
 from feniax.preprocessor.utils import dfield, initialise_Dclass, load_jnp
-from functools import wraps
+
 
 def filter_kwargs(cls):
     @wraps(cls)
@@ -845,11 +843,11 @@ class Dxloads(DataContainer):
 class SystemSolution(Enum):
     STATIC = 1
     DYNAMIC = 2
-    STATICAD = 3
-    DYNAMICAD = 4
-    STABILITY = 5
-    MULTIBODY = 6
-    CONTROL = 7
+    # STATICAD = 3
+    # DYNAMICAD = 4
+    STABILITY = 3
+    MULTIBODY = 4
+    CONTROL = 5
 
 
 SimulationTarget = Enum("TARGET", ["LEVEL", "TRIM", "MANOEUVRE", "TURBULENCE"])
@@ -891,7 +889,7 @@ class DdiffraxOde(Dlibrary):
     root_finder: dict = dfield("", default=None)
     stepsize_controller: dict = dfield("", default=None)
     solver_name: str = dfield("", default="Dopri5")
-    save_at: jnp.ndarray | list = dfield("", default=None)
+    save_at: jnp.ndarray | list[float] = dfield("", default=None)
     max_steps: int = dfield("", default=20000)
 
     def __post_init__(self, **kwargs):
@@ -1037,6 +1035,87 @@ class DtoAD(Dlibrary):
         )
         self._initialize_attributes()
 
+class ShardinputType(Enum):
+    POINTFORCES = 1
+    GUST1 = 3
+
+
+@Ddataclass
+class DShard_pointforces(DataContainer):
+    """Point forces
+
+    Parameters
+    ----------
+
+    """
+
+    follower_points: jnp.ndarray = dfield("", default=None)
+    follower_interpolation: jnp.ndarray = dfield("", default=None)
+    dead_points: jnp.ndarray = dfield("", default=None)
+    dead_interpolation: jnp.ndarray = dfield("", default=None)
+    gravity: jnp.ndarray = dfield("", default=None)
+    gravity_vect: jnp.ndarray = dfield("", default=None)
+    
+    def __post_init__(self):
+        
+        self._initialize_attributes()
+
+    
+@Ddataclass
+class DShard_gust1(DataContainer):
+    """Point forces
+
+    Parameters
+    ----------
+
+    """
+
+    length: jnp.ndarray = dfield("", default=None)
+    intensity: jnp.ndarray = dfield("", default=None)
+    u_inf: jnp.ndarray = dfield("", default=None)
+    rho_inf: jnp.ndarray = dfield("", default=None)
+    def __post_init__(self):
+        
+        self._initialize_attributes()
+    
+    
+@Ddataclass
+class DShard(DataContainer):
+    """Algorithm differentiation settings
+
+    Parameters
+    ----------
+    function : str
+    inputs : dict
+    input_type : str
+    grad_type : str
+    objective_fun : str
+    objective_var : str
+    objective_args : dict
+    _numnodes : int
+    _numtime : int
+    _numcomponents : int
+    label : str
+
+    """
+
+    inputs: dict = dfield("", default=None, yaml_save=False)
+    input_type: str = dfield("", default=None, options=ADinputType._member_names_)
+    label: str = dfield("", default=None, init=False)
+
+    def __post_init__(self):
+        label = ShardinputType[self.input_type.upper()].value
+        object.__setattr__(self, "label", label)
+        input_class = globals()[f"DShard_{self.input_type.lower()}"]
+        object.__setattr__(
+            self,
+            "inputs",
+            initialise_Dclass(
+                self.inputs,
+                input_class
+            ),
+        )
+        self._initialize_attributes()
 
 @Ddataclass
 class Dsystem(DataContainer):
@@ -1091,6 +1170,12 @@ class Dsystem(DataContainer):
         default="clamped",
         options=BoundaryCond._member_names_,
     )
+    operationalmode: str = dfield(
+        "",
+        options=["(empty string/default)", "AD", "Shard", "ShardAD"],
+        default=""
+    )
+    
     save: bool = dfield("Save results of the run system", default=True)
     xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
     aero: dict | Daero = dfield("Aerodynamic dataclass", default=None)
@@ -1141,7 +1226,8 @@ class Dsystem(DataContainer):
         """Dictionary mapping states types to functions in initcond""",
         default=dict(q1="velocity", q2="force"),
     )
-    ad: DtoAD = dfield("""Dictionary for AD""", default=None)
+    ad: dict | DtoAD = dfield("""Dictionary for AD""", default=None)
+    shard: dict | DShard = dfield("""Dictionary for parallelisation""", default=None)
 
     def __post_init__(self):
         if self.t is not None:
@@ -1174,18 +1260,39 @@ class Dsystem(DataContainer):
             "solver_settings",
             initialise_Dclass(self.solver_settings, libsettings_class),
         )
-        if self.ad is not None and isinstance(self.ad, dict):
-            libsettings_class = globals()["DtoAD"]
-            object.__setattr__(
-                self,
-                "ad",
-                initialise_Dclass(
-                    self.ad,
-                    libsettings_class,
-                    _numtime=len(self.t),
-                    _numnodes=self._fem.num_nodes,
-                ),
-            )
+        if self.ad is not None:
+
+            if isinstance(self.ad, dict):
+                libsettings_class = globals()["DtoAD"]
+                object.__setattr__(
+                    self,
+                    "ad",
+                    initialise_Dclass(
+                        self.ad,
+                        libsettings_class,
+                        _numtime=len(self.t),
+                        _numnodes=self._fem.num_nodes,
+                    ),
+                )
+            if self.shard is not None:
+                object.__setattr__(self, "operationalmode", "ShardAD")
+            else:
+                object.__setattr__(self, "operationalmode", "AD")
+        elif self.shard is not None:
+            object.__setattr__(self, "operationalmode", "Shard")            
+            if isinstance(self.shard, dict):
+                libsettings_class = globals()["DShard"]
+                object.__setattr__(
+                    self,
+                    "shard",
+                    initialise_Dclass(
+                        self.shard,
+                        libsettings_class,
+                        _fem=self._fem,
+                        _aero=self._aero,
+                    ),
+                )
+                
         if self.label is None:
             self.build_label()
         self._initialize_attributes()
@@ -1360,8 +1467,22 @@ def update_docstrings(module: Any) -> None:
             print(obj.__doc__)
 
 
-if __name__ == "__main__":
-    ...
+if (__name__ == "__main__"):
+    #...
     # run to generate docstring of data and types
     # update_docstrings(sys.modules[__name__])
     #update_docstrings(sys.modules[__name__])
+    import itertools
+    d = dict(dead_points = [[[9, 2], [18, 2]],
+                            [[9, 1], [18, 1]],
+                            [[10,2], [17, 2]]
+                            ],
+             dead_interpolation = [[[0, 1, 2],
+                                   [0, 1, 2]
+                                    ],
+                                   [[0,10,20],
+                                    [0,10,20]]
+                                   ]
+             )
+             
+    p = list(itertools.product(*d.values()))

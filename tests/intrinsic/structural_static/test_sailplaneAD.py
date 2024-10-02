@@ -36,7 +36,7 @@ class TestSailPlaneAD:
         inp.driver.typeof = "intrinsic"
         inp.simulation.typeof = "single"
         inp.system.name = "s1"
-        inp.system.solution = "staticAD"
+        inp.system.solution = "static"
         inp.system.solver_library = "diffrax"
         inp.system.solver_function = "newton"
         inp.system.solver_settings = dict(rtol=1e-6,
@@ -103,7 +103,7 @@ class TestSailPlaneAD:
         inp.driver.typeof = "intrinsic"
         inp.simulation.typeof = "single"
         inp.system.name = "s1"
-        inp.system.solution = "staticAD"
+        inp.system.solution = "static"
         inp.system.solver_library = "diffrax"
         inp.system.solver_function = "newton"
         inp.system.solver_settings = dict(rtol=1e-6,
