@@ -1,4 +1,4 @@
-# XRF1 (clamped)
+# IndustrialAC (clamped)
 
 Verifying the nonlinear structural dynamics on a clamped configuration.
 
@@ -89,22 +89,22 @@ and elsewhere. L~g~ 18.0,67.0,116.0,165.0,214 V0~g~
   7       165\.               16.3541764073    0.01                 200              1.225                     0\.
   8       165\.               16.3541764073    2                    200              1.225                     0\.
 
-  : Table with various gusts on the XRF1 that have been run in this work
+  : Table with various gusts on the IndustrialAC that have been run in this work
   or in the past
 
-``` {#XRF .python}
-xrf1_folder = feniax.PATH / "../examples/XRF1/"
+``` {#industrialAC .python}
+industrialAC_folder = feniax.PATH / "../examples/IndustrialAC/"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+inp.fem.eigenvals = jnp.load(f"{industrialAC_folder}/FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load(f"{industrialAC_folder}/FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
-inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+inp.fem.folder = pathlib.Path(f"{industrialAC_folder}/FEM/")
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -112,9 +112,9 @@ inp.simulation.typeof = "single"
 mach = "081"
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"{industrialAC_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"{industrialAC_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"{industrialAC_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 10.
 inp.systems.sett.s1.tn = 2001
@@ -123,26 +123,26 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust.shift = 0.
-inp.systems.sett.s1.aero.gust.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
-inp.systems.sett.s1.aero.gust.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust.panels_dihedral = f"{industrialAC_folder}/AERO/Dihedral.npy"
+inp.systems.sett.s1.aero.gust.collocation_points = f"{industrialAC_folder}/AERO/Control_nodes.npy"
 ```
 
-### XRF1
+### IndustrialAC
 
-``` {#XRF1 .python}
+``` {#IndustrialAC .python}
 
-xrf1_folder = feniax.PATH / "../examples/XRF1/"
+industrialAC_folder = feniax.PATH / "../examples/IndustrialAC/"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+inp.fem.eigenvals = jnp.load(f"{industrialAC_folder}/FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load(f"{industrialAC_folder}/FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
-inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+inp.fem.folder = pathlib.Path(f"{industrialAC_folder}/FEM/")
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -150,9 +150,9 @@ inp.simulation.typeof = "single"
 mach = "081"
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"{industrialAC_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"{industrialAC_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"{industrialAC_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 10.
 inp.systems.sett.s1.tn = 2001
@@ -161,8 +161,8 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust.shift = 0.
-inp.systems.sett.s1.aero.gust.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
-inp.systems.sett.s1.aero.gust.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust.panels_dihedral = f"{industrialAC_folder}/AERO/Dihedral.npy"
+inp.systems.sett.s1.aero.gust.collocation_points = f"{industrialAC_folder}/AERO/Control_nodes.npy"
 inp.driver.sol_path = pathlib.Path(
     f"./{name}")
 
@@ -176,22 +176,22 @@ inp.systems.sett.s1.aero.gust.step = 0.5
 run(inp, label=name)
 ```
 
-### XRF2
+### industrialAC2
 
-``` {#XRF2 .python}
+``` {#industrialAC2 .python}
 
-xrf1_folder = feniax.PATH / "../examples/XRF1/"
+industrialAC_folder = feniax.PATH / "../examples/IndustrialAC/"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+inp.fem.eigenvals = jnp.load(f"{industrialAC_folder}/FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load(f"{industrialAC_folder}/FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
-inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+inp.fem.folder = pathlib.Path(f"{industrialAC_folder}/FEM/")
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -199,9 +199,9 @@ inp.simulation.typeof = "single"
 mach = "081"
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"{industrialAC_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"{industrialAC_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"{industrialAC_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 10.
 inp.systems.sett.s1.tn = 2001
@@ -210,8 +210,8 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust.shift = 0.
-inp.systems.sett.s1.aero.gust.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
-inp.systems.sett.s1.aero.gust.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust.panels_dihedral = f"{industrialAC_folder}/AERO/Dihedral.npy"
+inp.systems.sett.s1.aero.gust.collocation_points = f"{industrialAC_folder}/AERO/Control_nodes.npy"
 inp.driver.sol_path = pathlib.Path(
     f"./{name}")
 
@@ -225,22 +225,22 @@ inp.systems.sett.s1.aero.gust.step = 0.05
 run(inp, label=name)
 ```
 
-### XRF3
+### industrialAC3
 
-``` {#XRF3 .python}
+``` {#industrialAC3 .python}
 
-xrf1_folder = feniax.PATH / "../examples/XRF1/"
+industrialAC_folder = feniax.PATH / "../examples/IndustrialAC/"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+inp.fem.eigenvals = jnp.load(f"{industrialAC_folder}/FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load(f"{industrialAC_folder}/FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
-inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+inp.fem.folder = pathlib.Path(f"{industrialAC_folder}/FEM/")
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -248,9 +248,9 @@ inp.simulation.typeof = "single"
 mach = "081"
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"{industrialAC_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"{industrialAC_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"{industrialAC_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 10.
 inp.systems.sett.s1.tn = 2001
@@ -259,8 +259,8 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust.shift = 0.
-inp.systems.sett.s1.aero.gust.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
-inp.systems.sett.s1.aero.gust.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust.panels_dihedral = f"{industrialAC_folder}/AERO/Dihedral.npy"
+inp.systems.sett.s1.aero.gust.collocation_points = f"{industrialAC_folder}/AERO/Control_nodes.npy"
 inp.driver.sol_path = pathlib.Path(
     f"./{name}")
 
@@ -274,22 +274,22 @@ inp.systems.sett.s1.aero.gust.step = 0.5
 run(inp, label=name)
 ```
 
-### XRF4
+### industrialAC4
 
-``` {#XRF4 .python}
+``` {#industrialAC4 .python}
 
-xrf1_folder = feniax.PATH / "../examples/XRF1/"
+industrialAC_folder = feniax.PATH / "../examples/IndustrialAC/"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+inp.fem.eigenvals = jnp.load(f"{industrialAC_folder}/FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load(f"{industrialAC_folder}/FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
-inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+inp.fem.folder = pathlib.Path(f"{industrialAC_folder}/FEM/")
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -297,9 +297,9 @@ inp.simulation.typeof = "single"
 mach = "081"
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"{industrialAC_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"{industrialAC_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"{industrialAC_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 10.
 inp.systems.sett.s1.tn = 2001
@@ -308,8 +308,8 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust.shift = 0.
-inp.systems.sett.s1.aero.gust.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
-inp.systems.sett.s1.aero.gust.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust.panels_dihedral = f"{industrialAC_folder}/AERO/Dihedral.npy"
+inp.systems.sett.s1.aero.gust.collocation_points = f"{industrialAC_folder}/AERO/Control_nodes.npy"
 inp.driver.sol_path = pathlib.Path(
     f"./{name}")
 
@@ -323,22 +323,22 @@ inp.systems.sett.s1.aero.gust.step = 0.5
 run(inp, label=name)
 ```
 
-### XRF5
+### industrialAC5
 
-``` {#XRF5 .python}
+``` {#industrialAC5 .python}
 
-xrf1_folder = feniax.PATH / "../examples/XRF1/"
+industrialAC_folder = feniax.PATH / "../examples/IndustrialAC/"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+inp.fem.eigenvals = jnp.load(f"{industrialAC_folder}/FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load(f"{industrialAC_folder}/FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
-inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+inp.fem.folder = pathlib.Path(f"{industrialAC_folder}/FEM/")
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -346,9 +346,9 @@ inp.simulation.typeof = "single"
 mach = "081"
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"{industrialAC_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"{industrialAC_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"{industrialAC_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 10.
 inp.systems.sett.s1.tn = 2001
@@ -357,8 +357,8 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust.shift = 0.
-inp.systems.sett.s1.aero.gust.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
-inp.systems.sett.s1.aero.gust.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust.panels_dihedral = f"{industrialAC_folder}/AERO/Dihedral.npy"
+inp.systems.sett.s1.aero.gust.collocation_points = f"{industrialAC_folder}/AERO/Control_nodes.npy"
 inp.driver.sol_path = pathlib.Path(
     f"./{name}")
 
@@ -375,22 +375,22 @@ inp.systems.sett.s1.aero.gust.step = 0.5
 run(inp, label=name)
 ```
 
-### XRF6
+### industrialAC6
 
-``` {#XRF6 .python}
+``` {#industrialAC6 .python}
 
-xrf1_folder = feniax.PATH / "../examples/XRF1/"
+industrialAC_folder = feniax.PATH / "../examples/IndustrialAC/"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+inp.fem.eigenvals = jnp.load(f"{industrialAC_folder}/FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load(f"{industrialAC_folder}/FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
-inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+inp.fem.folder = pathlib.Path(f"{industrialAC_folder}/FEM/")
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -398,9 +398,9 @@ inp.simulation.typeof = "single"
 mach = "081"
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"{industrialAC_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"{industrialAC_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"{industrialAC_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 10.
 inp.systems.sett.s1.tn = 2001
@@ -409,8 +409,8 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust.shift = 0.
-inp.systems.sett.s1.aero.gust.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
-inp.systems.sett.s1.aero.gust.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust.panels_dihedral = f"{industrialAC_folder}/AERO/Dihedral.npy"
+inp.systems.sett.s1.aero.gust.collocation_points = f"{industrialAC_folder}/AERO/Control_nodes.npy"
 inp.driver.sol_path = pathlib.Path(
     f"./{name}")
 inp.systems.sett.s1.tn = 501
@@ -424,22 +424,22 @@ inp.systems.sett.s1.aero.gust.step = 0.5
 run(inp, label=name)
 ```
 
-### XRF7
+### industrialAC7
 
-``` {#XRF7 .python}
+``` {#industrialAC7 .python}
 
-xrf1_folder = feniax.PATH / "../examples/XRF1/"
+industrialAC_folder = feniax.PATH / "../examples/IndustrialAC/"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+inp.fem.eigenvals = jnp.load(f"{industrialAC_folder}/FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load(f"{industrialAC_folder}/FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
-inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+inp.fem.folder = pathlib.Path(f"{industrialAC_folder}/FEM/")
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -447,9 +447,9 @@ inp.simulation.typeof = "single"
 mach = "081"
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"{industrialAC_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"{industrialAC_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"{industrialAC_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 10.
 inp.systems.sett.s1.tn = 2001
@@ -458,8 +458,8 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust.shift = 0.
-inp.systems.sett.s1.aero.gust.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
-inp.systems.sett.s1.aero.gust.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust.panels_dihedral = f"{industrialAC_folder}/AERO/Dihedral.npy"
+inp.systems.sett.s1.aero.gust.collocation_points = f"{industrialAC_folder}/AERO/Control_nodes.npy"
 inp.driver.sol_path = pathlib.Path(
     f"./{name}")
 
@@ -480,22 +480,22 @@ inp.systems.sett.s1.aero.gust.step = 0.5
 run(inp, label=name)
 ```
 
-### XRF8
+### industrialAC8
 
-``` {#XRF8 .python}
+``` {#industrialAC8 .python}
 
-xrf1_folder = feniax.PATH / "../examples/XRF1/"
+industrialAC_folder = feniax.PATH / "../examples/IndustrialAC/"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load(f"{xrf1_folder}/FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load(f"{xrf1_folder}/FEM/Vreal70.npy").T
+inp.fem.eigenvals = jnp.load(f"{industrialAC_folder}/FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load(f"{industrialAC_folder}/FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
-inp.fem.folder = pathlib.Path(f"{xrf1_folder}/FEM/")
+inp.fem.folder = pathlib.Path(f"{industrialAC_folder}/FEM/")
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -503,9 +503,9 @@ inp.simulation.typeof = "single"
 mach = "081"
 inp.systems.sett.s1.aero.u_inf = 200.
 inp.systems.sett.s1.aero.rho_inf = 1.225
-inp.systems.sett.s1.aero.A = f"{xrf1_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.D = f"{xrf1_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
-inp.systems.sett.s1.aero.poles = f"{xrf1_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.A = f"{industrialAC_folder}/AERO/AICs{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.D = f"{industrialAC_folder}/AERO/AICsQhj{mach}_8r{inp.fem.num_modes}.npy"
+inp.systems.sett.s1.aero.poles = f"{industrialAC_folder}/AERO/Poles{mach}_8r{inp.fem.num_modes}.npy"
 inp.systems.sett.s1.solution = "dynamic"
 inp.systems.sett.s1.t1 = 10.
 inp.systems.sett.s1.tn = 2001
@@ -514,8 +514,8 @@ inp.systems.sett.s1.q0treatment = 2
 inp.systems.sett.s1.aero.c_ref = 7.271
 inp.systems.sett.s1.aero.gust_profile = "mc"
 inp.systems.sett.s1.aero.gust.shift = 0.
-inp.systems.sett.s1.aero.gust.panels_dihedral = f"{xrf1_folder}/AERO/Dihedral.npy"
-inp.systems.sett.s1.aero.gust.collocation_points = f"{xrf1_folder}/AERO/Control_nodes.npy"
+inp.systems.sett.s1.aero.gust.panels_dihedral = f"{industrialAC_folder}/AERO/Dihedral.npy"
+inp.systems.sett.s1.aero.gust.collocation_points = f"{industrialAC_folder}/AERO/Control_nodes.npy"
 inp.driver.sol_path = pathlib.Path(
     f"./{name}")
 
@@ -606,7 +606,7 @@ def fig_background(func):
 ``` python
 
 @fig_background
-def xrf1_wingtip2(sol1, sol2, dim, labels=None,nast_scale=None, nast_load=None):
+def industrialAC_wingtip2(sol1, sol2, dim, labels=None,nast_scale=None, nast_load=None):
     scale = 1./33.977
     fig=None
     x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
@@ -704,7 +704,7 @@ def subplots_wtips2(fun, *args, **kwargs):
 
 
 @fig_background
-def xrf1_wingtip4(sol1, sol2, sol3, sol4, dim, labels=None,nast_scale=None, nast_load=None):
+def industrialAC_wingtip4(sol1, sol2, sol3, sol4, dim, labels=None,nast_scale=None, nast_load=None):
     scale = 1./33.977
     fig=None
     x1, y1 = putils.pickIntrinsic2D(sol1.data.dynamicsystem_s1.t,
@@ -762,14 +762,14 @@ def xrf1_wingtip4(sol1, sol2, sol3, sol4, dim, labels=None,nast_scale=None, nast
 # 
 examples_path = pathlib.Path("../../../../examples")
 
-####### XRF1 ###########
-nastran_path = examples_path / "XRF1/NASTRAN/146-111/"
-nas111 = op2reader.NastranReader(op2name=(nastran_path / "XRF1-146run.op2"))
+####### IndustrialAC ###########
+nastran_path = examples_path / "IndustrialAC/NASTRAN/146-111/"
+nas111 = op2reader.NastranReader(op2name=(nastran_path / "IndustrialAC-146run.op2"))
 nas111.readModel()
 t111, u111 = nas111.displacements()
 
-nastran_pathm = examples_path / "XRF1/NASTRAN/146-111_081"
-nas111m = op2reader.NastranReader(op2name=(nastran_pathm / "XRF1-146run.op2"))
+nastran_pathm = examples_path / "IndustrialAC/NASTRAN/146-111_081"
+nas111m = op2reader.NastranReader(op2name=(nastran_pathm / "IndustrialAC-146run.op2"))
 nas111m.readModel()
 t111m, u111m = nas111m.displacements()
 ```
@@ -777,7 +777,7 @@ t111m, u111m = nas111m.displacements()
 ### Aeroelastic dynamic loads on an industrial configuration
 
 The studies presented in this section are based on a reference
-configuration developed to industry standards known as XRF1, which is
+configuration developed to industry standards known as IndustrialAC, which is
 representative of a long-range wide-body transport airplane. The version
 with a wing-tip extension in [@CEA2023] is employed to verify a gust
 response against MSC Nastran linear solution of the full FE model. While
@@ -795,7 +795,7 @@ yet are limited to simple models. Thus the added value in the proposed
 approach comes at the intersection between the nonlinear physics arising
 from large integrated displacements, computational efficiency and the
 ability to enhance the models already built for industrial use.\
-Fig. [1](#fig:xrf1_modalshapes) shows the reference FE model with three
+Fig. [1](#fig:industrialAC_modalshapes) shows the reference FE model with three
 modal shapes. The FE model contains a total of around 177400 nodes,
 which are condensed into 176 active nodes along the reference load axes
 through interpolation elements. A Guyan or static condensation approach
@@ -806,15 +806,15 @@ The simulations are carried out with a modal resolution of 70 modes and
 a time step in the Runge-Kutta solver of 0.005.
 
 ```{=org}
-#+name: fig:xrf1_modalshapes
+#+name: fig:industrialAC_modalshapes
 ```
 ```{=org}
-#+caption: Modified XRF1 reference configuration with characteristic modal shapes
+#+caption: Modified IndustrialAC reference configuration with characteristic modal shapes
 ```
 ```{=org}
 #+attr_latex: :width 0.8\textwidth
 ```
-[file:figs_ext/xrf1_modalshapes3.pdf](figs_ext/xrf1_modalshapes3.pdf)
+[file:figs_ext/industrialAC_modalshapes3.pdf](figs_ext/industrialAC_modalshapes3.pdf)
 
 1.  Linear response for low intensity gust
 
@@ -856,15 +856,15 @@ a time step in the Runge-Kutta solver of 0.005.
     our NMROM that accurately reproduces the linear solution based on
     the full FE model.
 
-    ``` {#GustXRF12 .python}
-    sol1= solution.IntrinsicReader("./XRF1")
-    sol2= solution.IntrinsicReader("./XRF2")
-    fig, figname = fig_out(name)(subplots_wtips2)(xrf1_wingtip2,sol1, sol2, labels=[1,2], nast_scale=0.01, nast_load=[2,6])
+    ``` {#GustIndustrialAC2 .python}
+    sol1= solution.IntrinsicReader("./IndustrialAC")
+    sol2= solution.IntrinsicReader("./industrialAC2")
+    fig, figname = fig_out(name)(subplots_wtips2)(industrialAC_wingtip2,sol1, sol2, labels=[1,2], nast_scale=0.01, nast_load=[2,6])
     figname
     ```
 
     ![Wing-tip response to low intensity
-    gust](figs/GustXRF12.png){#fig:GustXRF12}
+    gust](figs/GustXRF12.png){#fig:GustXRF12.png}
 
 2.  Nonlinear response for high intensity gust
 
@@ -877,10 +877,10 @@ a time step in the Runge-Kutta solver of 0.005.
     geometrically nonlinear effects that are added to the analysis with
     no significant overhead.
 
-    ``` {#GustXRF34 .python}
-    sol1= solution.IntrinsicReader("./XRF3")
-    sol2= solution.IntrinsicReader("./XRF4")
-    fig, figname = fig_out(name)(subplots_wtips2)(xrf1_wingtip2, sol1, sol2, labels=[1,2], nast_scale=2., nast_load=[2,6])
+    ``` {#GustindustrialAC34 .python}
+    sol1= solution.IntrinsicReader("./industrialAC3")
+    sol2= solution.IntrinsicReader("./industrialAC4")
+    fig, figname = fig_out(name)(subplots_wtips2)(industrialAC_wingtip2, sol1, sol2, labels=[1,2], nast_scale=2., nast_load=[2,6])
     figname
     ```
 
@@ -891,18 +891,18 @@ a time step in the Runge-Kutta solver of 0.005.
     the method verified above at the time points where tip displacement
     are maximum and minimum, i.e. 0.54 and 0.84 seconds. The front and
     side views together with the aircraft reference configuration are
-    shown in Fig. [3](#fig:xrf1gust3D).
+    shown in Fig. [3](#fig:industrialACgust3D).
 
     ```{=org}
-    #+name: fig:xrf1gust3D
+    #+name: fig:industrialACgust3D
     ```
     ```{=org}
-    #+caption: 3D XRF1 Nonlinear gust response
+    #+caption: 3D IndustrialAC Nonlinear gust response
     ```
     ```{=org}
     #+attr_latex: :width 1\textwidth
     ```
-    [file:figs_ext/xrf1gust3D2.pdf](figs_ext/xrf1gust3D2.pdf)
+    [file:figs_ext/industrialACgust3D2.pdf](figs_ext/industrialACgust3D2.pdf)
 
     In previous examples the same Runge-Kutta 4 (RK4) time-marching
     scheme is used and now we explore the dynamic solution with other
@@ -917,12 +917,12 @@ a time step in the Runge-Kutta solver of 0.005.
     Euler implicit method is stable but do not yield accurate results.
 
     ``` {#GustXRF3578 .python}
-    sol3= solution.IntrinsicReader("./XRF3")
-    sol5= solution.IntrinsicReader("./XRF5")
-    sol7= solution.IntrinsicReader("./XRF7")
-    sol8= solution.IntrinsicReader("./XRF8")
+    sol3= solution.IntrinsicReader("./industrialAC3")
+    sol5= solution.IntrinsicReader("./industrialAC5")
+    sol7= solution.IntrinsicReader("./industrialAC7")
+    sol8= solution.IntrinsicReader("./industrialAC8")
 
-    fig, figname = fig_out(name)(subplots_wtips2)(xrf1_wingtip4, sol1=sol3, sol2=sol5, sol3=sol7, sol4=sol8,
+    fig, figname = fig_out(name)(subplots_wtips2)(industrialAC_wingtip4, sol1=sol3, sol2=sol5, sol3=sol7, sol4=sol8,
                                                 labels=["S1","S2","S3","S4"])
     figname
     ```
@@ -942,7 +942,7 @@ a time step in the Runge-Kutta solver of 0.005.
     [file:figs/GustXRF3578.pdf](figs/GustXRF3578.pdf)
 
     The computational times of the different solvers are shown in Table
-    [2](#table:XRF1_times). The implicit solvers have taken one order of
+    [2](#table:IndustrialAC_times). The implicit solvers have taken one order of
     magnitude more time to run despite the reduction in time step.
     Therefore the main take away this is that for moderately large
     frequency dynamics, the explicit solvers offer a much efficient
@@ -961,10 +961,10 @@ a time step in the Runge-Kutta solver of 0.005.
     Nastran solution involves first a frequency domain analysis and then
     an inverse Fourier transform to obtain the time-domain results.
 
-    ``` {#XRF1_times .python}
+    ``` {#IndustrialAC_times .python}
     dfruns = pd.read_csv('./run_times.csv',index_col=0).transpose()
     values = ["Time [s]"]
-    values += [', '.join([str(round(dfruns[f'XRF{i}'].iloc[0], 2)) for i in [3,5,7,8]])]
+    values += [', '.join([str(round(dfruns[f'industrialAC{i}'].iloc[0], 2)) for i in [3,5,7,8]])]
     values += [0*60*60 + 1*60 + 21]
     header = ["NMROM [S1, S2, S3, S4]" ]
     header += ["$\Delta$ NASTRAN 146"]
@@ -980,7 +980,7 @@ a time step in the Runge-Kutta solver of 0.005.
       ------------ ------------------------------ ----------------------
       Time \[s\]   22.49, 18.94, 273.95, 847.89   81
 
-      : Computational times XRF1 gust solution.
+      : Computational times IndustrialAC gust solution.
 
 3.  Differentiation of aeroelastic response
 
@@ -989,14 +989,14 @@ a time step in the Runge-Kutta solver of 0.005.
     sensitivity of the six components of the wing root loads are
     computed with respect to the gust parameters $w_g$ and $L_g$, and
     the flow parameter $\rho_{\inf}$. The results are presented in
-    [1](#table:XRF1_AD). A very good agreement with the finite
+    [1](#table:IndustrialAC_AD). A very good agreement with the finite
     differences is found with $\epsilon=10^{-4}$.
 
     ```{=org}
     #+caption: Automatic differentiation in aeroelastic problem
     ```
     ```{=org}
-    #+name: table:XRF1_AD
+    #+name: table:IndustrialAC_AD
     ```
     ```{=latex}
     \begin{table} [h!]

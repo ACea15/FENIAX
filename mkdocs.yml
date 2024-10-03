@@ -139,8 +139,8 @@ nav:
       - Sail Plane static response: examples/SailPlane/sailplane_nb.md
       - Wing nonlinear dynamics: examples/wingSP/wingSP_nb.md
       - Free flying shell structure: examples/SimoFS/main.md
-      - Full aircraft (clamped) gust verification: examples/XRF1/xrf1_nb.md
-      - Full aircraft trim + dynamic loads: examples/XRF1trim/main.md
+      - Full aircraft (clamped) gust verification: examples/industrialAC/xrf1_nb.md
+      - Full aircraft trim + dynamic loads: examples/industrialACtrim/main.md
   #- Postprocessing
   - Theoretical background:
       - Intrinsic modal description: theory_intrinsic.md
