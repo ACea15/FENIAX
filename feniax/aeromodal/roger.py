@@ -185,8 +185,10 @@ if __name__ == "__main__":
 
     op4 = OP4.OP4()
 
-    aero = op4.read_op4_ascii("/home/ac5015/pCloudDrive/tmp/Qhh50-50.op4")
-    aero2 = op4.read_op4("/home/ac5015/pCloudDrive/tmp/Qhj0_8-50.op4")
+    from pathlib import Path
+    home = Path.home()
+    aero = op4.read_op4_ascii(f"{home}/pCloudDrive/tmp/Qhh50-50.op4")
+    aero2 = op4.read_op4(f"{home}/pCloudDrive/tmp/Qhj0_8-50.op4")
 
     try:
         qhh = jnp.array(aero["Q_HH"].data)
@@ -197,7 +199,7 @@ if __name__ == "__main__":
 
     k_array = jnp.linspace(1e-3, 1, 50)  # jnp.linspace(0,1,50)
     poles = jnp.linspace(
-        1e-3, 5, 20
+        1e-3, 1, 40
     )  # jnp.array([0.05, 0.1, 0.15, 0.2, 0.5, 0.7, 0.9, 1.2, 1.6, 1.8, 2.5])
     qhj_new = stackQk_realimag(qhj)
     qhh_new = stackQk_realimag(qhh)
@@ -216,8 +218,10 @@ if __name__ == "__main__":
         import plotly.express as px
         import plotly.graph_objects as go
 
-        i = 20
-        j = 18
+        i = 1
+        j = 50
+        #i = 20
+        #j = 18
 
         fig = go.Figure()
         # fig.add_trace(go.Scatter(x=qhh[:,i,j].real, y=qhh[:,i,j].imag),

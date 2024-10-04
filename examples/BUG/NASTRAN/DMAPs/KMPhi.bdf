@@ -1,0 +1,7 @@
+$$$$ EXTRACT FEM MATRICES $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+DIAG  20
+COMPILE SEMODES
+ALTER  'CALL.*SUPER3.*CASECC.*CASEM.*PHA1.*LAMA2'
+OUTPUT4 PHA,,,,//0/11///20
+OUTPUT4 MAA,,,,//0/12///20
+OUTPUT4 KAA,,,,//0/13///20

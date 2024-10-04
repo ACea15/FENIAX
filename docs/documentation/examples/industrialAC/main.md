@@ -939,7 +939,7 @@ a time step in the Runge-Kutta solver of 0.005.
     ```{=org}
     #+results: GustXRF3578
     ```
-    [file:figs/GustXRF3578.pdf](figs/GustXRF3578.pdf)
+    [file:figs/GustXRF3578.png](figs/GustXRF3578.png)
 
     The computational times of the different solvers are shown in Table
     [2](#table:IndustrialAC_times). The implicit solvers have taken one order of
