@@ -12,13 +12,25 @@
   - DLMs: generated DLM models
 #+end_src
 
-* ASETs generation
+* Modal Solution
+:PROPERTIES:
+  :header-args: :noweb-ref FE extraction
+  :END:
 
+** INPUT PARAMETERS
+#+NAME: parameters_modal
+#+begin_src python :var output="num_modes" :results value :tangle ./gafs.py
+  import numpy as np
+  num_modes = 100
+  sol = "cao"
+  eval(output)
+#+end_src
+
+** ASETs generation
 #+begin_src python
   from pyNastran.bdf.bdf import BDF
   import pandas as pd
   from feniax.unastran.asetbuilder import BuildAsetModel
-  from feniax.unastran.aero import GenDLMPanels
   import  feniax.unastran.matrixbuilder as matrixbuilder
   import feniax.aeromodal.panels as panels
   import feniax.plotools.nastranvtk.bdfdef as bdfdef
@@ -92,41 +104,174 @@
           model_asets.write_grid("./FEM/structuralGrid")
 
 #+end_src
-* FE extraction
-  :PROPERTIES:
-  :header-args: :noweb-ref FE extraction
-  :END:
+
+
+** Clamped, asets, OP2 (cao)
+#+begin_src org :tangle "./NASTRAN/BUG103_cao.bdf" :noweb yes
+  SOL 103
+  CEND
+  TITLE=BUG model #                                 
+  ECHO=NONE                      	  
+  SPC = 1
+  SPCF = ALL
+  DISPLACEMENT=ALL
+  METHOD = 100
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  BEGIN BULK
+  PARAM,AUTOMSET,YES
+  $ PARAM,BAILOUT,-1
+  $ PARAM,GRDPNT,0                                                              
+  $ PARAM,K6ROT,1.0
+  $ PARAM,SNORM,20.0
+  PARAM,POST,-1
+  $ PARAM,MAXRATIO,1.0E07
+  $ PARAM,EXTOUT,DMIGPCH
+  EIGRL,100,,,<<parameters_modal(output="num_modes")>>
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ MODEL								              $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  
+  INCLUDE './base_model.bdf'
+    
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CLAMPING NODE								      $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  
+  SPC1    1       123456  1005
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$
+  $ ASETs                 $
+  $$$$$$$$$$$$$$$$$$$$$$$$$
+  
+  INCLUDE './Asets/asets_clamped_reduced.bdf'
+
+  ENDDATA
+#+end_src
+
+** Free, asets, OP2 (eao)
+#+begin_src org :tangle "./NASTRAN/BUG103_cao.bdf" :noweb yes
+  SOL 103
+  CEND
+  TITLE=BUG model #                                 
+  ECHO=NONE                      	  
+  SPC = 1
+  SPCF = ALL
+  DISPLACEMENT=ALL
+  METHOD = 100
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  BEGIN BULK
+  PARAM,AUTOMSET,YES
+  $ PARAM,BAILOUT,-1
+  $ PARAM,GRDPNT,0                                                              
+  $ PARAM,K6ROT,1.0
+  $ PARAM,SNORM,20.0
+  PARAM,POST,-1
+  $ PARAM,MAXRATIO,1.0E07
+  $ PARAM,EXTOUT,DMIGPCH
+  EIGRL,100,,,<<parameters_modal(output="num_modes")>>
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ MODEL								              $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  
+  INCLUDE './base_model.bdf'
+    
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CLAMPING NODE								      $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  
+  $ SPC1    1       123456  1005
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$
+  $ ASETs                 $
+  $$$$$$$$$$$$$$$$$$$$$$$$$
+  
+  INCLUDE './Asets/asets_free_reduced.bdf'
+
+  ENDDATA
+#+end_src
+
+
+** Run Nastran
+#+begin_src bash :results none
+  cd NASTRAN
+  source run_nastran.sh
+  run_nastran BUG103_<<parameters_modal(output=sol)>>.bdf
+#+end_src
+
+** Build modes in OP4 and in ASETs
+#+begin_src python :session py1  :results none :tangle generate_aero.py
+  #from feniax.utils import write_op4modes
+  import feniax.unastran.op4handler as op4handler
+  eigs, modes = op4handler.write_op4modes("./run_caof",
+                               num_modes,
+                               op4_name=f"./data_out/Phi{num_modes}",
+                               return_modes=True)
+
+  bdf = BDF()
+  bdf.read_bdf(self.bdf_file)
+  node_ids = bdf.node_ids
+  
+  sorted_nodeids = sorted(node_ids)
+
+  # num_nodes = 79
+  # eigs = np.array(eigs)
+  # modes4sims = np.zeros((6*(num_nodes - 1), num_modes))
+  # for i in range(num_modes):
+  #     modes4sims[:, i] = np.hstack(modes[i,:(num_nodes - 1)])
+  # SAVE = True
+  # #np.load("../FEM/Ka.npy")
+  # #scipy.linalg.eigh(Ka, Ma)
+  # if SAVE:
+  #     np.save("../FEM/eigenvecs.npy", modes4sims)
+  #     np.save("../FEM/eigenvals.npy", eigs)
+#+end_src
+
+
 
 ** VTK modes
 #+begin_src python :session py1 :results none :tangle py1.py
   import feniax.plotools.nastranvtk.modes as modes
+  import  importlib
+  importlib.reload(modes)
   modes.vtk_fromop2("./SOL103/run_cao.bdf", "./SOL103/run_cao.op2", scale = 100.)
 #+end_src
+
 * DLM generation
   :PROPERTIES:
   :header-args: :session *pybug* :tangle ./dlm.py
   :END:
 
 ** INPUT PARAMETERS
-#+NAME: DLMgeneration_parameters
+#+NAME: parameters_dlm
 #+begin_src python
-
-  dlm_label = "dlm1"
+  import json
+  from feniax.unastran.aero import GenDLMPanels 
+  label_dlm = "dlm1"
   PRINT_CAEROS = True
   ######## Set discretisation MODEL ##############
 
-  aeros = dict(RWing1=dict(nspan=2, nchord=8),
-               RWing2=dict(nspan=3, nchord=8),
-               RWing3=dict(nspan=9, nchord=8),
-               RWing4=dict(nspan=6, nchord=8),
-               RWing5=dict(nspan=4, nchord=8),
-               RHTP=dict(nspan=6, nchord=8),
-               LWing1=dict(nspan=2, nchord=8),
-               LWing2=dict(nspan=3, nchord=8),
-               LWing3=dict(nspan=9, nchord=8),
-               LWing4=dict(nspan=6, nchord=8),
-               LWing5=dict(nspan=4, nchord=8),
-               LHTP=dict(nspan=6, nchord=8)
+  nchord_wing = 8
+  nchord_htp = 8
+  aeros = dict(RWing1=dict(nspan=2, nchord=nchord_wing),
+               RWing2=dict(nspan=3, nchord=nchord_wing),
+               RWing3=dict(nspan=9, nchord=nchord_wing),
+               RWing4=dict(nspan=6, nchord=nchord_wing),
+               RWing5=dict(nspan=4, nchord=nchord_wing),
+               RHTP  =dict(nspan=6, nchord=nchord_htp),
+               LWing1=RWing1,
+               LWing2=RWing2,
+               LWing3=RWing3,
+               LWing4=RWing4,
+               LWing5=RWing5,
+               LHTP=RHTP
                )
 
   # CAEROS IDs in the original model (right side only)
@@ -137,6 +282,8 @@
                    RWing5=3503001,
                    RHTP=3600001)
 
+  with open(f"./NASTRAN/DLMs/input_{label_dlm}.txt", "w") as fp:
+      json.dump(aeros, fp)  # encode dict into JSON
 #+end_src
 
 ** Build
@@ -144,6 +291,7 @@
 #+begin_src python
   from pyNastran.bdf.bdf import BDF
 
+  # Read old model with right side of CAEROS
   bdfaero = BDF()#debug=False)
   bdfaero.read_bdf("./BUGaero1.bdf", validate=False, punch=False)
 
@@ -154,34 +302,38 @@
           print(f"*{ki}*-x12: {vi.x12}")
           print(f"*{ki}*-x43: {vi.x43}")
 
+  dlm_aeros = dict()      
+  # copy info from old model
   for ki, i in aeros2ids.items():
-      aeros[ki]['p1'] = bdfaero.caeros[i].p1
-      aeros[ki]['p4'] = bdfaero.caeros[i].p4
-      aeros[ki]['x12'] = bdfaero.caeros[i].x12
-      aeros[ki]['x43'] = bdfaero.caeros[i].x43
+      dlm_aeros[ki]['p1'] = bdfaero.caeros[i].p1
+      dlm_aeros[ki]['p4'] = bdfaero.caeros[i].p4
+      dlm_aeros[ki]['x12'] = bdfaero.caeros[i].x12
+      dlm_aeros[ki]['x43'] = bdfaero.caeros[i].x43
       ki_l=('L'+ki[1:])
-      aeros[ki_l]['p1'] = bdfaero.caeros[i].p1*np.array([1.,-1.,1.])
-      aeros[ki_l]['p4'] = bdfaero.caeros[i].p4*np.array([1.,-1.,1.])
-      aeros[ki_l]['x12'] = bdfaero.caeros[i].x12
-      aeros[ki_l]['x43'] = bdfaero.caeros[i].x43
+      # symmetry to left side
+      dlm_aeros[ki_l]['p1'] = bdfaero.caeros[i].p1*np.array([1.,-1.,1.])
+      dlm_aeros[ki_l]['p4'] = bdfaero.caeros[i].p4*np.array([1.,-1.,1.])
+      dlm_aeros[ki_l]['x12'] = bdfaero.caeros[i].x12
+      dlm_aeros[ki_l]['x43'] = bdfaero.caeros[i].x43
 
-  aeros['RWing1']['set1x'] = [1004, 2001] 
-  aeros['RWing2']['set1x'] = [2003, 2005, 2008, 2010] 
-  aeros['RWing3']['set1x'] = list(range(2012, 2030, 2))
-  aeros['RWing4']['set1x'] = list(range(2030, 2044, 2))
-  aeros['RWing5']['set1x'] = list(range(2044,2053, 2))
-  aeros['RHTP']['set1x'] = list(range(4000, 4014))
+  dlm_aeros['RWing1']['set1x'] = [1004, 2001] 
+  dlm_aeros['RWing2']['set1x'] = [2003, 2005, 2008, 2010] 
+  dlm_aeros['RWing3']['set1x'] = list(range(2012, 2030, 2))
+  dlm_aeros['RWing4']['set1x'] = list(range(2030, 2044, 2))
+  dlm_aeros['RWing5']['set1x'] = list(range(2044,2053, 2))
+  dlm_aeros['RHTP']['set1x'] = list(range(4000, 4014))
   #####
-  aeros['LWing1']['set1x'] = [1004, 10002001] 
-  aeros['LWing2']['set1x'] = [10002003, 10002005, 10002008, 10002010] 
-  aeros['LWing3']['set1x'] = list(range(10002012, 10002030, 2))
-  aeros['LWing4']['set1x'] = list(range(10002030, 10002044, 2))
-  aeros['LWing5']['set1x'] = list(range(10002044,10002053, 2))
-  aeros['LHTP']['set1x'] = [4000]+list(range(10004001, 10004014))
+  dlm_aeros['LWing1']['set1x'] = [1004, 10002001] 
+  dlm_aeros['LWing2']['set1x'] = [10002003, 10002005, 10002008, 10002010] 
+  dlm_aeros['LWing3']['set1x'] = list(range(10002012, 10002030, 2))
+  dlm_aeros['LWing4']['set1x'] = list(range(10002030, 10002044, 2))
+  dlm_aeros['LWing5']['set1x'] = list(range(10002044,10002053, 2))
+  dlm_aeros['LHTP']['set1x'] = [4000]+list(range(10004001, 10004014))
 
-  dlm = GenDLMPanels.from_dict(aeros) # pass your dictionary with DLM model
+  dlm = GenDLMPanels.from_dict(dlm_aeros) # pass your dictionary with DLM model
   dlm.build_model()
-  dlm.model.write_bdf(f"./NASTRAN/DLMs/{dlm_label}.bdf") # write the bdf file
+  dlm.model.write_bdf(f"./NASTRAN/DLMs/{label_dlm}.bdf") # write the bdf file
+  dlm.save_yaml(f"./NASTRAN/DLMs/model_{label_dlm}.bdf") # write the bdf file
 
 #+end_src
 
@@ -189,11 +341,128 @@
 #+NAME: DLMparaview
 #+begin_src python
   grid = panels.caero2grid(dlm.components, dlm.caero1) # build grid from dlm model
-  panels.build_gridmesh(grid, dlm_label, save_dir="./NASTRAN/Paraview")  #  write paraview mesh
+  panels.build_gridmesh(grid, label_dlm, save_dir="./NASTRAN/Paraview")  #  write paraview mesh
   #bdfdef.vtkRef("./NASTRAN/Paraview/BUG_103cao.bdf")  # write full FE paraview
 #+end_src
 
 * GAFs extraction
+:PROPERTIES:
+:header-args: :session *pybug*
+:END:
+** INPUT PARAMETERS
+#+NAME: parameters_gafs
+#+begin_src python :var output="num_modes" :results value :tangle ./gafs.py
+  import numpy as np
+  import feniax.unastran.aero as nasaero
+  import pickle
+
+  mach = 0.8
+  Mach = str(mach).replace('.','_')
+  machs = [mach]
+  reduced_freqs = np.hstack([1e-6, np.linspace(1e-3,1, 50)])
+  num_modes = 50
+  flutter_id = 9010
+  mach_fact = machs
+  kv_fact = [200., 220.]
+  u_inf = 200.
+  rho_inf = 1.5
+  density_fact = [rho_inf]
+  c_ref = 1.
+  b_ref = 24. * 2
+  S_ref = b_ref * c_ref
+  rho_ref=rho_inf
+  q_inf = 0.5 * rho_inf * u_inf ** 2
+  flutter_method="PK"
+  flutter_sett = dict()
+  aero_sett = dict()
+  label_gaf = f"L1{Mach}"
+  eval(output)
+#+end_src
+
+#+begin_src python :session py1 :results none :tangle ./gafs.py
+  dlm_gafs = nasaero.GenFlutter(flutter_id,
+                                density_fact,
+                                mach_fact,
+                                kv_fact,
+                                machs,
+                                reduced_freqs,
+                                u_inf,
+                                c_ref,
+                                rho_ref,
+                                flutter_method,
+                                flutter_sett,
+                                aero_sett)
+
+  dlm_gafs.build_model()
+  dlm_gafs.model.write_bdf(f".NASTRAN/GAFs/{gaf_label}.bdf")
+
+#+end_src
+
+** Build Nastran
+#+begin_src org :noweb yes :tangle "./NASTRAN/rungafs1_cao.bdf"
+  $EXECUTIVE CONTROL DECK
+  assign OUTPUT4='./data_out/Qhh<<parameters_gafs(output="label_gaf")>>-<<parameters_gafs(output="num_modes")>>.op4',formatted,UNIT=11
+  assign OUTPUT4='./data_out/Qhj<<parameters_gafs(output="label_gaf")>>-<<parameters_gafs(output="num_modes")>>.op4',formatted,UNIT=12
+  assign INPUTT4='./data_out/Phi<<parameters_gafs(output="num_modes")>>.op4',formatted,UNIT=90
+  $assign INPUTT4= 'Phi1.op4',formatted,UNIT=91
+  $NASTRAN NLINES=999999
+  NASTRAN QUARTICDLM=1
+  SOL 145
+  INCLUDE ./DMAPs/Qhhj.bdf
+  CEND
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CASE CONTROL									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  TITLE=BUG GAFs1 #                                 
+  $SPC=  100001                                                            
+  $MPC=  100001
+  SPC = 1                  
+  METHOD = 100
+  FMETHOD = <<parameters_gafs(output="flutter_id")>>
+  $
+  $ DISP(PLOT) = ALL
+  $
+  RESVEC = YES
+  $ MODESELECT (STRUCTURE, LMODES = 20)
+  $ MODESELECT (STRUCTURE,LFREQ=0.001,HFREQ=15.0) 
+  $ MODESELECT (FLUID,LFREQ=0.001,HFREQ=15.0)
+  ECHO=NONE
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  BEGIN BULK
+  PARAM,BAILOUT,0
+  PARAM,GRDPNT,0                                                              
+  PARAM,K6ROT,1.0
+  PARAM,SNORM,20.0
+  PARAM,POST,0
+  $PARAM,MAXRATIO,1.0E07 $Default anyway
+  $PARAM   AUTOSPC YES
+  MDLPRM  MLTSPLIN 1 $Aero grids can be defined in multiple splines (dafault 0)
+  PARAM   WTMASS  1.0  
+  PARAM   OPPHIB  1
+  PARAM   OPPHIPA 1
+
+  EIGRL,100,,,<<parameters_gafs(output="num_modes")>>
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CLAMPING NODE									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  SPC1    1       123456  1005
+  INCLUDE ./base_model.bdf
+  INCLUDE ./DLMs/<<parameters_dlm(output="label_dlm")>>.bdf
+  INCLUDE ./gafs/<<parameters_gafs(output="label_gafs")>>.bdf
+#+end_src
+** Read GAFs
+#+begin_src python  :results none  :noweb yes :tangle read_gafs.py
+  import pyNastran.op4.op4 as op4
+  Qhh = op4.read_op4(f"Qhh<<parameters_gafs(output="label_gaf")>>-<<parameters_gafs(output="num_modes")>>.op4")
+
+#+end_src
 
 ** Roger RFA
 
