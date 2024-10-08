@@ -166,9 +166,9 @@ def Q_RFAki(ki, roger_matrices, poles):
 
     return Qk
 
+Q_RFA = jax.vmap(Q_RFAki, in_axes=(0, None, None))
 
 if __name__ == "__main__":
-    Q_RFA = jax.vmap(Q_RFAki, in_axes=(0, None, None))
 
     def err_ki(ki, Qki_dlm, roger_matrices, poles, order=None):
         Qki_roger = Q_RFA(ki, roger_matrices, poles)
