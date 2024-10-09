@@ -26,6 +26,7 @@ run_nastran(){
 
 move_outputs(){
     local file_in="$1"
+    local stamp="${2:-false}"  
     local basename="${file_in%.*}"
     local timestamp=$(date +"%m_%d_%y-%H_%M_%S")
     # Save the results of find into an array
@@ -43,7 +44,13 @@ move_outputs(){
 	filename="${fileonly%.*}"
 	
 	# Move the file to the destination directory with the modified name
-	mv "$file" "results_runs/${filename}-${timestamp}.${extension}"
+	if [ "$stamp" = true ]; then
+	    mv "$file" "simulations_out/${filename}-${timestamp}.${extension}"
+            echo "Moving ${filename}-${timestamp}.${extension} to simulations_out"
+	else
+	    mv "$file" "simulations_out/${filename}.${extension}"
+            echo "Moving ${filename}.${extension} to simulations_out"
+	fi
     done
     
 }

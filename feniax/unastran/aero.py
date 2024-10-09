@@ -174,9 +174,9 @@ class GenDLMPanels:
         dictout = dict(
             components=[self.components, "DLM component names"],
             num_surfaces=[self.num_surfaces, "DLM number of components"],
-            p1=[self.p1, "Leading-edge inwards point"],
+            p1=[[[float(p1ix) for p1ix in p1i] for p1i in self.p1], "Leading-edge inwards point"],
             x12=[self.x12, "Chord length at p1"],
-            p4=[self.p4, "Leading-edge outwards point"],
+            p4 = [[[float(p4ix) for p4ix in p4i] for p4i in self.p4], "Leading-edge outwards point"],
             x43=[self.x43, "Chord length at point p4"],
             nspan=[self.nspan, "Number of panels spanwise"],
             nchord=[self.nchord, "Number of panels chordwise"],

@@ -14,32 +14,39 @@
 
 * Modal Solution
 :PROPERTIES:
-  :header-args: :noweb-ref FE extraction
-  :END:
+:header-args: :tangle ./modal_solution.py
+:END:
 
 ** INPUT PARAMETERS
-#+NAME: parameters_modal
-#+begin_src python :var output="num_modes" :results value :tangle ./gafs.py
+#+NAME: parameters_modal0
+#+begin_src python :results none
+  import feniax.unastran.op4handler as op4handler
+  from pyNastran.bdf.bdf import BDF
+  from feniax.unastran.asetbuilder import BuildAsetModel
+  import feniax.plotools.nastranvtk.bdfdef as bdfdef
   import numpy as np
+
   num_modes = 100
   sol = "cao"
+  WRITE_GRID= False
+  WRITE_ASETS= False
+  ASET_MODEL_FULL = False  # ASETS at every CONM2 of half the size (full model gives
+                           # problems in 103 and might be too large any way)
+#+end_src
+#+NAME: parameters_modal
+#+begin_src python :var output="num_modes" :results value :noweb yes :tangle no
+  <<parameters_modal0>>
   eval(output)
 #+end_src
 
 ** ASETs generation
-#+begin_src python
-  from pyNastran.bdf.bdf import BDF
-  import pandas as pd
-  from feniax.unastran.asetbuilder import BuildAsetModel
-  import  feniax.unastran.matrixbuilder as matrixbuilder
-  import feniax.aeromodal.panels as panels
-  import feniax.plotools.nastranvtk.bdfdef as bdfdef
-  import jax.numpy as jnp
-  import jax
-  import numpy as np
 
+- Generation of ASET (condensed) model based on CONM2 data
+- Generation of grid file for FENIAX: looking at the CONM2 alignment, one picks a reference node (clamped one in a fixed model), and from it nodes in each component stream outwards.
+  
+#+begin_src python
   bdf = BDF()#debug=False)
-  bdf.read_bdf("./NASTRAN/BUG_103cao.bdf", validate=False)
+  bdf.read_bdf("./NASTRAN/BUG_103.bdf", validate=False)
 
   # bdf_conm2 = BDF()
   # conm2_ids = list(range(314, 345)) + [376, 377, 378]
@@ -49,19 +56,16 @@
 
   # bdf_conm2.write_bdf("./Parts/MTOW_FUEL_RWBOXmod.bdf")
 
-
   ######## BUILD STRUCTURAL MODEL ##############
-
-  WRITE_ASETS= False
-  WRITE_GRID= False
-  ASET_MODEL_FULL = False  # ASETS at every CONM2 of half the size (full model gives
-                           # problems in 103 and might be too large any way)
 
   if ASET_MODEL_FULL:                         
       # Initial model
       components_ids = dict()
       components_ids['FusWing'] = [2000]
-      components_ids['FusBack'] = [1006, 1007, 1008, 1009]
+      if sol[0] == "c": # clamped model
+          components_ids['FusBack'] = [1006, 1007, 1008, 1009]
+      elif sol[0] == "e": # free model
+          components_ids['FusBack'] = [1005, 1006, 1007, 1008, 1009]
       components_ids['FusFront'] = [1004, 1003, 1002, 1001, 1000]
       components_ids['RWing'] = list(range(2001, 2053))
       components_ids['LWing'] = list(range(10002001, 10002053))
@@ -71,19 +75,23 @@
       components_ids['VTPTail'] = [3010]
       components_ids['RHTP'] = list(range(4001, 4014))
       components_ids['LHTP'] = list(range(10004001, 10004014))
-
-      # model = BuildAsetModel(components_ids, clamped_node=1005)
-      # model.write_asets("./Config/asets_clamped.bdf")
       model_asets = BuildAsetModel(components_ids, bdf, clamped_node=1005)
       if WRITE_ASETS:
-          model_asets.write_asets("./NASTRAN/Config/asets_clamped.bdf")
+          model_asets.write_asets("./NASTRAN/Asets/asets_clamped.bdf")
       if WRITE_GRID:
-          model_asets.write_grid("./FEM/structuralGrid")
+          if sol[0] == "c": # clamped model
+              model_asets.write_grid("./FEM/structuralGridfullclamped")
+          elif sol[0] == "e": # free model
+              model_asets.write_grid("./FEM/structuralGridfull")
+
   else:
       # Initial model removing some ASET nodes along the wing
       components_ids = dict()
       #components_ids['FusWing'] = [2000]
-      components_ids['FusBack'] = [1006, 1007, 1008, 1009]
+      if sol[0] == "c": # clamped model
+          components_ids['FusBack'] = [1006, 1007, 1008, 1009]
+      elif sol[0] == "e": # free model
+          components_ids['FusBack'] = [1005, 1006, 1007, 1008, 1009]
       components_ids['FusFront'] = [1004, 1003, 1002, 1001, 1000]
       components_ids['RWing'] = [2001, 2003, 2005, 2008, 2010] + list(range(2012, 2053, 2))
       components_ids['LWing'] = ([10002001, 10002003, 10002005, 10002008, 10002010] +
@@ -96,17 +104,17 @@
       components_ids['LHTP'] = list(range(10004001, 10004014))
 
       model_asets = BuildAsetModel(components_ids, bdf, clamped_node=1005)
-      WRITE_ASETS= False
       if WRITE_ASETS:
-          model_asets.write_asets("./NASTRAN/Config/asets_clamped_reduced.bdf")
-      WRITE_GRID= False
+          model_asets.write_asets("./NASTRAN/Asets/asets_clamped_reduced.bdf")
       if WRITE_GRID:
-          model_asets.write_grid("./FEM/structuralGrid")
-
+          if sol[0] == "c": # clamped model
+              model_asets.write_grid("./FEM/structuralGridclamped")
+          elif sol[0] == "e": # free model
+              model_asets.write_grid("./FEM/structuralGrid")
 #+end_src
 
-
-** Clamped, asets, OP2 (cao)
+** bdf models
+*** Clamped, asets, OP2 (cao)
 #+begin_src org :tangle "./NASTRAN/BUG103_cao.bdf" :noweb yes
   SOL 103
   CEND
@@ -151,21 +159,7 @@
 
   ENDDATA
 #+end_src
-
-#+begin_src python :results none :tangle generate_aero.py
-  import feniax.unastran.op2reader as op2reader
-  # op2 = op2reader.NastranReader(op2name=f"./data_out/Phi{num_modes}")
-  op2 = OP2()
-  op2.read_op2("")
-  eig1 = op2.eigenvectors[1]
-  eigen = eig1.data
-  SAVE = True
-  # if SAVE:
-  #     np.save(f"../FEM/eigenvecs_{num_modes}.npy", modes4sims.T)
-  #     np.save(f"../FEM/eigenvals_{num_modes}.npy", eigs)
-#+end_src
-
-** Free, asets, OP2 (eao)
+*** Free, asets, OP2 (eao)
 #+begin_src org :tangle "./NASTRAN/BUG103_eao.bdf" :noweb yes
   SOL 103
   CEND
@@ -211,31 +205,22 @@
   ENDDATA
 #+end_src
 
-#+begin_src python :results none :tangle generate_aero.py
-  import feniax.unastran.op2reader as op2reader
-  # op2 = op2reader.NastranReader(op2name=f"./data_out/Phi{num_modes}")
-  op2 = OP2()
-  op2.read_op2("")
-  eig1 = op2.eigenvectors[1]
-  eigen = eig1.data
-  SAVE = True
-  # if SAVE:
-  #     np.save(f"../FEM/eigenvecs_{num_modes}.npy", modes4sims.T)
-  #     np.save(f"../FEM/eigenvals_{num_modes}.npy", eigs)
-#+end_src
-
 ** Run Nastran
-#+begin_src bash :results none
+Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
+
+#+begin_src bash :results none :noweb yes :tangle run_modal.sh
   cd NASTRAN
   source run_nastran.sh
   run_nastran BUG103_<<parameters_modal(output=sol)>>.bdf
+  move_outputs BUG103_<<parameters_modal(output=sol)>>.bdf              
 #+end_src
 
-** Build modes in OP4 and in ASETs
+** Build modes in OP4, map to ASETs and paraview plot
+- Get the modal shapes of the full model from the OP2 file and write them in OP4 format (for use in aerodynamics).
+- Plot the modes in Paraview. 
+- If running a condensed model, pick the nodes where the asets are and save them to a file for use in FENIAX. To be sure there is no mismatch between aero matrices and modes (change of signs for instance).
+  
 #+begin_src python :results none :tangle generate_aero.py
-  #from feniax.utils import write_op4modes
-  import feniax.unastran.op4handler as op4handler
-  import numpy as np
   eigs, modes = op4handler.write_op4modes(f"./data_out/Phi{num_modes}",
                                           num_modes,
                                           #op4_name=f"./data_out/Phi{num_modes}",
@@ -250,18 +235,21 @@
   modes4simulations = modes[:, asets_idsfull]
   SAVE = True
   if SAVE:
-      np.save(f"../FEM/eigenvecs_{num_modes}.npy", modes4sims.T)
-      np.save(f"../FEM/eigenvals_{num_modes}.npy", eigs)
+      np.save(f"./FEM/eigenvecs_{num_modes}.npy", modes4sims.T)
+      np.save(f"./FEM/eigenvals_{num_modes}.npy", eigs)
 #+end_src
 
-** VTK modes
-#+begin_src python :session py1 :results none :tangle py1.py
-  import feniax.plotools.nastranvtk.modes as modes
-  import  importlib
-  importlib.reload(modes)
-  modes.vtk_fromop2(f"BUG103_<<parameters_modal(output=sol)>>.bdf",
-                    f"BUG103_<<parameters_modal(output=sol)>>.bdf",
-                     scale = 100.)
+*** VTK modes
+#+begin_src python
+  op2_file = f"./NASTRAN/simulations_out/BUG103_{sol}.bdf" 
+  bdf_file = f"./NASTRAN/BUG103_{sol}.bdf"   
+  bdfdef.vtkModes_fromop2(bdf_file,
+                          op2_file,
+                          scale = 100.,
+                          modes2plot=list(range(num_modes)),
+                          write_path="./NASTRAN/Paraview/Modes/")
+
+
 #+end_src
 
 * DLM generation
@@ -270,29 +258,34 @@
   :END:
 
 ** INPUT PARAMETERS
-#+NAME: parameters_dlm
+#+NAME: parameters_dlm0
 #+begin_src python
   import json
-  from feniax.unastran.aero import GenDLMPanels 
+  from feniax.unastran.aero import GenDLMPanels
+  from pyNastran.bdf.bdf import BDF
+  import numpy as np
+  import feniax.aeromodal.panels as panels
+
   label_dlm = "dlm1"
   PRINT_CAEROS = True
   ######## Set discretisation MODEL ##############
 
   nchord_wing = 8
   nchord_htp = 8
-  aeros = dict(RWing1=dict(nspan=2, nchord=nchord_wing),
+  dlm_aeros = dict(RWing1=dict(nspan=2, nchord=nchord_wing),
                RWing2=dict(nspan=3, nchord=nchord_wing),
                RWing3=dict(nspan=9, nchord=nchord_wing),
                RWing4=dict(nspan=6, nchord=nchord_wing),
                RWing5=dict(nspan=4, nchord=nchord_wing),
-               RHTP  =dict(nspan=6, nchord=nchord_htp),
-               LWing1=RWing1,
-               LWing2=RWing2,
-               LWing3=RWing3,
-               LWing4=RWing4,
-               LWing5=RWing5,
-               LHTP=RHTP
-               )
+               RHTP=dict(nspan=6, nchord=nchord_htp)
+             )
+
+  dlm_aeros["LWing1"] = dlm_aeros["RWing1"]
+  dlm_aeros["LWing2"] = dlm_aeros["RWing2"]
+  dlm_aeros["LWing3"] = dlm_aeros["RWing3"]
+  dlm_aeros["LWing4"] = dlm_aeros["RWing4"]
+  dlm_aeros["LWing5"] = dlm_aeros["RWing5"]
+  dlm_aeros["LHTP"] = dlm_aeros["RHTP"]
 
   # CAEROS IDs in the original model (right side only)
   aeros2ids = dict(RWing1=3504001,
@@ -302,18 +295,26 @@
                    RWing5=3503001,
                    RHTP=3600001)
 
-  with open(f"./NASTRAN/DLMs/input_{label_dlm}.txt", "w") as fp:
-      json.dump(aeros, fp)  # encode dict into JSON
+  with open(f"./NASTRAN/DLMs/input_{label_dlm}.json", "w") as fp:
+      json.dump(dlm_aeros, fp)  # encode dict into JSON
+#+end_src
+
+#+RESULTS: parameters_dlm0
+
+#+NAME: parameters_dlm
+#+begin_src python :var output="num_modes" :results value :tangle no :noweb yes
+  <<parameters_dlm0>>
+  eval(output)
 #+end_src
 
 ** Build
+Build the aero model based on discretisation and the right-hand side aero built initially in BUGaero1.bdf
 #+NAME: DLMbuild
 #+begin_src python
-  from pyNastran.bdf.bdf import BDF
 
   # Read old model with right side of CAEROS
   bdfaero = BDF()#debug=False)
-  bdfaero.read_bdf("./BUGaero1.bdf", validate=False, punch=False)
+  bdfaero.read_bdf("./NASTRAN/BUGaero1.bdf", validate=False, punch=False)
 
   if PRINT_CAEROS:
       for ki, vi in bdfaero.caeros.items():
@@ -322,7 +323,6 @@
           print(f"*{ki}*-x12: {vi.x12}")
           print(f"*{ki}*-x43: {vi.x43}")
 
-  dlm_aeros = dict()      
   # copy info from old model
   for ki, i in aeros2ids.items():
       dlm_aeros[ki]['p1'] = bdfaero.caeros[i].p1
@@ -357,24 +357,28 @@
 
 #+end_src
 
+#+RESULTS: DLMbuild
+: None
+
 ** Paraview postprocessing
 #+NAME: DLMparaview
-#+begin_src python
+#+begin_src python :results none
   grid = panels.caero2grid(dlm.components, dlm.caero1) # build grid from dlm model
-  panels.build_gridmesh(grid, label_dlm, save_dir="./NASTRAN/Paraview")  #  write paraview mesh
+  panels.build_gridmesh(grid, label_dlm, save_dir="./NASTRAN/Paraview/aero")  #  write paraview mesh
   #bdfdef.vtkRef("./NASTRAN/Paraview/BUG_103cao.bdf")  # write full FE paraview
 #+end_src
 
 * GAFs extraction
 :PROPERTIES:
-:header-args: :session *pybug*
+:header-args: :session *pybug* :tangle ./gafs.py
 :END:
 ** INPUT PARAMETERS
-#+NAME: parameters_gafs
-#+begin_src python :var output="num_modes" :results value :tangle ./gafs.py
+#+NAME: parameters_gafs0
+#+begin_src python :noweb yes
   import numpy as np
   import feniax.unastran.aero as nasaero
   import pickle
+
   sol = "cao"
   num_modes = 50
   mach = 0.8
@@ -396,11 +400,16 @@
   flutter_method="PK"
   flutter_sett = dict()
   aero_sett = dict()
+  label_dlm = "<<parameters_dlm(output="label_dlm")>>"
   label_gaf = f"L1{Mach}"
+#+end_src
+#+NAME: parameters_gafs
+#+begin_src python :var output="num_modes" :results value :tangle no :noweb yes
+  <<parameters_gafs0>>
   eval(output)
 #+end_src
 
-#+begin_src python :session py1 :results none :tangle ./gafs.py
+#+begin_src python :results none 
   dlm_gafs = nasaero.GenFlutter(flutter_id,
                                 density_fact,
                                 mach_fact,
@@ -415,11 +424,12 @@
                                 aero_sett)
 
   dlm_gafs.build_model()
-  dlm_gafs.model.write_bdf(f".NASTRAN/GAFs/{gaf_label}.bdf")
+  dlm_gafs.model.write_bdf(f".NASTRAN/GAFs/{label_gaf}.bdf")
 #+end_src
 
-** Build Nastran
-#+begin_src org :noweb yes :tangle "./NASTRAN/rungafs1_cao.bdf"
+** bdf models
+*** cao
+#+begin_src org :noweb yes :tangle "./NASTRAN/BUGgafs1_cao.bdf"
   $EXECUTIVE CONTROL DECK
   assign OUTPUT4='./data_out/Qhh<<parameters_gafs(output="label_gaf")>>-<<parameters_gafs(output="num_modes")>>.op4',formatted,UNIT=11
   assign OUTPUT4='./data_out/Qhj<<parameters_gafs(output="label_gaf")>>-<<parameters_gafs(output="num_modes")>>.op4',formatted,UNIT=12
@@ -474,9 +484,78 @@
 
   SPC1    1       123456  1005
   INCLUDE ./base_model.bdf
-  INCLUDE ./DLMs/<<parameters_dlm(output="label_dlm")>>.bdf
+  INCLUDE ./DLMs/<<parameters_gafs(output="label_dlm")>>.bdf
   INCLUDE ./gafs/<<parameters_gafs(output="label_gafs")>>.bdf
 #+end_src
+*** eao
+#+begin_src org :noweb yes :tangle "./NASTRAN/BUGgafs1_eao.bdf"
+  $EXECUTIVE CONTROL DECK
+  assign OUTPUT4='./data_out/Qhh<<parameters_gafs(output="label_gaf")>>-<<parameters_gafs(output="num_modes")>>.op4',formatted,UNIT=11
+  assign OUTPUT4='./data_out/Qhj<<parameters_gafs(output="label_gaf")>>-<<parameters_gafs(output="num_modes")>>.op4',formatted,UNIT=12
+  assign INPUTT4='./data_out/Phi<<parameters_gafs(output="num_modes")>>.op4',formatted,UNIT=90
+  $assign INPUTT4= 'Phi1.op4',formatted,UNIT=91
+  $NASTRAN NLINES=999999
+  NASTRAN QUARTICDLM=1
+  SOL 145
+  INCLUDE ./DMAPs/Qhhj.bdf
+  CEND
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CASE CONTROL									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  TITLE=BUG GAFs1 #                                 
+  $SPC=  100001                                                            
+  $MPC=  100001
+  SPC = 1                  
+  METHOD = 100
+  FMETHOD = <<parameters_gafs(output="flutter_id")>>
+  $
+  $ DISP(PLOT) = ALL
+  $
+  RESVEC = YES
+  $ MODESELECT (STRUCTURE, LMODES = 20)
+  $ MODESELECT (STRUCTURE,LFREQ=0.001,HFREQ=15.0) 
+  $ MODESELECT (FLUID,LFREQ=0.001,HFREQ=15.0)
+  ECHO=NONE
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  BEGIN BULK
+  PARAM,BAILOUT,0
+  PARAM,GRDPNT,0                                                              
+  PARAM,K6ROT,1.0
+  PARAM,SNORM,20.0
+  PARAM,POST,0
+  $PARAM,MAXRATIO,1.0E07 $Default anyway
+  $PARAM   AUTOSPC YES
+  MDLPRM  MLTSPLIN 1 $Aero grids can be defined in multiple splines (dafault 0)
+  PARAM   WTMASS  1.0  
+  PARAM   OPPHIB  1
+  PARAM   OPPHIPA 1
+
+  EIGRL,100,,,<<parameters_gafs(output="num_modes")>>
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CLAMPING NODE									  $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  SPC1    1       123456  1005
+  INCLUDE ./base_model.bdf
+  INCLUDE ./DLMs/<<parameters_gafs(output="label_dlm")>>.bdf
+  INCLUDE ./gafs/<<parameters_gafs(output="label_gafs")>>.bdf
+#+end_src
+** Run Nastran
+Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
+
+#+begin_src bash :results none :noweb yes :tangle run_modal.sh
+  cd NASTRAN
+  source run_nastran.sh
+  run_nastran BUGgafs1_<<parameters_modal(output=sol)>>.bdf
+  move_outputs BUGgafs1_<<parameters_modal(output=sol)>>.bdf              
+#+end_src
+
 ** Roger RFA
 #+begin_src python  :results none  :noweb yes :tangle roger.py
   import pyNastran.op4.op4 as op4
