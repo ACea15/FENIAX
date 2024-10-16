@@ -12,6 +12,18 @@
   - DLMs: generated DLM models
 #+end_src
 
+#+begin_src python
+  import pathlib
+  pathlib.Path('./FEM').mkdir(parents=True, exist_ok=True)
+  pathlib.Path('./AERO').mkdir(parents=True, exist_ok=True)  
+  pathlib.Path('./NASTRAN/Paraview').mkdir(parents=True, exist_ok=True)
+  pathlib.Path('./NASTRAN/GAFs').mkdir(parents=True, exist_ok=True)
+  pathlib.Path('./NASTRAN/DLMs').mkdir(parents=True, exist_ok=True)
+#+end_src
+
+#+RESULTS:
+: None
+
 * Modal Solution
 :PROPERTIES:
 :header-args: :tangle ./modal_solution.py :session *pybug* :comments yes
@@ -27,7 +39,7 @@
   import numpy as np
 
   num_modes = 50
-  sol = "cao" # {c/e}{af}o
+  sol = "cao" # {c,e}{a,f}{o,p}
   WRITE_GRID= False
   WRITE_ASETS= False
   ASET_MODEL_FULL = False  # ASETS at every CONM2 of half the size (full model gives
@@ -122,7 +134,11 @@
 :header-args: :noweb yes :comments no
 :END:
 
-#+NAME: bdf_BUG103
+- Run BUG 103 solution with clamped and free-free conditions (label c and e respectively).
+- Condensed and full models (a and f labels)
+- Extract binary OP2 from which to read eigenvectors or pch file to read FE matrices (o and p)
+  
+#+NAME: bdf_BUG103case
 #+begin_src org :tangle no 
   SOL 103
   CEND
@@ -132,31 +148,33 @@
   SPCF = ALL
   DISPLACEMENT=ALL
   METHOD = 100
-  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-  $ BULK   									  $
-  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+#+end_src
+#+NAME: bdf_BUG103bulk
+#+begin_src org :tangle no 
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ BULK   						    
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
   BEGIN BULK
   PARAM,AUTOMSET,YES
   $ PARAM,BAILOUT,-1
-  $ PARAM,GRDPNT,0                                                              
+  $ PARAM,GRDPNT,0                                          
   $ PARAM,K6ROT,1.0
   $ PARAM,SNORM,20.0
-  PARAM,POST,-1
   $ PARAM,MAXRATIO,1.0E07
   $ PARAM,EXTOUT,DMIGPCH
   EIGRL,100,,,<<parameters_modal(output="num_modes")>>
 
-  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-  $ MODEL								              $
-  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-  
-  INCLUDE './base_model.bdf'    
 #+end_src
+
 *** Clamped, asets, OP2 (cao)
 #+begin_src org :tangle "./NASTRAN/BUG103_cao.bdf"
-  <<bdf_BUG103>>
-  
+  <<bdf_BUG103case>>
+  <<bdf_BUG103bulk>>
+  PARAM,POST,-1
+
+  INCLUDE './base_model.bdf'
+
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
   $ CLAMPING NODE								      $
   $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
@@ -173,7 +191,12 @@
 #+end_src
 *** Free, asets, OP2 (eao)
 #+begin_src org :tangle "./NASTRAN/BUG103_eao.bdf" 
-  <<bdf_BUG103>>  
+  <<bdf_BUG103case>>
+  <<bdf_BUG103bulk>>
+  PARAM,POST,-1
+
+  INCLUDE './base_model.bdf'
+
   $$$$$$$$$$$$$$$$$$$$$$$$$
   $ ASETs                 $
   $$$$$$$$$$$$$$$$$$$$$$$$$
@@ -182,7 +205,44 @@
 
   ENDDATA
 #+end_src
+*** Clamped, asets, pch (cap)
+#+begin_src org :tangle "./NASTRAN/BUG103_cap.bdf"
+  <<bdf_BUG103case>>
+  <<bdf_BUG103bulk>>
+  PARAM,EXTOUT,DMIGPCH
 
+  INCLUDE './base_model.bdf'
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+  $ CLAMPING NODE								      $
+  $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+  SPC1    1       123456  1005
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$
+  $ ASETs                 $
+  $$$$$$$$$$$$$$$$$$$$$$$$$
+
+  INCLUDE './Asets/asets_clamped_reduced.bdf'
+
+  ENDDATA
+#+end_src
+*** Free, asets, pch (eap)
+#+begin_src org :tangle "./NASTRAN/BUG103_eap.bdf" 
+  <<bdf_BUG103case>>
+  <<bdf_BUG103bulk>>
+  PARAM,EXTOUT,DMIGPCH
+
+  INCLUDE './base_model.bdf'
+
+  $$$$$$$$$$$$$$$$$$$$$$$$$
+  $ ASETs                 $
+  $$$$$$$$$$$$$$$$$$$$$$$$$
+
+  INCLUDE './Asets/asets_free_reduced.bdf'
+
+  ENDDATA
+#+end_src
 *** Clamped, full, OP2 (cfo)
 #+begin_src org :tangle "./NASTRAN/BUG103_cfo.bdf" 
   <<bdf_BUG103>>  
@@ -194,13 +254,11 @@
 
   ENDDATA
 #+end_src
-
 *** Free, full, OP2 (efo)
 #+begin_src org :tangle "./NASTRAN/BUG103_efo.bdf" 
   <<bdf_BUG103>>
   ENDDATA
 #+end_src
-
 ** Run Nastran
 Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
 
@@ -248,6 +306,20 @@ Plot the modal shapes in Paraview
                           plot_ref=False)
 
 
+#+end_src
+
+** Read pch
+Read the pch file and save FE matrices to FEM folder
+
+#+begin_src python
+  import feniax.unastran.matrixbuilder as matrixbuilder
+
+  id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch("BUG_103cap.pch")
+  SAVE_FE = False
+  if SAVE_FE:
+      np.save("./FEM/Ka.py", stiffnessMatrix)
+      np.save("./FEM/Ma.py", massMatrix)
+    
 #+end_src
 
 * DLM generation
@@ -362,15 +434,37 @@ Build the aero model based on discretisation and the right-hand side aero built 
   #bdfdef.vtkRef("./NASTRAN/Paraview/BUG_103cao.bdf")  # write full FE paraview
 #+end_src
 
+** Dihedral extraction
+Basically extracting the value of  for the normal of each panel that needs to be multiplied by 
+*** bdf models
+:PROPERTIES:
+:header-args: :comments no :noweb yes
+:END:
+
+#+NAME: BUGdihedral
+#+begin_src org :tangle BUGdihedral.bdf 
+#+end_src
+
+*** Run Nastran
+Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
+
+#+begin_src bash :session shell1 :results none :tangle run_gafs.sh
+  cd NASTRAN
+  source run_nastran.sh
+  run_nastran BUGdihedral.bdf
+  move_outputs BUGdihedral.bdf              
+#+end_src
+
 * GAFs extraction
 :PROPERTIES:
-:header-args: :session *pybug* :tangle ./gafs.py :comments yes
+:header-args: :session *pybug* :tangle ./gafs.py :comments yes :noweb yes
 :END:
 ** INPUT PARAMETERS
 #+NAME: parameters_gafs0
 #+begin_src python :noweb yes
   import numpy as np
   import feniax.unastran.aero as nasaero
+  import feniax.unastran.op4handler as op4handler
   import pickle
 
   sol = "cao"
@@ -405,7 +499,6 @@ Build the aero model based on discretisation and the right-hand side aero built 
   input_dict = dict(reduced_freqs=list(reduced_freqs), mach=mach, u_inf=u_inf, rho_inf=rho_inf)
   with open(f"./NASTRAN/GAFs/input_{label_flow}.json", "w") as fp:
       json.dump(input_dict, fp)  # encode dict into JSON
-
 #+end_src
 
 #+RESULTS: parameters_gafs0
@@ -416,8 +509,10 @@ Build the aero model based on discretisation and the right-hand side aero built 
   eval(output)
 #+end_src
 
+#+RESULTS: parameters_gafs
+
 ** Unsteady
-#+begin_src python :results none 
+#+begin_src python :results none
   dlm_gafs = nasaero.GenFlutter(flutter_id,
                                 density_fact,
                                 mach_fact,
@@ -437,7 +532,7 @@ Build the aero model based on discretisation and the right-hand side aero built 
 
 *** bdf models
 :PROPERTIES:
-:header-args: :noweb yes :comments no
+:header-args: :comments no :noweb yes
 :END:
 
 #+NAME: BUGgafs_case
@@ -455,7 +550,7 @@ Build the aero model based on discretisation and the right-hand side aero built 
 #+end_src
 
 #+NAME: BUGgafs_bulk
-#+begin_src org :tangle no 
+#+begin_src org :tangle no :noweb yes 
   METHOD = 100
   FMETHOD = <<parameters_gafs(output="flutter_id")>>
   $
@@ -523,7 +618,7 @@ TODO: add ASETs and check whether it affects the results
 *** Run Nastran
 Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
 
-#+begin_src bash :session shell1 :results none :noweb yes :tangle run_gafs.sh
+#+begin_src bash :session shell1 :results none :tangle run_gafs.sh
   cd NASTRAN
   source run_nastran.sh
   run_nastran BUGgafs_<<parameters_gafs(output="sol")>>.bdf
@@ -531,100 +626,75 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+end_src
 
 *** Roger RFA
-#+begin_src python  :results none  :noweb yes :tangle roger.py
-  import pyNastran.op4.op4 as op4
-  import feniax.aeromodal.roger as roger
-  import plotly.express as px
-  import plotly.graph_objects as go
+#+begin_src python  :results none  :tangle rogerRFA.py
 
-  op4_Qhh = op4.read_op4(f"./NASTRAN/data_out/Qhh<<parameters_gafs(output="label_gaf")>>-<<parameters_gafs(output="num_modes")>>.op4")
-  op4_Qhj = op4.read_op4(f"./NASTRAN/data_out/Qhh<<parameters_gafs(output="label_gaf")>>-<<parameters_gafs(output="num_modes")>>.op4")
+  #op4m = op4.OP4()
+  #Qop4 = op4m.read_op4(file_name)
 
-  try:
-      qhh = jnp.array(op4_Qhh["Q_HH"].data)
-      qhj = jnp.array(op4_Qhj["Q_HJ"].data)
-  except AttributeError:
-      qhh = jnp.array(op4_Qhh["Q_HH"][1])
-      qhj = jnp.array(op4_Qhj["Q_HJ"][1])
-
-  poles = jnp.linspace(1e-3, 1, 40)  
-  qhj_new = roger.stackQk_realimag(qhj)
-  qhh_new = roger.stackQk_realimag(qhh)
-
-  k_matrix = roger.frequency_matrix(reduced_freqs[1:], poles)
-  roger_matricesQhj = roger.rogerRFA(k_matrix, qhj_new)
-  roger_matricesQhh = roger.rogerRFA(k_matrix, qhh_new)
-
-  ks = jnp.hstack([1e-6, k_array])
-  Qk_hj = roger.Q_RFA(reduced_freqs, roger_matricesQhj, poles)
-  Qk_hh = roger.Q_RFA(reduced_freqs, roger_matricesQhh, poles)
-
-  PLOT = True
-  if PLOT:
-
-      i = 1
-      j = 50
-      #i = 20
-      #j = 18
-
-      fig = go.Figure()
-      # fig.add_trace(go.Scatter(x=qhh[:,i,j].real, y=qhh[:,i,j].imag),
-      #                     mode='makers',
-      #                     # name='lines'
-      #               )
-      fig.add_trace(
-          go.Scatter(
-              x=qhh[:, i, j].real,
-              y=qhh[:, i, j].imag,
-              mode="markers",
-              # name='lines'
-          ),
-      )
-
-      fig.add_trace(
-          go.Scatter(
-              x=Qk_hh[:, i, j].real,
-              y=Qk_hh[:, i, j].imag,
-              mode="lines",
-              # name='lines'
-          ),
-      )
-      # fig.add_trace(px.scatter(x=qhh[:,i,j].real, y=qhh[:,i,j].imag))
-
-      # fig = px.scatter(x=qhh[:,i,j].real, y=qhh[:,i,j].imag)
-      fig.show()
-
-      # Q_RFA(ki, roger_matrices, poles)
-
-      fig = go.Figure()
-      # fig.add_trace(go.Scatter(x=qhh[:,i,j].real, y=qhh[:,i,j].imag),
-      #                     mode='makers',
-      #                     # name='lines'
-      #               )
-      fig.add_trace(
-          go.Scatter(
-              x=qhj[:, i, j].real,
-              y=qhj[:, i, j].imag,
-              mode="markers",
-              # name='lines'
-          ),
-      )
-
-      fig.add_trace(
-          go.Scatter(
-              x=Qk_hj[:, i, j].real,
-              y=Qk_hj[:, i, j].imag,
-              mode="lines",
-              # name='lines'
-          ),
-      )
-      # fig.add_trace(px.scatter(x=qhh[:,i,j].real, y=qhh[:,i,j].imag))
-
-      # fig = px.scatter(x=qhh[:,i,j].real, y=qhh[:,i,j].imag)
-      fig.show()
-  
+  Qhh = op4handler.read_data('./NASTRAN/data_out/Qhh<<parameters_gafs(output="label_gaf")>>.op4',
+                             'Q_HH')
+  Qhj = op4handler.read_data('./NASTRAN/data_out/Qhj<<parameters_gafs(output="label_gaf")>>.op4',
+                             'Q_HJ')
 
 #+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
+  import importlib
+  import feniax.aeromodal.roger as roger
+  importlib.reload(roger)
+
+  optpoles = roger.OptimisePoles(reduced_freqs, Qhh,
+                                 num_poles_=4,
+                                 poles_step_=0.1,
+                                 poles_range_=[0.05,1])
+  optpoles.run(show_info=True)
+  qhhr1 = optpoles.get_model(label='m1')
+  optpoles.set_errsettings(error_name="average", rfa_method=2, norm_order=None)
+  optpoles.run(show_info=True)
+  qhhr2 = optpoles.get_model(label='m2')
+  optpoles.set_errsettings(error_name="max", rfa_method=2, norm_order=None)
+  optpoles.run(show_info=True)
+  optpoles.save("./AERO", f"A{label_gaf}", f"Poles{label_gaf}")
+  qhhr3 = optpoles.get_model(label='m3')
+
+#+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
+
+  optpoles = roger.OptimisePoles(reduced_freqs, Qhh,
+                                 num_poles_=4,
+                                 poles_step_=0.05,
+                                 poles_range_=[0.05,1])
+  optpoles.set_errsettings(error_name="max", rfa_method=2, norm_order=None)
+  optpoles.run(show_info=True)
+  qhhr4 = optpoles.get_model(label='m1')
+  
+#+end_src
+
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
+  Qroger1 = qhhr1.eval_array(reduced_freqs)
+  Qroger2 = qhhr2.eval_array(reduced_freqs)
+  Qroger3 = qhhr3.eval_array(reduced_freqs)
+  Qroger4 = qhhr4.eval_array(reduced_freqs)
+  
+#+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+
+  roger.plot_gafs(0, 1, Qhh, [Qroger, Qroger2, Qroger3, Qroger4])
+  
+  #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
+#+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  iterate_vect = list(range(10))
+  plot_prod = list(itertools.product(iterate_vect,iterate_vect))
+  for li in plot_prod:
+      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-3:
+          roger.plot_gafs(li[0], li[1], Qhh, [Qroger, Qroger2, Qroger3, Qroger4])
+#+end_src
+
 
 ** Steady
 *** bdf models
@@ -737,5 +807,25 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   move_outputs BUGgafsSteady_<<parameters_gafs(output="sol")>>.bdf              
 #+end_src
 
+*** Read op4
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+
+  Qax_name = "Qax<<parameters_gafs(output="label_gaf")>>"
+  Qah_name = "Qah<<parameters_gafs(output="label_gaf")>>"
+  Qhx_name = "Qhx<<parameters_gafs(output="label_gaf")>>"
+  Qax = op4handler.read_data(f'./NASTRAN/data_out/{Qax_name}.op4',
+                             'Q_AX')
+  Qah = op4handler.read_data(f'./NASTRAN/data_out/{Qah_name}.op4',
+                             'Q_AH')
+  Qhx = op4handler.read_data(f'./NASTRAN/data_out/{Qhx_name}.op4',
+                             'Q_HX')
+  SAVE_Qx = False
+  if SAVE_Qx:
+      np.save(f"./AERO/{Qax_name}.npy", Qax)
+      np.save(f"./AERO/{Qah_name}.npy", Qah)
+      np.save(f"./AERO/{Qhx_name}.npy", Qhx)
+
+#+end_src
 
 * Gust solution (146)
