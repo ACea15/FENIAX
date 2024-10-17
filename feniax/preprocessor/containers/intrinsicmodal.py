@@ -675,6 +675,8 @@ class Daero(DataContainer):
         if self.u_inf is not None and self.rho_inf is not None:
             q_inf = 0.5 * self.rho_inf * self.u_inf**2
             object.__setattr__(self, "q_inf", q_inf)
+        if isinstance(self.Q0_rigid, (str, pathlib.Path)):
+            object.__setattr__(self, "Q0_rigid", jnp.load(self.Q0_rigid))            
         if isinstance(self.A, (str, pathlib.Path)):
             object.__setattr__(self, "A", jnp.load(self.A))
         if isinstance(self.B, (str, pathlib.Path)):

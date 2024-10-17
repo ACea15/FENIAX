@@ -144,11 +144,11 @@ def dq_10G121(q, *args):
 def dq_10g15(q, *args):
     """Manoeuvre under qalpha."""
 
-    (eta_0, gamma2, omega, qalpha, A0, C0) = args[0]
+    (eta_0, gamma2, omega, x, qalpha, A0hat, C0hat, t) = args[0]
     q0 = -q / omega
     F = omega * q - common.contraction_gamma2(gamma2, q)
-    F += xloads.eta_steadyaero(q0, A0)
-    F += xloads.eta_manoeuvre(qalpha, A0)
+    F += xloads.eta_steadyaero(q0, A0hat)
+    F += xloads.eta_manoeuvre(t, x, qalpha, C0hat)
     F += eta_0
     return F
 

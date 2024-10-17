@@ -172,8 +172,10 @@ def eta_steadyaero(q0: jnp.ndarray, A0hat: jnp.ndarray):
 
 
 @jax.jit
-def eta_manoeuvre(qalpha: jnp.ndarray, C0hat: jnp.ndarray):
-    eta = C0hat @ qalpha
+def eta_manoeuvre(t, x, qalpha: jnp.ndarray, C0hat: jnp.ndarray):
+    
+    qalpha_ti = linear_interpolation(t, x, qalpha)
+    eta = C0hat @ qalpha_ti
     return eta
 
 

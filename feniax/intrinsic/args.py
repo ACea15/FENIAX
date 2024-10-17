@@ -178,11 +178,12 @@ def arg_10g15(
     **kwargs,
 ):
     eta_0 = kwargs["eta_0"]
+    x = sys.xloads.x
     gamma2 = sol.data.couplings.gamma2
     omega = sol.data.modes.omega
     qalpha = sys.aero.qalpha
     aero = getattr(sol.data, f"modalaeroroger_{sys.name}")
-    return (eta_0, gamma2, omega, qalpha, aero.A0hat, aero.C0hat)
+    return (eta_0, gamma2, omega, x, qalpha, aero.A0hat, aero.C0hat)
 
 
 @catter2library
