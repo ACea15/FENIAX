@@ -19,6 +19,8 @@
   pathlib.Path('./NASTRAN/Paraview').mkdir(parents=True, exist_ok=True)
   pathlib.Path('./NASTRAN/GAFs').mkdir(parents=True, exist_ok=True)
   pathlib.Path('./NASTRAN/DLMs').mkdir(parents=True, exist_ok=True)
+  pathlib.Path('./NASTRAN/data_out').mkdir(parents=True, exist_ok=True)
+  pathlib.Path('./NASTRAN/simulations_out').mkdir(parents=True, exist_ok=True)
 #+end_src
 
 #+RESULTS:
@@ -293,6 +295,27 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
       np.save(f"./FEM/eigenvals_{num_modes}.npy", eigs)
 #+end_src
 
+#+begin_src python :results none  :noweb yes
+  modes = op4handler.read_data(f"./NASTRAN/data_out/Phi{num_modes}_{sol}.op4", "PHG")
+  eigs = np.linspace(1,50,50)
+  bdf_file = f"./NASTRAN/BUG103_{sol}.bdf"
+  bdf = BDF()
+  bdf.read_bdf(bdf_file)
+  node_ids = bdf.node_ids
+  assert len(modes)/6 == len(node_ids), "the modes size does not match the node_ids"
+  sorted_nodeids = sorted(node_ids)
+  asets_ids = bdf.asets[0].node_ids
+  asets_ids_sorted = sorted(asets_ids)
+  asets_idsfull = np.array([sorted_nodeids.index(ai) for ai in asets_ids_sorted])
+  asets_indexes = np.hstack([[6*i + j for j in range(6)] for i in asets_idsfull])
+  modes4simulations = modes[asets_indexes, :]
+  SAVE = True
+  if SAVE:
+      np.save(f"./FEM/eigenvecs_{num_modes}.npy", modes4simulations)
+      np.save(f"./FEM/eigenvals_{num_modes}.npy", eigs)
+#+end_src
+
+
 *** VTK modes
 Plot the modal shapes in Paraview
 #+begin_src python
@@ -314,13 +337,15 @@ Read the pch file and save FE matrices to FEM folder
 #+begin_src python
   import feniax.unastran.matrixbuilder as matrixbuilder
 
-  id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch("BUG_103cap.pch")
-  SAVE_FE = False
+  id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch("./NASTRAN/simulations_out/BUG103_cap.pch")
+  SAVE_FE = True
   if SAVE_FE:
-      np.save("./FEM/Ka.py", stiffnessMatrix)
-      np.save("./FEM/Ma.py", massMatrix)
-    
+      np.save("./FEM/Ka.npy", stiffnessMatrix)
+      np.save("./FEM/Ma.npy", massMatrix)
+  assert len(asets_indexes) == len(stiffnessMatrix), "the FE matrices size does not match the indexes used to build the aset modes from the full set"
 #+end_src
+
+#+RESULTS:
 
 * DLM generation
   :PROPERTIES:
@@ -644,7 +669,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   importlib.reload(roger)
 
   optpoles = roger.OptimisePoles(reduced_freqs, Qhh,
-                                 num_poles_=4,
+                                 num_poles_=5,
                                  poles_step_=0.1,
                                  poles_range_=[0.05,1])
   optpoles.run(show_info=True)
@@ -820,7 +845,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
                              'Q_AH')
   Qhx = op4handler.read_data(f'./NASTRAN/data_out/{Qhx_name}.op4',
                              'Q_HX')
-  SAVE_Qx = False
+  SAVE_Qx = True
   if SAVE_Qx:
       np.save(f"./AERO/{Qax_name}.npy", Qax)
       np.save(f"./AERO/{Qah_name}.npy", Qah)
