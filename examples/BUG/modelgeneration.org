@@ -371,6 +371,7 @@ Read the pch file and save FE matrices to FEM folder
   from pyNastran.bdf.bdf import BDF
   import numpy as np
   import feniax.aeromodal.panels as panels
+  import feniax.plotools.grid
   import copy
   PRINT_CAEROS = True
   ######## Set discretisation MODEL ##############
@@ -467,7 +468,7 @@ Build the aero model based on discretisation and the right-hand side aero built 
 #+NAME: DLMparaview
 #+begin_src python :results none
   grid = panels.caero2grid(dlm.components, dlm.caero1) # build grid from dlm model
-  panels.build_gridmesh(grid, label_dlm, save_dir="./NASTRAN/Paraview/aero")  #  write paraview mesh
+  gridmesh = panels.build_gridmesh(grid, label_dlm, save_dir="./NASTRAN/Paraview/aero")  #  write paraview mesh
   #bdfdef.vtkRef("./NASTRAN/Paraview/BUG_103cao.bdf")  # write full FE paraview
 #+end_src
 
