@@ -1,10 +1,72 @@
 from pyNastran.bdf.bdf import BDF
 from feniax.preprocessor.utils import dump_yaml
+import feniax.plotools.grid as grid
+import numpy as np
 import pathlib
 from ruamel.yaml import YAML
+import pyvista
 
+class GenDLMGrid:
+    """
+    Given a BDF model with CAEROS, it builds the corresponding Grid
+    """
+    
+    def __init__(
+            self,
+            model: BDF,
+            collocation_chordwise=0.75
+            
+    ):
+        self.model = model
+        self.collocation_chordwise = collocation_chordwise
+        self.panelgrid = grid.AeroGrid()
+        self.collocationgrid = grid.AeroGrid()
+        self.build_grid()
 
+    def build_grid(self):
+
+        self.panelgrid = grid.AeroGrid.build_DLMgrid(self.model)
+        self.collocationgrid = grid.AeroGrid.build_DLMcollocation(self.model,
+                                                                  self.collocation_chordwise)
+        collocation_ids = list(self.collocationgrid.points.keys())
+        # if collocation ids are not sorted then the stacked points would not correspond to the ones in         # Nastran 
+        assert collocation_ids == sorted(collocation_ids)
+        
+    def get_grid(self):
+        
+        stack_points = []
+        for points_i in self.panelgrid.points.values():
+            stack_points.append(points_i)
+        return np.vstack(stack_points)
+
+    def get_collocation(self):
+        
+        stack_points = []
+        for points_i in self.collocationgrid.points.values():
+            stack_points.append(points_i)
+        return np.vstack(stack_points)
+        
+    def plot_pyvista(self, folder_path: str | pathlib.Path, grid=True, collocation=True):
+
+        folder_path = pathlib.Path(folder_path)
+        folder_path.mkdir(parents=True, exist_ok=True)
+        if grid:
+            for k, v in self.panelgrid.points.items():
+                cells_ = self.panelgrid.cells[k]
+                c14 = 4 * np.ones(len(cells_), dtype="int64")
+                cells = np.hstack([c14.reshape(len(c14), 1), cells_], dtype="int64")
+                mesh = pyvista.PolyData(v, cells)
+                mesh.save(folder_path / f"grid_{k}.ply", binary=False)
+        if collocation:
+            for k, v in self.collocationgrid.points.items():
+                cells_ = self.collocationgrid.cells[k]
+                c14 = 4 * np.ones(len(cells_), dtype="int64")
+                cells = np.hstack([c14.reshape(len(c14), 1), cells_], dtype="int64")
+                mesh = pyvista.PolyData(v, cells)
+                mesh.save(folder_path / f"collocation_{k}.ply", binary=False)
+    
 class GenDLMPanels:
+    
     def __init__(
         self,
         components: list,
@@ -28,8 +90,10 @@ class GenDLMPanels:
         self.nchord = nchord
         self.set1x = set1x
         self.spline_type = spline_type
+        self.panelgrid = grid.AeroGrid()
+        self.collocationgrid = grid.AeroGrid()
         self.build_dlm()
-
+        
     def __eq__(self, o):
         equal_dict = dict(
             components=self.components == o.components,
@@ -148,9 +212,7 @@ class GenDLMPanels:
             self.set1x,
             self.spline_type,
         )
-
-    def build_grid(self): ...
-
+        
     def build_model(self, model=None):
         if model is None:
             self.model = BDF(debug=True, log=None)

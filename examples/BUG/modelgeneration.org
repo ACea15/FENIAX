@@ -328,7 +328,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+end_src
 
 
-*** VTK modes
+*** Plot VTK modes
 Plot the modal shapes in Paraview
 #+begin_src python
   op2_file = f"./NASTRAN/simulations_out/BUG103_{sol}.op2" 
@@ -340,7 +340,7 @@ Plot the modal shapes in Paraview
                           write_path=f"./NASTRAN/Paraview/Modes_{sol}/",
                           plot_ref=False)
 
-
+  #bdfdef.vtkRef("./NASTRAN/Paraview/BUG_103cao.bdf")  # write full FE paraview
 #+end_src
 
 ** Read pch
@@ -367,7 +367,7 @@ Read the pch file and save FE matrices to FEM folder
 #+NAME: parameters_dlm0
 #+begin_src python
   import json
-  from feniax.unastran.aero import GenDLMPanels
+  import feniax.unastran.aero as aero
   from pyNastran.bdf.bdf import BDF
   import numpy as np
   import feniax.aeromodal.panels as panels
@@ -457,7 +457,7 @@ Build the aero model based on discretisation and the right-hand side aero built 
   dlm_aeros['LWing5']['set1x'] = list(range(10002044,10002053, 2))
   dlm_aeros['LHTP']['set1x'] = [4000]+list(range(10004001, 10004014))
 
-  dlm = GenDLMPanels.from_dict(dlm_aeros) # pass your dictionary with DLM model
+  dlm = aero.GenDLMPanels.from_dict(dlm_aeros) # pass your dictionary with DLM model
   dlm.build_model()
   dlm.model.write_bdf(f"./NASTRAN/DLMs/{label_dlm}.bdf") # write the bdf file
   dlm.save_yaml(f"./NASTRAN/DLMs/model_{label_dlm}.bdf") # write the bdf file
@@ -465,10 +465,21 @@ Build the aero model based on discretisation and the right-hand side aero built 
 #+end_src
 
 ** Paraview postprocessing
+
+Old method:
 #+NAME: DLMparaview
-#+begin_src python :results none
+#+begin_src python :results none :tangle no
   grid = panels.caero2grid(dlm.components, dlm.caero1) # build grid from dlm model
-  gridmesh = panels.build_gridmesh(grid, label_dlm, save_dir="./NASTRAN/Paraview/aero")  #  write paraview mesh
+  gridmesh = panels.build_gridmesh(grid, label_dlm, save_dir=f"./NASTRAN/Paraview/aero{label_dlm}")  #  write paraview mesh
+#+end_src
+
+#+NAME: DLM
+#+begin_src python :results none
+
+  dlmgrid = aero.GenDLMGrid(dlm.model)
+  dlmgrid.plot_pyvista(f"./paraview/dlm{label_dlm}")
+  collocationpoints = dlmgrid.get_collocation()
+  
   #bdfdef.vtkRef("./NASTRAN/Paraview/BUG_103cao.bdf")  # write full FE paraview
 #+end_src
 
