@@ -370,6 +370,7 @@ Read the pch file and save FE matrices to FEM folder
   import feniax.unastran.aero as aero
   from pyNastran.bdf.bdf import BDF
   import numpy as np
+  import feniax.unastran.op4handler as op4handler
   import feniax.aeromodal.panels as panels
   import feniax.plotools.grid
   import copy
@@ -479,7 +480,7 @@ Old method:
   dlmgrid = aero.GenDLMGrid(dlm.model)
   dlmgrid.plot_pyvista(f"./paraview/dlm{label_dlm}")
   collocationpoints = dlmgrid.get_collocation()
-  
+  np.save(f"./AERO/Collocation_{label_dlm}.npy", collocationpoints)
   #bdfdef.vtkRef("./NASTRAN/Paraview/BUG_103cao.bdf")  # write full FE paraview
 #+end_src
 
@@ -1329,13 +1330,13 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 *** Read op4
 
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+#+begin_src python  :results none  :noweb yes 
 
   dihedral = op4handler.read_data(f'./NASTRAN/data_out/Dihedral.op4',
                              'WJ')
   SAVE_DIHEDRAL = True
   if SAVE_DIHEDRAL:
-      np.save(f"./AERO/dihedral.npy", dihedral.real[:,0])
+      np.save(f"./AERO/Dihedral_{label_dlm}.npy", dihedral.real[:,0])
 
 #+end_src
 
@@ -1350,7 +1351,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   import feniax.unastran.aero as nasaero
   import feniax.unastran.op4handler as op4handler
   import pickle
-
+  import itertools
   sol = "cao"
   num_modes = 50
   mach = 0.8
@@ -1510,8 +1511,16 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+end_src
 
 *** Roger RFA
-#+begin_src python  :results none  :tangle rogerRFA.py
+:PROPERTIES:
+:header-args: :session *pybug* :noweb yes
+:END:
 
+#+begin_src python  :results none  :tangle rogerRFA.py
+  import numpy as np
+  import feniax.unastran.aero as nasaero
+  import feniax.unastran.op4handler as op4handler
+  import pickle
+  
   #op4m = op4.OP4()
   #Qop4 = op4m.read_op4(file_name)
 
@@ -1528,20 +1537,30 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   importlib.reload(roger)
 
   optpoles = roger.OptimisePoles(reduced_freqs, Qhh,
-                                 num_poles_=5,
+                                 num_poles_=9,
                                  poles_step_=0.1,
-                                 poles_range_=[0.05,1])
+                                 poles_range_=[0.05,1],
+                                 rfa_method_=2)
   optpoles.run(show_info=True)
   qhhr1 = optpoles.get_model(label='m1')
-  optpoles.set_errsettings(error_name="average", rfa_method=2, norm_order=None)
-  optpoles.run(show_info=True)
-  qhhr2 = optpoles.get_model(label='m2')
-  optpoles.set_errsettings(error_name="max", rfa_method=2, norm_order=None)
-  optpoles.run(show_info=True)
-  optpoles.save("./AERO", f"A{label_gaf}", f"Poles{label_gaf}")
-  qhhr3 = optpoles.get_model(label='m3')
+  # optpoles.set_errsettings(error_name="average", rfa_method=2, norm_order=None)
+  # optpoles.run(show_info=True)
+  # qhhr2 = optpoles.get_model(label='m2')
+  # optpoles.set_errsettings(error_name="max", rfa_method=2, norm_order=None)
+  # optpoles.run(show_info=True)
+  # optpoles.save("./AERO", f"A{label_gaf}", f"Poles{label_gaf}")
+  # qhhr3 = optpoles.get_model(label='m3')
 
 #+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
+  poles = jnp.load("./AERO/PolesDd1c7F1Scao-50.npy")
+  rogerhj = roger.ComputeRoger(Qhj, reduced_freqs, poles, 2)
+  jnp.save(f"./AERO/D{label_gaf}.npy", rogerhj.roger_matrices)
+  rogerhjeval = roger.EvaluateRoger.create(rogerhj)
+  Qrogerhj = rogerhjeval.eval_array(reduced_freqs)
+#+end_src
+
 
 #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
 
@@ -1558,9 +1577,9 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
   Qroger1 = qhhr1.eval_array(reduced_freqs)
-  Qroger2 = qhhr2.eval_array(reduced_freqs)
-  Qroger3 = qhhr3.eval_array(reduced_freqs)
-  Qroger4 = qhhr4.eval_array(reduced_freqs)
+  # Qroger2 = qhhr2.eval_array(reduced_freqs)
+  # Qroger3 = qhhr3.eval_array(reduced_freqs)
+  # Qroger4 = qhhr4.eval_array(reduced_freqs)
   
 #+end_src
 
@@ -1570,6 +1589,15 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   
   #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
 #+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  iterate_vect = list(range(10))
+  plot_prod = list(itertools.product(iterate_vect,iterate_vect))
+  for li in plot_prod:
+      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-3:
+          roger.plot_gafs(li[0], li[1], Qhh, [Qroger1])
+#+end_src
+
 
 #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
   iterate_vect = list(range(10))
