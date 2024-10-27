@@ -84,9 +84,9 @@ class OptimisePoles:
         self.num_poles = num_poles_
         self.poles_step = poles_step_
         self.poles_range = poles_range_
-        self.rfa_method = rfa_method_
+        # self.rfa_method = rfa_method_
         self._build_polesgrid()
-        self.set_errsettings()
+        self.set_errsettings(rfa_method=rfa_method_)
         
     def get_model(self, label='m1'):
 
