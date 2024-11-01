@@ -34,12 +34,12 @@ class ComputeRoger:
     @property
     def poles(self):
 
-        return self.poles
+        return self._poles
 
     @poles.setter
     def poles(self, _poles):
 
-        self.poles = _poles
+        self._poles = _poles
         self._solve()
         
     def _solve(self):
@@ -47,7 +47,6 @@ class ComputeRoger:
             self.roger_matrices = build_gafs(self.poles, self.sampling_aeromatrices, self.redfreqs)
         elif self.method == 2:
             self.roger_matrices = build_gafs2(self.poles, self.sampling_aeromatrices, self.redfreqs)
-
             
 class EvaluateRoger:
     
@@ -65,6 +64,11 @@ class EvaluateRoger:
 
         return Q_RFA(k, self.roger_matrices, self.poles)
 
+    @classmethod
+    def create(cls, model: ComputeRoger, label="m1"):
+
+        return cls(model.roger_matrices, model.poles)
+    
 
 class OptimisePoles:
 

@@ -332,9 +332,9 @@ def dlm_control_nodes(aero_mesh, file_save=""):
         if tipo == "CQUA":
             nelem = nelem + 1
 
-    Matrice_grid = zeros((ngrid, 4))
-    Matrice_elem = zeros((nelem, 5))
-    Control_node = zeros((nelem, 3))
+    Matrice_grid = np.zeros((ngrid, 4))
+    Matrice_elem = np.zeros((nelem, 5))
+    Control_node = np.zeros((nelem, 3))
     aero_mesh_file.seek(0)
 
     counter_grid = 0
@@ -383,10 +383,10 @@ def dlm_control_nodes(aero_mesh, file_save=""):
         ):
             aero_mesh_file.readline()
 
-    point_1 = zeros((3))
-    point_2 = zeros((3))
-    point_3 = zeros((3))
-    point_4 = zeros((3))
+    point_1 = np.zeros((3))
+    point_2 = np.zeros((3))
+    point_3 = np.zeros((3))
+    point_4 = np.zeros((3))
 
     for k in range(nelem):
         for i in range(ngrid):

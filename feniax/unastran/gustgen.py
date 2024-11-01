@@ -17,6 +17,7 @@ class Gust4Nastran:
         Fg,
         grid_DAREA,
         VD=False,
+        U_ds=None    
     ):
         # INPUT:
         self.h = h
@@ -35,6 +36,10 @@ class Gust4Nastran:
         # MZFW=74800.
         # Zmo=12496.8      #41000ft
 
+        if U_ds is None:
+            self.U_ds = []
+        else:
+            self.U_ds = U_ds
         # Constant definition
         T_0 = 288.16
         rho_0 = 1.225
@@ -47,8 +52,8 @@ class Gust4Nastran:
         self.T, self.rho, self.P, self.a = self.standard_atmosphere(
             self.h, k, R, g, gamma, T_0, rho_0
         )
-        self.TAS2EAS = scipy.sqrt(self.rho / rho_0)
-        U_inf_EAS = self.TAS2EAS * self.U_inf_TAS
+        self.TAS2EAS = np.sqrt(self.rho / rho_0)
+        self.U_inf_EAS = self.TAS2EAS * self.U_inf_TAS
 
         # Frequency and Time step Definition
         self.delta_f = F_max / N_step_freq
@@ -81,10 +86,10 @@ class Gust4Nastran:
         if self.VD == True:
             self.U_ref = self.U_ref / 2.0
 
-        self.U_ds = []
         self.delta_T_gust = []
         for i in range(len(H)):
-            self.U_ds.append(self.U_ref * self.Fg * (self.H[i] / 106.68) ** (1.0 / 6.0))
+            if self.U_ds == []: 
+                self.U_ds.append(self.U_ref * self.Fg * (self.H[i] / 106.68) ** (1.0 / 6.0))
             if self.Type == "tas":
                 self.U_inf = self.U_inf_TAS
                 self.U_ds[i] = self.U_ds[i] / self.TAS2EAS
@@ -101,7 +106,7 @@ class Gust4Nastran:
             T = T_0 - k * h
             rho = rho_0 * (T / T_0) ** (1 / (n - 1))
             P = rho * R * T
-            a = scipy.sqrt(gamma * R * T)
+            a = np.sqrt(gamma * R * T)
         elif 11000.0 <= h <= 25000.0:
             h_11k = 11000.0
             T_11k = T_0 - k * h_11k
@@ -112,7 +117,7 @@ class Gust4Nastran:
             T = T_11k
             rho = rho_11k * psi
             P = P_11k * psi
-            a = scipy.sqrt(gamma * R * T_11k)
+            a = np.sqrt(gamma * R * T_11k)
         return T, rho, P, a
 
     def gust_family(self, write_gust, write_subcase):

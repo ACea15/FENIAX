@@ -505,6 +505,11 @@ class DGustMc(DGust):
         if isinstance(self.collocation_points, (str, pathlib.Path)):
             object.__setattr__(self, "collocation_points", jnp.load(self.collocation_points))
 
+        object.__setattr__(self, "panels_dihedral", jnp.array(self.panels_dihedral))
+        object.__setattr__(self, "collocation_points", jnp.array(self.collocation_points))    
+        # self.panels_dihedral = jnp.array(self.panels_dihedral)
+        # self.collocation_points = jnp.array(self.collocation_points)
+        
         gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(
             self.intensity,
             self.panels_dihedral,
