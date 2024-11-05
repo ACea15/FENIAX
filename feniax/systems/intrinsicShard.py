@@ -25,19 +25,21 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
         num_nodes = self.fem.num_nodes
         C06ab = self.sol.data.modes.C06ab
         if self.settings.shard.input_type.lower() == "pointforces":
-            super().set_xloading()
             if self.settings.shard.inputs.follower_points is not None:
+                super().set_xloading(compute_follower=False)
                 self.xpoints = xloads.shard_point_follower(self.settings.xloads.x,
                                                            self.settings.shard.inputs.follower_points,
                                                            self.settings.shard.inputs.follower_interpolation,
                                                            num_nodes,
                                                            C06ab)
             elif self.settings.shard.inputs.dead_points is not None:
+                super().set_xloading(compute_dead=False)
                 self.xpoints = xloads.shard_point_dead(self.settings.xloads.x,
-                                                           self.settings.shard.inputs.dead_points,
-                                                           self.settings.shard.inputs.dead_interpolation,
+                                                       self.settings.shard.inputs.dead_points,
+                                                       self.settings.shard.inputs.dead_interpolation,
                                                        num_nodes)
             elif self.settings.shard.inputs.gravity is not None:
+                super().set_xloading(compute_gravity=False)
                 self.xpoints = xloads.shard_gravity(self.settings.xloads.x,
                                                     self.settings.shard.inputs.gravity,
                                                     self.settings.shard.inputs.gravity_vect,
@@ -74,7 +76,7 @@ class StaticShardIntrinsic(IntrinsicShardSystem, cls_name="staticShard_intrinsic
         print(f"***** Setting intrinsic static shard system with label {self.label}")
         self.main = getattr(static_shard, self.label)
 
-    def build_solution(self, jac, objective, q, X2, X3, ra, Cab, *args, **kwargs):
+    def build_solution(self, q, X2, X3, ra, Cab, *args, **kwargs):
         
         self.sol.add_container(
             "StaticSystem",

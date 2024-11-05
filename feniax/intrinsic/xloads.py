@@ -3,6 +3,7 @@ import jax
 from functools import partial
 import feniax.intrinsic.functions as functions
 import itertools
+import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
 
 def redirect_to(another_function):
     def decorator(original_function):
@@ -347,13 +348,13 @@ def shard_gravity(x, gravity, gravity_vect, Ma, Mfe_order):
 
     return shardforce_gravity #Ns_Nx_6_Nn
 
-def shard_gust(inputs) -> jnp.ndarray:
+def shard_gust(inputs: intrinsicmodal.DShard_gust1) -> jnp.ndarray:
 
     prod_list = []
     for k, v in inputs.__dict__.items():
         if v is not None:
             prod_list.append(v)
-    prod = list(itertools.product(prod_list))
+    prod = list(itertools.product(*prod_list))
     return jnp.array(prod)
             
     
@@ -377,7 +378,10 @@ if __name__ == "__main__":
     #Ns_Nx_6_Nn
     shard_dead = shard_point_dead(x, dead_points, dead_interpolation,  num_nodes)
     dead0 = build_point_dead(x, dead_points[0], dead_interpolation[0], num_nodes)
-    (dead0 == shard_dead[0]).all()
+    print((dead0 == shard_dead[0]).all())
     dead1 = build_point_dead(x, dead_points[1], dead_interpolation[1], num_nodes)
-    (dead1 == shard_dead[1]).all()
+    print((dead1 == shard_dead[1]).all())
     
+    g1 = intrinsicmodal.DShard_gust1(length=[10,20],intensity=[3,4,5], u_inf=[100,150], rho_inf=[0.2,0.3,0.6])
+    prod = shard_gust(g1)
+    print(prod)

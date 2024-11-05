@@ -47,6 +47,7 @@ class StaticSystem:
     X3: jnp.ndarray = None
     Cab: jnp.ndarray = None
     ra: jnp.ndarray = None
+    t: dict = None
     jac: dict[str,jnp.ndarray] = None
     f_ad: dict = None
 

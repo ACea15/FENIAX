@@ -127,12 +127,12 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         else:
             self.q0 = q0
 
-    def set_xloading(self):
+    def set_xloading(self, compute_follower=True, compute_dead=True, compute_gravity=True):
 
         force_follower = None
         force_dead = None
         force_gravity = None
-        if self.settings.xloads.follower_forces:
+        if self.settings.xloads.follower_forces and compute_follower:
            # self.settings.xloads.build_point_follower(
            #     self.fem.num_nodes, self.sol.data.modes.C06ab
            # )           
@@ -142,13 +142,13 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
                                                          self.fem.num_nodes,
                                                          self.sol.data.modes.C06ab
                                                          )
-        if self.settings.xloads.dead_forces:
+        if self.settings.xloads.dead_forces and compute_dead:
             force_dead = xloads.build_point_dead(self.settings.xloads.x,
                                                  self.settings.xloads.dead_points,
                                                  self.settings.xloads.dead_interpolation,
                                                  self.fem.num_nodes,
                                                  )
-        if self.settings.xloads.gravity_forces:
+        if self.settings.xloads.gravity_forces and compute_gravity:
             if self.fem.constrainedDoF:
                 force_gravity = xloads.build_gravity(self.settings.xloads.x,
                                      self.settings.xloads.gravity,

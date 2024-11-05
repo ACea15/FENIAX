@@ -1064,9 +1064,19 @@ class DShard_pointforces(DataContainer):
     gravity_vect: jnp.ndarray = dfield("", default=None)
     
     def __post_init__(self):
-        
+        if self.follower_points is not None:
+            object.__setattr__(self, "follower_points", jnp.array(self.follower_points))
+        if self.follower_interpolation is not None:
+            object.__setattr__(self, "follower_interpolation", jnp.array(self.follower_interpolation))
+        if self.dead_points is not None:
+            object.__setattr__(self, "dead_points", jnp.array(self.dead_points))
+        if self.dead_interpolation is not None:                 
+            object.__setattr__(self, "dead_interpolation", jnp.array(self.dead_interpolation))
+        if self.gravity is not None:
+            object.__setattr__(self, "gravity", jnp.array(self.gravity))
+        if self.gravity_vect is not None:            
+            object.__setattr__(self, "gravity_vect", jnp.array(self.gravity_vect))        
         self._initialize_attributes()
-
     
 @Ddataclass
 class DShard_gust1(DataContainer):
@@ -1107,7 +1117,7 @@ class DShard(DataContainer):
     """
 
     inputs: dict = dfield("", default=None, yaml_save=False)
-    input_type: str = dfield("", default=None, options=ADinputType._member_names_)
+    input_type: str = dfield("", default=None, options=ShardinputType._member_names_)
     label: str = dfield("", default=None, init=False)
 
     def __post_init__(self):
@@ -1295,8 +1305,8 @@ class Dsystem(DataContainer):
                     initialise_Dclass(
                         self.shard,
                         libsettings_class,
-                        _fem=self._fem,
-                        _aero=self._aero,
+                        #_fem=self._fem,
+                        #_aero=self._aero,
                     ),
                 )
                 
