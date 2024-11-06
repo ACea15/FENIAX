@@ -19,37 +19,47 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
         solver_args = getattr(argshard, f"arg_{label}")
         self.args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
 
-
-    def set_xloading(self):
+    def _set_gust1(self):
+        
+        super().set_xloading()
+        self.xpoints = xloads.shard_gust1(self.settings.shard.inputs)
+        
+    def _set_pointforces(self):
 
         num_nodes = self.fem.num_nodes
-        C06ab = self.sol.data.modes.C06ab
-        if self.settings.shard.input_type.lower() == "pointforces":
-            if self.settings.shard.inputs.follower_points is not None:
-                super().set_xloading(compute_follower=False)
-                self.xpoints = xloads.shard_point_follower(self.settings.xloads.x,
-                                                           self.settings.shard.inputs.follower_points,
-                                                           self.settings.shard.inputs.follower_interpolation,
-                                                           num_nodes,
-                                                           C06ab)
-            elif self.settings.shard.inputs.dead_points is not None:
-                super().set_xloading(compute_dead=False)
-                self.xpoints = xloads.shard_point_dead(self.settings.xloads.x,
-                                                       self.settings.shard.inputs.dead_points,
-                                                       self.settings.shard.inputs.dead_interpolation,
-                                                       num_nodes)
-            elif self.settings.shard.inputs.gravity is not None:
-                super().set_xloading(compute_gravity=False)
-                self.xpoints = xloads.shard_gravity(self.settings.xloads.x,
-                                                    self.settings.shard.inputs.gravity,
-                                                    self.settings.shard.inputs.gravity_vect,
-                                                    self.fem.Ma,
-                                                    self.fem.Mfe_order)
-            
-        elif self.settings.shard.input_type.lower() == "gust1":
-            super().set_xloading()
-            self.xpoints = xloads.shard_gust(self.settings.shard.inputs)
+        C06ab = self.sol.data.modes.C06ab        
+        if self.settings.shard.inputs.follower_points is not None:
+            super().set_xloading(compute_follower=False)
+            self.xpoints = xloads.shard_point_follower(self.settings.xloads.x,
+                                                       self.settings.shard.inputs.follower_points,
+                                                       self.settings.shard.inputs.follower_interpolation,
+                                                       num_nodes,
+                                                       C06ab)
+        elif self.settings.shard.inputs.dead_points is not None:
+            super().set_xloading(compute_dead=False)
+            self.xpoints = xloads.shard_point_dead(self.settings.xloads.x,
+                                                   self.settings.shard.inputs.dead_points,
+                                                   self.settings.shard.inputs.dead_interpolation,
+                                                   num_nodes)
+        elif self.settings.shard.inputs.gravity is not None:
+            super().set_xloading(compute_gravity=False)
+            self.xpoints = xloads.shard_gravity(self.settings.xloads.x,
+                                                self.settings.shard.inputs.gravity,
+                                                self.settings.shard.inputs.gravity_vect,
+                                                self.fem.Ma,
+                                                self.fem.Mfe_order)
+
+    def _set_steadyalpha(self):
         
+        super().set_xloading()
+        self.xpoints = xloads.shard_steadyalpha(self.settings.shard.inputs,
+                                                self.settings.aero)
+            
+    def set_xloading(self):
+
+        shard_type = self.settings.shard.input_type.lower()
+        f_shard = getattr(self, f"_set_{shard_type}")
+        f_shard()
         
     def solve(self):
         
@@ -67,6 +77,15 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
         
         self.build_solution(**results)
 
+    def build_solution(self):
+        self.sol.add_container(
+            "Shards",
+            label="_" + self.name,
+            points=self.xpoints,
+        )
+        if self.settings.save:
+            self.sol.save_container("Shards", label="_" + self.name)
+        
 class StaticShardIntrinsic(IntrinsicShardSystem, cls_name="staticShard_intrinsic"):
     
     def set_system(self):
@@ -78,6 +97,7 @@ class StaticShardIntrinsic(IntrinsicShardSystem, cls_name="staticShard_intrinsic
 
     def build_solution(self, q, X2, X3, ra, Cab, *args, **kwargs):
         
+        super().build_solution()
         self.sol.add_container(
             "StaticSystem",
             label="_" + self.name,
@@ -104,6 +124,7 @@ class DynamicShardIntrinsic(IntrinsicShardSystem, cls_name="dynamicShard_intrins
 
     def build_solution(self, q, X1, X2, X3, ra, Cab, *args, **kwargs):
         
+        super().build_solution()
         self.sol.add_container(
             "DynamicSystem",
             label="_" + self.name,

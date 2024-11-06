@@ -348,7 +348,8 @@ def shard_gravity(x, gravity, gravity_vect, Ma, Mfe_order):
 
     return shardforce_gravity #Ns_Nx_6_Nn
 
-def shard_gust(inputs: intrinsicmodal.DShard_gust1) -> jnp.ndarray:
+
+def shard_gust1(inputs: intrinsicmodal.DShard_gust1) -> jnp.ndarray:
 
     prod_list = []
     for k, v in inputs.__dict__.items():
@@ -357,6 +358,21 @@ def shard_gust(inputs: intrinsicmodal.DShard_gust1) -> jnp.ndarray:
     prod = list(itertools.product(*prod_list))
     return jnp.array(prod)
             
+def shard_steadyalpha(inputs: intrinsicmodal.DShard_steadyalpha,
+                      default: intrinsicmodal.Daero) -> jnp.ndarray:
+
+    prod_list = []
+    default_dict = default.__dict__
+    for k, v in inputs.__dict__.items():
+        if v is not None:
+            prod_list.append(v)
+        elif k == "aeromatrix":
+            prod_list.append([0])
+        else:
+            d_k = default_dict[k]
+            prod_list.append([d_k])
+    prod = list(itertools.product(*prod_list))
+    return jnp.array(prod)
     
     
 
@@ -383,5 +399,17 @@ if __name__ == "__main__":
     print((dead1 == shard_dead[1]).all())
     
     g1 = intrinsicmodal.DShard_gust1(length=[10,20],intensity=[3,4,5], u_inf=[100,150], rho_inf=[0.2,0.3,0.6])
-    prod = shard_gust(g1)
+    prod = shard_gust1(g1)
     print(prod)
+
+    steadyalpha = intrinsicmodal.DShard_steadyalpha(u_inf=[100,150], rho_inf=[0.2,0.3,0.6])
+    aero = intrinsicmodal.Daero(u_inf=100, rho_inf=0.4)
+    prod = shard_steadyalpha(steadyalpha, aero)
+    print(prod)
+
+    print("-----------")
+    steadyalpha = intrinsicmodal.DShard_steadyalpha(u_inf=[100,150])
+    aero = intrinsicmodal.Daero(u_inf=100, rho_inf=0.4)
+    prod = shard_steadyalpha(steadyalpha, aero)
+    print(prod)
+    

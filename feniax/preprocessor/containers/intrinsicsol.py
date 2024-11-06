@@ -102,6 +102,9 @@ class GustRoger:
     Qhj_wsum: jnp.ndarray = None
     Qhjl_wdot: jnp.ndarray = None
 
+@dataclass(slots=True)
+class Shards:
+    points: jnp.ndarray = None
 
 
     

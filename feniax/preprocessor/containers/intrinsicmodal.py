@@ -1044,6 +1044,7 @@ class DtoAD(Dlibrary):
 
 class ShardinputType(Enum):
     POINTFORCES = 1
+    STEADYALPHA = 2
     GUST1 = 3
 
 
@@ -1077,7 +1078,23 @@ class DShard_pointforces(DataContainer):
         if self.gravity_vect is not None:            
             object.__setattr__(self, "gravity_vect", jnp.array(self.gravity_vect))        
         self._initialize_attributes()
-    
+
+@Ddataclass
+class DShard_steadyalpha(DataContainer):
+    """Point forces
+
+    Parameters
+    ----------
+
+    """
+
+    rho_inf: jnp.ndarray = dfield("", default=None)
+    u_inf: jnp.ndarray = dfield("", default=None)
+    aeromatrix: list[int] = dfield("", default=None)
+    def __post_init__(self):
+        
+        self._initialize_attributes()
+        
 @Ddataclass
 class DShard_gust1(DataContainer):
     """Point forces

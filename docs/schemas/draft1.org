@@ -646,10 +646,17 @@ derivatives
 
 * System based solutions
 TODO: make automatic label as the first
-| Type        | Target | Gravity    | BC1        | ModalAero | SteadyAero   | UnsteadyAero | Point loads | q0 approx | Rigid-body           | Nonlinearities         | residualised |
-|-------------+--------+------------+------------+-----------+--------------+--------------+-------------+-----------+----------------------+------------------------+--------------|
-| 1 static    | Level  | False: "g" | Clamped    | None      | None         | None         | None        | via q2    | 1-quaternion+strains | All -> ""              | None -> ""   |
-| 2 Dynamic   | TRIM1  | True: "G"  | Free       | Rogers    | qalpha       | gust         | follower    | via q1    | All-quaternions      | Linear sys -> "l"      | True -> "r"  |
+| Type         | Target | Gravity    | BC1        | ModalAero | SteadyAero   | UnsteadyAero | Point loads | q0 approx | Rigid-body           | Nonlinearities         | residualised |
+|--------------+--------+------------+------------+-----------+--------------+--------------+-------------+-----------+----------------------+------------------------+--------------|
+| 1 static     | Level  | False: "g" | Clamped    | None      | None         | None         | None        | via q2    | 1-quaternion+strains | All -> ""              | None -> ""   |
+| 2 Dynamic    | TRIM1  | True: "G"  | Free       | Rogers    | qalpha       | gust         | follower    | via q1    | All-quaternions      | Linear sys -> "l"      | True -> "r"  |
+| 3 staticAD   |        |            |            |           |              |              |             |           |                      |                        |              |
+| 4 dynamicAD  |        |            |            |           |              |              |             |           |                      |                        |              |
+| 3 staticPL   | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
+| 3 dynamicPL  | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
+| 3 staticPLAD | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
+| 3   | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
+
 | 3 Stability | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
 | 4 Multibody |        |            |            |           |              |              |             |           |                      |                        |              |
 | 5 Control   |        |            |            |           |              |              |             |           |                      |                        |              |
@@ -738,6 +745,20 @@ Well in place for Nastran Models  except for the derivatives provided by Nastran
 Extensive  work carried out into a software architecture that complies with good design principles.
 #+RESULTS: classes_architecture2
 [[file:classes2.png]]
+
+
+** Systems
+
+Static and dynamic systems for static and dynamic simulations
+
+Systems with labels:
+
+
+[[file:~/projects/FENIAX/feniax/systems/intrinsic_system.py::label = f"dq_{self.settings.label}"][intrinsic_system]]
+[[file:~/projects/FENIAX/feniax/systems/intrinsicAD.py::label = f"main_{label_sys}_{label_ad}"][AD_system]]
+[[file:~/projects/FENIAX/feniax/systems/intrinsicShard.py::self.label = f"main_{label_sys}_{label_shard}"][shard_system]]
+
+
 * Short term goals
 - Set up a testing framework with well-known problems in nonlinear structural-mechanics/aeroelasticity.
 - Application to the Bristol model provided by Airbus.
