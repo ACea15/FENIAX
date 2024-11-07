@@ -1103,11 +1103,10 @@ class DShard_gust1(DataContainer):
     ----------
 
     """
-
+    rho_inf: jnp.ndarray = dfield("", default=None)
+    u_inf: jnp.ndarray = dfield("", default=None)
     length: jnp.ndarray = dfield("", default=None)
     intensity: jnp.ndarray = dfield("", default=None)
-    u_inf: jnp.ndarray = dfield("", default=None)
-    rho_inf: jnp.ndarray = dfield("", default=None)
     def __post_init__(self):
         
         self._initialize_attributes()

@@ -349,12 +349,19 @@ def shard_gravity(x, gravity, gravity_vect, Ma, Mfe_order):
     return shardforce_gravity #Ns_Nx_6_Nn
 
 
-def shard_gust1(inputs: intrinsicmodal.DShard_gust1) -> jnp.ndarray:
+def shard_gust1(inputs: intrinsicmodal.DShard_gust1,
+                default: intrinsicmodal.Daero) -> jnp.ndarray:
 
     prod_list = []
+    default_dict = default.__dict__
     for k, v in inputs.__dict__.items():
         if v is not None:
             prod_list.append(v)
+        elif k == "aeromatrix":
+            prod_list.append([0])
+        else:
+            d_k = default_dict[k]
+            prod_list.append([d_k])
     prod = list(itertools.product(*prod_list))
     return jnp.array(prod)
             

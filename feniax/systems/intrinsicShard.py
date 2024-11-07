@@ -22,7 +22,8 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
     def _set_gust1(self):
         
         super().set_xloading()
-        self.xpoints = xloads.shard_gust1(self.settings.shard.inputs)
+        self.xpoints = xloads.shard_gust1(self.settings.shard.inputs,
+                                          self.settings.aero)
         
     def _set_pointforces(self):
 
