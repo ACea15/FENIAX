@@ -56,14 +56,25 @@ def _get_gustRogerMc(
         gust_step,
     )
     time_discretization = (gust_shift + xgust) / u_inf
-    if time_discretization[-1] < simulation_time[-1]:
-        time = jnp.hstack(
-            [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
-        )
-    else:
-        time = time_discretization
-    if time[0] != 0.0:
-        time = jnp.hstack([0.0, time[0] - 1e-6, time])
+    # if time_discretization[-1] < simulation_time[-1]:
+    #     time = jnp.hstack(
+    #         [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
+    #     )
+    # else:
+    #     time = time_discretization
+    extended_time = jnp.hstack(
+        [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
+    )
+    time = jax.lax.select(time_discretization[-1] < simulation_time[-1],
+                          extended_time,
+                          time_discretization)
+    
+    # if time[0] != 0.0:
+    #     time = jnp.hstack([0.0, time[0] - 1e-6, time])
+    time = jax.lax.select(time[0] != 0.0,
+                          jnp.hstack([0.0, time[0] - 1e-6, time]),
+                          time )
+        
     ntime = len(time)
     # npanels = len(collocation_points)
     return gust_totaltime, xgust, time, ntime

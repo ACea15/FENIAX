@@ -22,7 +22,6 @@ from feniax.intrinsic.functions import (
 from feniax.preprocessor.containers.data_container import DataContainer
 from feniax.preprocessor.utils import dfield, initialise_Dclass, load_jnp
 
-
 def filter_kwargs(cls):
     @wraps(cls)
     def wrapper(*args, **kwargs):
@@ -443,6 +442,49 @@ class Dfem(DataContainer):
 class DGust(DataContainer):
     ...
 
+def _get_gustRogerMc(
+    gust_intensity,
+    dihedral,
+    gust_shift,
+    gust_step,
+    simulation_time,
+    gust_length,
+    u_inf,
+    min_collocationpoints,
+    max_collocationpoints,
+):
+    #
+    gust_totaltime = gust_length / u_inf
+    xgust = jnp.arange(
+        min_collocationpoints,  # jnp.min(collocation_points[:,0]),
+        max_collocationpoints  # jnp.max(collocation_points[:,0]) +
+        + gust_length
+        + gust_step,
+        gust_step,
+    )
+    time_discretization = (gust_shift + xgust) / u_inf
+    # if time_discretization[-1] < simulation_time[-1]:
+    #     time = jnp.hstack(
+    #         [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
+    #     )
+    # else:
+    #     time = time_discretization
+    extended_time = jnp.hstack(
+        [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
+    )
+    time = jax.lax.select(time_discretization[-1] < simulation_time[-1],
+                          extended_time,
+                          time_discretization)
+    
+    # if time[0] != 0.0:
+    #     time = jnp.hstack([0.0, time[0] - 1e-6, time])
+    time = jax.lax.select(time[0] != 0.0,
+                          jnp.hstack([0.0, time[0] - 1e-6, time]),
+                          time )
+        
+    ntime = len(time)
+    # npanels = len(collocation_points)
+    return gust_totaltime, xgust, time, ntime
 
 @Ddataclass
 class DGustMc(DGust):
@@ -457,7 +499,7 @@ class DGustMc(DGust):
     intensity : float
          Gust intensity
     step : float
-         Gust discretisation in x-direction -gust dx
+         Gust discretisation in x-direction --gust dx
     time_epsilon: float
          Epsilon time between the gust first hitting the AC and the next interpolation point
     length : float
@@ -510,7 +552,18 @@ class DGustMc(DGust):
         # self.panels_dihedral = jnp.array(self.panels_dihedral)
         # self.collocation_points = jnp.array(self.collocation_points)
         
-        gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(
+        # gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(
+        #     self.intensity,
+        #     self.panels_dihedral,
+        #     self.shift,
+        #     self.step,
+        #     self.simulation_time,
+        #     self.length,
+        #     self.u_inf,
+        #     jnp.min(self.collocation_points[:, 0]),
+        #     jnp.max(self.collocation_points[:, 0]),
+        # )
+        gust_totaltime, xgust, time, ntime = _get_gustRogerMc(
             self.intensity,
             self.panels_dihedral,
             self.shift,
@@ -521,6 +574,7 @@ class DGustMc(DGust):
             jnp.min(self.collocation_points[:, 0]),
             jnp.max(self.collocation_points[:, 0]),
         )
+        
         object.__setattr__(self, "totaltime", gust_totaltime)
         object.__setattr__(self, "x", xgust)
         object.__setattr__(self, "time", time)
