@@ -43,9 +43,9 @@
   import numpy as np
 
   num_modes = 50
-  sol = "cao" # {c,e}{a,f}{o,p}
-  WRITE_GRID= False
-  WRITE_ASETS= False
+  sol = "eao" # {c,e}{a,f}{o,p}
+  WRITE_GRID= True
+  WRITE_ASETS= True
   ASET_MODEL_FULL = False  # ASETS at every CONM2 of half the size (full model gives
                            # problems in 103 and might be too large any way)
 #+end_src
@@ -64,7 +64,7 @@
 - Generation of ASET (condensed) model based on CONM2 data
 - Generation of grid file for FENIAX: looking at the CONM2 alignment, one picks a reference node (clamped one in a fixed model), and from it nodes in each component stream outwards.
   
-#+begin_src python
+#+begin_src python  :results none
   bdf = BDF()#debug=False)
   bdf.read_bdf("./NASTRAN/BUG103.bdf", validate=False)
 
@@ -95,14 +95,19 @@
       components_ids['VTPTail'] = [3010]
       components_ids['RHTP'] = list(range(4001, 4014))
       components_ids['LHTP'] = list(range(10004001, 10004014))
-      model_asets = BuildAsetModel(components_ids, bdf, clamped_node=1005)
+      if sol[0] == "c": # clamped model
+          model_asets = BuildAsetModel(components_ids, bdf, clamped_node=1005)
+      elif sol[0] == "e": # free model
+          model_asets = BuildAsetModel(components_ids, bdf)          
+
       if WRITE_ASETS:
-          model_asets.write_asets("./NASTRAN/Asets/asets_clamped.bdf")
-      if WRITE_GRID:
           if sol[0] == "c": # clamped model
-              model_asets.write_grid("./FEM/structuralGridfullclamped")
+              model_asets.write_asets("./NASTRAN/Asets/asets_clamped.bdf")
           elif sol[0] == "e": # free model
-              model_asets.write_grid("./FEM/structuralGridfull")
+              model_asets.write_asets("./NASTRAN/Asets/asets_free.bdf")
+
+      if WRITE_GRID:
+          model_asets.write_grid(f"./FEM/structuralGridfull_{sol[:-1]}")
 
   else:
       # Initial model removing some ASET nodes along the wing
@@ -122,18 +127,19 @@
       components_ids['VTPTail'] = [3010]
       components_ids['RHTP'] = list(range(4001, 4014))
       components_ids['LHTP'] = list(range(10004001, 10004014))
+      if sol[0] == "c": # clamped model
+          model_asets = BuildAsetModel(components_ids, bdf, clamped_node=1005)
+      elif sol[0] == "e": # free model
+          model_asets = BuildAsetModel(components_ids, bdf)
 
-      model_asets = BuildAsetModel(components_ids, bdf, clamped_node=1005)
-      if WRITE_ASETS:
-          model_asets.write_asets("./NASTRAN/Asets/asets_clamped_reduced.bdf")
-      if WRITE_GRID:
+      if WRITE_ASETS:          
           if sol[0] == "c": # clamped model
-              model_asets.write_grid("./FEM/structuralGridclamped")
+              model_asets.write_asets("./NASTRAN/Asets/asets_clamped_reduced.bdf")
           elif sol[0] == "e": # free model
-              model_asets.write_grid("./FEM/structuralGrid")
+              model_asets.write_asets("./NASTRAN/Asets/asets_free_reduced.bdf")              
+      if WRITE_GRID:
+          model_asets.write_grid(f"./FEM/structuralGrid_{sol[:-1]}")
 #+end_src
-
-#+RESULTS:
 
 ** bdf models
 :PROPERTIES:
@@ -305,8 +311,8 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   #modes4simulations = modes[asets_indexes, :]
   SAVE = False
   if SAVE:
-      np.save(f"./FEM/eigenvecs_{num_modes}.npy", modes4simulations.T)
-      np.save(f"./FEM/eigenvals_{num_modes}.npy", eigs)
+      np.save(f"./FEM/eigenvecs_{sol}{num_modes}.npy", modes4simulations.T)
+      np.save(f"./FEM/eigenvals_{sol}{num_modes}.npy", eigs)
 #+end_src
 
 #+begin_src python :results none  :noweb yes
@@ -324,8 +330,8 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   modes4simulations = modes[asets_indexes, :]
   SAVE = True
   if SAVE:
-      np.save(f"./FEM/eigenvecs_{num_modes}.npy", modes4simulations)
-      np.save(f"./FEM/eigenvals_{num_modes}.npy", eigs)
+      np.save(f"./FEM/eigenvecs_{sol}{num_modes}.npy", modes4simulations)
+      np.save(f"./FEM/eigenvals_{sol}{num_modes}.npy", eigs)
 #+end_src
 
 *** Plot VTK modes
@@ -337,7 +343,7 @@ Plot the modal shapes in Paraview
                           op2_file,
                           scale = 100.,
                           modes2plot=list(range(num_modes)),
-                          write_path=f"./NASTRAN/Paraview/Modes_{sol}/",
+                          write_path=f"./paraview/Modes_{sol}/",
                           plot_ref=False)
 
   #bdfdef.vtkRef("./NASTRAN/Paraview/BUG_103cao.bdf")  # write full FE paraview
@@ -346,14 +352,14 @@ Plot the modal shapes in Paraview
 ** Read pch
 Read the pch file and save FE matrices to FEM folder
 
-#+begin_src python
+#+begin_src python :noweb yes
   import feniax.unastran.matrixbuilder as matrixbuilder
-
-  id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch("./NASTRAN/simulations_out/BUG103_cap.pch")
+  soli = sol[:-1]
+  id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch(f"./NASTRAN/simulations_out/BUG103_{soli}p.pch")
   SAVE_FE = True
   if SAVE_FE:
-      np.save("./FEM/Ka.npy", stiffnessMatrix)
-      np.save("./FEM/Ma.npy", massMatrix)
+      np.save(f"./FEM/Ka_{soli}.npy", stiffnessMatrix)
+      np.save(f"./FEM/Ma_{soli}.npy", massMatrix)
   assert len(asets_indexes) == len(stiffnessMatrix), "the FE matrices size does not match the indexes used to build the aset modes from the full set"
 #+end_src
 
@@ -471,7 +477,7 @@ Old method: build panel coordinates out of corner points
 #+NAME: DLMparaview
 #+begin_src python :results none :tangle no
   grid = panels.caero2grid(dlm.components, dlm.caero1) # build grid from dlm model
-  gridmesh = panels.build_gridmesh(grid, label_dlm, save_dir=f"./NASTRAN/Paraview/aero{label_dlm}")  #  write paraview mesh
+  gridmesh = panels.build_gridmesh(grid, label_dlm, save_dir=f"./paraview/aero{label_dlm}")  #  write paraview mesh
 #+end_src
 
 Use pynastran via get_collocation. Note: should push fix to pyNastran
@@ -1368,7 +1374,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   import feniax.unastran.op4handler as op4handler
   import pickle
   import itertools
-  sol = "cao"
+  sol = "eao"
   num_modes = 50
   mach = 0.8
   Mach = str(mach).replace('.','_')
@@ -1378,7 +1384,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
                              np.linspace(5e-1, 1., 10)[1:]])
   reduced_freqs = np.hstack([1e-5, np.linspace(1e-4, 1, 100)
                              ])
-  #reduced_freqs = np.geomspace(1e-4, 1, 50, endpoint=True)
+  #reduced_freqs = np.geomspace(1e-5, 1, 100, endpoint=True)
   num_modes = 50
   flutter_id = 9010
   mach_fact = machs
@@ -1937,13 +1943,14 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 ** Gust
 *** Run
-#+begin_src python
+#+begin_src python :tangle settings_gust1.py
   import pathlib
   import jax.numpy as jnp
   import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
   from feniax.preprocessor.inputs import Inputs
   import feniax.feniax_main
-  
+  import feniax.plotools.reconstruction as reconstruction
+
   label_gaf = "<<parameters_gafs(output="label_gaf")>>"
   num_poles = 5
   Dhj_file = f"D{label_gaf}p{num_poles}"
@@ -1969,8 +1976,12 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
                               LHTP=None,
                               )
 
-  inp.fem.folder = pathlib.Path('./FEM/')
-  inp.fem.eig_names = ["eigenvals_50.npy", "eigenvecs_50.npy"]
+  inp.fem.grid = f"./FEM/structuralGrid_{sol[:-1]}"
+  #inp.fem.folder = pathlib.Path('./FEM/')
+  inp.fem.Ka_name = f"./FEM/Ka_{sol[:-1]}.npy"
+  inp.fem.Ma_name = f"./FEM/Ma_{sol[:-1]}.npy"
+  inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
+                       f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
   inp.fem.num_modes = 50
   inp.driver.typeof = "intrinsic"
 
@@ -1979,27 +1990,29 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   inp.driver.sol_path = pathlib.Path(
       "./results1gust")
   inp.simulation.typeof = "single"
-  inp.systems.sett.s1.solution = "dynamic"
-  inp.systems.sett.s1.t1 = 7.5
-  inp.systems.sett.s1.tn = 4001
-  inp.systems.sett.s1.solver_library = "runge_kutta"
-  inp.systems.sett.s1.solver_function = "ode"
-  inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")
-  inp.systems.sett.s1.xloads.modalaero_forces = True
-  inp.systems.sett.s1.q0treatment = 2
-  inp.systems.sett.s1.aero.c_ref = <<parameters_gafs(output="chord_ref")>>
-  inp.systems.sett.s1.aero.u_inf = 180.
-  inp.systems.sett.s1.aero.rho_inf = 1.
-  inp.systems.sett.s1.aero.poles = f"./AERO/{Poles_file}.npy"
-  inp.systems.sett.s1.aero.A = f"./AERO/{Ahh_file}.npy"
-  inp.systems.sett.s1.aero.D = f"./AERO/{Dhj_file}.npy"
-  inp.systems.sett.s1.aero.gust_profile = "mc"
-  inp.systems.sett.s1.aero.gust.intensity = 14.0732311562*0.001
-  inp.systems.sett.s1.aero.gust.length = 67.
-  inp.systems.sett.s1.aero.gust.step = 0.1
-  inp.systems.sett.s1.aero.gust.shift = 0.
-  inp.systems.sett.s1.aero.gust.panels_dihedral = jnp.load("./AERO/Dihedral_d1c7.npy")
-  inp.systems.sett.s1.aero.gust.collocation_points = "./AERO/Collocation_d1c7.npy"
+  inp.system.name = "s1"
+  inp.system.bc1 = 'free'
+  inp.system.solution = "dynamic"
+  inp.system.t1 = 1
+  inp.system.tn = 1001
+  inp.system.solver_library = "runge_kutta"
+  inp.system.solver_function = "ode"
+  inp.system.solver_settings = dict(solver_name="rk4")
+  inp.system.xloads.modalaero_forces = True
+  inp.system.q0treatment = 1
+  inp.system.aero.c_ref = <<parameters_gafs(output="chord_ref")>>
+  inp.system.aero.u_inf = 200.
+  inp.system.aero.rho_inf = 0.4
+  inp.system.aero.poles = f"./AERO/{Poles_file}.npy"
+  inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
+  inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
+  inp.system.aero.gust_profile = "mc"
+  inp.system.aero.gust.intensity = 10*2
+  inp.system.aero.gust.length = 100.
+  inp.system.aero.gust.step = 0.1
+  inp.system.aero.gust.shift = 0.
+  inp.system.aero.gust.panels_dihedral = jnp.load("./AERO/Dihedral_d1c7.npy")
+  inp.system.aero.gust.collocation_points = "./AERO/Collocation_d1c7.npy"
 
   config =  configuration.Config(inp)
   sol1 = feniax.feniax_main.main(input_obj=config)
@@ -2012,16 +2025,17 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   import feniax.plotools.uplotly as uplotly
   import feniax.plotools.utils as putils
-  x, y = putils.pickIntrinsic2D(sol1.dynamicsystem_s1.t,
-                                sol1.dynamicsystem_s1.ra,
+  x, y = putils.pickIntrinsic2D(sol1.dynamicsystem_sys1.t,
+                                sol1.dynamicsystem_sys1.ra,
                                 fixaxis2=dict(node=35, dim=2))
   fig = None
-  fig = uplotly.lines2d(x, (y - y[0]), fig,
+  fig = uplotly.lines2d(x, (y), fig,
                           dict(#name=f"NMROM-",
                                #line=dict(color=colors[i],
                                #         dash=dash[i % 3])
+                               
                                ),
-                          dict())
+                          dict(xaxis_range=[0,1],yaxis_range=[0,5]))
   figname = f"./figs/try1.png"
   fig.write_image(figname, scale=1)
   fig.show()
@@ -2031,6 +2045,86 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+RESULTS: Tipdisplacement
 [[file:./figs/try1.png]]
 
+#+NAME: 3Ddynamic
+#+begin_src python :tangle ./paraview_3Ddynamic.py
+  import time
+  time1 = time.time()
+  rintrinsic, uintrinsic = reconstruction.rbf_based(
+          nastran_bdf="./NASTRAN/BUG103.bdf",
+          X=config.fem.X,
+          time=config.system.t, #range(len(inp.system.t)),
+          ra=sol1.dynamicsystem_sys1.ra,
+          Rab=sol1.dynamicsystem_sys1.Cab,
+          R0ab=sol1.modes.C0ab,
+          vtkpath=inp.driver.sol_path /"paraview/bug",
+          plot_timeinterval=4,
+          plot_ref=False,
+          tolerance=1e-3,
+          size_cards=8,
+          rbe3s_full=False,
+          ra_movie=None)
+  time2 = time.time()
+  print(time1-time2)
+#+end_src
+
+#+begin_src python :tangle ./paraview_3Ddynamic.py
+  from paraview.simple import *
+  import pathlib
+
+  def merge_paraview(file_list, file_out):
+      # Create a reader for each file
+      readers = [XMLUnstructuredGridReader(FileName=file) for file in file_list]
+
+      # Append the readers to merge the datasets
+      appended = AppendDatasets(Input=readers)
+
+      # Save the merged dataset
+      writer = XMLUnstructuredGridWriter(Input=appended, FileName=file_out)
+      writer.UpdatePipeline()
+
+
+  paraview_files = ['CQUAD4.vtu',
+                    'CONM2.vtu',
+                    #'CBUSH.vtu',
+                    'RBE2.vtu',
+                    'CTRIA3.vtu',
+                    'RBE3.vtu',
+                    'CBAR.vtu']
+
+  folder = pathlib.Path('./paraview/soldyn1')
+  folder_out = folder / "merged"
+  folder_out.mkdir(exist_ok=True)
+  for i, fi in enumerate(folder.glob("bug_*")):
+      if fi.is_dir() and (fi / paraview_files[0]).is_file():
+          #print(fi)
+          name_len = len("bug_")
+          index = fi.name[name_len:].split('.')[0]
+          file_list = [str(fi / pvf) for pvf in paraview_files]
+          #print(file_list)
+          file_out = str(folder_out / f"bug_{index}.vtu")
+          # readers = [XMLUnstructuredGridReader(FileName=file) for file in file_list]
+
+          # # Append the readers to merge the datasets
+          # appended = AppendDatasets(Input=readers)
+          # print(file_out)
+          # # Save the merged dataset
+          # writer = XMLUnstructuredGridWriter(Input=appended, FileName=file_out)
+          # writer.UpdatePipeline()        
+          merge_paraview(file_list, file_out)
+
+#+end_src
+
+#+begin_src bash :results none
+  ~/Downloads/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/bin/pvpython paraview_3Ddynamic.py
+#+end_src
+
+#+begin_src bash :session shell3
+  cd ./paraview/soldyn1/merged
+  ffmpeg -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
+  cd -
+#+end_src
+
+#+RESULTS:
 
 * Gust solution (146)
 :PROPERTIES:

@@ -692,12 +692,13 @@ TODO: make automatic label as the first
 
 #+begin_src python :session py1 :results output
   import feniax.intrinsic.functions as functions
-  label = functions.label_generator([1,0,'G',1,1])
+  label = functions.label_generator([2,0,'g',0,1,0,1,0,1])
   print(label)
 #+end_src
 
 #+RESULTS:
-: 10G6
+: 20g546[0m
+: [0m
 
 
 

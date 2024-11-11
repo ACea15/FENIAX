@@ -305,7 +305,7 @@ def dq_20g21l(t, q, *args):
     return jnp.hstack([F1, F2, Fl])
 
 
-@partial(jax.jit, static_argnames=["q"])
+#@partial(jax.jit, static_argnames=["q"])
 def dq_20g273(t, q, *args):
     """Gust response, q0 obtained via integrator q1."""
 
@@ -348,6 +348,53 @@ def dq_20g273(t, q, *args):
     F0 = q1
     # Fl = Fl_tensor.reshape(num_modes * num_poles
     return jnp.hstack([F1, F2, Fl, F0])
+
+def dq_20g546(t, q, *args):
+    """Gust response free flight, q0 obtained via integrator q1."""
+
+    (
+        eta_0,
+        gamma1,
+        gamma2,
+        omega,
+        phi1l,
+        states,
+        num_modes,
+        num_poles,
+        A0hat,
+        A1hat,
+        A2hatinv,
+        A3hat,
+        u_inf,
+        c_ref,
+        poles,
+        xgust,
+        F1gust,
+        Flgust,
+    ) = args[0]
+
+    q1 = q[states["q1"]]
+    q2 = q[states["q2"]]
+    ql = q[states["ql"]]
+    q0 = q[states["q0"]]
+    qr = q[states["qr"]]
+    
+    # ql_tensor = ql.reshape((num_modes, num_poles))
+    eta_s = xloads.eta_rogerstruct(q0, q1, ql, A0hat, A1hat, num_modes, num_poles)
+    eta_gust = xloads.eta_rogergust(t, xgust, F1gust)
+    F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2)
+    F1 += eta_s + eta_gust
+    F1 += eta_0
+    F1 = A2hatinv @ F1  # Nm
+    Fl = xloads.lags_rogerstructure(
+        A3hat, q1, ql, u_inf, c_ref, poles, num_modes, num_poles
+    )  # NlxNm
+    Flgust = xloads.lags_rogergust(t, xgust, Flgust)  # NlxNm
+    Fl += Flgust
+    Fr = common.f_quaternion(phi1l, q1, qr)
+    F0 = q1
+    F = jnp.hstack([F1, F2, Fl, F0, Fr])
+    return F
 
 
 def dq_20G78(t, q, *args):
@@ -417,7 +464,7 @@ def dq_20G78(t, q, *args):
     return F
 
 
-def dq_20G78(t, q, *args):
+def dq_20G78l(t, q, *args):
     """Free flight with gravity forces and rigid body DoF (LINEAR)"""
 
     (
