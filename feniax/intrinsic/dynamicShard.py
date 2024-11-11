@@ -9,6 +9,7 @@ import feniax.systems.sollibs.diffrax as libdiffrax
 import feniax.intrinsic.gust as igust
 import feniax.systems.sollibs as sollibs
 import feniax.intrinsic.dq_dynamic as dq_dynamic
+import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
 
 
 @partial(jax.jit, static_argnames=["config"])
@@ -25,7 +26,15 @@ def main_20g21_3(
     states = _dqargs[4]
     q1_index = states["q1"]
     q2_index = states["q2"]
-       
+    collocation_points = config.system.aero.gust.collocation_points
+    #xcollocation_points = collocation_points[:, 0]
+    #xcollocation_min = min(xcollocation_points)
+    #xcollocation_max = max(xcollocation_points)
+    gust_shift = config.system.aero.gust.shift
+    dihedral = config.system.aero.gust.panels_dihedral
+    fshape_span = igust._get_spanshape(config.system.aero.gust.shape)        
+    gust_totaltime = config.system.aero.gust.totaltime
+    time_gust = config.system.aero.gust.time
     # @jax.jit
     def _main_20g21_3(inp):
 
@@ -44,13 +53,20 @@ def main_20g21_3(
         D1hat = c_ref * rho_inf * u_inf / 4 * D[1]
         D2hat = c_ref**2 * rho_inf / 8 * D[2]
         D3hat = q_inf * D[3:]
+
+        # gust_totaltime, xgust, time_gust, ntime = intrinsicmodal.gust_discretisation(
+        #     gust_intensity,
+        #     config.system.aero.gust.panels_dihedral,
+        #     config.system.aero.gust.shift,
+        #     config.system.aero.gust.step,
+        #     simulation_time,
+        #     gust_length,
+        #     u_inf,
+        #     xcollocation_min,
+        #     xcollocation_max,
+        # )
         
-        gust_shift = config.system.aero.gust.shift
-        dihedral = config.system.aero.gust.panels_dihedral
-        collocation_points = config.system.aero.gust.collocation_points
-        gust_totaltime = config.system.aero.gust.totaltime
-        time_gust = config.system.aero.gust.time
-        fshape_span = igust._get_spanshape(config.system.aero.gust.shape)        
+        #gust_totaltime = config.system.aero.gust.totaltime
         gust, gust_dot, gust_ddot = igust._downwashRogerMc(
             u_inf,
             gust_length,

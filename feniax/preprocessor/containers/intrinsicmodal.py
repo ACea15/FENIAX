@@ -9,6 +9,7 @@ from dataclasses import dataclass, fields, is_dataclass
 from enum import Enum
 from functools import wraps
 from typing import Any
+from functools import partial
 
 import feniax.intrinsic.geometry as geometry
 import jax
@@ -437,14 +438,11 @@ class Dfem(DataContainer):
         setobj("component_father_int", component_father_int)
         self._initialize_attributes()
 
-
-# @Ddataclass
-class DGust(DataContainer):
-    ...
-
-def _get_gustRogerMc(
-    gust_intensity,
-    dihedral,
+# @partial(jax.jit, static_argnames=["min_collocationpoints",
+#                                    "max_collocationpoints",
+#                                    "gust_length",
+#                                    "gust_step"])
+def gust_discretisation(
     gust_shift,
     gust_step,
     simulation_time,
@@ -474,17 +472,26 @@ def _get_gustRogerMc(
     )
     time = jax.lax.select(time_discretization[-1] < simulation_time[-1],
                           extended_time,
-                          time_discretization)
-    
+                          jnp.hstack([time_discretization,
+                                      time_discretization[-1] + 1e-6,
+                                      time_discretization[-1] + 2*1e-6]) # need to be shame shape!!
+                          )
+
     # if time[0] != 0.0:
     #     time = jnp.hstack([0.0, time[0] - 1e-6, time])
     time = jax.lax.select(time[0] != 0.0,
                           jnp.hstack([0.0, time[0] - 1e-6, time]),
-                          time )
-        
+                          jnp.hstack([0.0, 1e-6, 2*1e-6, time[1:]]))
+
     ntime = len(time)
     # npanels = len(collocation_points)
     return gust_totaltime, xgust, time, ntime
+        
+
+# @Ddataclass
+class DGust(DataContainer):
+
+    ...
 
 @Ddataclass
 class DGustMc(DGust):
@@ -536,6 +543,7 @@ class DGustMc(DGust):
     panels_dihedral: str | jnp.ndarray = dfield("", default=None)
     collocation_points: str | jnp.ndarray = dfield("", default=None)
     shape: str = dfield("", default="const")
+    fixed_discretisation: dict[str: float] = dfield("", default=None)
     totaltime: float = dfield("", init=False)
     x: jnp.ndarray = dfield("", init=False)
     time: jnp.ndarray = dfield("", init=False)
@@ -563,17 +571,26 @@ class DGustMc(DGust):
         #     jnp.min(self.collocation_points[:, 0]),
         #     jnp.max(self.collocation_points[:, 0]),
         # )
-        gust_totaltime, xgust, time, ntime = _get_gustRogerMc(
-            self.intensity,
-            self.panels_dihedral,
-            self.shift,
-            self.step,
-            self.simulation_time,
-            self.length,
-            self.u_inf,
-            jnp.min(self.collocation_points[:, 0]),
-            jnp.max(self.collocation_points[:, 0]),
-        )
+        if self.fixed_discretisation is None:
+            gust_totaltime, xgust, time, ntime = gust_discretisation(
+                self.shift,
+                self.step,
+                self.simulation_time,
+                self.length,
+                self.u_inf,
+                float(jnp.min(self.collocation_points[:, 0])),
+                float(jnp.max(self.collocation_points[:, 0])),
+            )
+        else:
+            gust_totaltime, xgust, time, ntime = gust_discretisation(
+                self.shift,
+                self.step,
+                self.simulation_time,
+                self.fixed_discretisation[0],
+                self.fixed_discretisation[1],                
+                float(jnp.min(self.collocation_points[:, 0])),
+                float(jnp.max(self.collocation_points[:, 0])),
+            )
         
         object.__setattr__(self, "totaltime", gust_totaltime)
         object.__setattr__(self, "x", xgust)
@@ -581,44 +598,6 @@ class DGustMc(DGust):
         object.__setattr__(self, "ntime", ntime)
         # del self.simulation_time
         self._initialize_attributes()
-
-    def _set_gustDiscretization(
-        self,
-        gust_intensity,
-        dihedral,
-        gust_shift,
-        gust_step,
-        simulation_time,
-        gust_length,
-        u_inf,
-        min_collocationpoints,
-        max_collocationpoints,
-    ):
-        #
-        gust_totaltime = gust_length / u_inf
-        xgust = jnp.arange(
-            min_collocationpoints,  # jnp.min(collocation_points[:,0]),
-            max_collocationpoints  # jnp.max(collocation_points[:,0]) +
-            + gust_length
-            + gust_step,
-            gust_step,
-        )
-        time_discretization = (gust_shift + xgust) / u_inf
-        if time_discretization[-1] < simulation_time[-1]:
-            time = jnp.hstack(
-                [
-                    time_discretization,
-                    time_discretization[-1] + self.time_epsilon,
-                    simulation_time[-1],
-                ]
-            )
-        else:
-            time = time_discretization
-        if time[0] != 0.0:
-            time = jnp.hstack([0.0, time[0] - 1e-6, time])
-        ntime = len(time)
-        # npanels = len(collocation_points)
-        return gust_totaltime, xgust, time, ntime
 
 
 @Ddataclass

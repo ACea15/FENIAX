@@ -75,7 +75,7 @@ def arg_20g21(
     A = system.aero.A
     D = system.aero.D
     xgust = system.aero.gust.x
-    
+    collocation_x = system.aero.gust.collocation_points[:,0]
     return (phi1l, phi2l, psi2l, X_xdelta, C0ab, A, D, c_ref,
             (
                 eta_0,
