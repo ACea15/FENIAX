@@ -597,6 +597,7 @@ def sys_3Dconfiguration0(config):
 
 
 def systems(sol, config):
+
     st.header("Systems")
     show = Enum(
         "States",
@@ -698,6 +699,61 @@ def systems_comparison(sol, config):
             case show.CONFIGURATION3D_PV.name:
                 sys_3Dconfiguration_pv(solsys, config)
 
+def systems_shard(sol_shard, config_shard, sol=None, config=None):
+    st.header("Comparison")
+    show = Enum(
+        "States",
+        [
+            "STATES",
+            "DISPLACEMENTS",
+            "VELOCITIES",
+            "STRAINS",
+            "INTERNALFORCES",
+            "CONFIGURATION3D",
+            "CONFIGURATION3D_PV",
+        ],
+    )
+
+    
+    sys_names = [
+        mi
+        for mi in dir(list(sol_shard.values())[0].data)
+        if (mi[0] != "_" and "system" in mi)
+    ]
+    sys_option = st.selectbox(
+        "Select a system for the analysis",
+        sys_names,
+        index=None,
+        placeholder="Select system...",
+    )
+
+    st.write("System being analysed:", sys_option)
+    if sys_option is not None:
+        solsys = {k: getattr(solk.data, sys_option) for k, solk in sol.items()}
+        field_option = st.sidebar.radio(
+            "Select what you want to display:", show._member_names_
+        )
+        # breakpoint()
+        match field_option:
+            case show.STATES.name:
+                sys_states_comparison(solsys)
+            case show.DISPLACEMENTS.name:
+                sys_displacements_comp(solsys, config)
+            case show.VELOCITIES.name:
+                sys_velocities_comp(solsys)
+            case show.STRAINS.name:
+                sys_strains_comp(solsys)
+            case show.INTERNALFORCES.name:
+                sys_internalforces_comp(solsys)
+            case show.CONFIGURATION3D.name:
+                # fig = sys_3Dconfiguration(solsys, config)
+                # st.plotly_chart(fig, use_container_width=False)
+                # st.subheader("Slide")
+                fig2 = sys_3Dconfiguration_ti(solsys, config)
+                st.plotly_chart(fig2, use_container_width=False)
+            case show.CONFIGURATION3D_PV.name:
+                sys_3Dconfiguration_pv(solsys, config)
+                
 
 def modes_3Dconfiguration(mode, config, mode_label, settings=None):
     icomp = putils.IntrinsicStructComponent(config.fem)
