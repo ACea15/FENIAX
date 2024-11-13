@@ -57,13 +57,14 @@ inp.system.aero.poles = f"./AERO/{Poles_file}.npy"
 inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
 inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
 inp.system.aero.gust_profile = "mc"
-inp.system.aero.gust.intensity = 14.0732311562*0.001
-inp.system.aero.gust.length = 67.
-inp.system.aero.gust.step = 0.1
+inp.system.aero.gust.intensity = 0.01 # 14.0732311562*0.001
+inp.system.aero.gust.length = 30.
+inp.system.aero.gust.step = 0.05
 inp.system.aero.gust.shift = 0.
 inp.system.aero.gust.panels_dihedral = jnp.load("./AERO/Dihedral_d1c7.npy")
 inp.system.aero.gust.collocation_points = "./AERO/Collocation_d1c7.npy"
 
 config =  configuration.Config(inp)
 sol1 = feniax.feniax_main.main(input_obj=config)
+
 # Run:1 ends here

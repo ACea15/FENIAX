@@ -33,7 +33,7 @@ def main_20g21_3(
     gust_shift = config.system.aero.gust.shift
     dihedral = config.system.aero.gust.panels_dihedral
     fshape_span = igust._get_spanshape(config.system.aero.gust.shape)        
-    gust_totaltime = config.system.aero.gust.totaltime
+    # gust_totaltime = config.system.aero.gust.totaltime
     time_gust = config.system.aero.gust.time
     # @jax.jit
     def _main_20g21_3(inp):
@@ -43,6 +43,7 @@ def main_20g21_3(
         gust_length = inp[2]
         gust_intensity = inp[3]
         q_inf = 0.5 * rho_inf * u_inf**2
+        gust_totaltime = gust_length / u_inf
         
         A0hat = q_inf * A[0]
         A1hat = c_ref * rho_inf * u_inf / 4 * A[1]
@@ -134,6 +135,7 @@ def main_20g21_3(
             dt=config.system.dt,
             t=config.system.t,
         )
+        # jax.debug.breakpoint()
         q = states_puller(sol)
         q1 = q[:, q1_index]
         q2 = q[:, q2_index]

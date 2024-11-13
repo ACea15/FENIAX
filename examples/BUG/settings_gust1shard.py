@@ -38,7 +38,7 @@ inp.driver.typeof = "intrinsic"
 #inp.driver.sol_path = pathlib.Path(
 #    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    "./results1gust")
+    "./results_shardgust1")
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
 inp.system.solution = "dynamic"
@@ -57,17 +57,19 @@ inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
 inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
 inp.system.aero.gust_profile = "mc"
 #inp.system.aero.gust.intensity = 14.0732311562*0.001
-inp.system.aero.gust.fixed_discretisation = [67, 180]
+inp.system.aero.gust.fixed_discretisation = [50, 180]
 #inp.system.aero.gust.length = 67.
-inp.system.aero.gust.step = 0.1
+inp.system.aero.gust.step = 1
 inp.system.aero.gust.shift = 0.
 inp.system.aero.gust.panels_dihedral = "./AERO/Dihedral_d1c7.npy"
 inp.system.aero.gust.collocation_points = "./AERO/Collocation_d1c7.npy"
 
 
-inputflow = dict(length=[10,67],
-                 intensity= [0.01,0.08, 0.2, 0.7]
-                   )
+inputflow = dict(length=[30,67],
+                 intensity= [0.01,0.08, 0.2, 0.7],
+                 #u_inf = [inp.system.aero.u_inf],
+                 # rho_inf = [inp.system.aero.rho_inf]
+                 )
 inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
 
