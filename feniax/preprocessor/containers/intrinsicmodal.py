@@ -5,12 +5,11 @@ Containers for the intrinsic modal solution settings
 import inspect
 import math
 import pathlib
-import re
-import sys
-import dataclasses
-from dataclasses import dataclass, fields, is_dataclass, field
+from dataclasses import dataclass, fields, is_dataclass
 from enum import Enum
+from functools import wraps
 from typing import Any
+from functools import partial
 
 import feniax.intrinsic.geometry as geometry
 import jax
@@ -23,7 +22,6 @@ from feniax.intrinsic.functions import (
 )
 from feniax.preprocessor.containers.data_container import DataContainer
 from feniax.preprocessor.utils import dfield, initialise_Dclass, load_jnp
-from functools import wraps
 
 def filter_kwargs(cls):
     @wraps(cls)
@@ -440,11 +438,60 @@ class Dfem(DataContainer):
         setobj("component_father_int", component_father_int)
         self._initialize_attributes()
 
+# @partial(jax.jit, static_argnames=["min_collocationpoints",
+#                                    "max_collocationpoints",
+#                                    "gust_length",
+#                                    "gust_step"])
+def gust_discretisation(
+    gust_shift,
+    gust_step,
+    simulation_time,
+    gust_length,
+    u_inf,
+    min_collocationpoints,
+    max_collocationpoints,
+):
+    #
+    gust_totaltime = gust_length / u_inf
+    xgust = jnp.arange(
+        min_collocationpoints,  # jnp.min(collocation_points[:,0]),
+        max_collocationpoints  # jnp.max(collocation_points[:,0]) +
+        + gust_length
+        + gust_step,
+        gust_step,
+    )
+    time_discretization = (gust_shift + xgust) / u_inf
+    # if time_discretization[-1] < simulation_time[-1]:
+    #     time = jnp.hstack(
+    #         [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
+    #     )
+    # else:
+    #     time = time_discretization
+    extended_time = jnp.hstack(
+        [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
+    )
+    time = jax.lax.select(time_discretization[-1] < simulation_time[-1],
+                          extended_time,
+                          jnp.hstack([time_discretization,
+                                      time_discretization[-1] + 1e-6,
+                                      time_discretization[-1] + 2*1e-6]) # need to be shame shape!!
+                          )
+
+    # if time[0] != 0.0:
+    #     time = jnp.hstack([0.0, time[0] - 1e-6, time])
+    time = jax.lax.select(time[0] != 0.0,
+                          jnp.hstack([0.0, time[0] - 1e-6, time]),
+                          jnp.hstack([0.0, 1e-6, 2*1e-6, time[1:]]))
+
+    ntime = len(time)
+    # npanels = len(collocation_points)
+    return gust_totaltime, xgust, time, ntime
+        
 
 # @Ddataclass
 class DGust(DataContainer):
-    ...
 
+    ...
 
 @Ddataclass
 class DGustMc(DGust):
@@ -459,7 +506,7 @@ class DGustMc(DGust):
     intensity : float
          Gust intensity
     step : float
-         Gust discretisation in x-direction -gust dx
+         Gust discretisation in x-direction --gust dx
     time_epsilon: float
          Epsilon time between the gust first hitting the AC and the next interpolation point
     length : float
@@ -496,6 +543,7 @@ class DGustMc(DGust):
     panels_dihedral: str | jnp.ndarray = dfield("", default=None)
     collocation_points: str | jnp.ndarray = dfield("", default=None)
     shape: str = dfield("", default="const")
+    fixed_discretisation: dict[str: float] = dfield("", default=None)
     totaltime: float = dfield("", init=False)
     x: jnp.ndarray = dfield("", init=False)
     time: jnp.ndarray = dfield("", init=False)
@@ -507,61 +555,49 @@ class DGustMc(DGust):
         if isinstance(self.collocation_points, (str, pathlib.Path)):
             object.__setattr__(self, "collocation_points", jnp.load(self.collocation_points))
 
-        gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(
-            self.intensity,
-            self.panels_dihedral,
-            self.shift,
-            self.step,
-            self.simulation_time,
-            self.length,
-            self.u_inf,
-            jnp.min(self.collocation_points[:, 0]),
-            jnp.max(self.collocation_points[:, 0]),
-        )
+        object.__setattr__(self, "panels_dihedral", jnp.array(self.panels_dihedral))
+        object.__setattr__(self, "collocation_points", jnp.array(self.collocation_points))    
+        # self.panels_dihedral = jnp.array(self.panels_dihedral)
+        # self.collocation_points = jnp.array(self.collocation_points)
+        
+        # gust_totaltime, xgust, time, ntime = self._set_gustDiscretization(
+        #     self.intensity,
+        #     self.panels_dihedral,
+        #     self.shift,
+        #     self.step,
+        #     self.simulation_time,
+        #     self.length,
+        #     self.u_inf,
+        #     jnp.min(self.collocation_points[:, 0]),
+        #     jnp.max(self.collocation_points[:, 0]),
+        # )
+        if self.fixed_discretisation is None:
+            gust_totaltime, xgust, time, ntime = gust_discretisation(
+                self.shift,
+                self.step,
+                self.simulation_time,
+                self.length,
+                self.u_inf,
+                float(jnp.min(self.collocation_points[:, 0])),
+                float(jnp.max(self.collocation_points[:, 0])),
+            )
+        else:
+            gust_totaltime, xgust, time, ntime = gust_discretisation(
+                self.shift,
+                self.step,
+                self.simulation_time,
+                self.fixed_discretisation[0],
+                self.fixed_discretisation[1],                
+                float(jnp.min(self.collocation_points[:, 0])),
+                float(jnp.max(self.collocation_points[:, 0])),
+            )
+        
         object.__setattr__(self, "totaltime", gust_totaltime)
         object.__setattr__(self, "x", xgust)
         object.__setattr__(self, "time", time)
         object.__setattr__(self, "ntime", ntime)
         # del self.simulation_time
         self._initialize_attributes()
-
-    def _set_gustDiscretization(
-        self,
-        gust_intensity,
-        dihedral,
-        gust_shift,
-        gust_step,
-        simulation_time,
-        gust_length,
-        u_inf,
-        min_collocationpoints,
-        max_collocationpoints,
-    ):
-        #
-        gust_totaltime = gust_length / u_inf
-        xgust = jnp.arange(
-            min_collocationpoints,  # jnp.min(collocation_points[:,0]),
-            max_collocationpoints  # jnp.max(collocation_points[:,0]) +
-            + gust_length
-            + gust_step,
-            gust_step,
-        )
-        time_discretization = (gust_shift + xgust) / u_inf
-        if time_discretization[-1] < simulation_time[-1]:
-            time = jnp.hstack(
-                [
-                    time_discretization,
-                    time_discretization[-1] + self.time_epsilon,
-                    simulation_time[-1],
-                ]
-            )
-        else:
-            time = time_discretization
-        if time[0] != 0.0:
-            time = jnp.hstack([0.0, time[0] - 1e-6, time])
-        ntime = len(time)
-        # npanels = len(collocation_points)
-        return gust_totaltime, xgust, time, ntime
 
 
 @Ddataclass
@@ -677,6 +713,8 @@ class Daero(DataContainer):
         if self.u_inf is not None and self.rho_inf is not None:
             q_inf = 0.5 * self.rho_inf * self.u_inf**2
             object.__setattr__(self, "q_inf", q_inf)
+        if isinstance(self.Q0_rigid, (str, pathlib.Path)):
+            object.__setattr__(self, "Q0_rigid", jnp.load(self.Q0_rigid))            
         if isinstance(self.A, (str, pathlib.Path)):
             object.__setattr__(self, "A", jnp.load(self.A))
         if isinstance(self.B, (str, pathlib.Path)):
@@ -845,11 +883,11 @@ class Dxloads(DataContainer):
 class SystemSolution(Enum):
     STATIC = 1
     DYNAMIC = 2
-    STATICAD = 3
-    DYNAMICAD = 4
-    STABILITY = 5
-    MULTIBODY = 6
-    CONTROL = 7
+    # STATICAD = 3
+    # DYNAMICAD = 4
+    STABILITY = 3
+    MULTIBODY = 4
+    CONTROL = 5
 
 
 SimulationTarget = Enum("TARGET", ["LEVEL", "TRIM", "MANOEUVRE", "TURBULENCE"])
@@ -891,7 +929,7 @@ class DdiffraxOde(Dlibrary):
     root_finder: dict = dfield("", default=None)
     stepsize_controller: dict = dfield("", default=None)
     solver_name: str = dfield("", default="Dopri5")
-    save_at: jnp.ndarray | list = dfield("", default=None)
+    save_at: jnp.ndarray | list[float] = dfield("", default=None)
     max_steps: int = dfield("", default=20000)
 
     def __post_init__(self, **kwargs):
@@ -1037,6 +1075,113 @@ class DtoAD(Dlibrary):
         )
         self._initialize_attributes()
 
+class ShardinputType(Enum):
+    POINTFORCES = 1
+    STEADYALPHA = 2
+    GUST1 = 3
+
+
+@Ddataclass
+class DShard_pointforces(DataContainer):
+    """Point forces
+
+    Parameters
+    ----------
+
+    """
+
+    follower_points: jnp.ndarray = dfield("", default=None)
+    follower_interpolation: jnp.ndarray = dfield("", default=None)
+    dead_points: jnp.ndarray = dfield("", default=None)
+    dead_interpolation: jnp.ndarray = dfield("", default=None)
+    gravity: jnp.ndarray = dfield("", default=None)
+    gravity_vect: jnp.ndarray = dfield("", default=None)
+    
+    def __post_init__(self):
+        if self.follower_points is not None:
+            object.__setattr__(self, "follower_points", jnp.array(self.follower_points))
+        if self.follower_interpolation is not None:
+            object.__setattr__(self, "follower_interpolation", jnp.array(self.follower_interpolation))
+        if self.dead_points is not None:
+            object.__setattr__(self, "dead_points", jnp.array(self.dead_points))
+        if self.dead_interpolation is not None:                 
+            object.__setattr__(self, "dead_interpolation", jnp.array(self.dead_interpolation))
+        if self.gravity is not None:
+            object.__setattr__(self, "gravity", jnp.array(self.gravity))
+        if self.gravity_vect is not None:            
+            object.__setattr__(self, "gravity_vect", jnp.array(self.gravity_vect))        
+        self._initialize_attributes()
+
+@Ddataclass
+class DShard_steadyalpha(DataContainer):
+    """Point forces
+
+    Parameters
+    ----------
+
+    """
+
+    rho_inf: jnp.ndarray = dfield("", default=None)
+    u_inf: jnp.ndarray = dfield("", default=None)
+    aeromatrix: list[int] = dfield("", default=None)
+    def __post_init__(self):
+        
+        self._initialize_attributes()
+        
+@Ddataclass
+class DShard_gust1(DataContainer):
+    """Point forces
+
+    Parameters
+    ----------
+
+    """
+    rho_inf: jnp.ndarray = dfield("", default=None)
+    u_inf: jnp.ndarray = dfield("", default=None)
+    length: jnp.ndarray = dfield("", default=None)
+    intensity: jnp.ndarray = dfield("", default=None)
+    def __post_init__(self):
+        
+        self._initialize_attributes()
+    
+    
+@Ddataclass
+class DShard(DataContainer):
+    """Algorithm differentiation settings
+
+    Parameters
+    ----------
+    function : str
+    inputs : dict
+    input_type : str
+    grad_type : str
+    objective_fun : str
+    objective_var : str
+    objective_args : dict
+    _numnodes : int
+    _numtime : int
+    _numcomponents : int
+    label : str
+
+    """
+
+    inputs: dict = dfield("", default=None, yaml_save=False)
+    input_type: str = dfield("", default=None, options=ShardinputType._member_names_)
+    label: str = dfield("", default=None, init=False)
+
+    def __post_init__(self):
+        label = ShardinputType[self.input_type.upper()].value
+        object.__setattr__(self, "label", label)
+        input_class = globals()[f"DShard_{self.input_type.lower()}"]
+        object.__setattr__(
+            self,
+            "inputs",
+            initialise_Dclass(
+                self.inputs,
+                input_class
+            ),
+        )
+        self._initialize_attributes()
 
 @Ddataclass
 class Dsystem(DataContainer):
@@ -1091,6 +1236,12 @@ class Dsystem(DataContainer):
         default="clamped",
         options=BoundaryCond._member_names_,
     )
+    operationalmode: str = dfield(
+        "",
+        options=["(empty string/default)", "AD", "Shard", "ShardAD"],
+        default=""
+    )
+    
     save: bool = dfield("Save results of the run system", default=True)
     xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
     aero: dict | Daero = dfield("Aerodynamic dataclass", default=None)
@@ -1141,7 +1292,8 @@ class Dsystem(DataContainer):
         """Dictionary mapping states types to functions in initcond""",
         default=dict(q1="velocity", q2="force"),
     )
-    ad: DtoAD = dfield("""Dictionary for AD""", default=None)
+    ad: dict | DtoAD = dfield("""Dictionary for AD""", default=None)
+    shard: dict | DShard = dfield("""Dictionary for parallelisation""", default=None)
 
     def __post_init__(self):
         if self.t is not None:
@@ -1174,18 +1326,39 @@ class Dsystem(DataContainer):
             "solver_settings",
             initialise_Dclass(self.solver_settings, libsettings_class),
         )
-        if self.ad is not None and isinstance(self.ad, dict):
-            libsettings_class = globals()["DtoAD"]
-            object.__setattr__(
-                self,
-                "ad",
-                initialise_Dclass(
-                    self.ad,
-                    libsettings_class,
-                    _numtime=len(self.t),
-                    _numnodes=self._fem.num_nodes,
-                ),
-            )
+        if self.ad is not None:
+
+            if isinstance(self.ad, dict):
+                libsettings_class = globals()["DtoAD"]
+                object.__setattr__(
+                    self,
+                    "ad",
+                    initialise_Dclass(
+                        self.ad,
+                        libsettings_class,
+                        _numtime=len(self.t),
+                        _numnodes=self._fem.num_nodes,
+                    ),
+                )
+            if self.shard is not None:
+                object.__setattr__(self, "operationalmode", "ShardAD")
+            else:
+                object.__setattr__(self, "operationalmode", "AD")
+        elif self.shard is not None:
+            object.__setattr__(self, "operationalmode", "Shard")            
+            if isinstance(self.shard, dict):
+                libsettings_class = globals()["DShard"]
+                object.__setattr__(
+                    self,
+                    "shard",
+                    initialise_Dclass(
+                        self.shard,
+                        libsettings_class,
+                        #_fem=self._fem,
+                        #_aero=self._aero,
+                    ),
+                )
+                
         if self.label is None:
             self.build_label()
         self._initialize_attributes()
@@ -1360,8 +1533,22 @@ def update_docstrings(module: Any) -> None:
             print(obj.__doc__)
 
 
-if __name__ == "__main__":
-    ...
+if (__name__ == "__main__"):
+    #...
     # run to generate docstring of data and types
     # update_docstrings(sys.modules[__name__])
     #update_docstrings(sys.modules[__name__])
+    import itertools
+    d = dict(dead_points = [[[9, 2], [18, 2]],
+                            [[9, 1], [18, 1]],
+                            [[10,2], [17, 2]]
+                            ],
+             dead_interpolation = [[[0, 1, 2],
+                                   [0, 1, 2]
+                                    ],
+                                   [[0,10,20],
+                                    [0,10,20]]
+                                   ]
+             )
+             
+    p = list(itertools.product(*d.values()))

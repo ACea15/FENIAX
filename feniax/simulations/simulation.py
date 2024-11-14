@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
-import feniax.drivers.driver as driver
+
 import feniax.preprocessor.solution as solution
 import feniax.systems.system as system
+
 
 __SIMULATION_DICT__ = dict()
 

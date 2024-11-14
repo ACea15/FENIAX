@@ -270,7 +270,8 @@ def compute_C0ab(
 
 
 @partial(jit, static_argnames=["precision"])
-def coordinate_transform(u1: jnp.ndarray, v1: jnp.ndarray, precision) -> jnp.ndarray:
+def coordinate_transform(u1: jnp.ndarray, v1: jnp.ndarray,
+                         precision=jax.lax.Precision.HIGHEST) -> jnp.ndarray:
     """Applies a coordinate transformation
 
     to the 6-element component (dim=1) of a 3rd order tensor

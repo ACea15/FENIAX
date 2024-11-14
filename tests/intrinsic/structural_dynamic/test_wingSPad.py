@@ -24,7 +24,7 @@ class TestWingSPad:
         inp.driver.save_fem = False
         inp.simulation.typeof = "single"
         inp.system.name = "s1"
-        inp.system.solution = "dynamicAD"
+        inp.system.solution = "dynamic"
         inp.system.t1 = 10.
         inp.system.tn = 1001
         inp.system.solver_library = "diffrax"
@@ -64,7 +64,7 @@ class TestWingSPad:
         inp.driver.save_fem = False
         inp.simulation.typeof = "single"
         inp.system.name = "s1"
-        inp.system.solution = "dynamicAD"
+        inp.system.solution = "dynamic"
         inp.system.t1 = 10.
         inp.system.tn = 1001
         inp.system.solver_library = "diffrax"

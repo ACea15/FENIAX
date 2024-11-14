@@ -90,7 +90,15 @@ convention = "numpy"  # Accepts: "google", "numpy", or "pep257".
 #quote-style = "single"
 #indent-style = "space"
 docstring-code-format = true
-
+[tool.mypy]
+# allow_untyped_defs = True
+# allow_untyped_calls = True
+# disable_error_code = no-untyped-call
+# files = ["feniax", "tests"]
+# [[tool.mypy.overrides]]
+# module = "feniax.simulations"
+# ignore_missing_imports = true
+#ignore_missing_imports = True
 [tool.pylsp-mypy]
 enabled = true
 live_mode = true

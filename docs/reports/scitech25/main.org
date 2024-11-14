@@ -1,4 +1,6 @@
 #+TITLE: Aircraft Nonlinear Dynamic Loads at Large Scale Using an Accelerator-Based Distributed Solution 
+#+TITLE: Massively parallel Aircraft nonlinear dynamic loads using an Accelerator-Based Distributed Solution
+
 # #+TITLE: Parallelized Aeroelastic Solution for Large Scale Simulation of Nonlinear Dynamic Loads on Accelerators
 # #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+AUTHOR: Alvaro Cea\footnote{Research Associate, CAGB 308, South Kensington Campus. (alvaro.cea-esteban15@imperial.ac.uk)}, and Rafael Palacios\footnote{Professor in Computational Aeroelasticity, CAGB 338, South Kensington Campus. AIAA Associate Fellow (r.palacios@imperial.ac.uk)}

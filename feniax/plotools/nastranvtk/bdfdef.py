@@ -20,9 +20,10 @@ def vtkRef(bdf_file, size_card=8, write_path=None):
 
 
 def vtkModes_fromop2(
-    bdf_file, op2_file, scale=100.0, modes2plot=None, size_card=8, write_path=None
+        bdf_file, op2_file, scale=100.0, modes2plot=None, size_card=8, write_path=None, plot_ref=True
 ):
     bdfile = pathlib.Path(bdf_file)
+    write_path = pathlib.Path(write_path)
     mbdf = BDF()
     mop2 = OP2()
     mbdf.read_bdf(bdf_file)
@@ -36,10 +37,11 @@ def vtkModes_fromop2(
     # run the reference
     if write_path is None:
         write_path = bdfile.parent / bdfile.name.split(".")[0]
-        write_path.mkdir(parents=True, exist_ok=True)
-    write_vtk = f"{write_path}/Ref.vtk"
-    mbdf.write_bdf(f"{write_path}/Ref.bdf", size=size_card)
-    bdf2vtk.run(f"{write_path}/Ref.bdf", None, write_vtk, False, fileformat="ascii")
+    write_path.mkdir(parents=True, exist_ok=True)
+    if plot_ref:
+        write_vtk = f"{write_path}/Ref.vtk"
+        mbdf.write_bdf(f"{write_path}/Ref.bdf", size=size_card)
+        bdf2vtk.run(f"{write_path}/Ref.bdf", None, write_vtk, False, fileformat="ascii")
     # run the modes
     for mode_i in modes2plot:
         # mbdfi = copy.deepcopy(mbdf)
