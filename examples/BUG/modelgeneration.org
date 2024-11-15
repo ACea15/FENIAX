@@ -1940,7 +1940,6 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
           ra_movie=None)
 #+end_src
 
-
 ** Gust
 *** Run
 #+begin_src python :tangle settings_gust1.py
@@ -2125,6 +2124,108 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+end_src
 
 #+RESULTS:
+
+
+** Sharding
+
+*** Discrete loads
+
+*** Discrete loads Montecarlo
+#+begin_src python :tangle settings_DiscreteLoadsMC.py
+  import pathlib
+  import jax.numpy as jnp
+  import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
+  from feniax.preprocessor.inputs import Inputs
+  import feniax.feniax_main
+  import feniax.plotools.reconstruction as reconstruction
+
+    label_gaf = "<<parameters_gafs(output="label_gaf")>>"
+    num_poles = 5
+    Dhj_file = f"D{label_gaf}p{num_poles}"
+    Ahh_file = f"A{label_gaf}p{num_poles}"
+    Poles_file = f"Poles{label_gaf}p{num_poles}"
+
+    inp = Inputs()
+    inp.engine = "intrinsicmodal"
+    inp.fem.eig_type = "inputs"
+
+    inp.fem.connectivity = dict(# FusWing=['RWing',
+        #          'LWing'],
+                                FusBack=['FusTail',
+                                         'VTP'],
+        FusFront=None,
+        RWing=None,
+        LWing=None,
+        FusTail=None,
+        VTP=['HTP', 'VTPTail'],
+        HTP=['RHTP', 'LHTP'],
+        VTPTail=None,
+        RHTP=None,
+        LHTP=None,
+    )
+
+    inp.fem.grid = f"./FEM/structuralGrid_{sol[:-1]}"
+    #inp.fem.folder = pathlib.Path('./FEM/')
+    inp.fem.Ka_name = f"./FEM/Ka_{sol[:-1]}.npy"
+    inp.fem.Ma_name = f"./FEM/Ma_{sol[:-1]}.npy"
+    inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
+                         f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
+    inp.fem.num_modes = 50
+    inp.driver.typeof = "intrinsic"
+
+    #inp.driver.sol_path = pathlib.Path(
+    #    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
+    inp.driver.sol_path = pathlib.Path(
+        "./results1gust")
+
+    inp.simulation.typeof = "single"
+    inp.system.name = "sh1"
+    inp.system.solution = "static"
+    inp.system.solver_library = "diffrax"
+    inp.system.solver_function = "newton"
+    inp.system.solver_settings = dict(rtol=1e-6,
+                                      atol=1e-6,
+                                      max_steps=50,
+                                      norm="linalg_norm",
+                                      kappa=0.01)
+    inp.system.xloads.follower_forces = True
+
+    inp.system.xloads.x = [0, 1, 2, 3, 4, 5, 6]
+    inp.system.t = [1, 2, 3, 4, 5, 6]
+    # rwing: 14-35
+    # lwing: 40-61
+    points = []
+    interpolation = [0.,2e5,2.5e5,3.e5,4.e5,4.8e5,5.3e5]
+    for ri,li in zip(range(14, 36),range(40,62)):
+        points.append(ri)
+        points.append(li)
+    [interpolation for pi in points]
+    
+    inputforces = dict(follower_points=[[[25, 2], [48, 2]],
+                                        [[20, 2], [43, 2]],
+                                        [[15, 2], [38, 2]],
+                                        [[10, 2], [33, 2]],
+                                        [[25, 5], [48, 5]],
+                                        [[20, 5], [43, 5]],
+                                        [[15, 5], [38, 5]],
+                                        [[10, 5], [33, 5]],
+                                        ],
+                       follower_interpolation= [[[0.,2e5,2.5e5,3.e5,4.e5,4.8e5,5.3e5],
+                                                 [0.,2e5,2.5e5,3.e5,4.e5,4.8e5,5.3e5]
+                                                 ]
+                                                ]*8
+                       )
+    inp.system.shard = dict(input_type="pointforces",
+                            inputs=inputforces)
+
+    sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+
+
+#+end_src
+
+*** Manoeuvre
+
+*** Gust
 
 * Gust solution (146)
 :PROPERTIES:

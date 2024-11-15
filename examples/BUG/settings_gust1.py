@@ -39,12 +39,12 @@ inp.driver.typeof = "intrinsic"
 #inp.driver.sol_path = pathlib.Path(
 #    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    "./results1gust")
+    "./resultsgust3")
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
 inp.system.solution = "dynamic"
-inp.system.t1 = 7.5
-inp.system.tn = 4001
+inp.system.t1 = 2.5
+inp.system.tn = 2001
 inp.system.solver_library = "runge_kutta"
 inp.system.solver_function = "ode"
 inp.system.solver_settings = dict(solver_name="rk4")
@@ -57,9 +57,9 @@ inp.system.aero.poles = f"./AERO/{Poles_file}.npy"
 inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
 inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
 inp.system.aero.gust_profile = "mc"
-inp.system.aero.gust.intensity = 0.01 # 14.0732311562*0.001
-inp.system.aero.gust.length = 30.
-inp.system.aero.gust.step = 0.05
+inp.system.aero.gust.intensity = 0.2 # 14.0732311562*0.001
+inp.system.aero.gust.length = 67
+inp.system.aero.gust.step = 0.5
 inp.system.aero.gust.shift = 0.
 inp.system.aero.gust.panels_dihedral = jnp.load("./AERO/Dihedral_d1c7.npy")
 inp.system.aero.gust.collocation_points = "./AERO/Collocation_d1c7.npy"

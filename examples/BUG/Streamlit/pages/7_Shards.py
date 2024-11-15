@@ -4,7 +4,7 @@ import feniax.preprocessor.configuration as configuration
 
 import streamlit as st
 import importlib
-# importlib.reload(sti)
+importlib.reload(sti)
 
 st.set_page_config(
     page_title="Shards systems",
@@ -41,7 +41,7 @@ if len(selected_shardfolders) > 0:
             config = configuration.Config.from_file(f"{si}/config.yaml")
             Csol[si.name] = sol
             Cconfig[si.name] = config
-        st.session_state['Csol'] = Csol
+            st.session_state['Csol'] = Csol
         st.session_state['Cconfig'] = Cconfig
         
         sti.systems_shard(st.session_state['Csolshard'],

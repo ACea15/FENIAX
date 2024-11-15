@@ -86,8 +86,8 @@ def show_vtu(vtu_folder, stream_out="streamlit"):
 def df_geometry(fem):
     st.header("Geometry and FE Models")
     st.subheader("Condensed model")
-    st.table(fem.df_grid)
-
+    with st.expander("See dataframe with geometry nodes"):    
+        st.table(fem.df_grid)
 
 def fe_matrices(fem):
     st.subheader("Ka and Ma input matrices")
@@ -134,7 +134,8 @@ def df_modes(sol, config):
     df = pd.DataFrame(
         mvalue[mnumber].T * scale, columns=["x", "y", "z", "rx", "ry", "rz"]
     )
-    st.table(df)
+    with st.expander("See Modes data-frame"):
+        st.table(df)
     st.divider()
     fig = modes_3Dconfiguration(
         mode=mvalue[mnumber] * scale, config=config, mode_label=mname, settings=None
@@ -323,7 +324,7 @@ def sys_X_comparison(X, t, labels, ylabel, mode="lines"):
     componenti = None
     col1, col2 = st.columns(2)
     ntimes, ncomponents, nnodes = X[0].shape
-
+    dashstyle = [None, 'dash', 'dot', 'dashdot']*10
     nodei = col1.selectbox("Select a node", options=range(nnodes))
     componenti = col2.selectbox("Select a component", options=range(ncomponents))
     # breakpoint()
@@ -335,7 +336,7 @@ def sys_X_comparison(X, t, labels, ylabel, mode="lines"):
                 fig,
                 dict(
                     name=labels[i],
-                    # line=dict(color="navy"),
+                    line=dict(dash=dashstyle[i]),
                     mode=mode,
                 ),
                 dict(title="Time evolution"),
@@ -355,15 +356,34 @@ def sys_displacements_comp(solsys, config):
         t = [list(range(len(qi))) for qi in Xvs[0].q]
         mode = "lines+markers"
 
-    ra = [x.ra - config[labels[i]].fem.X.T for i, x in enumerate(Xvs)]
-    sys_X_comparison(ra, t, labels, "Displacements", mode)
+    try:
+        ua = [x.ra - config[labels[i]].fem.X.T for i, x in enumerate(Xvs)]
+    except KeyError:
+        label0 = list(config.keys())[0]
+        ua = [x.ra - config[label0].fem.X.T for i, x in enumerate(Xvs)]
+    sys_X_comparison(ua, t, labels, "Displacements", mode)
 
+def sys_positions_comp(solsys):
+    labels = list(solsys.keys())
+    Xvs = list(solsys.values())
+    if hasattr(Xvs[0], "t"):
+        t = [x.t for x in Xvs]
+        mode = "lines"
+    else:
+        t = [list(range(len(qi))) for qi in Xvs[0].q]
+        mode = "lines+markers"
 
+    ra = [x.ra for i, x in enumerate(Xvs)]
+    sys_X_comparison(ra, t, labels, "Positions", mode)
+    
 def sys_displacements(solsys, config):
     sys_X(solsys.ra - config.fem.X.T, solsys, label="Displacements")
 
-
+def sys_positions(solsys):
+    sys_X(solsys.ra, solsys, label="Positions")
+    
 def sys_velocities_comp(solsys):
+    
     Xvs = list(solsys.values())
     if hasattr(Xvs[0], "X1"):
         labels = list(solsys.keys())
@@ -372,7 +392,6 @@ def sys_velocities_comp(solsys):
         sys_X_comparison(x1, t, labels, "X1")
     else:
         st.text("Static solution!! All velocities are 0")
-
 
 def sys_velocities(solsys):
     if hasattr(solsys, "X1"):
@@ -604,6 +623,7 @@ def systems(sol, config):
         [
             "STATES",
             "DISPLACEMENTS",
+            "POSITIONS",
             "VELOCITIES",
             "STRAINS",
             "INTERNALFORCES",
@@ -630,6 +650,8 @@ def systems(sol, config):
                 sys_states(solsys)
             case show.DISPLACEMENTS.name:
                 sys_displacements(solsys, config)
+            case show.POSITIONS.name:
+                sys_positions(solsys)                
             case show.VELOCITIES.name:
                 sys_velocities(solsys)
             case show.STRAINS.name:
@@ -653,6 +675,7 @@ def systems_comparison(sol, config):
         [
             "STATES",
             "DISPLACEMENTS",
+            "POSITIONS",            
             "VELOCITIES",
             "STRAINS",
             "INTERNALFORCES",
@@ -684,6 +707,8 @@ def systems_comparison(sol, config):
                 sys_states_comparison(solsys)
             case show.DISPLACEMENTS.name:
                 sys_displacements_comp(solsys, config)
+            case show.POSITIONS.name:
+                sys_positions(solsys)                
             case show.VELOCITIES.name:
                 sys_velocities_comp(solsys)
             case show.STRAINS.name:
@@ -733,6 +758,7 @@ def systems_shard(sol_shard, config_shard, sol=None, config=None):
         [
             "STATES",
             "DISPLACEMENTS",
+            "POSITIONS",            
             "VELOCITIES",
             "STRAINS",
             "INTERNALFORCES",
@@ -792,6 +818,8 @@ def systems_shard(sol_shard, config_shard, sol=None, config=None):
                     sys_states_comparison(selected_solsys)
                 case show.DISPLACEMENTS.name:
                     sys_displacements_comp(selected_solsys, config_shard)
+                case show.POSITIONS.name:
+                    sys_positions_comp(selected_solsys)
                 case show.VELOCITIES.name:
                     sys_velocities_comp(selected_solsys)
                 case show.STRAINS.name:
