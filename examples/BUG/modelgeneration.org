@@ -505,7 +505,6 @@ Alternative: export to cquads and use old codes
   #bdfdef.vtkRef("./NASTRAN/Paraview/BUG_103cao.bdf")  # write full FE paraview
 #+end_src
 
-
 ** Dihedral extraction
 Basically extracting the value of  for the normal of each panel that needs to be multiplied by 
 *** bdf models
@@ -1531,188 +1530,6 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   run_nastran BUGgafs_<<parameters_gafs(output="sol")>>.bdf
   move_outputs BUGgafs_<<parameters_gafs(output="sol")>>.bdf              
 #+end_src
-
-*** Roger RFA
-:PROPERTIES:
-:header-args: :session *pybug* :noweb yes
-:END:
-
-#+begin_src python  :results none  :tangle rogerRFA.py
-  import numpy as np
-  import feniax.unastran.aero as nasaero
-  import feniax.unastran.op4handler as op4handler
-  import pickle
-
-  #op4m = op4.OP4()
-  #Qop4 = op4m.read_op4(file_name)
-
-  Qhh = op4handler.read_data('./NASTRAN/data_out/Qhh<<parameters_gafs(output="label_gaf")>>.op4',
-                             'Q_HH')
-  Qhj = op4handler.read_data('./NASTRAN/data_out/Qhj<<parameters_gafs(output="label_gaf")>>.op4',
-                             'Q_HJ')
-#+end_src
-
-**** RFA for Qhh and Qhj
-
-- Pole optimisation
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
-    import importlib
-    import feniax.aeromodal.roger as roger
-    importlib.reload(roger)
-    num_poles = 5
-    Dhj_file = f"D{label_gaf}p{num_poles}"
-    Ahh_file = f"A{label_gaf}p{num_poles}"
-    Poles_file = f"Poles{label_gaf}p{num_poles}"
-    optpoles = roger.OptimisePoles(reduced_freqs, Qhh,
-                                   num_poles_=num_poles,
-                                   poles_step_=0.3,
-                                   poles_range_=[0.05,3],
-                                   rfa_method_=1
-                                   )
-    # optpoles.set_errsettings(#error_name="max",
-    #                          rfa_method=2,
-    #                          norm_order=None)
-    optpoles.run(show_info=True)
-
-    qhhr1 = optpoles.get_model(label='m1')
-    # optimize with method 2
-    optpoles.set_errsettings(error_name="average", rfa_method=2, norm_order=None)
-    optpoles.run(show_info=True)
-    qhhr2 = optpoles.get_model(label='m2')
-    # optimize for max function
-    optpoles.set_errsettings(error_name="max", rfa_method=2, norm_order=None)
-    optpoles.run(show_info=True)
-    optpoles.save("./AERO", Ahh_file,
-                  Poles_file)
-    qhhr3 = optpoles.get_model(label='m3')
-    Qroger1 = qhhr1.eval_array(reduced_freqs)
-    Qroger2 = qhhr2.eval_array(reduced_freqs)
-    Qroger3 = qhhr3.eval_array(reduced_freqs)    
-  #+end_src
-
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
-    poles = qhhr3.poles #jnp.load("./AERO/PolesDd1c7F1Scao-50.npy")
-    rogerhj = roger.ComputeRoger(Qhj, reduced_freqs, poles, 2)
-    np.save(f"./AERO/{Dhj_file}.npy", rogerhj.roger_matrices)
-    rogerhjeval = roger.EvaluateRoger.create(rogerhj)
-    Qrogerhj = rogerhjeval.eval_array(reduced_freqs)
-  #+end_src
-
-- Double number of poles
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-    num_poles *= 2 
-    Dhj_file = f"D{label_gaf}p{num_poles}"
-    Ahh_file = f"A{label_gaf}p{num_poles}"
-    Poles_file = f"Poles{label_gaf}p{num_poles}"    
-    optpoles = roger.OptimisePoles(reduced_freqs, Qhh,
-                                   num_poles_=num_poles,
-                                   poles_step_=0.1,
-                                   poles_range_=[0.05,1],
-                                   rfa_method_=1
-                                   )
-    optpoles.set_errsettings(error_name="max",
-                             rfa_method=2, norm_order=None)
-    optpoles.run(show_info=True)
-    optpoles.save("./AERO", Ahh_file,
-                  Poles_file)
-    qhhr4 = optpoles.get_model(label='m4')
-    Qroger4 = qhhr4.eval_array(reduced_freqs)    
-  #+end_src
-
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
-    poles = qhhr4.poles #jnp.load("./AERO/PolesDd1c7F1Scao-50.npy")
-    rogerhj = roger.ComputeRoger(Qhj, reduced_freqs, poles, 2)
-    np.save(f"./AERO/{Dhj_file}.npy", rogerhj.roger_matrices)
-    rogerhjeval = roger.EvaluateRoger.create(rogerhj)
-    Qrogerhj = rogerhjeval.eval_array(reduced_freqs)
-  #+end_src
-  
-- n times more poles, no optimisation
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-    n = 1.4
-    num_poles = 7 # *= n
-    num_poles = int(num_poles) 
-    Dhj_file = f"D{label_gaf}p{num_poles}"
-    Ahh_file = f"A{label_gaf}p{num_poles}"
-    Poles_file = f"Poles{label_gaf}p{num_poles}"        
-    poles = np.linspace(0.05,2,num_poles)
-    np.save(f"./AERO/{Poles_file}.npy", poles)
-    rogerhh = roger.ComputeRoger(Qhh, reduced_freqs, poles, 2)
-    np.save(f"./AERO/{Ahh_file}.npy", rogerhh.roger_matrices)
-    rogerhj = roger.ComputeRoger(Qhj, reduced_freqs, poles, 2)
-    np.save(f"./AERO/{Dhj_file}.npy", rogerhj.roger_matrices)
-
-    rogerhheval = roger.EvaluateRoger.create(rogerhh)
-    Qrogerhh = rogerhheval.eval_array(reduced_freqs)  
-    rogerhjeval = roger.EvaluateRoger.create(rogerhj)
-    Qrogerhj = rogerhjeval.eval_array(reduced_freqs)
-  #+end_src
-
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-  
-    roger.plot_gafs(0, 0, Qhh, [Qrogerhh])
-    
-    #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
-  #+end_src
-
-**** Plot Qhh study
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-
-  roger.plot_gafs(0, 1, Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
-  
-  #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
-#+end_src
-
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-  iterate_vect = list(range(10))
-  plot_prod = list(itertools.product(iterate_vect,iterate_vect))
-  for li in plot_prod:
-      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-3:
-          roger.plot_gafs(li[0], li[1], Qhh, [Qroger1])
-#+end_src
-
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-  iterate_vect = list(range(10))
-  plot_prod = list(itertools.product(iterate_vect,iterate_vect))
-  for li in plot_prod:
-      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-3:
-          roger.plot_gafs(li[0], li[1], Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
-#+end_src
-
-
-**** Plot Qhh
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-
-  roger.plot_gafs(0, 1, Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
-  
-  #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
-#+end_src
-
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-  iterate_vect = list(range(10))
-  plot_prod = list(itertools.product(iterate_vect,iterate_vect))
-  for li in plot_prod:
-      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-4:
-          roger.plot_gafs(li[0], li[1], Qhh, [Qrogerhh])
-#+end_src
-
-**** Plot Qhj
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-
-  roger.plot_gafs(0, 1, Qhj, [Qrogerhj])
-  
-  #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
-#+end_src
-
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-  iterate_vect = list(range(10))
-  plot_prod = list(range(20))
-  panel = 20
-  for li in plot_prod:
-      if np.linalg.norm(Qhj[:, li, panel]) > 1e-3:
-          roger.plot_gafs(li, panel, Qhj, [Qrogerhj])
-#+end_src
-
 ** Steady
 *** bdf models
 :PROPERTIES:
@@ -1845,26 +1662,229 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 #+end_src
 
-* FENIAX
+* Roger RFA
 :PROPERTIES:
-:header-args: :session *pybug* :comments yes :noweb yes
+:header-args: :session *pybug* :noweb yes
 :END:
 
-** Manoeuvre
-*** Run
-#+begin_src python :tangle ./settings_manoeuvre.py
+** INPUT PARAMETERS
+#+NAME: parameters_rfa0
+#+begin_src python :noweb yes
+  num_poles = 5
+  Dhj_file = f"D{label_gaf}p{num_poles}"
+  Ahh_file = f"A{label_gaf}p{num_poles}"
+  Poles_file = f"Poles{label_gaf}p{num_poles}"
+#+end_src
+
+#+begin_src python  :results none  :tangle rogerRFA.py
+  import numpy as np
+  import feniax.unastran.aero as nasaero
+  import feniax.unastran.op4handler as op4handler
+  import pickle
+
+  #op4m = op4.OP4()
+  #Qop4 = op4m.read_op4(file_name)
+
+  Qhh = op4handler.read_data('./NASTRAN/data_out/Qhh<<parameters_gafs(output="label_gaf")>>.op4',
+                             'Q_HH')
+  Qhj = op4handler.read_data('./NASTRAN/data_out/Qhj<<parameters_gafs(output="label_gaf")>>.op4',
+                             'Q_HJ')
+#+end_src
+
+** RFA for Qhh and Qhj
+
+- Pole optimisation
+  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
+    import importlib
+    import feniax.aeromodal.roger as roger
+    importlib.reload(roger)
+    <<parameters_rfa0>>    
+    optpoles = roger.OptimisePoles(reduced_freqs, Qhh,
+                                   num_poles_=num_poles,
+                                   poles_step_=0.3,
+                                   poles_range_=[0.05,3],
+                                   rfa_method_=1
+                                   )
+    # optpoles.set_errsettings(#error_name="max",
+    #                          rfa_method=2,
+    #                          norm_order=None)
+    optpoles.run(show_info=True)
+
+    qhhr1 = optpoles.get_model(label='m1')
+    # optimize with method 2
+    optpoles.set_errsettings(error_name="average", rfa_method=2, norm_order=None)
+    optpoles.run(show_info=True)
+    qhhr2 = optpoles.get_model(label='m2')
+    # optimize for max function
+    optpoles.set_errsettings(error_name="max", rfa_method=2, norm_order=None)
+    optpoles.run(show_info=True)
+    optpoles.save("./AERO", Ahh_file,
+                  Poles_file)
+    qhhr3 = optpoles.get_model(label='m3')
+    Qroger1 = qhhr1.eval_array(reduced_freqs)
+    Qroger2 = qhhr2.eval_array(reduced_freqs)
+    Qroger3 = qhhr3.eval_array(reduced_freqs)    
+  #+end_src
+
+  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
+    poles = qhhr3.poles #jnp.load("./AERO/PolesDd1c7F1Scao-50.npy")
+    rogerhj = roger.ComputeRoger(Qhj, reduced_freqs, poles, 2)
+    np.save(f"./AERO/{Dhj_file}.npy", rogerhj.roger_matrices)
+    rogerhjeval = roger.EvaluateRoger.create(rogerhj)
+    Qrogerhj = rogerhjeval.eval_array(reduced_freqs)
+  #+end_src
+
+- Double number of poles
+  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+    num_poles *= 2 
+    Dhj_file = f"D{label_gaf}p{num_poles}"
+    Ahh_file = f"A{label_gaf}p{num_poles}"
+    Poles_file = f"Poles{label_gaf}p{num_poles}"    
+    optpoles = roger.OptimisePoles(reduced_freqs, Qhh,
+                                   num_poles_=num_poles,
+                                   poles_step_=0.1,
+                                   poles_range_=[0.05,1],
+                                   rfa_method_=1
+                                   )
+    optpoles.set_errsettings(error_name="max",
+                             rfa_method=2, norm_order=None)
+    optpoles.run(show_info=True)
+    optpoles.save("./AERO", Ahh_file,
+                  Poles_file)
+    qhhr4 = optpoles.get_model(label='m4')
+    Qroger4 = qhhr4.eval_array(reduced_freqs)    
+  #+end_src
+
+  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
+    poles = qhhr4.poles #jnp.load("./AERO/PolesDd1c7F1Scao-50.npy")
+    rogerhj = roger.ComputeRoger(Qhj, reduced_freqs, poles, 2)
+    np.save(f"./AERO/{Dhj_file}.npy", rogerhj.roger_matrices)
+    rogerhjeval = roger.EvaluateRoger.create(rogerhj)
+    Qrogerhj = rogerhjeval.eval_array(reduced_freqs)
+  #+end_src
+  
+- n times more poles, no optimisation
+  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+    n = 1.4
+    num_poles = 7 # *= n
+    num_poles = int(num_poles) 
+    Dhj_file = f"D{label_gaf}p{num_poles}"
+    Ahh_file = f"A{label_gaf}p{num_poles}"
+    Poles_file = f"Poles{label_gaf}p{num_poles}"        
+    poles = np.linspace(0.05,2,num_poles)
+    np.save(f"./AERO/{Poles_file}.npy", poles)
+    rogerhh = roger.ComputeRoger(Qhh, reduced_freqs, poles, 2)
+    np.save(f"./AERO/{Ahh_file}.npy", rogerhh.roger_matrices)
+    rogerhj = roger.ComputeRoger(Qhj, reduced_freqs, poles, 2)
+    np.save(f"./AERO/{Dhj_file}.npy", rogerhj.roger_matrices)
+
+    rogerhheval = roger.EvaluateRoger.create(rogerhh)
+    Qrogerhh = rogerhheval.eval_array(reduced_freqs)  
+    rogerhjeval = roger.EvaluateRoger.create(rogerhj)
+    Qrogerhj = rogerhjeval.eval_array(reduced_freqs)
+  #+end_src
+
+  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  
+    roger.plot_gafs(0, 0, Qhh, [Qrogerhh])
+    
+    #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
+  #+end_src
+
+** Plot Qhh study
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+
+  roger.plot_gafs(0, 1, Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
+  
+  #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
+#+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  iterate_vect = list(range(10))
+  plot_prod = list(itertools.product(iterate_vect,iterate_vect))
+  for li in plot_prod:
+      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-3:
+          roger.plot_gafs(li[0], li[1], Qhh, [Qroger1])
+#+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  iterate_vect = list(range(10))
+  plot_prod = list(itertools.product(iterate_vect,iterate_vect))
+  for li in plot_prod:
+      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-3:
+          roger.plot_gafs(li[0], li[1], Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
+#+end_src
+
+
+** Plot Qhh
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+
+  roger.plot_gafs(0, 1, Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
+  
+  #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
+#+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  iterate_vect = list(range(10))
+  plot_prod = list(itertools.product(iterate_vect,iterate_vect))
+  for li in plot_prod:
+      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-4:
+          roger.plot_gafs(li[0], li[1], Qhh, [Qrogerhh])
+#+end_src
+
+** Plot Qhj
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+
+  roger.plot_gafs(0, 1, Qhj, [Qrogerhj])
+  
+  #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
+#+end_src
+
+#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  iterate_vect = list(range(10))
+  plot_prod = list(range(20))
+  panel = 20
+  for li in plot_prod:
+      if np.linalg.norm(Qhj[:, li, panel]) > 1e-3:
+          roger.plot_gafs(li, panel, Qhj, [Qrogerhj])
+#+end_src
+
+
+* FENIAX
+:PROPERTIES:
+:header-args: :session *pybug* :comments yes :noweb yes :results none
+:END:
+
+#+NAME: ImportsFeniax
+#+begin_src python
   import pathlib
   import jax.numpy as jnp
   import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
   from feniax.preprocessor.inputs import Inputs
   import feniax.feniax_main
   import feniax.plotools.reconstruction as reconstruction
+#+end_src
 
+#+NAME: ImportsFeniaxShard
+#+begin_src python
+  import pathlib
+  #import jax.numpy as jnp
+  import numpy as np
+  from feniax.preprocessor.inputs import Inputs
+  import feniax.feniax_shardmain
+#+end_src
+
+#+NAME: MainBug
+#+begin_src python
+  label_dlm = "<<parameters_dlm(output="label_dlm")>>"
+  sol = "<<parameters_gafs(output="sol")>>"
   label_gaf = "<<parameters_gafs(output="label_gaf")>>"
-  num_poles = 5
-  Dhj_file = f"D{label_gaf}p{num_poles}"
-  Ahh_file = f"A{label_gaf}p{num_poles}"
-  Poles_file = f"Poles{label_gaf}p{num_poles}"
+  num_modes = <<parameters_gafs(output="num_modes")>>
+  c_ref = <<parameters_gafs(output="chord_ref")>>
+  u_inf = <<parameters_gafs(output="u_inf")>>
+  rho_inf = <<parameters_gafs(output="rho_inf")>>
+
+  <<parameters_rfa0>>
 
   inp = Inputs()
   inp.engine = "intrinsicmodal"
@@ -1884,16 +1904,25 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
                               RHTP=None,
                               LHTP=None,
                               )
-
-  inp.fem.folder = pathlib.Path('./FEM/')
-  inp.fem.eig_names = ["eigenvals_50.npy", "eigenvecs_50.npy"]
-  inp.fem.num_modes = 50
+  inp.fem.grid = f"./FEM/structuralGrid_{sol[:-1]}"
+  #inp.fem.folder = pathlib.Path('./FEM/')
+  inp.fem.Ka_name = f"./FEM/Ka_{sol[:-1]}.npy"
+  inp.fem.Ma_name = f"./FEM/Ma_{sol[:-1]}.npy"
+  inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
+                       f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
+  inp.driver.typeof = "intrinsic"
+  inp.fem.num_modes = num_modes
   inp.driver.typeof = "intrinsic"
 
-  #inp.driver.sol_path = pathlib.Path(
-  #    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
-  inp.driver.sol_path = pathlib.Path(
-      "./results1manoeuvre")
+#+end_src
+
+** Manoeuvre
+
+!!Warning: label_gaf may have a solution with a free model (eao for instance) instead of a clamped, in which case it is not correct.
+
+#+NAME: ManoeuvreMain
+#+begin_src python 
+  <<MainBug>>
   inp.simulation.typeof = "single"
   inp.systems.sett.s1.solution = "static"
   inp.systems.sett.s1.solver_library = "diffrax"
@@ -1906,24 +1935,29 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   inp.systems.sett.s1.xloads.modalaero_forces = True
   inp.systems.sett.s1.xloads.x = [0.,1.]
   inp.systems.sett.s1.t = [0.25, 0.5, 0.75, 1]
-  inp.systems.sett.s1.aero.c_ref = <<parameters_gafs(output="chord_ref")>>
-  inp.systems.sett.s1.aero.u_inf = 234 # a0(7000) =312
-  inp.systems.sett.s1.aero.rho_inf = 0.6
+  inp.systems.sett.s1.aero.c_ref = c_ref
+  inp.systems.sett.s1.aero.u_inf = u_inf # a0(7000) =312
+  inp.systems.sett.s1.aero.rho_inf = rho_inf
   inp.systems.sett.s1.aero.poles = f"./AERO/{Poles_file}.npy"
   inp.systems.sett.s1.aero.A = f"./AERO/{Ahh_file}.npy"
   inp.systems.sett.s1.aero.Q0_rigid = f"./AERO/Qhx{label_gaf}.npy"
   inp.systems.sett.s1.aero.qalpha = jnp.array(([0.,  0., 0, 0, 0, 0],
                                                [0.,  4 * jnp.pi / 180, 0, 0, 0, 0]))
+#+end_src
 
+*** Run
+#+begin_src python :tangle ./settings_manoeuvre1.py
+  <<ImportsFeniax>>
+  <<ManoeuvreMain>>
+  inp.driver.sol_path = pathlib.Path(
+      "./results1manoeuvre")  
   config =  configuration.Config(inp)
   solstatic1 = feniax.feniax_main.main(input_obj=config)
 #+end_src
 
-#+RESULTS:
-
 *** Plot
 #+NAME: 3Dstatic
-#+begin_src python :tangle ./settings_manoeuvre.py
+#+begin_src python :tangle ./settings_manoeuvre1.py
   rintrinsic, uintrinsic = reconstruction.rbf_based(
           nastran_bdf="./NASTRAN/BUG103.bdf",
           X=config.fem.X,
@@ -1931,7 +1965,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
           ra=solstatic1.staticsystem_s1.ra,
           Rab=solstatic1.staticsystem_s1.Cab,
           R0ab=solstatic1.modes.C0ab,
-          vtkpath="./paraview/solstatic1/bug",
+          vtkpath=inp.driver.sol_path / "paraview/solstatic1/bug",
           plot_timeinterval=1,
           plot_ref=True,
           tolerance=1e-3,
@@ -1941,56 +1975,14 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+end_src
 
 ** Gust
-*** Run
-#+begin_src python :tangle settings_gust1.py
-  import pathlib
-  import jax.numpy as jnp
-  import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-  from feniax.preprocessor.inputs import Inputs
-  import feniax.feniax_main
-  import feniax.plotools.reconstruction as reconstruction
-
-  label_gaf = "<<parameters_gafs(output="label_gaf")>>"
-  num_poles = 5
-  Dhj_file = f"D{label_gaf}p{num_poles}"
-  Ahh_file = f"A{label_gaf}p{num_poles}"
-  Poles_file = f"Poles{label_gaf}p{num_poles}"
-
-  inp = Inputs()
-  inp.engine = "intrinsicmodal"
-  inp.fem.eig_type = "inputs"
-
-  inp.fem.connectivity = dict(# FusWing=['RWing',
-                              #          'LWing'],
-                              FusBack=['FusTail',
-                                       'VTP'],
-                              FusFront=None,
-                              RWing=None,
-                              LWing=None,
-                              FusTail=None,
-                              VTP=['HTP', 'VTPTail'],
-                              HTP=['RHTP', 'LHTP'],
-                              VTPTail=None,
-                              RHTP=None,
-                              LHTP=None,
-                              )
-
-  inp.fem.grid = f"./FEM/structuralGrid_{sol[:-1]}"
-  #inp.fem.folder = pathlib.Path('./FEM/')
-  inp.fem.Ka_name = f"./FEM/Ka_{sol[:-1]}.npy"
-  inp.fem.Ma_name = f"./FEM/Ma_{sol[:-1]}.npy"
-  inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
-                       f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
-  inp.fem.num_modes = 50
-  inp.driver.typeof = "intrinsic"
-
-  #inp.driver.sol_path = pathlib.Path(
-  #    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
-  inp.driver.sol_path = pathlib.Path(
-      "./results1gust")
+#+NAME: GustMain
+#+begin_src python 
+  <<MainBug>>
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
-  inp.system.bc1 = 'free'
+  if sol[0] == "e": # free model, otherwise clamped
+      inp.system.bc1 = 'free'
+      inp.system.q0treatment = 1
   inp.system.solution = "dynamic"
   inp.system.t1 = 1
   inp.system.tn = 1001
@@ -1998,10 +1990,9 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   inp.system.solver_function = "ode"
   inp.system.solver_settings = dict(solver_name="rk4")
   inp.system.xloads.modalaero_forces = True
-  inp.system.q0treatment = 1
-  inp.system.aero.c_ref = <<parameters_gafs(output="chord_ref")>>
-  inp.system.aero.u_inf = 200.
-  inp.system.aero.rho_inf = 0.4
+  inp.system.aero.c_ref = c_ref
+  inp.system.aero.u_inf = u_inf
+  inp.system.aero.rho_inf = rho_inf
   inp.system.aero.poles = f"./AERO/{Poles_file}.npy"
   inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
   inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
@@ -2010,14 +2001,20 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   inp.system.aero.gust.length = 100.
   inp.system.aero.gust.step = 0.1
   inp.system.aero.gust.shift = 0.
-  inp.system.aero.gust.panels_dihedral = jnp.load("./AERO/Dihedral_d1c7.npy")
-  inp.system.aero.gust.collocation_points = "./AERO/Collocation_d1c7.npy"
+  inp.system.aero.gust.panels_dihedral = f"./AERO/Dihedral_{label_dlm}.npy"
+  inp.system.aero.gust.collocation_points = f"./AERO/Collocation_{label_dlm}.npy"
+#+end_src
+
+*** Run
+#+begin_src python :tangle settings_gust1.py
+  <<ImportsFeniax>>
+  <<GustMain>>
+  inp.driver.sol_path = pathlib.Path(
+      f"./results1gust_{sol}")
 
   config =  configuration.Config(inp)
   sol1 = feniax.feniax_main.main(input_obj=config)
 #+end_src
-
-#+RESULTS:
 
 *** Plot
 #+NAME: Tipdisplacement
@@ -2090,9 +2087,9 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
                     'RBE3.vtu',
                     'CBAR.vtu']
 
-  folder = pathlib.Path('./paraview/soldyn1')
+  folder = pathlib.Path("./results1gust/paraview/") # pathlib.Path('./paraview/soldyn1')
   folder_out = folder / "merged"
-  folder_out.mkdir(exist_ok=True)
+  folder_out.mkdir(exist_ok=True, parents=True)
   for i, fi in enumerate(folder.glob("bug_*")):
       if fi.is_dir() and (fi / paraview_files[0]).is_file():
           #print(fi)
@@ -2113,119 +2110,100 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 #+end_src
 
-#+begin_src bash :results none
+#+begin_src bash :results none :session shell4
   ~/Downloads/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/bin/pvpython paraview_3Ddynamic.py
 #+end_src
 
-#+begin_src bash :session shell3
-  cd ./paraview/soldyn1/merged
-  ffmpeg -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
+#+begin_src bash :session shell4
+  cd ./results1gust/paraview/merged
+  ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
   cd -
 #+end_src
 
 #+RESULTS:
-
+: bash: cd: ./results1gust/paraview/merged: No such file or directory
 
 ** Sharding
 
 *** Discrete loads
 
 *** Discrete loads Montecarlo
-#+begin_src python :tangle settings_DiscreteLoadsMC.py
-  import pathlib
-  import jax.numpy as jnp
-  import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-  from feniax.preprocessor.inputs import Inputs
-  import feniax.feniax_main
-  import feniax.plotools.reconstruction as reconstruction
+#+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard3*
+  <<ImportsFeniaxShard>>  
+  <<MainBug>>
+  inp.driver.sol_path = pathlib.Path(
+      "./results1DiscreteMC")
 
-    label_gaf = "<<parameters_gafs(output="label_gaf")>>"
-    num_poles = 5
-    Dhj_file = f"D{label_gaf}p{num_poles}"
-    Ahh_file = f"A{label_gaf}p{num_poles}"
-    Poles_file = f"Poles{label_gaf}p{num_poles}"
+  inp.simulation.typeof = "single"
+  inp.system.name = "s1"
+  inp.system.solution = "static"
+  inp.system.solver_library = "diffrax"
+  inp.system.solver_function = "newton"
+  inp.system.solver_settings = dict(rtol=1e-6,
+                                    atol=1e-6,
+                                    max_steps=50,
+                                    norm="linalg_norm",
+                                    kappa=0.01)
+  inp.system.xloads.follower_forces = True
+  inp.system.xloads.x = [0, 1, 2, 3]
+  inp.system.t = [1, 2, 3]
+  # rwing: 14-35
+  # lwing: 40-61
+  points = []
+  _interpolation = [0.,1e4, 2e4, 3.e4]
+  for ri,li in zip(range(14, 36),range(40,62)):
+      points.append([ri, 2])
+      points.append([li, 2])
+  interpolation = np.array([_interpolation for pi in points])  #  
+  paths = 8*10
+  mu = 0.
+  sigma = 1
+  rand = np.random.normal(mu, sigma, paths)
+  follower_interpolation = [interpolation * ri for ri in rand]
+  inputforces = dict(follower_points=points,
+                     follower_interpolation=follower_interpolation
+                     )
+  inp.system.shard = dict(input_type="pointforces",
+                          inputs=inputforces)
 
-    inp = Inputs()
-    inp.engine = "intrinsicmodal"
-    inp.fem.eig_type = "inputs"
-
-    inp.fem.connectivity = dict(# FusWing=['RWing',
-        #          'LWing'],
-                                FusBack=['FusTail',
-                                         'VTP'],
-        FusFront=None,
-        RWing=None,
-        LWing=None,
-        FusTail=None,
-        VTP=['HTP', 'VTPTail'],
-        HTP=['RHTP', 'LHTP'],
-        VTPTail=None,
-        RHTP=None,
-        LHTP=None,
-    )
-
-    inp.fem.grid = f"./FEM/structuralGrid_{sol[:-1]}"
-    #inp.fem.folder = pathlib.Path('./FEM/')
-    inp.fem.Ka_name = f"./FEM/Ka_{sol[:-1]}.npy"
-    inp.fem.Ma_name = f"./FEM/Ma_{sol[:-1]}.npy"
-    inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
-                         f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
-    inp.fem.num_modes = 50
-    inp.driver.typeof = "intrinsic"
-
-    #inp.driver.sol_path = pathlib.Path(
-    #    f"./results_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
-    inp.driver.sol_path = pathlib.Path(
-        "./results1gust")
-
-    inp.simulation.typeof = "single"
-    inp.system.name = "sh1"
-    inp.system.solution = "static"
-    inp.system.solver_library = "diffrax"
-    inp.system.solver_function = "newton"
-    inp.system.solver_settings = dict(rtol=1e-6,
-                                      atol=1e-6,
-                                      max_steps=50,
-                                      norm="linalg_norm",
-                                      kappa=0.01)
-    inp.system.xloads.follower_forces = True
-
-    inp.system.xloads.x = [0, 1, 2, 3, 4, 5, 6]
-    inp.system.t = [1, 2, 3, 4, 5, 6]
-    # rwing: 14-35
-    # lwing: 40-61
-    points = []
-    interpolation = [0.,2e5,2.5e5,3.e5,4.e5,4.8e5,5.3e5]
-    for ri,li in zip(range(14, 36),range(40,62)):
-        points.append(ri)
-        points.append(li)
-    [interpolation for pi in points]
-    
-    inputforces = dict(follower_points=[[[25, 2], [48, 2]],
-                                        [[20, 2], [43, 2]],
-                                        [[15, 2], [38, 2]],
-                                        [[10, 2], [33, 2]],
-                                        [[25, 5], [48, 5]],
-                                        [[20, 5], [43, 5]],
-                                        [[15, 5], [38, 5]],
-                                        [[10, 5], [33, 5]],
-                                        ],
-                       follower_interpolation= [[[0.,2e5,2.5e5,3.e5,4.e5,4.8e5,5.3e5],
-                                                 [0.,2e5,2.5e5,3.e5,4.e5,4.8e5,5.3e5]
-                                                 ]
-                                                ]*8
-                       )
-    inp.system.shard = dict(input_type="pointforces",
-                            inputs=inputforces)
-
-    sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+  sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
 
 
 #+end_src
 
 *** Manoeuvre
+#+begin_src python :tangle ./settings_manoeuvre1shard.py :session *pyshard1*
+  <<ImportsFeniaxShard>>
+  <<ManoeuvreMain>>
+  inp.driver.sol_path = pathlib.Path(
+      "./results1manoeuvreShard")  
+  inputflow = dict(u_inf=[100., 150., 170, 190.],
+                   rho_inf=[0.4, 0.6, 1., 1.2])
+  inp.system.shard = dict(input_type="steadyalpha",
+                        inputs=inputflow)
+  num_gpus = 8
+  solstatic1shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
+#+end_src
 
 *** Gust
+#+begin_src python :tangle settings_gust1shard.py :session *pyshard2*
+  <<ImportsFeniaxShard>>
+  <<GustMain>>
+
+  inp.driver.sol_path = pathlib.Path(
+      f"./results1gust_{sol}Shard")
+  inp.system.aero.gust.fixed_discretisation = [100, u_inf]
+  # Shard inputs
+  inputflow = dict(length=[30, 67],
+                   intensity= [0.01, 0.08, 0.2, 0.7],
+                   rho_inf = [rho_inf, rho_inf*1.1]
+                 )
+  inp.system.shard = dict(input_type="gust1",
+                        inputs=inputflow)
+
+  num_gpus = 16
+  solstatic1shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
+#+end_src
 
 * Gust solution (146)
 :PROPERTIES:
