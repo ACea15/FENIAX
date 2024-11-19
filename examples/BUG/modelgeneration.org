@@ -43,7 +43,7 @@
   import numpy as np
 
   num_modes = 50
-  sol = "eao" # {c,e}{a,f}{o,p}
+  sol = "cao" # {c,e}{a,f}{o,p}
   WRITE_GRID= True
   WRITE_ASETS= True
   ASET_MODEL_FULL = False  # ASETS at every CONM2 of half the size (full model gives
@@ -360,7 +360,10 @@ Read the pch file and save FE matrices to FEM folder
   if SAVE_FE:
       np.save(f"./FEM/Ka_{soli}.npy", stiffnessMatrix)
       np.save(f"./FEM/Ma_{soli}.npy", massMatrix)
-  assert len(asets_indexes) == len(stiffnessMatrix), "the FE matrices size does not match the indexes used to build the aset modes from the full set"
+  try:
+      assert len(asets_indexes) == len(stiffnessMatrix), "the FE matrices size does not match the indexes used to build the aset modes from the full set"
+  except NameError:
+      print("Careful, no aset-matrix sizes checked")
 #+end_src
 
 #+RESULTS:
@@ -1373,7 +1376,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   import feniax.unastran.op4handler as op4handler
   import pickle
   import itertools
-  sol = "eao"
+  sol = "cao"
   num_modes = 50
   mach = 0.8
   Mach = str(mach).replace('.','_')
@@ -1849,7 +1852,6 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
           roger.plot_gafs(li, panel, Qhj, [Qrogerhj])
 #+end_src
 
-
 * FENIAX
 :PROPERTIES:
 :header-args: :session *pybug* :comments yes :noweb yes :results none
@@ -1859,6 +1861,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+begin_src python
   import pathlib
   import jax.numpy as jnp
+  import numpy as np
   import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
   from feniax.preprocessor.inputs import Inputs
   import feniax.feniax_main
@@ -1924,25 +1927,26 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+begin_src python 
   <<MainBug>>
   inp.simulation.typeof = "single"
-  inp.systems.sett.s1.solution = "static"
-  inp.systems.sett.s1.solver_library = "diffrax"
-  inp.systems.sett.s1.solver_function = "newton"
-  inp.systems.sett.s1.solver_settings = dict(rtol=1e-6,
+  inp.system.name = "s1"
+  inp.system.solution = "static"
+  inp.system.solver_library = "diffrax"
+  inp.system.solver_function = "newton"
+  inp.system.solver_settings = dict(rtol=1e-6,
                                              atol=1e-6,
                                              max_steps=100,
                                              norm="linalg_norm",
                                              kappa=0.01)
-  inp.systems.sett.s1.xloads.modalaero_forces = True
-  inp.systems.sett.s1.xloads.x = [0.,1.]
-  inp.systems.sett.s1.t = [0.25, 0.5, 0.75, 1]
-  inp.systems.sett.s1.aero.c_ref = c_ref
-  inp.systems.sett.s1.aero.u_inf = u_inf # a0(7000) =312
-  inp.systems.sett.s1.aero.rho_inf = rho_inf
-  inp.systems.sett.s1.aero.poles = f"./AERO/{Poles_file}.npy"
-  inp.systems.sett.s1.aero.A = f"./AERO/{Ahh_file}.npy"
-  inp.systems.sett.s1.aero.Q0_rigid = f"./AERO/Qhx{label_gaf}.npy"
-  inp.systems.sett.s1.aero.qalpha = jnp.array(([0.,  0., 0, 0, 0, 0],
-                                               [0.,  4 * jnp.pi / 180, 0, 0, 0, 0]))
+  inp.system.xloads.modalaero_forces = True
+  inp.system.xloads.x = [0.,1.]
+  inp.system.t = [0.25, 0.5, 0.75, 1]
+  inp.system.aero.c_ref = c_ref
+  inp.system.aero.u_inf = u_inf # a0(7000) =312
+  inp.system.aero.rho_inf = rho_inf
+  inp.system.aero.poles = f"./AERO/{Poles_file}.npy"
+  inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
+  inp.system.aero.Q0_rigid = f"./AERO/Qhx{label_gaf}.npy"
+  inp.system.aero.qalpha = [[0.,  0., 0, 0, 0, 0],
+                            [0.,  4 * np.pi / 180, 0, 0, 0, 0]]
 #+end_src
 
 *** Run
@@ -1950,7 +1954,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   <<ImportsFeniax>>
   <<ManoeuvreMain>>
   inp.driver.sol_path = pathlib.Path(
-      "./results1manoeuvre")  
+      "./results/manoeuvre1")  
   config =  configuration.Config(inp)
   solstatic1 = feniax.feniax_main.main(input_obj=config)
 #+end_src
@@ -2010,7 +2014,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   <<ImportsFeniax>>
   <<GustMain>>
   inp.driver.sol_path = pathlib.Path(
-      f"./results1gust_{sol}")
+      f"./results/gust1_{sol}")
 
   config =  configuration.Config(inp)
   sol1 = feniax.feniax_main.main(input_obj=config)
@@ -2126,6 +2130,9 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 ** Sharding
 
 *** Discrete loads
+Forces and moments at node 35 and 61
+
+
 
 *** Discrete loads Montecarlo
 #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard3*
@@ -2176,11 +2183,11 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   <<ImportsFeniaxShard>>
   <<ManoeuvreMain>>
   inp.driver.sol_path = pathlib.Path(
-      "./results1manoeuvreShard")  
+      "./results/manoeuvre1Shard")  
   inputflow = dict(u_inf=[100., 150., 170, 190.],
                    rho_inf=[0.4, 0.6, 1., 1.2])
   inp.system.shard = dict(input_type="steadyalpha",
-                        inputs=inputflow)
+                          inputs=inputflow)
   num_gpus = 8
   solstatic1shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
 #+end_src
@@ -2191,7 +2198,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   <<GustMain>>
 
   inp.driver.sol_path = pathlib.Path(
-      f"./results1gust_{sol}Shard")
+      f"./results/gust1_{sol}Shard")
   inp.system.aero.gust.fixed_discretisation = [100, u_inf]
   # Shard inputs
   inputflow = dict(length=[30, 67],
@@ -2201,9 +2208,10 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
 
-  num_gpus = 16
+  num_gpus = 8
   solstatic1shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
 #+end_src
+
 
 * Gust solution (146)
 :PROPERTIES:
