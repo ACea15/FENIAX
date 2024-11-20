@@ -5,14 +5,14 @@
   (pyvenv-workon "feniax")
 #+end_src
 
-* Folder structure
+* Folder and file structure
 #+begin_src markdown :tangle "./README.md" :results none
   # Folder structure
   - Parts: BDF files with the structural model parts
   - DLMs: generated DLM models
 #+end_src
 
-#+begin_src python
+#+begin_src python :results none
   import pathlib
   pathlib.Path('./FEM').mkdir(parents=True, exist_ok=True)
   pathlib.Path('./AERO').mkdir(parents=True, exist_ok=True)  
@@ -25,12 +25,21 @@
   pathlib.Path('./figs').mkdir(parents=True, exist_ok=True)  
   #+end_src
 
-#+RESULTS:
-: None
+P1_modalsolution.py -> 
+P2_runmodal.sh -> Run Nastran modal solution
+P3_dlm.py -> 
+P4_rundihedral.sh -> 
+P5_getdihedral.py -> 
+P6_outputgafs.py -> 
+P7_rungafs.sh -> 
+P8_rungafSteady.sh -> 
+P9_getgafSteady.py -> 
+P10_rogerRFA.py -> 
+
 
 * Modal Solution
 :PROPERTIES:
-:header-args: :tangle ./modal_solution.py :session *pybug* :comments yes
+:header-args: :tangle ./P1_modalsolution.py :session *pybug* :comments yes
 :END:
 
 ** INPUT PARAMETERS
@@ -278,9 +287,9 @@
   ENDDATA
 #+end_src
 ** Run Nastran
-Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
+Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors. 
 
-#+begin_src bash :session shell1 :noweb yes :tangle run_modal.sh :results none
+#+begin_src bash :session shell1 :noweb yes :tangle P2_runmodal.sh :results none
   cd NASTRAN
   source run_nastran.sh
   run_nastran BUG103_<<parameters_modal(output="sol")>>.bdf
@@ -335,6 +344,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+end_src
 
 *** Plot VTK modes
+
 Plot the modal shapes in Paraview
 #+begin_src python
   op2_file = f"./NASTRAN/simulations_out/BUG103_{sol}.op2" 
@@ -370,11 +380,11 @@ Read the pch file and save FE matrices to FEM folder
 
 * DLM generation
   :PROPERTIES:
-  :header-args: :session *pybug* :tangle ./dlm.py :comments yes
+  :header-args: :session *pybug*  :comments yes
   :END:
 ** INPUT PARAMETERS
 #+NAME: parameters_dlm0
-#+begin_src python
+#+begin_src python :tangle ./P3_dlm.py
   import json
   import feniax.unastran.aero as aero
   from pyNastran.bdf.bdf import BDF
@@ -427,7 +437,7 @@ Read the pch file and save FE matrices to FEM folder
 ** Build
 Build the aero model based on discretisation and the right-hand side aero built initially in BUGaero1.bdf
 #+NAME: DLMbuild
-#+begin_src python :results none
+#+begin_src python :results none :tangle ./P3_dlm.py
 
   # Read old model with right side of CAEROS
   bdfaero = BDF()#debug=False)
@@ -474,7 +484,7 @@ Build the aero model based on discretisation and the right-hand side aero built 
 
 #+end_src
 
-** Paraview postprocessing
+** DLM grid: Collocation points and Paraview plotting
 
 Old method: build panel coordinates out of corner points 
 #+NAME: DLMparaview
@@ -483,9 +493,9 @@ Old method: build panel coordinates out of corner points
   gridmesh = panels.build_gridmesh(grid, label_dlm, save_dir=f"./paraview/aero{label_dlm}")  #  write paraview mesh
 #+end_src
 
-Use pynastran via get_collocation. Note: should push fix to pyNastran
-#+NAME: DLM
-#+begin_src python :results none
+Use pynastran via get_collocation. Note: should push fix to pyNastran.
+#+NAME: DLMGrid
+#+begin_src python :results none :tangle ./P3_dlm.py
 
   dlmgrid = aero.GenDLMGrid(dlm.model)
   dlmgrid.plot_pyvista(f"./paraview/dlm{label_dlm}")
@@ -1345,7 +1355,7 @@ Basically extracting the value of  for the normal of each panel that needs to be
 *** Run Nastran
 Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
 
-#+begin_src bash :session shell1 :results none :tangle run_gafs.sh
+#+begin_src bash :session shell1 :results none :tangle P4_rundihedral.sh
   cd NASTRAN
   source run_nastran.sh
   run_nastran BUGdihedral.bdf
@@ -1354,8 +1364,9 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 *** Read op4
 
-#+begin_src python  :results none  :noweb yes 
-
+#+begin_src python  :results none  :noweb yes :tangle P5_getdihedral.py
+  import numpy as np
+  import feniax.unastran.op4handler as op4handler
   dihedral = op4handler.read_data(f'./NASTRAN/data_out/Dihedral.op4',
                              'WJ')
   SAVE_DIHEDRAL = True
@@ -1366,7 +1377,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 * GAFs extraction
 :PROPERTIES:
-:header-args: :session *pybug* :tangle ./gafs.py :comments yes :noweb yes
+:header-args: :session *pybug* :tangle ./P6_outputgafs.py :comments yes :noweb yes
 :END:
 ** INPUT PARAMETERS
 #+NAME: parameters_gafs0
@@ -1527,7 +1538,7 @@ TODO: add ASETs and check whether it affects the results
 *** Run Nastran
 Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
 
-#+begin_src bash :session shell1 :results none :tangle run_gafs.sh
+#+begin_src bash :session shell1 :results none :tangle P7_rungafs.sh
   cd NASTRAN
   source run_nastran.sh
   run_nastran BUGgafs_<<parameters_gafs(output="sol")>>.bdf
@@ -1637,7 +1648,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 *** Run Nastran
 Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
 
-#+begin_src bash :session shell1 :results none :noweb yes :tangle run_gafs.sh
+#+begin_src bash :session shell1 :results none :noweb yes :tangle P8_rungafSteady.sh
   cd NASTRAN
   source run_nastran.sh
   run_nastran BUGgafsSteady_<<parameters_gafs(output="sol")>>.bdf
@@ -1646,8 +1657,10 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 *** Read op4
 
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-
+#+begin_src python  :results none  :noweb yes :tangle P9_getgafSteady.py
+  import numpy as np
+  import feniax.unastran.op4handler as op4handler
+  
   Qax_name = "Qax<<parameters_gafs(output="label_gaf")>>"
   Qah_name = "Qah<<parameters_gafs(output="label_gaf")>>"
   Qhx_name = "Qhx<<parameters_gafs(output="label_gaf")>>"
@@ -1672,19 +1685,21 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 ** INPUT PARAMETERS
 #+NAME: parameters_rfa0
-#+begin_src python :noweb yes
+#+begin_src python 
   num_poles = 5
   Dhj_file = f"D{label_gaf}p{num_poles}"
   Ahh_file = f"A{label_gaf}p{num_poles}"
   Poles_file = f"Poles{label_gaf}p{num_poles}"
 #+end_src
 
-#+begin_src python  :results none  :tangle rogerRFA.py
+#+begin_src python  :results none  :tangle P10_rogerRFA.py
   import numpy as np
   import feniax.unastran.aero as nasaero
   import feniax.unastran.op4handler as op4handler
   import pickle
-
+  import importlib
+  import feniax.aeromodal.roger as roger
+  importlib.reload(roger)
   #op4m = op4.OP4()
   #Qop4 = op4m.read_op4(file_name)
 
@@ -1697,10 +1712,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 ** RFA for Qhh and Qhj
 
 - Pole optimisation
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
-    import importlib
-    import feniax.aeromodal.roger as roger
-    importlib.reload(roger)
+  #+begin_src python  :results none :tangle P10_rogerRFA.py  
     <<parameters_rfa0>>    
     optpoles = roger.OptimisePoles(reduced_freqs, Qhh,
                                    num_poles_=num_poles,
@@ -1729,7 +1741,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
     Qroger3 = qhhr3.eval_array(reduced_freqs)    
   #+end_src
 
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
+  #+begin_src python  :results none   :tangle P10_rogerRFA.py  
     poles = qhhr3.poles #jnp.load("./AERO/PolesDd1c7F1Scao-50.npy")
     rogerhj = roger.ComputeRoger(Qhj, reduced_freqs, poles, 2)
     np.save(f"./AERO/{Dhj_file}.npy", rogerhj.roger_matrices)
@@ -1738,7 +1750,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   #+end_src
 
 - Double number of poles
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  #+begin_src python  :results none 
     num_poles *= 2 
     Dhj_file = f"D{label_gaf}p{num_poles}"
     Ahh_file = f"A{label_gaf}p{num_poles}"
@@ -1758,7 +1770,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
     Qroger4 = qhhr4.eval_array(reduced_freqs)    
   #+end_src
 
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py  
+  #+begin_src python  :results none 
     poles = qhhr4.poles #jnp.load("./AERO/PolesDd1c7F1Scao-50.npy")
     rogerhj = roger.ComputeRoger(Qhj, reduced_freqs, poles, 2)
     np.save(f"./AERO/{Dhj_file}.npy", rogerhj.roger_matrices)
@@ -1767,7 +1779,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   #+end_src
   
 - n times more poles, no optimisation
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  #+begin_src python  :results none 
     n = 1.4
     num_poles = 7 # *= n
     num_poles = int(num_poles) 
@@ -1787,7 +1799,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
     Qrogerhj = rogerhjeval.eval_array(reduced_freqs)
   #+end_src
 
-  #+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+  #+begin_src python  :results none 
   
     roger.plot_gafs(0, 0, Qhh, [Qrogerhh])
     
@@ -1795,14 +1807,14 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   #+end_src
 
 ** Plot Qhh study
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+#+begin_src python  :results none  
 
   roger.plot_gafs(0, 1, Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
   
   #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
 #+end_src
 
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+#+begin_src python  :results none  
   iterate_vect = list(range(10))
   plot_prod = list(itertools.product(iterate_vect,iterate_vect))
   for li in plot_prod:
@@ -1810,7 +1822,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
           roger.plot_gafs(li[0], li[1], Qhh, [Qroger1])
 #+end_src
 
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+#+begin_src python  :results none 
   iterate_vect = list(range(10))
   plot_prod = list(itertools.product(iterate_vect,iterate_vect))
   for li in plot_prod:
@@ -1819,31 +1831,15 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+end_src
 
 
-** Plot Qhh
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-
-  roger.plot_gafs(0, 1, Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
-  
-  #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
-#+end_src
-
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
-  iterate_vect = list(range(10))
-  plot_prod = list(itertools.product(iterate_vect,iterate_vect))
-  for li in plot_prod:
-      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-4:
-          roger.plot_gafs(li[0], li[1], Qhh, [Qrogerhh])
-#+end_src
-
 ** Plot Qhj
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+#+begin_src python  :results none  
 
   roger.plot_gafs(0, 1, Qhj, [Qrogerhj])
   
   #roger.plot_gafs(20, 2, Qhh, [Qroger, Qroger2, Qroger3])
 #+end_src
 
-#+begin_src python  :results none  :noweb yes :tangle rogerRFA.py
+#+begin_src python  :results none 
   iterate_vect = list(range(10))
   plot_prod = list(range(20))
   panel = 20
@@ -2131,7 +2127,61 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 *** Discrete loads
 Forces and moments at node 35 and 61
+#+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard3*
+  <<ImportsFeniaxShard>>  
+  <<MainBug>>
+  inp.driver.sol_path = pathlib.Path(
+      "./results1DiscreteMC")
 
+  inp.simulation.typeof = "single"
+  inp.system.name = "s1"
+  inp.system.solution = "static"
+  inp.system.solver_library = "diffrax"
+  inp.system.solver_function = "newton"
+  inp.system.solver_settings = dict(rtol=1e-6,
+                                    atol=1e-6,
+                                    max_steps=50,
+                                    norm="linalg_norm",
+                                    kappa=0.01)
+  inp.system.xloads.follower_forces = True
+  inp.system.xloads.x = [0, 1, 2, 3]
+  inp.system.t = [1, 2, 3]
+  # rwing: 14-35
+  # lwing: 40-61
+  inputforces = dict(follower_points=[[[35, 0], [61, 0]],
+                                      [[35, 1], [61, 1]],
+                                      [[35, 2], [61, 2]],
+                                      [[35, 3], [61, 3]],
+                                      [[35, 4], [61, 4]],
+                                      [[35, 5], [61, 5]],
+                                      [[35, 2], [61, 2], [35, 4], [61, 4]],
+                                      [[35, 2], [61, 2], [35, 4], [61, 4]],
+                                      ],  # [[[node_i, component_j]..(total_forces per run)],...(parallel forces)[[node_i, component_j]..]]     
+                     follower_interpolation= [[[0.,2e5,3.e5],
+                                               [0.,2e5,3.e5]],
+                                              [[0.,2e5,3.e5],
+                                               [0.,2e5,3.e5]],
+                                              [[0.,2e5,3.e5],
+                                               [0.,2e5,3.e5]],
+                                              [[0.,2e5,3.e5],
+                                               [0.,2e5,3.e5]],
+                                              [[0.,2e5,3.e5],
+                                               [0.,2e5,3.e5]],
+                                              [[0.,2e5,3.e5],
+                                               [0.,2e5,3.e5]],
+                                              [[0.,2e5,3.e5],
+                                               [0.,2e5,3.e5]],
+                                              [[0.,2e5,3.e5],
+                                               [0.,2e5,3.e5]]
+                                              ]  # [[[0,...interpolation points]..(total_forces per run)],...(parallel forces)[[0,...]..]]
+                   )  
+  inp.system.shard = dict(input_type="pointforces",
+                        inputs=inputforces)
+
+  sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+
+
+#+end_src
 
 
 *** Discrete loads Montecarlo
