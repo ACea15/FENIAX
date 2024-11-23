@@ -2149,6 +2149,9 @@ Forces and moments at node 35 and 61
   inp.system.xloads.follower_forces = True
   inp.system.xloads.x = [0, 1, 2, 3]
   inp.system.t = [1, 2, 3]
+  l1 = 1e4
+  l2 = 2.5e4
+  l3 = 5e4
   # rwing: 14-35
   # lwing: 40-61
                         # [[[node_i, component_j]..(total_forces per run)],...(parallel forces)[[node_i, component_j]..]]      
@@ -2162,39 +2165,39 @@ Forces and moments at node 35 and 61
                                       [[35, 2], [61, 2], [35, 4], [61, 4]],
                                       ],
                      # [[[0,...interpolation points]..(total_forces per run)],...(parallel forces)[[0,...]..]]
-                     follower_interpolation= [[[0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3],
+                     follower_interpolation= [[[0., l1, l2, l3], 
+                                               [0., l1, l2, l3],
                                                [0., 0., 0., 0.],
                                                [0., 0., 0., 0.]], 
-                                              [[0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3],
+                                              [[0., l1, l2, l3], 
+                                               [0., l1, l2, l3],
                                                [0., 0., 0., 0.],
                                                [0., 0., 0., 0.]], 
-                                              [[0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3],
+                                              [[0., l1, l2, l3], 
+                                               [0., l1, l2, l3],
                                                [0., 0., 0., 0.],
                                                [0., 0., 0., 0.]], 
-                                              [[0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3],
+                                              [[0., l1, l2, l3], 
+                                               [0., l1, l2, l3],
                                                [0., 0., 0., 0.],
                                                [0., 0., 0., 0.]], 
-                                              [[0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3],
+                                              [[0., l1, l2, l3], 
+                                               [0., l1, l2, l3],
                                                [0., 0., 0., 0.],
                                                [0., 0., 0., 0.]], 
-                                              [[0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3],
+                                              [[0., l1, l2, l3], 
+                                               [0., l1, l2, l3],
                                                [0., 0., 0., 0.],
                                                [0., 0., 0., 0.]], 
-                                              [[0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3]
+                                              [[0., l1, l2, l3], 
+                                               [0., l1, l2, l3], 
+                                               [0., l1*alpha, l2*alpha, l3*alpha], 
+                                               [0., l1*alpha, l2*alpha, l3*alpha]
                                                ], 
-                                              [[0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3], 
-                                               [0., 2e3, 3.e3, 5e3]]
+                                              [[0., l1, l2, l3], 
+                                               [0., l1, l2, l3], 
+                                               [0., l1*alpha, l2*alpha, l3*alpha], 
+                                               [0., l1*alpha, l2*alpha, l3*alpha]]
                                               ]
                    )  
   inp.system.shard = dict(input_type="pointforces",
@@ -2211,14 +2214,15 @@ Forces and moments at node 35 and 61
   import feniax.plotools.reconstruction as reconstruction
   import feniax.preprocessor.configuration as configuration
   config =  configuration.Config(inp)
-  rintrinsic, uintrinsic = reconstruction.rbf_based(
+  for i in range(8):
+      rintrinsic, uintrinsic = reconstruction.rbf_based(
           nastran_bdf="./NASTRAN/BUG103.bdf",
           X=config.fem.X,
           time=range(len(inp.system.t)),
-          ra=sol.staticsystem_sys1.ra[0],
-          Rab=sol.staticsystem_sys1.Cab[0],
+          ra=sol.staticsystem_sys1.ra[i],
+          Rab=sol.staticsystem_sys1.Cab[i],
           R0ab=sol.staticsystem_sys1.modes.C0ab,
-          vtkpath=inp.driver.sol_path / "paraview/bug",
+          vtkpath=inp.driver.sol_path / f"paraview/L{i}/bug",
           plot_timeinterval=1,
           plot_ref=True,
           tolerance=1e-3,
@@ -2323,10 +2327,12 @@ Forces and moments at node 35 and 61
 #+begin_src python :tangle ./settings_manoeuvre1shard.py :session *pyshard1*
   <<ImportsFeniaxShard>>
   <<ManoeuvreMain>>
+  
+  rho_rand = np.random.normal(0.6, 0.6*0.15, 500)
   inp.driver.sol_path = pathlib.Path(
       "./results/manoeuvre1Shard")  
-  inputflow = dict(u_inf=[100., 150., 170, 190.],
-                   rho_inf=[0.4, 0.6, 1., 1.2])
+  inputflow = dict(#u_inf=[100., 150., 170, 190.],
+                   rho_inf=rho_rand)
   inp.system.shard = dict(input_type="steadyalpha",
                           inputs=inputflow)
   num_gpus = 8
@@ -2340,11 +2346,11 @@ Forces and moments at node 35 and 61
 
   inp.driver.sol_path = pathlib.Path(
       f"./results/gust1_{sol}Shard")
-  inp.system.aero.gust.fixed_discretisation = [100, u_inf]
+  inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
-  inputflow = dict(length=[30, 67],
-                   intensity= [0.01, 0.08, 0.2, 0.7],
-                   rho_inf = [rho_inf, rho_inf*1.1]
+  inputflow = dict(length=np.linspace(25,265,13),
+                   intensity= np.linspace(0.1, 3, 11),
+                   rho_inf = [0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
                  )
   inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
