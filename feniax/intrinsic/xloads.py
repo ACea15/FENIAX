@@ -135,6 +135,26 @@ def eta_pointdead(t, phi1, x, force_dead, Rab):
     eta = jnp.tensordot(phi1, f_fd, axes=([1, 2], [0, 1]))
     return eta
 
+@jax.jit
+def force_pointdead(t, x, force_dead):
+    f = linear_interpolation(t, x, force_dead)
+    return f
+
+
+@jax.jit
+def force_pointfollower(t, x, force_follower, Rab):
+    f1 = jax.vmap(
+        lambda R, x: jnp.vstack(
+            [jnp.hstack([R, jnp.zeros((3, 3))]), jnp.hstack([jnp.zeros((3, 3)), R])]
+        )
+        @ x,
+        in_axes=(2, 1),
+        out_axes=1,
+    )
+    f = linear_interpolation(t, x, force_follower)
+    f_fd = f1(Rab, f)
+    return f_fd
+
 
 @jax.jit
 def eta_pointdead_const(phi1, f, Rab):

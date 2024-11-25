@@ -25,7 +25,7 @@
   pathlib.Path('./figs').mkdir(parents=True, exist_ok=True)  
 #+end_src
 
-#+begin_src shell :tangle ./ 
+#+begin_src shell :tangle ./workflow.sh 
   python P1_modalsolution.py  
   source P2_runmodal.sh   # Run Nastran modal solution
   python P3_dlm.py  
@@ -53,7 +53,7 @@
   import feniax.plotools.nastranvtk.bdfdef as bdfdef
   import numpy as np
 
-  num_modes = 50
+  num_modes = 100
   sol = "cao" # {c,e}{a,f}{o,p}
   WRITE_GRID= True
   WRITE_ASETS= True
@@ -291,8 +291,7 @@
 ** Run Nastran
 Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors. 
 
-#+begin_src bash :session shell1 :noweb yes :tangle P2_runmodal.sh :results none
-  cd NASTRAN
+#+begin_src bash :session shell1 :noweb yes :tangle P2_runmodal.sh :results none :dir ./NASTRAN
   source run_nastran.sh
   run_nastran BUG103_<<parameters_modal(output="sol")>>.bdf
   move_outputs BUG103_<<parameters_modal(output="sol")>>.bdf
@@ -1387,11 +1386,13 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   import numpy as np
   import feniax.unastran.aero as nasaero
   import feniax.unastran.op4handler as op4handler
+  from feniax.utils import standard_atmosphere
   import pickle
   import itertools
-  sol = "cao"
+  sol = "eao"
   num_modes = 50
-  mach = 0.8
+  mach = 0.75
+  altitude = 7000 # meters
   Mach = str(mach).replace('.','_')
   machs = [mach]
   reduced_freqs = np.hstack([1e-6, np.linspace(1e-5,1e-1, 25),
@@ -1404,8 +1405,9 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   flutter_id = 9010
   mach_fact = machs
   kv_fact = [200., 220.]
-  u_inf = 200.
-  rho_inf = 1.2
+  T, rho_inf, P, a = standard_atmosphere(altitude)
+  u_inf = mach * a
+  #rho_inf = 1.2
   density_fact = [rho_inf]
   chord_ref = 3.
   span_ref = 24. * 2  # always full span
@@ -1416,7 +1418,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   flutter_sett = dict()
   aero_sett = dict()
   label_dlm = "<<parameters_dlm(output="label_dlm")>>"
-  label_flow = f"F1"
+  label_flow = f"F2"
   label_gaf = f"D{label_dlm}{label_flow}S{sol}-{num_modes}"
   input_dict = dict(reduced_freqs=list(reduced_freqs), mach=mach, u_inf=u_inf, rho_inf=rho_inf)
   with open(f"./NASTRAN/GAFs/input_{label_flow}.json", "w") as fp:
@@ -1694,6 +1696,8 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   Poles_file = f"Poles{label_gaf}p{num_poles}"
 #+end_src
 
+#+RESULTS: parameters_rfa0
+
 #+begin_src python  :results none  :tangle P10_rogerRFA.py
   import numpy as np
   import feniax.unastran.aero as nasaero
@@ -1832,7 +1836,6 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
           roger.plot_gafs(li[0], li[1], Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
 #+end_src
 
-
 ** Plot Qhj
 #+begin_src python  :results none  
 
@@ -1858,6 +1861,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+NAME: ImportsFeniax
 #+begin_src python
   import pathlib
+  import time
   import jax.numpy as jnp
   import numpy as np
   import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
@@ -1869,13 +1873,14 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+NAME: ImportsFeniaxShard
 #+begin_src python
   import pathlib
+  import time
   #import jax.numpy as jnp
   import numpy as np
   from feniax.preprocessor.inputs import Inputs
   import feniax.feniax_shardmain
 #+end_src
 
-#+NAME: MainBug
+#+NAME: MainBugParameters
 #+begin_src python
   label_dlm = "<<parameters_dlm(output="label_dlm")>>"
   sol = "<<parameters_gafs(output="sol")>>"
@@ -1884,9 +1889,10 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   c_ref = <<parameters_gafs(output="chord_ref")>>
   u_inf = <<parameters_gafs(output="u_inf")>>
   rho_inf = <<parameters_gafs(output="rho_inf")>>
+#+end_src
 
-  <<parameters_rfa0>>
-
+#+NAME: MainBug
+#+begin_src python
   inp = Inputs()
   inp.engine = "intrinsicmodal"
   inp.fem.eig_type = "inputs"
@@ -1914,7 +1920,6 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   inp.driver.typeof = "intrinsic"
   inp.fem.num_modes = num_modes
   inp.driver.typeof = "intrinsic"
-
 #+end_src
 
 ** Manoeuvre
@@ -1922,7 +1927,9 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 !!Warning: label_gaf may have a solution with a free model (eao for instance) instead of a clamped, in which case it is not correct.
 
 #+NAME: ManoeuvreMain
-#+begin_src python 
+#+begin_src python
+  <<MainBugParameters>>
+  <<parameters_rfa0>>
   <<MainBug>>
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
@@ -1944,7 +1951,8 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
   inp.system.aero.Q0_rigid = f"./AERO/Qhx{label_gaf}.npy"
   inp.system.aero.qalpha = [[0.,  0., 0, 0, 0, 0],
-                            [0.,  4 * np.pi / 180, 0, 0, 0, 0]]
+                            [0.,  4 * np.pi / 180, 0, 0, 0, 0]] # interpolation: x=0 => qalpha=0
+                                                                # x=1 => qalpha = 4   
 #+end_src
 
 *** Run
@@ -1978,7 +1986,9 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 ** Gust
 #+NAME: GustMain
-#+begin_src python 
+#+begin_src python
+  <<MainBugParameters>>
+  <<parameters_rfa0>>
   <<MainBug>>
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
@@ -2112,26 +2122,56 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 #+end_src
 
+merge all vtu files 
 #+begin_src bash :results none :session shell4
   ~/Downloads/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/bin/pvpython paraview_3Ddynamic.py
 #+end_src
 
+make gust video
 #+begin_src bash :session shell4
   cd ./results1gust/paraview/merged
-  ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
+  # ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
+  ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 BugGust.mp4
   cd -
 #+end_src
 
+make gif
+#+begin_src bash :session shell4
+  cd ./results1gust/paraview/merged
+  ffmpeg -i BugGust.mp4  -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" BugGust.gif
+  cd -
+#+end_src
+
+
+#+begin_src bash :session shell4
+  cd ./results1gust/paraview/merged
+  # ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
+  ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 BugGust.mp4
+  cd -
+#+end_src
+
+
 #+RESULTS:
 : bash: cd: ./results1gust/paraview/merged: No such file or directory
+
+#+begin_src bash :session shell4
+  cd ./paraview/soldyn1/merged
+  # ffmpeg -y -framerate 20 -pattern_type glob -i '*.png' BugGustWrecked.gif
+  #ffmpeg -y -framerate 20 -pattern_type glob -i '*.png' -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" BugGustWrecked2.gif
+  ffmpeg -i BugGust_wrecked.mp4  -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" BugGustWrecked2.gif
+  cd -
+#+end_src
 
 ** Sharding
 
 *** Discrete loads
 Forces and moments at node 35 and 61
 
+#+NAME: DiscreteLoads
 #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard3*
-  <<ImportsFeniaxShard>>  
+  <<ImportsFeniaxShard>>
+  sol = "cao"
+  num_modes = 300
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
       "./results/DiscreteLoads1")
@@ -2143,15 +2183,28 @@ Forces and moments at node 35 and 61
   inp.system.solver_function = "newton"
   inp.system.solver_settings = dict(rtol=1e-6,
                                     atol=1e-6,
-                                    max_steps=50,
+                                    max_steps=100,
                                     norm="linalg_norm",
                                     kappa=0.01)
   inp.system.xloads.follower_forces = True
-  inp.system.xloads.x = [0, 1, 2, 3]
-  inp.system.t = [1, 2, 3]
-  l1 = 1e4
-  l2 = 2.5e4
-  l3 = 5e4
+  inp.system.xloads.x = [0, 1, 2, 3, 4, 5]
+  inp.system.t = [0.5, 1, 1.5, 2, 2.5, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5.]
+  lz1 = 5e4  * 0.5
+  lz2 = 9e4  * 0.5
+  lz3 = 2e5  * 0.5
+  lz4 = 4e5  * 0.5
+  lz5 = 5e5  * 0.5 
+  lx1 = lz1 * 5 
+  lx2 = lz2 * 5
+  lx3 = lz3 * 5
+  lx4 = lz4 * 5
+  lx5 = lz5 * 5
+  ly1 = lz1 * 7
+  ly2 = lz2 * 7
+  ly3 = lz3 * 7
+  ly4 = lz4 * 7
+  ly5 = lz5 * 7
+
   # rwing: 14-35
   # lwing: 40-61
                         # [[[node_i, component_j]..(total_forces per run)],...(parallel forces)[[node_i, component_j]..]]      
@@ -2161,56 +2214,117 @@ Forces and moments at node 35 and 61
                                       [[35, 3], [61, 3], [35, 0], [61, 0]],
                                       [[35, 4], [61, 4], [35, 0], [61, 0]],
                                       [[35, 5], [61, 5], [35, 0], [61, 0]],
-                                      [[35, 2], [61, 2], [35, 4], [61, 4]],
+                                      [[35, 0], [61, 0], [35, 4], [61, 4]],
                                       [[35, 2], [61, 2], [35, 4], [61, 4]],
                                       ],
                      # [[[0,...interpolation points]..(total_forces per run)],...(parallel forces)[[0,...]..]]
-                     follower_interpolation= [[[0., l1, l2, l3], 
-                                               [0., l1, l2, l3],
-                                               [0., 0., 0., 0.],
-                                               [0., 0., 0., 0.]], 
-                                              [[0., l1, l2, l3], 
-                                               [0., l1, l2, l3],
-                                               [0., 0., 0., 0.],
-                                               [0., 0., 0., 0.]], 
-                                              [[0., l1, l2, l3], 
-                                               [0., l1, l2, l3],
-                                               [0., 0., 0., 0.],
-                                               [0., 0., 0., 0.]], 
-                                              [[0., l1, l2, l3], 
-                                               [0., l1, l2, l3],
-                                               [0., 0., 0., 0.],
-                                               [0., 0., 0., 0.]], 
-                                              [[0., l1, l2, l3], 
-                                               [0., l1, l2, l3],
-                                               [0., 0., 0., 0.],
-                                               [0., 0., 0., 0.]], 
-                                              [[0., l1, l2, l3], 
-                                               [0., l1, l2, l3],
-                                               [0., 0., 0., 0.],
-                                               [0., 0., 0., 0.]], 
-                                              [[0., l1, l2, l3], 
-                                               [0., l1, l2, l3], 
-                                               [0., l1*alpha, l2*alpha, l3*alpha], 
-                                               [0., l1*alpha, l2*alpha, l3*alpha]
+                     follower_interpolation= [[[0., lx1, lx2, lx3, lx4, lx5], 
+                                               [0., lx1, lx2, lx3, lx4, lx5],
+                                               [0., 0., 0., 0., 0., 0.],
+                                               [0., 0., 0., 0., 0., 0.]], 
+                                              [[0., ly1, ly2, ly3, ly4, ly5], 
+                                               [0., ly1, ly2, ly3, ly4, ly5],
+                                               [0., 0., 0., 0., 0., 0.],
+                                               [0., 0., 0., 0., 0., 0.]], 
+                                              [[0., lz1, lz2, lz3, lz4, lz5], 
+                                               [0., lz1, lz2, lz3, lz4, lz5],
+                                               [0., 0., 0., 0., 0., 0.],
+                                               [0., 0., 0., 0., 0., 0.]], 
+                                              [[0., lz1, lz2, lz3, lz4, lz5], 
+                                               [0., lz1, lz2, lz3, lz4, lz5],
+                                               [0., 0., 0., 0., 0., 0.],
+                                               [0., 0., 0., 0., 0., 0.]], 
+                                              [[0., lx1, lx2, lx3, lx4, lx5], 
+                                               [0., lx1, lx2, lx3, lx4, lx5],
+                                               [0., 0., 0., 0., 0., 0.],
+                                               [0., 0., 0., 0., 0., 0.]], 
+                                              [[0., lx1, lx2, lx3, lx4, lx5], 
+                                               [0., lx1, lx2, lx3, lx4, lx5],
+                                               [0., 0., 0., 0., 0., 0.],
+                                               [0., 0., 0., 0., 0., 0.]], 
+                                              [[0., lz1, lz2, lz3, lz4, lz5], 
+                                               [0., lz1, lz2, lz3, lz4, lz5], 
+                                               [0., lx1, lx2, lx3, lx4, lx5], 
+                                               [0., lx1, lx2, lx3, lx4, lx5]
                                                ], 
-                                              [[0., l1, l2, l3], 
-                                               [0., l1, l2, l3], 
-                                               [0., l1*alpha, l2*alpha, l3*alpha], 
-                                               [0., l1*alpha, l2*alpha, l3*alpha]]
+                                              [[0., lz1, lz2, lz3, lz4, lz5], 
+                                               [0., lz1, lz2, lz3, lz4, lz5], 
+                                               [0., lx1, lx2, lx3, lx4, lx5], 
+                                               [0., lx1, lx2, lx3, lx4, lx5]]
                                               ]
                    )  
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
-
+  t1 = time.time()
   sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+  t2 = time.time()
+  print(f"Time DiscreteLoads: {t2 - t1}")
+#+end_src
 
+#+NAME: 3Dstatic
+#+begin_src python :session *pyshard3*
+  import pyvista as pv
+  import feniax.intrinsic.xloads as xloads
+  import importlib
+  importlib.reload(xloads)
+  import pathlib
+  import feniax.preprocessor.configuration as configuration
+  def glyph_forcefolllower(t, x, force, ra, Rab, scale=1, save_path=None, folder="", name="force", X=None, R0ab=None, plot=False):
+      ra = np.array(ra)
+      Rab = np.array(Rab)
+      if save_path is not None:
+          save_path = pathlib.Path(save_path)
+      for i, ti in enumerate(t):
+          _ffollower = np.array(xloads.force_pointfollower(t=ti, x=np.array(inp.system.xloads.x), force_follower=force, Rab=Rab[i]))
+          ffollower = _ffollower[:3].T / scale
+          mesh = pv.PolyData(ra[i].T)
+          mesh["vectors"] = ffollower 
+          # Create glyphs to represent vectors
+          glyphs = mesh.glyph() #orient="vectors", scale=False, factor=1e-3)
+          if save_path is not None:
+              path = save_path / f"{folder}_{i}.vtk"
+              path.mkdir(parents=True, exist_ok=True)
+              glyphs.save(path / f"{name}.vtk", binary=False)
+      if X is not None and R0ab is not None:
+          _ffollower = np.array(xloads.force_pointfollower(t=0, x=np.array(inp.system.xloads.x),
+                                                           force_follower=force, Rab=np.array(R0ab)))
+          ffollower = _ffollower[:3].T / scale
+          mesh = pv.PolyData(np.array(X))
+          mesh["vectors"] = ffollower 
+          # Create glyphs to represent vectors
+          glyphs = mesh.glyph() #orient="vectors", scale=False, factor=1e-3)
+          if save_path is not None:
+              path = save_path / f"{folder}_ref.vtk/"
+              path.mkdir(parents=True, exist_ok=True)
+              glyphs.save(path / f"{name}.vtk", binary=False)
+      if plot:
+          # Plot the vector field
+          plotter = pv.Plotter()
+          plotter.add_mesh(glyphs, color='red')
+          plotter.add_mesh(mesh)
+          plotter.show()
+
+  config =  configuration.Config(inp)
+  X=config.fem.X
+  for li in range(8):
+      f = sol.shards_sys1.points[li]
+      R0ab=sol.modes.C0ab
+      glyph_forcefolllower(t=inp.system.t,
+                           x = inp.system.xloads.x,
+                           force=f,
+                           ra=sol.staticsystem_sys1.ra[li],
+                           Rab=sol.staticsystem_sys1.Cab[li],
+                           scale=1e5*0.2,
+                           save_path=inp.driver.sol_path / f"paraview/L{li}/",
+                           folder="bug",
+                           X=X,
+                           R0ab=R0ab)      
 #+end_src
 
 **** Plot results
 
 #+NAME: 3Dstatic
-#+begin_src python :session *pyshard4*
+#+begin_src python :session *pyshard3*
   import feniax.plotools.reconstruction as reconstruction
   import feniax.preprocessor.configuration as configuration
   config =  configuration.Config(inp)
@@ -2221,10 +2335,10 @@ Forces and moments at node 35 and 61
           time=range(len(inp.system.t)),
           ra=sol.staticsystem_sys1.ra[i],
           Rab=sol.staticsystem_sys1.Cab[i],
-          R0ab=sol.staticsystem_sys1.modes.C0ab,
+          R0ab=sol.modes.C0ab,
           vtkpath=inp.driver.sol_path / f"paraview/L{i}/bug",
           plot_timeinterval=1,
-          plot_ref=True,
+          plot_ref=False,
           tolerance=1e-3,
           size_cards=8,
           rbe3s_full=False,
@@ -2232,12 +2346,80 @@ Forces and moments at node 35 and 61
 #+end_src
 
 
+#+begin_src python :tangle ./results/DiscreteLoads1/paraview/merge.py :session *pyshard3*
+
+  from paraview.simple import *
+  import pathlib
+
+  def merge_paraview(file_list, file_out):
+      # Create a reader for each file
+      #readers = [XMLUnstructuredGridReader(FileName=file) for file in file_list]
+      readers = [OpenDataFile(file) for file in file_list]
+      # Append the readers to merge the datasets
+      appended = AppendDatasets(Input=readers)
+
+      # Save the merged dataset
+      #writer = XMLUnstructuredGridWriter(Input=appended, FileName=file_out)
+      #writer.UpdatePipeline()
+      SaveData(file_out, proxy=appended)
+
+  paraview_files = ['CQUAD4.vtu',
+                    'CONM2.vtu',
+                    #'CBUSH.vtu',
+                    'RBE2.vtu',
+                    'CTRIA3.vtu',
+                    'RBE3.vtu',
+                    'CBAR.vtu',
+                    'force.vtk'
+                    ]
+
+  for i in range(8):
+      folder = pathlib.Path(f"./L{i}")
+      folder_out = folder / "merged"
+      folder_out.mkdir(exist_ok=True, parents=True)
+      for i, fi in enumerate(folder.glob("bug_*")):
+          if fi.is_dir() and (fi / paraview_files[0]).is_file():
+              print(fi)
+              name_len = len("bug_")
+              index = fi.name[name_len:].split('.')[0]
+              file_list = [str(fi / pvf) for pvf in paraview_files]
+              #print(file_list)
+              file_out = str(folder_out / f"bug_{index}.vtu")
+              # readers = [XMLUnstructuredGridReader(FileName=file) for file in file_list]
+
+              # # Append the readers to merge the datasets
+              # appended = AppendDatasets(Input=readers)
+              # print(file_out)
+              # # Save the merged dataset
+              # writer = XMLUnstructuredGridWriter(Input=appended, FileName=file_out)
+              # writer.UpdatePipeline()        
+              merge_paraview(file_list, file_out)
+
+#+end_src
+
+merge all vtu files 
+#+begin_src bash :results none :session shell1
+  # cd results/DiscreteLoads1/paraview/
+  ~/Downloads/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/bin/pvpython merge.py
+#+end_src
+one needs to go to paraview now and save images
+
+make gust video
+#+begin_src bash :session shell1
+  # ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
+  ffmpeg -y -framerate 1 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 BugGust.mp4
+  cd -
+#+end_src
+
 *** Discrete loads Montecarlo
+**** High loading
 #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
-  <<ImportsFeniaxShard>>  
+  <<ImportsFeniaxShard>>
+  sol = "cao"
+  num_modes = 50
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
-      "./results/DiscreteMC1")
+      f"./results/DiscreteMC1high{num_modes}")
 
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
@@ -2250,14 +2432,14 @@ Forces and moments at node 35 and 61
                                     norm="linalg_norm",
                                     kappa=0.01)
   inp.system.xloads.follower_forces = True
-  inp.system.xloads.x = [0, 1, 2, 3]
-  inp.system.t = [1, 2, 3]
+  inp.system.xloads.x = [0, 1, 2, 3, 4, 5]
+  inp.system.t = [1, 2, 3, 4, 5]
   # rwing: 14-35
   # lwing: 40-61
   points = []
   interpolation = []
-  _interpolation = [0., 1.e4, 1.2e4, 1.5e4] # 1.5e4, 2e4] #[0., 0., 0., 0.]
-  _interpolation_torsion = [0., 1e4, 2e4, 3e4] 
+  _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4] # 1.5e4, 2e4..4e4] #[0., 0., 0., 0.]
+  _interpolation_torsion = [i*2 for i in _interpolation] #[0., 4e3, 1e4, 2e4, 4e4, 5e4] 
   for ri,li in zip(range(14, 36),range(40,62)):
       points.append([ri, 2])
       points.append([ri, 4])
@@ -2272,12 +2454,12 @@ Forces and moments at node 35 and 61
 
   interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
   paths = 8*10
-  sigma0 = 0.15
+  sigma0 = 0.15  # percentage of mu for sigma
   mu = _interpolation[-1]
-  sigma = (1 + sigma0) * _interpolation[-1]
+  sigma = (sigma0) * _interpolation[-1]
   rand = np.random.normal(mu, sigma, paths)
   mu_torsion = _interpolation_torsion[-1]
-  sigma_torsion = (1 + sigma0) * _interpolation_torsion[-1]
+  sigma_torsion = (sigma0) * _interpolation_torsion[-1]
   rand_torsion = np.random.normal(mu_torsion, sigma_torsion, paths)
   follower_interpolation = []
   for i, ri in enumerate(rand):
@@ -2293,26 +2475,28 @@ Forces and moments at node 35 and 61
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
 
-  sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+  t1 = time.time()
+  sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+  t2 = time.time()
+  print(f"Time DiscreteLoads MC: {t2 - t1}")
+
   # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
   # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
 #+end_src
 
-**** Plot results
+***** Plot results
 
-#+NAME: 3Dstatic
 #+begin_src python :session *pyshard4*
   import feniax.plotools.reconstruction as reconstruction
   import feniax.preprocessor.configuration as configuration
   config =  configuration.Config(inp)
   rintrinsic, uintrinsic = reconstruction.rbf_based(
-
       nastran_bdf="./NASTRAN/BUG103.bdf",
           X=config.fem.X,
           time=range(len(inp.system.t)),
-          ra=sol.staticsystem_sys1.ra[0],
-          Rab=sol.staticsystem_sys1.Cab[0],
-          R0ab=sol.modes.C0ab,
+          ra=sol1.staticsystem_sys1.ra[0],
+          Rab=sol1.staticsystem_sys1.Cab[0],
+          R0ab=sol1.modes.C0ab,
           vtkpath=inp.driver.sol_path / "paraview/bug",
           plot_timeinterval=1,
           plot_ref=True,
@@ -2322,6 +2506,170 @@ Forces and moments at node 35 and 61
           ra_movie=None)
 #+end_src
 
+**** Small loading
+
+#+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
+  <<ImportsFeniaxShard>>
+  sol = "cao"
+  num_modes = 50
+  <<MainBug>>
+  inp.driver.sol_path = pathlib.Path(
+      "./results/DiscreteMC1small")
+
+  inp.simulation.typeof = "single"
+  inp.system.name = "s1"
+  inp.system.solution = "static"
+  inp.system.solver_library = "diffrax"
+  inp.system.solver_function = "newton"
+  inp.system.solver_settings = dict(rtol=1e-6,
+                                    atol=1e-6,
+                                    max_steps=50,
+                                    norm="linalg_norm",
+                                    kappa=0.01)
+  inp.system.xloads.follower_forces = True
+  inp.system.xloads.x = [0, 1, 2, 3, 4, 5]
+  inp.system.t = [1, 2, 3, 4, 5]
+  # rwing: 14-35
+  # lwing: 40-61
+  points = []
+  interpolation = []
+  _interpolationsmall = [i*1e-2 for i in _interpolation] 
+  _interpolationsmall_torsion = [i*1e-2 for i in _interpolation_torsion]
+  for ri,li in zip(range(14, 36),range(40,62)):
+      points.append([ri, 2])
+      points.append([ri, 4])
+      points.append([li, 2])
+      points.append([li, 4])
+  for i, _ in enumerate(range(len(points))):
+
+      if i % 2 == 0:
+          interpolation.append(_interpolationsmall)
+      else:
+          interpolation.append(_interpolationsmall_torsion)
+
+  interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
+  paths = 8*10
+  sigma0 = 0.15  # percentage of mu for sigma
+  mu = _interpolationsmall[-1]
+  sigma = (sigma0) * _interpolationsmall[-1]
+  rand = np.random.normal(mu, sigma, paths)
+  mu_torsion = _interpolationsmall_torsion[-1]
+  sigma_torsion = (sigma0) * _interpolationsmall_torsion[-1]
+  rand_torsion = np.random.normal(mu_torsion, sigma_torsion, paths)
+  follower_interpolation = []
+  for i, ri in enumerate(rand):
+      interpolationrand = np.copy(interpolation)
+      interpolationrand[::2, -1] = ri
+      interpolationrand[1::2, -1] = rand_torsion[i]
+      follower_interpolation.append(interpolationrand)
+  #follower_interpolation = [interpolation * ri for ri in rand]
+  follower_points = [points]*paths
+  inputforces = dict(follower_points=follower_points,
+                     follower_interpolation=follower_interpolation
+                     )
+  inp.system.shard = dict(input_type="pointforces",
+                          inputs=inputforces)
+
+  sol2 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+  # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
+  # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
+#+end_src
+
+**** Very Small loading
+ #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
+   <<ImportsFeniaxShard>>
+   sol = "cao"
+   num_modes = 50
+   <<MainBug>>
+   inp.driver.sol_path = pathlib.Path(
+       "./results/DiscreteMC1verysmall")
+
+   inp.simulation.typeof = "single"
+   inp.system.name = "s1"
+   inp.system.solution = "static"
+   inp.system.solver_library = "diffrax"
+   inp.system.solver_function = "newton"
+   inp.system.solver_settings = dict(rtol=1e-6,
+                                     atol=1e-6,
+                                     max_steps=50,
+                                     norm="linalg_norm",
+                                     kappa=0.01)
+   inp.system.xloads.follower_forces = True
+   inp.system.xloads.x = [0, 1, 2, 3, 4, 5]
+   inp.system.t = [1, 2, 3, 4, 5]
+   # rwing: 14-35
+   # lwing: 40-61
+   points = []
+   interpolation = []
+   _interpolationverysmall = [i*1e-3 for i in _interpolation] 
+   _interpolationverysmall_torsion = [i*1e-3 for i in _interpolation_torsion]   
+
+   for ri,li in zip(range(14, 36),range(40,62)):
+       points.append([ri, 2])
+       points.append([ri, 4])
+       points.append([li, 2])
+       points.append([li, 4])
+   for i, _ in enumerate(range(len(points))):
+
+       if i % 2 == 0:
+           interpolation.append(_interpolationverysmall)
+       else:
+           interpolation.append(_interpolationverysmall_torsion)
+
+   interpolation = np.array(interpolation)  # num_pointforces x num_interpolationverysmall  
+   paths = 8*10
+   sigma0 = 0.15  # percentage of mu for sigma
+   mu = _interpolationverysmall[-1]
+   sigma = (sigma0) * _interpolationverysmall[-1]
+   rand = np.random.normal(mu, sigma, paths)
+   mu_torsion = _interpolationverysmall_torsion[-1]
+   sigma_torsion = (sigma0) * _interpolationverysmall_torsion[-1]
+   rand_torsion = np.random.normal(mu_torsion, sigma_torsion, paths)
+   follower_interpolation = []
+   for i, ri in enumerate(rand):
+       interpolationrand = np.copy(interpolation)
+       interpolationrand[::2, -1] = ri
+       interpolationrand[1::2, -1] = rand_torsion[i]
+       follower_interpolation.append(interpolationrand)
+   #follower_interpolation = [interpolation * ri for ri in rand]
+   follower_points = [points]*paths
+   inputforces = dict(follower_points=follower_points,
+                      follower_interpolation=follower_interpolation
+                      )
+   inp.system.shard = dict(input_type="pointforces",
+                           inputs=inputforces)
+
+   sol3 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+   # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
+   # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
+#+end_src
+*** Statistics
+#+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
+  u_mean = np.mean(sol1.staticsystem_sys1.ra[:,-1,2,35] - config.fem.X[35,2])
+  u_std = np.std(sol1.staticsystem_sys1.ra[:,-1,2,35])
+
+  print(f"Mean displacement node 35: {u_mean}")
+  print(f"std displacement node 35: {u_std}") 
+  print(f"Ratio displacement node 35: {u_mean/u_std}") 
+  print("***************") 
+
+  u_mean2 = np.mean(sol2.staticsystem_sys1.ra[:,-1,2,35] - config.fem.X[35,2])
+  u_std2 = np.std(sol2.staticsystem_sys1.ra[:,-1,2,35])
+
+  print(f"Mean displacement node 35: {u_mean2}")
+  print(f"std displacement node 35: {u_std2}") 
+  print(f"ratio displacement node 35: {u_mean2/u_std2}") 
+  print("***************") 
+
+  u_mean3 = np.mean(sol3.staticsystem_sys1.ra[:,-1,2,35] - config.fem.X[35,2])
+  u_std3 = np.std(sol3.staticsystem_sys1.ra[:,-1,2,35])
+  
+  print(f"Mean displacement node 35: {u_mean3}")
+  print(f"std displacement node 35: {u_std3}") 
+  print(f"ratio displacement node 35: {u_mean3/u_std3}") 
+  print("***************") 
+  
+#+end_src
 
 *** Manoeuvre
 #+begin_src python :tangle ./settings_manoeuvre1shard.py :session *pyshard1*
