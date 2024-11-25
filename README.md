@@ -1,7 +1,12 @@
-# Finite Element models 4 Intrinsic Nonlinear Aeroelastics in JAX [FENIAX]
+# Finite Element models 4 Nonlinear Intrinsic Aeroelastics in JAX [FENIAX]
 
 FENIAX is an aeroelastic toolbox  written and parallelized in Python, which acts as a post-processor of commercial software such as MSC Nastran. 
 Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.
+Some of the key features of the software are:
+- Leveraging on the numerical library JAX and optimised algorithms, a high performance is achieved that leads to simulation times comparable to the linear counterparts on conventional platforms.
+- The software runs on modern hardware architectures such as GPUs in a addition to standard CPUs.
+- Algorithm differentiation (AD) of the aeroelastic response is available via JAX primitives. 
+- Concurrent simulations for multiple load cases are being developed.
 
 ## Installation
 
@@ -17,30 +22,56 @@ pip install .
 pip install -e .[all]
 ```
 
-- see setup.py file for the options available. Python 3.9+ is required but 3.11+ is recommended. 
+- see pyproject.toml file for the options available. Python 3.10+ is required.
+
+- To install with GPU support install jax first:
+```
+pip install -U "jax[cuda12]"
+pip install -e ".[all]"
+```
+
+
+### Python environment
+Although it is not necessary, it is recommended that the software is installed in its own environment. Options that have been tested out follow.
+
+- _Conda_:
+
 Although it is not necessary, If conda is being used as package manager, one can make a specific environment as,
 
 ```
 conda create -n feniax python=3.11
-conda activate fem4inas
+conda activate feniax
 ```
 
-- If pytest has been installed, check everything is OK by running the tests: 
+If pytest has been installed, check everything is OK by running the tests: 
 
 ```
-pytest tests
+pytest
 ```
 
 - Thus a typical installation would comprise of these 4 steps:
 ```
 conda create -n feniax.python=3.11
-conda activate fem4inas
+conda activate feniax
 pip install -e .[all]
-pytest tests
+pytest
 ```
+
+- _pyenv_: Navigate to the root directory and run the following: 
+
+```
+  pyenv install 3.11.10
+  pyenv virtualenv 3.11.10 feniax
+  pyenv local feniax
+  pip install -e .[all]
+  pytest
+```
+By setting pyenv local to feniax, every time one moves to feniax directory the environment is automatically activated
+
 
 ## Documentation
 Available at https://acea15.github.io/FENIAX/
+
 ## Simulation Examples
 
 The most relevant examples in the code base are shown here, these and more can be found in the folder `/examples`
@@ -91,3 +122,4 @@ They are also part of a large test suite that is integrated into the development
 
 #### Gust trimmed flight
 ![XRF1-Trim+gust](./docs/media/xrf1_trimgust_optimized.gif)
+
