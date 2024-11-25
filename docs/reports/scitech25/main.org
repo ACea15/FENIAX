@@ -1,5 +1,5 @@
 #+TITLE: Aircraft Nonlinear Dynamic Loads at Large Scale Using an Accelerator-Based Distributed Solution 
-#+TITLE: Massively parallel Aircraft nonlinear dynamic loads using an Accelerator-Based Distributed Solution
+#+TITLE: Concurrent Aircraft nonlinear dynamic loads using an Accelerator-Based Distributed Solution
 
 # #+TITLE: Parallelized Aeroelastic Solution for Large Scale Simulation of Nonlinear Dynamic Loads on Accelerators
 # #+AUTHOR: Alvaro Cea and Rafael Palacios
@@ -281,118 +281,15 @@ This paves the way for a broader multidisciplinary analysis where CFD-based aero
 
 * Results
 The following results show the strength of the approach in problems with large geometric nonlinearities, the ability to run on CPUs and GPUs and to automatically compute gradients of dynamic problems, and the edge in performance when compare with commercial toolbox Nastran.  
-** Automatic differentiation of the nonlinear dynamics of a representative wing
-This test case demonstrates the accuracy of the NMROM approach for  dynamic geometrically-nonlinear calculations and was first introduced in [[cite:&CEA2021b]]. The right wing of Fig. [[fig:SailPlane2]] is considered and dynamic nonlinear simulations are carried out and compared to MSC Nastran linear and nonlinear analysis (SOL 109 and 400, respectively) on the full FE model.
 
-#+NAME: fig:SailPlane2
-#+CAPTION: Representative plane structural and aerodynamic models
-#+ATTR_LATEX: :width 0.7\textwidth 
-[[file:figs_ext/SailPlaneRef.png]]
+** Structural static analysis
 
+*** Extremely large deformations under discrete loads
+*** Uncertainty quantification of nonlinear response
 
-A force is applied at the wing tip with a triangular loading profile, followed by a sudden release of the applied force to heavily excite the wing. The force profile is given in Fig. [[fig:ramping_load]]. The applied force is then \(f_{tip} = \alpha \times \textup{\pmb{f}}_{max} f(0.05, 4) = [-2\times 10^5, 0., 6\times 10^5]f(0.05, 4)\) where $\alpha$ has been set to $1$.
+** Steady manoeuvre loads
 
-#+NAME: fig:ramping_load
-#+CAPTION: Ramping load profile for dynamic simulation of representative wing 
-#+ATTR_LATEX: :width 0.6\textwidth 
-[[./figs_ext/ramping_load.pdf]]
-The dynamic response is presented in Fig. [[fig:wsp_3d]], where results have been normalised with the wing semi-span (28.8 m.). As expected, linear analysis over-predicts vertical displacements and does not capture displacements in the $x$ and $y$ directions. NMROMs were built with 5, 15, 30, 50 and 100 modes. A Runge-Kutta four is used to march the equation in time with time steps corresponding to the inverse of the largest eigenvalue in the NMROM, i.e. $dt = [27.34, 6.62, 2.49, 1.27, 0.575] \times 10^{-3}$ s. 
-
-#+NAME: fig:wsp_3d
-#+ATTR_LATEX: :width 1\textwidth 
-#+CAPTION: Span-normalised wing-tip displacements
-#+RESULTS: WSPsubplots
-[[file:figs/WSPsubplots.png]]
-
-The 3D shape of the model is retrieved and compared against the full nonlinear dynamic solution as illustrated in Fig. [[wsp_3d]] (Nastran solution in yellow and NMROM with 50 modes in blue). The times at positive and negative peaks are displayed. Even though a wing of such characteristics would never undergo this level of deformations, these results further support the viability of the methodology to solve highly geometrically nonlinear dynamics, on complex models and with minimal computational effort. 
-#+NAME: wsp_3d
-#+CAPTION: Snapshots of wing 3D dynamic response comparing NMROM (yellow) and NLFEM3D (blue)
-#+ATTR_LATEX: :width 1\textwidth 
-[[./figs_ext/WSP_3D-front.png]]
-
-Next we look at the differences of the dynamic simulations with the same metric employed above that now evolves in time. Integrator errors accumulate and discrepancies grow with time but still remain small. In fact the differences between Nastran and our dynamic solvers are comparable to the static example with the highest load (around the $5\times 10^{-5}$ mark), both cases inducing over 25\% percent deformations of the wing semi-span.
-
-#+NAME: WSP_error
-#+CAPTION: L-2 norm per node differences between Nastran full FE solution and NMROM with 50 modes
-#+ATTR_LATEX: :width 0.7\textwidth 
-#+RESULTS: WSP_error
-[[file:figs/WSP_error.png]]
-
-An impressive reduction of computational time is achieved by our solvers as highlighted in Table [[table:WSP_times]]. The nonlinear response of the full model in Nastran took 1 hour 22 minutes, which is over two orders of magnitude slower than the NMROM with 50 modes resolution, which proved very accurate. The significant increase in computational effort when moving from a solution with 50 modes to 100 modes is due to various factors: vectorised operations are limited and the quadratic nonlinearities ultimately lead to O($N_m^3$) algorithms; the time-step needs to be decreased for the Runge-Kutta integration to remain stable; the additional overheads that come with saving and moving larger tensors, from the modal shapes, the cubic modal couplings, to the system states (note times shown account for all the steps from start to end of the simulation, including saving all the data for postprocessing).
-
-#+NAME: table:WSP_times
-#+CAPTION: Computational times representative wing dynamic solution
-#+ATTR_LATEX: :center t
-#+RESULTS: WSP_times
-|          | NMROM (modes: 5, 15, 30, 50, 100) | NASTRAN 400 | NASTRAN 109 |
-|----------+-----------------------------------+-------------+-------------|
-| Time [s] | 2.79, 2.92, 4.85, 7.14, 155.3     |        4920 |        33.6 |
-
-We move now to one of the main highlights of this work, i.e. the ability to compute gradients via automatic differentiation in geometrically nonlinear dynamic problems. The maximum root loads occurring in a wing subjected to dynamic loads is a good test case as it can be a critical metric in sizing the aircraft wings, especially high-aspect ratio ones. Thus we look at the variation of the maximum z-component of the vertical internal forces as a function of \(\alpha\) in the loading profile of Fig. [[fig:ramping_load]]. Effectively, the slope of the loading increases with \(\alpha\). Table [[table:AD_WSP]] shows the derivatives computed using FD with $\epsilon=10^{-4}$ and AD in reverse-mode on the example with 50 modes resolution. In this case the FD needed tweaking of $\epsilon$ while application of AD was straight forward with no need for checkpoints and took around three times the speed of a single calculation. 
-
-#+NAME: table:AD_WSP
-#+CAPTION: Automatic differentiation in dynamic problem
-#+ATTR_LATEX: :center t
-| $\alpha$ | $f(\alpha)$ [KN/m]   | $f'(\alpha)$ (AD)     | $f'(\alpha)$ (FD)     |
-|----------+----------------------+-----------------------+-----------------------|
-|      0.5 | $1723.2 \times 10^3$ | $3587.71 \times 10^3$ | $3587.77 \times 10^3$ |
-|      1.0 | $3624.4 \times 10^3$ | $3735.26 \times 10^3$ | $3735.11 \times 10^3$ |
-|      1.5 | $5608.3 \times 10^3$ | $3957.81 \times 10^3$ | $3958.31 \times 10^3$ |
-
-** Accelerator benchmark on a very flexible free flying structure
-This example exemplifies the ability of our solvers to turn a generic linear free-free finite-element model into a fully nonlinear solution that accounts for the rigid-body dynamics coupled with large elastic deformations, which has already been presented in [[cite:&PALACIOS2019]]. The novelties introduced herein are the new optimised implementation that can run on accelerators and the approach to recover the full 3D state from the reduced model.
-The beam version of this structure was first studied by Simo and Vu-Quoc [[cite:&SIMO1988]] and has served to verify several implementations of nonlinear beam dynamics with rigid body motions [[cite:&HESSE2014]].
-A straight structure of constant square cross section (side = 3, wall thickness = 3/10) is built consisting of 784 shell elements linked to 50 spanwise nodes via interpolation elements as depicted in Fig. [[fig:FFS]] together with the material properties and two types of loading: firstly, a dead-force in the x-direction and dead-moment in the z-direction that yield a planar motion in the x-y plane; and secondly, the addition of a moment in the y-direction which produces a three dimensional motion.
-
-#+NAME: fig:FFS
-#+CAPTION: FFS geometry, material properties and load cases
-#+ATTR_LATEX: :width 0.7\textwidth 
-[[file:figs_ext/ffbw10.pdf]]
-
-The free-flying evolution of the 3D model is shown in Fig. [[fig:FFB_2D]] for the planar motion and Fig. [[fig:FFB_3D]] for the loads giving rise to the full 3D deformations. It worth remarking the later motion also exhibits large torsional deformations which are combined with the also large bending displacements and rigid-body modes.
-
-#+NAME: fig:FFB_2D
-#+CAPTION: Free-flying structure in the 2D plane
-#+ATTR_LATEX: :width 0.8\textwidth 
-[[file:figs_ext/FFB_2D2.pdf]]
-
-
-#+NAME: fig:FFB_3D
-#+CAPTION: Free-flying structure in the 3D plane
-#+ATTR_LATEX: :width 1.\textwidth 
-[[file:figs_ext/FFB_3Dt.pdf]]
-
-
-Because the applied load is a dead force we can track the position of the center-of-gravity (Cg) analytically as a verification exercise. Furthermore, the highly nonlinear nature of this problem makes it a good example to showcase the strength of accelerators for large problems and to gain insights as to when it might be better to deploy the codes in standard CPUs instead. Therefore we perform a sweep with the number of modes kept in the solution from 50 to 300, which determines the size of the system to be solved. The full modal basis is employed at 300 modes and due to the nonlinear cubic term this entails operations of the order of $O(10^7)$ at every time step of the solution, making it a good case for accelerators. The increase in the number of modes also restricts the incremental time step used in the explicit solver to preserve stability. Table [[table:FFB_times]] shows both computational time and Cg error for the planar case and in two scenarios: linking  the integration time-step to the largest eigenvalue $\lambda$ in the solution $dt=\lambda^{-0.5}$; and fixing it to $dt=10^{-3}$.
-Computations have been carried out in AMD EPYC 7742 CPU processors and Nvidia GPU RTX 6000 at the Imperial College cluster.
-
-# time steps = 0.001, 0.0028, 0.0061
-
-#+NAME: table:FFB_times
-#+CAPTION: FFB computational times and Cg error
-#+ATTR_LATEX: :center t
-| Arch/Nmodes         | 50M        | 100M        | 150M       | 200M       | 250M       | 300M         |
-|---------------------+------------+-------------+------------+------------+------------+--------------|
-| CPU HPC (time/err)  | 7/1.3e-1   | 9.3/5.7e-2  | 34/2.2e-2  | 79/2e-3    | 474/5.3e-4 | 1869/2.54e-5 |
-| GPU HPC (var. dt)   | 9.9/1.3e-1 | 10.4/5.7e-2 | 14/2.2e-2  | 22/2e-3    | 38/5.3e-4  | 111/2.54e-5  |
-|---------------------+------------+-------------+------------+------------+------------+--------------|
-| CPU HPC (time/err)  | 42/2.1e-2  | 184/1.2e-2  | 287/5.6e-3 | 421/7.2e-4 | 893/2.7e-4 | 1869/2.54e-5 |
-| GPU HPC (const. dt) | 58/2.1e-2  | 65/1.2e-2   | 67/5.6e-3  | 76/7.2e-4  | 94/2.7e-4  | 111/2.54e-5  |
-|---------------------+------------+-------------+------------+------------+------------+--------------|
-
-Fig. [[fig:FFBtimes2]] and [[fig:FFBerror2]] illustrate the times and error results in the table for the second case with fixed time step. The gain in performance from the GPU is is more impressive the larger the system to solve, and for the full modal basis the CPU takes more than 31 minutes versus the less than 2 minutes in the GPU. Computational times in the 3D problem are similar and the error on the Cg position is slightly higher: for the 300 modes, the error is $6.9e-5$ versus the $2.54e-5$ of the planar case.  
-
-#+NAME: fig:FFBtimes2
-#+CAPTION: Performance CPU vs GPU comparison in free-flying structure 
-#+ATTR_LATEX: :width 0.5\textwidth 
-#+RESULTS: FFBtimes2
-[[file:figs/FFBtimes2.png]]
-
-#+NAME: fig:FFBerror2
-#+CAPTION: Error metric Cg position for planar case
-#+ATTR_LATEX: :width 0.5\textwidth 
-#+RESULTS: FFBerror2
-[[file:figs/FFBerror2.png]]
+** Dynamic loads at large scale
 
 
 * Further work
