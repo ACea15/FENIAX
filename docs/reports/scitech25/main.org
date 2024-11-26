@@ -1,5 +1,5 @@
-#+TITLE: Aircraft Nonlinear Dynamic Loads at Large Scale Using an Accelerator-Based Distributed Solution 
-#+TITLE: Concurrent Aircraft nonlinear dynamic loads using an Accelerator-Based Distributed Solution
+# #+TITLE: Aircraft Nonlinear Dynamic Loads at Large Scale Using an Accelerator-Based Distributed Solution 
+#+TITLE: Nonlinear Aircraft Loads at Large Scale Using an Accelerator-Based Concurrent Solution
 
 # #+TITLE: Parallelized Aeroelastic Solution for Large Scale Simulation of Nonlinear Dynamic Loads on Accelerators
 # #+AUTHOR: Alvaro Cea and Rafael Palacios
@@ -49,6 +49,19 @@
 #+LATEX_HEADER: \newcommand{\AIC}{\bs{\mathcal{A}}}
 
 :END:
+
+#+begin_abstract
+A novel methodology is presented in this paper for the structural and aeroelastic analysis of large engineering systems with slender components, such as aircraft.
+Leveraging on the numerical library JAX, a nonlinear formulation based on velocities and strains enables a highly vectorised codebase that is especially suitable for the integration of aerodynamic loads which naturally appear as follower forces. On top of that, JAX automatic differentiation capabilities lead to a differentiable software that can be embedded into broader multidisciplinary frameworks. 
+The general solution starts from a linear Finite-Element (FE) model of arbitrary complexity, on which a structural model order reduction is performed. A nonlinear description of the reduced model follows, with the corresponding reconstruction of the full 3D dynamics. Both highly accurate and efficient solutions for representative aircraft models are shown. An extensive verification has been carried out by comparison with MSC Nastran full-FE linear and nonlinear solutions.
+Furthermore the nonlinear gust response of an industrial configuration with over half a million degrees-of-freedom is computed, and it is faster than its frequency-based, linear equivalent as implemented by the commercial package. Therefore this could be harnessed by aircraft loads engineers to add geometrically nonlinear effects to their existing workflows at no extra computational effort.
+Finally, automatic differentiation on both static and dynamic problems is validated against finite-differences, which combined with a near real-time performance of the solvers opens new possibilities for aeroelastic studies and design optimisation.
+
+We propose a non-intrusive framework to enhance complex FE structural and aeroelastic models with geometric nonlinearities -including follower aerodynamic forces, geometric stiffening of the structure and shortening effects-, and the ability to perform time-domain dynamic analysis in near-real time. 
+
+Bring parallelisation on distributed accelerators into our solution process, thus applying the state-of-the-art techniques in used for the large problems in deep-learning. Combined with our already fast simulations times, this could allow the prediction of those sizing aeroelastic loads that include thousands of cases in commercial aircraft, the computation of their gradients with respect to design variables, with geometrically nonlinear effects accounted for, and at such performance that the framework could be integrated into a larger multidisciplinary optimization.
+
+#+end_abstract
 
 
 * House keeping  :noexport: 
@@ -171,40 +184,36 @@ As highlighted in cite:&LIVNE2018, formulations that include nonlinear effects s
 This is also the case for more radical configurations that may or may not exhibit high flexibility but whose aeroelastic behaviour is more uncertain.
 A more holistic approach to the design also increases the complexity of the processes exponentially, and the trade-offs and cost-benefit analysis may not be possible until robust computational tools are in-place to simulate the different assumptions.
  Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations cite:&Kier2017, as it considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitively expensive computational times. 
-Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above.
+Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above. 
+
 Those previous considerations set the goals for our previous work [[cite:&CEA2023;&CEA2024]]: 1) to be able to perform geometrically nonlinear aeroelastic analysis, 2) to work with generic FEMs in a non-intrusive manner, and 3) to achieve a computational efficiency that is equivalent to present linear methods (if not faster).
 \\
+
 In this work we explore the latest advances on accelerator's parallelisation and how to integrate them into our solution process to enable large scale aeroelastic simulations under geometrically nonlinear assumptions.
 Specifically, we set out to characterise the dynamics of highly flexible aircraft in response to the very large envelopes of in-flight loads encountered in the certification process. 
 In our latest developments we have leveraged the numerical library JAX cite:&jax2018github to build a new simulation environment for time-domain nonlinear aeroelastic analysis that achieves two orders of magnitude speed-ups with respect to standard implementations [[cite:&CEA2024]],  is suitable for modern hardware architectures such as GPUs [[cite:&ALVAROCEA2024]], and that is also capable of computing derivatives via algorithmic differentiation [[cite:&ALVAROCEA2024a]]. The power of JAX for scientific computation has been proved recently in fluid dynamics cite:&BEZGIN2023 and solid mechanics cite:&XUE2023 applications. 
 We want to go one step further by adding parallelisation and distributed computational capabilities to the codebase to tackle the very demanding task of calculating load envelopes while introducing new physics to account for the large displacements and rotations ultra-high-aspect-ratio wings undergo. 
 In this multi-process environment, a Single Program Multiple Data (SPMD) paradigm is employed with the main computation spanning as many devices as available in the cluster and performing collective operations to communicate between devices. 
-By addressing in one program a substantial part of scenarios during flight (manoeuvres and gust responses at different velocities and altitudes, and for a range of mass cases and configurations), we will be able to produce the critical loading characteristics of the aircraft at a fraction of time. Moreover, the  boundaries of these critical cases will be differentiated using the AD, providing gradients for optimization studies as well as additional insights to the designer.  
-A representative configuration of a high-aspect-ratio aircraft is going to be studied and verification against MSC Nastran will be shown for the linear cases. Afterwards an assessment of geometrically nonlinear effects for trim, manoeuvre and gust loads will be carried out.   
-This application of modern hardware architectures to aircraft nonlinear load analysis is novel and could potentially be introduced inside current industrial processes. 
+By addressing in one program a substantial part of scenarios during flight (manoeuvres and gust responses at different velocities and altitudes, and for a range of mass cases and configurations), we will be able to produce the critical loading characteristics of the aircraft at a fraction of time. Moreover, as future work we aim to differentiate the boundaries of these critical cases  using AD, thereby providing gradients for optimization studies as well as additional insights to the designer.  
 
-* Theory and implementation
+A representative configuration of an ultra-high-aspect-ratio aircraft is studied under various loading scenarios that have been parallelised, namely structural static loads, manoeuvre cases for varying flow conditions and dynamic loads with multiple gusts run concurrently. This application of modern hardware architectures to aircraft nonlinear load analysis is novel and could potentially be introduced inside current industrial processes. 
+The paper is organised as follows: [[Theory and implementation]]
+[[Results]]
+
+[[Conclusions]]
+
+* Theoretical and computational background
 In this section we briefly describe the backbone theory of the proposed methods for nonlinear aeroelastic modelling as continuation of the work in [[cite:&CEA2021b;&CEA2023]]. A summary of the main formulation and its integration into an aeroelastic framework are presented next, along with some implementation details. 
-We start with a global FE model of the airframe as illustrated in Fig. [[workflow]].
 
-#+NAME: workflow
-#+CAPTION: Workflow of the solution process
-#+ATTR_LATEX: :width 1.\textwidth 
-[[./figs_ext/workflowAIAA3.pdf]]
-It is common practice for large-scale aeroelastic models to feature lumped masses along a load path axis that are attached to their corresponding cross-sectional nodes via interpolation elements.
+The approach is built on a non-intrusive reduction order process combined with a nonlinear description of the dominant dimension in slender structures. It achieves a nonlinear representation of linear aeroelastic models of arbitrary complexity in a very efficient manner and without losing the characteristics of the linear model.  
+
+
+** Nonlinear aeroelastic system
+The approach is built on a non-intrusive reduction order process combined with a nonlinear description of the dominant dimension in slender structures. It achieves a nonlinear representation of linear aeroelastic models of arbitrary complexity in a very efficient manner and without losing the characteristics of the linear model.  
+
 With those characteristics a reduced model can be obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$ (Step 1 in Fig. [[workflow]]). The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$ (Step 2, however, $\pmb \Phi_0$ is defined on the master nodes and the figure shows the full reconstructed modal shapes). The dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written in material velocities, $\bm x_1$,  and stresses, $\bm x_2$, as state variables. A modal expansion of those is a key step in seamlessly mapping the global FEM into the nonlinear description. The intrinsic modes are introduced and the projection of the state variables is such  $\pmb{x}_1 = \pmb{\Phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\Phi}_2\pmb{q}_2$.
-A resulting set of four intrinsic modal shapes are directly linked to the displacement modal shapes coming from the global FEM:
 
-1. Velocity modes, $\bm \Phi_1 = \bm \Phi_0$, which follow after the linear relation with displacements: $\bm x_1 = \dot{\bm x}_0$, $\bm \Phi_1 \bm q_1 = \bm \Phi_0 \dot{\bm q}_0$.
-
-2. Momentum modes, $\bm \Psi_1 = \bm M_a \bm \Phi_0$. Note from this definition that, for arbitrary distributed mass models, the dynamic condensation technique will produce a fully-populated mass matrix, and the various couplings will be captured after the matrix multiplication. 
-
-3. Force/moment modes, $\bm \Phi_2 = \mathcal{S}(\bm K_a \bm \Phi_0)$, represent the internal stress resultants in the structure as the sum, $\mathcal{S}$, along the main load-paths of equilibrium forces and moments produced by the modal deformations.
-   # Note that if $\bm{\mathfrak{f}} = \bm K_a \bm \Phi_0|^{1-3}$ are the internal forces and $\bm{\mathfrak{m}} = \bm K_a \bm \Phi_0|^{3-6}$ the internal moments, the moments produced by the internal forces also need to be taken into account: $\bm \Phi_2|^{3-6} = \mathcal{S}(\bm{\mathfrak{m}} + \bm{r}_{\frac{1}{2}} \times \bm{\mathfrak{f}})$.
-   Results are presented in the mid-point between nodes because more information cannot be extracted in terms of linear stresses from one node to the other.
-   
-4. Strain modes, $\bm \Psi_2 = -\bm \Phi_{0d} + \pmb{E}^{\top}\bm \Phi_{0m}$, with $\bm \Phi_{0d}$ the approximate derivative along $s$: $\bm \Phi_{0d}^i = \frac{\bm \Phi_0^{i+1} - \bm \Phi_0^{i}}{\Delta s_i}$; and $\bm \Phi_{0m} = \frac{\bm \Phi_0^{i+1} + \bm \Phi_0^{i}}{2}$, the displacement modal shape in between nodes. $\pmb{E}^{\top}$ is a constant matrix.
- After the intrinsic modes have been computed, a dynamic system is obtained after a Galerkin projection of the equations of motion \cite[Ch. 8]{PALACIOS2023}:
+After the intrinsic modes have been computed, a dynamic system is obtained after a Galerkin projection of the equations of motion \cite[Ch. 8]{PALACIOS2023}:
 
 \begin{equation}
 \label{eq2:sol_qs}
@@ -213,7 +222,8 @@ A resulting set of four intrinsic modal shapes are directly linked to the displa
 \dot{\pmb{q}}_{2} &= -\pmb{\omega} \odot \pmb{q}_{1} + \pmb{\Gamma}_{2}^{\top} \pmb{:} \left( \pmb{q}_{2} \otimes  \pmb{q}_{1} \right)
 \end{split}
 \end{equation}
-where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product[fn:1: The double dot product represents a contraction of the last two indexes of the first tensor with the first two indexes of the second one; it however needs further specification as two alternative definitions can be adopted and here we opt for the following: \(\pmb{a} \pmb{:} \pmb{b} = a_{..ij} b_{ij..} \). This has implications on the definition of the transpose of \(\bm{\Gamma}_2 \) in the second equation since for high order tensors multiple transpose operators can be defined. Consistency is achieved by ensuring the dot product operation satisfies the following: \( \pmb{x} \cdot \left(\bm{\Gamma} \pmb{:} \left( \pmb{y} \otimes \pmb{z} \right)  \right) = \pmb{y} \cdot \left(\bm{\Gamma}^{\top} \pmb{:} \left(\pmb{z} \otimes \pmb{x} \right)  \right) \), which leads to the transpose of the third order tensor, \( \bm{\Gamma} = \Gamma^{ijk} \), as \( \bm{\Gamma}^{\top} = \Gamma^{jki} \).].
+where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product.
+
 The form of the equations in compact tensorial notation is in fact the way they have been implemented and vectorised. This description is geometrically-exact, with nonlinearities encapsulated in the modal couplings of the third-order tensors $\pmb{\Gamma}_{1}$ and $\pmb{\Gamma}_{2}$ (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation). $\pmb{\eta}$ is the modal projection of the external forcing terms. They are computed as integrals along the load-paths as an inner product: $\langle \pmb{u},\pmb{v}  \rangle = \int_\Gamma \pmb{u}^\top \pmb{v} ds$, for any $\pmb{u}\in\mathbb{R}^6$ and $\pmb{v}\in\mathbb{R}^6$: 
 # ?? messy in tensorial notation (computation is via vmap)
 \begin{align}\label{eq2:gammas12}
@@ -221,12 +231,7 @@ The form of the equations in compact tensorial notation is in fact the way they 
 \Gamma_{2}^{ijk} & = \langle \pmb{\Phi}_{1i}, \lo_2(\pmb{\Phi}_{2j})\pmb{\Psi}_{2k}\rangle,  \\
 \eta_{i} & = \langle \pmb{\Phi}_{1i}, \pmb{f}_1\rangle  \nonumber
 \end{align}
-with $\lo_1$ and $\lo_2$ linear operators. The solution of Eqs. \ref{eq2:sol_qs} correspond to Step 3 in Fig. [[workflow]], and can be extended to form the full aeroelastic system with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{v}_g$. Control states can also be included [[cite:&CEA2021a]], but they are not necessary for this work. For a set of reduced frequencies and a given Mach number, the DLM (or a higher fidelity aerodynamic method) yields the Generalised Aerodynamic Forces (GAFs). The current implementation uses Roger's rational function approximation to those GAFs [[cite:&Roger1977]], which results in the follower modal forces:
-
-# \begin{equation}
-# \lo_1 (\pmb{x}_1)  = \begin{bmatrix} \tilde{\pmb{\omega}} & \pmb{0} \\ \tilde{\pmb{\ve}} & \tilde{\pmb{\omega}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}
-# \lo_2 (\pmb{x}_2)=  \begin{bmatrix} \pmb{0} & \tilde{\pmb{f}} \\ \tilde{\pmb{f}} & \tilde{\pmb{m}} \end{bmatrix} \hspace{0.5cm} ; \hspace{0.5cm}  \pmb{\mathsf{E}}= \lo_1 \begin{pmatrix} \begin{bmatrix} 1 \\ \bm 0_5 \end{bmatrix} \end{pmatrix}
-# \end{equation}
+with $\lo_1$ and $\lo_2$ linear operators.  and can be extended to form the full aeroelastic system with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{v}_g$. Control states can also be included [[cite:&CEA2021a]], but they are not necessary for this work. For a set of reduced frequencies and a given Mach number, the DLM (or a higher fidelity aerodynamic method) yields the Generalised Aerodynamic Forces (GAFs). The current implementation uses Roger's rational function approximation to those GAFs [[cite:&Roger1977]], which results in the follower modal forces:
 
 \begin{equation}\label{eq3:eta_full}
 \begin{split}
@@ -250,60 +255,106 @@ The coupling of the structure and aerodynamic equations combined with the aerody
 in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$.
 The aerodynamic matrices $\hat{\bm{\mathcal{A}}}_{p+2}$ have also been scaled accordingly.
 \\
-
-In the second instance, the rotation and position in the inertial reference system are calculated by integration of strains along the domain, as in the Frenet-Serret formulas of differential geometry. Following definition of strains and curvatures, 
-\begin{equation}\label{eq2:urecover_s}
-\begin{split}
-\pmb{R}_{ab}^{\prime} &= \pmb{R}_{ab}\tilde{\pmb{k}} \\
-\pmb{r}_a'&=\pmb{R}_{ab}(\pmb{\gamma} + \pmb{e}_x)
-\end{split}
-\end{equation}
-Analytical solutions to Eq. \eqref{eq2:urecover_s} can be obtained when the strain is assumed constant between nodes and a piecewise constant integration is carried out, as is the case in the current implementation. If the beam path is discretized in n+1 points, strain and curvatures are defined in the mid-points of the spatial discretization (n in total). $\gamma_n$ and $\kappa_n$ are constant within the segment $s_{n-1} \leq s \leq s_n$, and the position and rotation matrix after integration are
-\begin{equation}\label{eq:strain_integration}
-\begin{split}
-\bm{R}_{ab}(s) &= \bm{R}_{ab}(s_{n-1})\pmb{\mathcal{H}}^0(\bm{k},s) \\
-\bm{r}_a(s) &= \bm{r}_a(s_{n-1}) + \bm{R}_{ab}(s_{n-1})\pmb{\mathcal{H}}^1(\bm{k}, s)\left(\bm{e}_x+\bm{\gamma}_n\right) 
-\end{split}
-\end{equation}
-Where the operators $\pmb{\mathcal{H}}^0(\bm{k}, s)$ and $\pmb{\mathcal{H}}^1(\bm{k}, s)$ are obtained from integration of the exponential function as defined in \cite{Palacios2010}.
-# \begin{equation}
-# \begin{split}
-# \pmb{\mathcal{H}}^0(\bm{k},s) &= e^{\Delta\tilde{\bm{k}}} =\pmb I + \frac{\sin(\Delta \phi)}{\Delta{ \phi}}\Delta \tilde{\pmb\Psi}+ \frac{1-\cos(\Delta \phi)}{\Delta \phi^2}\Delta \tilde{\pmb\Psi}\Delta \tilde{\pmb\Psi}  \\
-# \pmb{\mathcal{H}}^1(\bm{k},s) &= \Delta s\left(\pmb I + \frac{1-\cos(\Delta \phi)}{\Delta \phi^2}\Delta \tilde{\pmb\Psi} + \frac{\Delta \phi -\sin(\Delta \phi)}{\Delta \phi^3}\Delta\tilde{\pmb\Psi}\Delta\tilde{\pmb\Psi} \right)  
-# \end{split}
-# \end{equation}
-# with $\Delta s = s- s_{n-1}$, $\Delta \pmb{\Psi} = \bm{k} \Delta s$ and $\Delta \phi = ||\Delta \pmb{\Psi}||$.
-Note that when position and rotations are recovered from strain integration, there is still one point that is either clamped or needs to be tracked from integration of its local velocity
-In the next section an optimized implementation of this algorithm is shown in JAX.
-\\
 Once the nonlinear solution of the condensed model is computed, the corresponding full 3D state is calculated via a two postprocessing steps: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model.
 This paves the way for a broader multidisciplinary analysis where CFD-based aerodynamic loading could be used for the calculation of the nonlinear static equilibrium, and also with the transfer of the full deformed state back to the original FE solver to study other phenomena such as local buckling. 
+
+** Computational implementation
+
+Bring parallelisation on distributed accelerators into our solution process, thus applying the state-of-the-art techniques in used for the large problems in deep-learning. Combined with our already fast simulations times, this could allow the prediction of those sizing aeroelastic loads that include thousands of cases in commercial aircraft, the computation of their gradients with respect to design variables, with geometrically nonlinear effects accounted for, and at such performance that the framework could be integrated into a larger multidisciplinary optimization.
+  
+One of the main contribution of this work is a new computational implementation that achieves accelerations of over 2 orders of magnitude with respect to its predecessor\footnote{Both the new implementation and the examples of this paper can be found at \url{https://github.com/ACea15/FENIAX}}. In addition, a highly modular, flexible architecture based on software design patterns has been put in place, which was further described in \cite{CEA2024}. Moreover, the resulting nonlinear aeroelastic framework is suitable for modern hardware architectures and able to compute sensitivities via algorithmic differentiation (AD), as will be demonstrated herein.
+The key enabler was moving from standard Python to a highly vectorised, JAX-based numerical implementation. JAX is a Python library designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. It combines XLA (accelerated linear algebra) and Autograd, the former being a compiler that optimises models for different hardware platforms, the latter is an Automatic Differentiation (AD) tool in Python.
+
+In JAX, you need to only specify how you want the input and output of your code to be partitioned, and the compiler will figure out how to: 1) partition everything inside; and 2) compile inter-device communications.
+
+The XLA compiler behind jit includes heuristics for optimizing computations across multiple devices. In the simplest of cases, those heuristics boil down to computation follows data.
+
+To demonstrate how auto-parallelization works in JAX, below is an example that uses a jax.jit()-decorated staged-out function: it’s a simple element-wise function, where the computation for each shard will be performed on the device associated with that shard, and the output is sharded in the same way:
+
+
+\begin{algorithm*}[h!]
+\DontPrintSemicolon
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\Input{Input file: settings.yaml; FE model: $\bm{K}_a$, $\bm{M}_a$, $\bm{X}_a$; Aerodynamic matrices: $\bm{\mathcal{A}}$}
+\Output{Nonlinear aeroelastic solution}
+\Begin{
+ \BlankLine
+$\bm{\phi}$, $\bm{\psi}$  $\longleftarrow$ modes($\bm{K}_a$, $\bm{M}_a$, $\bm{X}_a$) \Comment{Intrinsic modes: O($N_n^2 \times N_m$)}  \;
+$\bm{\Gamma}$  $\longleftarrow$ couplings($\bm{\phi}$, $\bm{\psi}$) \Comment{Nonlinear couplings O($N_n \times N_m^3$)} \;
+$\bm{q}$  $\longleftarrow$ system($\bm{\Gamma}$, $\bm{\mathcal{A}}$, $\bm{\phi}$, $\bm{X}_a$) \Comment{Modal coordinates: O($N_t \times N_m^3$)}  \;
+$\bm{X}_1$, $\bm{X}_{2}$, $\bm{X}_{3}$   $\longleftarrow$ ivars($\bm{q}$, $\bm{\phi}$, $\bm{\psi}$) \Comment{velocity/strain fields: O($N_t \times N_m$)} \;
+$\bm{r}_a$, $\bm{R}_{a}$   $\longleftarrow$ integration($\bm{X}_{3}$, $\bm{X}_a$) \Comment{Positional/rotational fields: O($N_f \times N_t \times N_n$)}  \;
+\BlankLine
+}
+\caption{Main components in solution process for parallel multiple load cases}
+\label{orgef66755}
+\end{algorithm*}
+
 
 * Results
 The following results show the strength of the approach in problems with large geometric nonlinearities, the ability to run on CPUs and GPUs and to automatically compute gradients of dynamic problems, and the edge in performance when compare with commercial toolbox Nastran.  
 
+The next step is to characterise the geometrically nonlinear aeroelastic response of the BUG High-Aspect-Ratio aircraft [[cite:&STODIECK2018a]] shown in Fig. [[fig:BUG]]. We aim to achieve the following points:
+
+#+NAME: fig:BUG
+#+CAPTION: BUG model main components
+#+ATTR_LATEX: :width 0.8\textwidth 
+[[file:figs_ext/BUGmodel2.png]]
+
 ** Structural static analysis
 
+#+NAME: fig:BUG_tip
+#+CAPTION: Loading scenario
+#+ATTR_LATEX: :width 0.8\textwidth 
+
+
 *** Extremely large deformations under discrete loads
+
+#+NAME: fig:BUG_tip
+#+CAPTION: Static equilibrium for tip loads
+#+ATTR_LATEX: :width 0.8\textwidth 
+
 *** Uncertainty quantification of nonlinear response
+
+#+NAME: fig:BUG_UQ
+#+CAPTION: Static equilibrium for load distribution, first and last loads
+#+ATTR_LATEX: :width 0.8\textwidth 
+
 
 ** Steady manoeuvre loads
 
+#+NAME: fig:BUG_manoeuvre
+#+CAPTION: Aeroelastic steady equilibrium for increasing angle of attack
+#+ATTR_LATEX: :width 0.8\textwidth 
+
 ** Dynamic loads at large scale
 
+#+NAME: fig:BUG_Gust
+#+CAPTION: Dynamic response to 1-cos gust excitation with  
+#+ATTR_LATEX: :width 0.8\textwidth 
 
-* Further work
-The next step is to characterise the geometrically nonlinear aeroelastic response of the BUG High-Aspect-Ratio aircraft [[cite:&STODIECK2018a]] shown in Fig. [[fig:bug]]. We aim to achieve the following points:
+
+* Conclusions
+A modal-based formulation has been enhanced with multiple load cases parallelism 
+data parallelism capabilities for Single-Program Multi-Data (SPMD) computations 
+
+parallel compu for the dynamics of flexible aircraft that accounts for both geometrically nonlinear deformations and rigid-body motions -as well as the nonlinear interaction between them-.
+
+evice parallelism for Single-Program Multi-Data (SPMD) code in JAX. SPMD is a parallelism technique where the same computation, such as the forward pass of a neural network, can be run on different input data (for example, different inputs in a batch) in parallel on different devices, such as several GPUs or Google TPUs.
+
+the numerical library JAX as the engine powering the computations.
+
+
+This has allowed time-domain computations in near real-time with two orders of magnitude speed-ups compared to conventional implementations.
+This has allowed time-domain computations in near real-time with two orders of magnitude speed-ups compared to conventional implementations.
+On all of these cases we have shown how the program running the computations can be deployed on standard CPUs but also on modern hardware architectures such as GPUs that can lead to performance gains of over 30 times faster.
+
+
 
 - Fine-tune the aeroelastic solvers to introduce an updating mechanism of the normal of the aerodynamic panels to account for the nonlinear effect around deformed configurations such as trimmed flight. 
 - Build manoeuvre and dynamic load envelopes that can also be differentiated via AD.
-- Bring parallelisation on distributed accelerators into our solution process, thus applying the state-of-the-art techniques in used for the large problems in deep-learning. Combined with our already fast simulations times, this could allow the prediction of those sizing aeroelastic loads that include thousands of cases in commercial aircraft, the computation of their gradients with respect to design variables, with geometrically nonlinear effects accounted for, and at such performance that the framework could be integrated into a larger multidisciplinary optimization.
-  
-#+NAME: fig:bug
-#+CAPTION: BUG static equilibrium 
-#+ATTR_LATEX: :width 0.8\textwidth 
-[[file:figs_ext/bug_model.pdf]]
-
+- 
 
 bibliographystyle:unsrt
 # bibliography:/home/acea/Documents/Engineering.bib
