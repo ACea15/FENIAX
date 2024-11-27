@@ -1391,8 +1391,8 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   import itertools
   sol = "eao"
   num_modes = 50
-  mach = 0.75
-  altitude = 7000 # meters
+  mach = 0.7
+  altitude = 10000 # meters
   Mach = str(mach).replace('.','_')
   machs = [mach]
   reduced_freqs = np.hstack([1e-6, np.linspace(1e-5,1e-1, 25),
@@ -1418,7 +1418,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   flutter_sett = dict()
   aero_sett = dict()
   label_dlm = "<<parameters_dlm(output="label_dlm")>>"
-  label_flow = f"F2"
+  label_flow = f"F3"
   label_gaf = f"D{label_dlm}{label_flow}S{sol}-{num_modes}"
   input_dict = dict(reduced_freqs=list(reduced_freqs), mach=mach, u_inf=u_inf, rho_inf=rho_inf)
   with open(f"./NASTRAN/GAFs/input_{label_flow}.json", "w") as fp:
@@ -1542,8 +1542,7 @@ TODO: add ASETs and check whether it affects the results
 *** Run Nastran
 Running Nastran using the tailored functions in run_nastra.sh which moves output files and checks for fatal errors.
 
-#+begin_src bash :session shell1 :results none :tangle P7_rungafs.sh
-  cd NASTRAN
+#+begin_src bash :session shell1 :results none :tangle P7_rungafs.sh :dir NASTRAN
   source run_nastran.sh
   run_nastran BUGgafs_<<parameters_gafs(output="sol")>>.bdf
   move_outputs BUGgafs_<<parameters_gafs(output="sol")>>.bdf              
@@ -1996,8 +1995,8 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
       inp.system.bc1 = 'free'
       inp.system.q0treatment = 1
   inp.system.solution = "dynamic"
-  inp.system.t1 = 1
-  inp.system.tn = 1001
+  inp.system.t1 = 2
+  inp.system.tn = 2501
   inp.system.solver_library = "runge_kutta"
   inp.system.solver_function = "ode"
   inp.system.solver_settings = dict(solver_name="rk4")
@@ -2009,8 +2008,8 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
   inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
   inp.system.aero.gust_profile = "mc"
-  inp.system.aero.gust.intensity = 10*2
-  inp.system.aero.gust.length = 100.
+  inp.system.aero.gust.intensity = 20
+  inp.system.aero.gust.length = 250.
   inp.system.aero.gust.step = 0.1
   inp.system.aero.gust.shift = 0.
   inp.system.aero.gust.panels_dihedral = f"./AERO/Dihedral_{label_dlm}.npy"
@@ -2022,7 +2021,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   <<ImportsFeniax>>
   <<GustMain>>
   inp.driver.sol_path = pathlib.Path(
-      f"./results/gust1_{sol}")
+      f"./results/gust2_{sol}")
 
   config =  configuration.Config(inp)
   sol1 = feniax.feniax_main.main(input_obj=config)
@@ -2043,7 +2042,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
                                #         dash=dash[i % 3])
                                
                                ),
-                          dict(xaxis_range=[0,1],yaxis_range=[0,5]))
+                          dict(xaxis_range=[0,2],yaxis_range=[0,5]))
   figname = f"./figs/try1.png"
   fig.write_image(figname, scale=1)
   fig.show()
@@ -2314,8 +2313,8 @@ Forces and moments at node 35 and 61
                            force=f,
                            ra=sol.staticsystem_sys1.ra[li],
                            Rab=sol.staticsystem_sys1.Cab[li],
-                           scale=1e5*0.2,
-                           save_path=inp.driver.sol_path / f"paraview/L{li}/",
+                           scale=1e4*4,
+                           save_path=inp.driver.sol_path / f"paraviewM{num_modes}/L{li}/",
                            folder="bug",
                            X=X,
                            R0ab=R0ab)      
@@ -2336,7 +2335,7 @@ Forces and moments at node 35 and 61
           ra=sol.staticsystem_sys1.ra[i],
           Rab=sol.staticsystem_sys1.Cab[i],
           R0ab=sol.modes.C0ab,
-          vtkpath=inp.driver.sol_path / f"paraview/L{i}/bug",
+          vtkpath=inp.driver.sol_path / f"paraviewM{num_modes}/L{i}/bug",
           plot_timeinterval=1,
           plot_ref=False,
           tolerance=1e-3,
@@ -2416,7 +2415,7 @@ make gust video
 #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
   <<ImportsFeniaxShard>>
   sol = "cao"
-  num_modes = 50
+  num_modes = 100
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
       f"./results/DiscreteMC1high{num_modes}")
@@ -2453,7 +2452,7 @@ make gust video
           interpolation.append(_interpolation_torsion)
 
   interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
-  paths = 8*10
+  paths = 160
   sigma0 = 0.15  # percentage of mu for sigma
   mu = _interpolation[-1]
   sigma = (sigma0) * _interpolation[-1]
@@ -2490,21 +2489,85 @@ make gust video
   import feniax.plotools.reconstruction as reconstruction
   import feniax.preprocessor.configuration as configuration
   config =  configuration.Config(inp)
-  rintrinsic, uintrinsic = reconstruction.rbf_based(
-      nastran_bdf="./NASTRAN/BUG103.bdf",
+  for li in [0, paths-1]:  
+      rintrinsic, uintrinsic = reconstruction.rbf_based(
+          nastran_bdf="./NASTRAN/BUG103.bdf",
           X=config.fem.X,
           time=range(len(inp.system.t)),
-          ra=sol1.staticsystem_sys1.ra[0],
-          Rab=sol1.staticsystem_sys1.Cab[0],
+          ra=sol1.staticsystem_sys1.ra[li],
+          Rab=sol1.staticsystem_sys1.Cab[li],
           R0ab=sol1.modes.C0ab,
-          vtkpath=inp.driver.sol_path / "paraview/bug",
+          vtkpath=inp.driver.sol_path / f"paraviewM{num_modes}/L{li}/bug",
           plot_timeinterval=1,
           plot_ref=True,
           tolerance=1e-3,
           size_cards=8,
           rbe3s_full=False,
-          ra_movie=None)
+          ra_movie=None
+      )
 #+end_src
+
+
+#+NAME: discrete loads
+#+begin_src python :session *pyshard4*
+  import pyvista as pv
+  import feniax.intrinsic.xloads as xloads
+  import importlib
+  importlib.reload(xloads)
+  import pathlib
+  import feniax.preprocessor.configuration as configuration
+  def glyph_forcefolllower(t, x, force, ra, Rab, scale=1, save_path=None, folder="", name="force", X=None, R0ab=None, plot=False):
+      ra = np.array(ra)
+      Rab = np.array(Rab)
+      if save_path is not None:
+          save_path = pathlib.Path(save_path)
+      for i, ti in enumerate(t):
+          _ffollower = np.array(xloads.force_pointfollower(t=ti, x=np.array(inp.system.xloads.x), force_follower=force, Rab=Rab[i]))
+          ffollower = _ffollower[:3].T / scale
+          mesh = pv.PolyData(ra[i].T)
+          mesh["vectors"] = ffollower 
+          # Create glyphs to represent vectors
+          glyphs = mesh.glyph() #orient="vectors", scale=False, factor=1e-3)
+          if save_path is not None:
+              path = save_path / f"{folder}_{i}.vtk"
+              path.mkdir(parents=True, exist_ok=True)
+              glyphs.save(path / f"{name}.vtk", binary=False)
+      if X is not None and R0ab is not None:
+          _ffollower = np.array(xloads.force_pointfollower(t=0, x=np.array(inp.system.xloads.x),
+                                                           force_follower=force, Rab=np.array(R0ab)))
+          ffollower = _ffollower[:3].T / scale
+          mesh = pv.PolyData(np.array(X))
+          mesh["vectors"] = ffollower 
+          # Create glyphs to represent vectors
+          glyphs = mesh.glyph() #orient="vectors", scale=False, factor=1e-3)
+          if save_path is not None:
+              path = save_path / f"{folder}_ref.vtk/"
+              path.mkdir(parents=True, exist_ok=True)
+              glyphs.save(path / f"{name}.vtk", binary=False)
+      if plot:
+          # Plot the vector field
+          plotter = pv.Plotter()
+          plotter.add_mesh(glyphs, color='red')
+          plotter.add_mesh(mesh)
+          plotter.show()
+
+  config =  configuration.Config(inp)
+  X=config.fem.X
+  for li in [0, paths-1]:
+      f = sol1.shards_sys1.points[li]
+      R0ab=sol1.modes.C0ab
+      glyph_forcefolllower(t=inp.system.t,
+                           x = inp.system.xloads.x,
+                           force=f,
+                           ra=sol1.staticsystem_sys1.ra[li],
+                           Rab=sol1.staticsystem_sys1.Cab[li],
+                           scale=1e4*0.5,
+                           save_path=inp.driver.sol_path / f"paraviewM{num_modes}/L{li}/",
+                           folder="bug",
+                           X=X,
+                           R0ab=R0ab)      
+#+end_src
+
 
 **** Small loading
 
