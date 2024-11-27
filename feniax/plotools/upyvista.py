@@ -42,31 +42,31 @@ def render_mesh(points, lines):
 
     return mesh
 
-import pyvista as pv
+# import pyvista as pv
 
-points = np.random.rand(100, 3)
-mesh = pv.PolyData(points)
-mesh.plot(point_size=10, style='points', color='tan')
+# points = np.random.rand(100, 3)
+# mesh = pv.PolyData(points)
+# mesh.plot(point_size=10, style='points', color='tan')
 
-polydata = pv.PolyData(points)
+# polydata = pv.PolyData(points)
 
-# Add the vectors as point data
-polydata["vectors"] = vectors
+# # Add the vectors as point data
+# polydata["vectors"] = vectors
 
-# Create glyphs to represent vectors
-glyphs = polydata.glyph(orient="vectors", scale=False, factor=0.3)
+# # Create glyphs to represent vectors
+# glyphs = polydata.glyph(orient="vectors", scale=False, factor=0.3)
 
-# Plot the vector field
-plotter = pv.Plotter()
-plotter.add_mesh(glyphs, color='red')
-plotter.add_mesh(polydata, color='blue', point_size=5, render_points_as_spheres=True)
-plotter.show()
+# # Plot the vector field
+# plotter = pv.Plotter()
+# plotter.add_mesh(glyphs, color='red')
+# plotter.add_mesh(polydata, color='blue', point_size=5, render_points_as_spheres=True)
+# plotter.show()
 
-mesh = pyvista.PolyData(v, cells)
-mesh.save(folder_path / f"collocation_{k}.ply", binary=False)
+# mesh = pyvista.PolyData(v, cells)
+# mesh.save(folder_path / f"collocation_{k}.ply", binary=False)
     
 
-X=config.fem.X,
-time=range(len(inp.system.t)),
-ra=sol.staticsystem_sys1.ra[i],
-Rab=sol.staticsystem_sys1.Cab[i],
+# X=config.fem.X,
+# time=range(len(inp.system.t)),
+# ra=sol.staticsystem_sys1.ra[i],
+# Rab=sol.staticsystem_sys1.Cab[i],

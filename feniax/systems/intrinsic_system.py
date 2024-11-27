@@ -38,6 +38,27 @@ def recover_fields(q1, q2, tn, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config):
 
     return X1, X2, X3, ra, Cab
 
+@partial(jax.jit, static_argnames=["config", "tn", "dt"])
+def recover_fieldsRB(q1, q2, tn, dt, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config):
+    ra_n0 = X[0]
+    Rab_n0 = jnp.eye(3)
+    X1 = postprocess.compute_velocities(phi1l, q1)
+
+    X2 = postprocess.compute_internalforces(phi2l, q2)
+    X3 = postprocess.compute_strains(psi2l, q2)
+    
+    Cab0, ra0 = postprocess.integrate_node0(
+        X1[:, :, 0], dt, ra_n0, Rab_n0
+    )
+    Cab, ra = postprocess.integrate_strains_t(
+        ra0,
+        Cab0,
+        X3,
+        X_xdelta,
+        C0ab,
+        config,
+    )
+    return X1, X2, X3, ra, Cab
 
 @partial(jax.jit, static_argnames=["config", "tn"])
 def recover_staticfields(q2, tn, X, phi2l, psi2l, X_xdelta, C0ab, config):

@@ -90,3 +90,46 @@ def arg_20g21(
             )
 
             )
+
+def arg_20g546(
+    sol: solution.IntrinsicSolution,
+    system: intrinsicmodal.Dsystem,
+    fem: intrinsicmodal.Dfem,
+    *args,
+    **kwargs,
+):
+    
+    eta_0 = kwargs["eta_0"]
+    phi1l = sol.data.modes.phi1l
+    phi2l = sol.data.modes.phi2l
+    psi2l = sol.data.modes.psi2l
+    X_xdelta = sol.data.modes.X_xdelta
+    omega = sol.data.modes.omega
+    X_xdelta = sol.data.modes.X_xdelta
+    C0ab = sol.data.modes.C0ab
+    gamma1 = sol.data.couplings.gamma1    
+    gamma2 = sol.data.couplings.gamma2    
+    states = system.states
+    c_ref = system.aero.c_ref
+    num_modes = fem.num_modes
+    num_poles = system.aero.num_poles
+    poles = system.aero.poles
+    A = system.aero.A
+    D = system.aero.D
+    xgust = system.aero.gust.time
+    collocation_x = system.aero.gust.collocation_points[:,0]
+    return (phi1l, phi2l, psi2l, X_xdelta, C0ab, A, D, c_ref,
+            (
+                eta_0,
+                gamma1,
+                gamma2,
+                omega,
+                phi1l,
+                states,
+                poles,        
+                num_modes,
+                num_poles,
+                xgust,
+            )
+
+            )
