@@ -108,18 +108,4 @@ They are also part of a large test suite that is integrated into the development
 #### 3D dynamics
 ![Free flying structure 3D](./docs/media/SimoFFB3D_optimized.gif)
 
-### Industrial Aircraft model
-!!! success
-    Linear response validated with MSC Nastran linear aeroelastic solution (sol 146)
-
-#### Gust clamped model
-
-[Notebook](./docs/documentation/examples/XRF1/xrf1_nb.md)
-
-
-![XRF1-gustclamped](./docs/media/xrf1_gust_optimized.gif)
-
-
-#### Gust trimmed flight
-![XRF1-Trim+gust](./docs/media/xrf1_trimgust_optimized.gif)
 
