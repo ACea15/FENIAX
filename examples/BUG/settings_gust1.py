@@ -8,9 +8,9 @@ from feniax.preprocessor.inputs import Inputs
 import feniax.feniax_main
 import feniax.plotools.reconstruction as reconstruction
 label_dlm = "d1c7"
-sol = "cao"
-label_gaf = "Dd1c7F3Scao-50"
-num_modes = 50
+sol = "eao"
+label_gaf = "Dd1c7F3Seao-100"
+num_modes = 100
 c_ref = 3.0
 u_inf = 209.62786434059765
 rho_inf = 0.41275511341689247
