@@ -38,7 +38,6 @@
   python P10_rogerRFA.py  
 #+end_src
 
-
 * Modal Solution
 :PROPERTIES:
 :header-args: :tangle ./P1_modalsolution.py :session *pybug* :comments yes
@@ -54,7 +53,7 @@
   import numpy as np
 
   num_modes = 100
-  sol = "cao" # {c,e}{a,f}{o,p}
+  sol = "eao" # {c,e}{a,f}{o,p}
   WRITE_GRID= True
   WRITE_ASETS= True
   ASET_MODEL_FULL = False  # ASETS at every CONM2 of half the size (full model gives
@@ -1389,8 +1388,8 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   from feniax.utils import standard_atmosphere
   import pickle
   import itertools
-  sol = "cao"
-  num_modes = 50
+  sol = "eao"
+  num_modes = 100
   mach = 0.7
   altitude = 10000 # meters
   Mach = str(mach).replace('.','_')
@@ -1401,7 +1400,6 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   reduced_freqs = np.hstack([1e-5, np.linspace(1e-4, 1, 100)
                              ])
   #reduced_freqs = np.geomspace(1e-5, 1, 100, endpoint=True)
-  num_modes = 50
   flutter_id = 9010
   mach_fact = machs
   kv_fact = [200., 220.]
@@ -1892,6 +1890,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 #+NAME: MainBug
 #+begin_src python
+  device_count = 1
   inp = Inputs()
   inp.engine = "intrinsicmodal"
   inp.fem.eig_type = "inputs"
@@ -1920,6 +1919,59 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   inp.fem.num_modes = num_modes
   inp.driver.typeof = "intrinsic"
 #+end_src
+** Discrete loads
+Forces and moments at node 35 and 61
+
+#+NAME: DiscreteLoads
+#+begin_src python :tangle settings_DiscreteLoads.py 
+  <<ImportsFeniax>>
+  sol = "cao"
+  num_modes = 300
+  <<MainBug>>
+  inp.driver.sol_path = pathlib.Path(
+      "./results/DiscreteLoads1")
+
+  inp.simulation.typeof = "single"
+  inp.system.name = "s1"
+  inp.system.solution = "static"
+  inp.system.solver_library = "diffrax"
+  inp.system.solver_function = "newton"
+  inp.system.solver_settings = dict(rtol=1e-6,
+                                    atol=1e-6,
+                                    max_steps=100,
+                                    norm="linalg_norm",
+                                    kappa=0.01)
+  inp.system.xloads.follower_forces = True
+  inp.system.xloads.x = [0, 1, 2, 3, 4, 5]
+  inp.system.t = [0.5, 1, 1.5, 2, 2.5, 3, 3.25, 3.5, 3.75, 4, 4.25, 4.5, 4.75, 5.]
+  lz1 = 5e4  * 0.5
+  lz2 = 9e4  * 0.5
+  lz3 = 2e5  * 0.5
+  lz4 = 4e5  * 0.5
+  lz5 = 5e5  * 0.5 
+  lx1 = lz1 * 5 
+  lx2 = lz2 * 5
+  lx3 = lz3 * 5
+  lx4 = lz4 * 5
+  lx5 = lz5 * 5
+  ly1 = lz1 * 7
+  ly2 = lz2 * 7
+  ly3 = lz3 * 7
+  ly4 = lz4 * 7
+  ly5 = lz5 * 7
+
+  # rwing: 14-35
+  # lwing: 40-61
+  inp.system.xloads.follower_points = [[35, 2], [61, 2], [35, 4], [61, 4]]
+  inp.system.xloads.follower_interpolation = [[0., lz1, lz2, lz3, lz4, lz5], 
+                                               [0., lz1, lz2, lz3, lz4, lz5], 
+                                               [0., lx1, lx2, lx3, lx4, lx5], 
+                                               [0., lx1, lx2, lx3, lx4, lx5]]
+  t1 = time.time()
+  sol = feniax.feniax_main.main(input_dict=inp)
+  t2 = time.time()
+  print(f"Time DiscreteLoads: {t2 - t1}")
+#+end_src
 
 ** Manoeuvre
 
@@ -1942,7 +1994,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
                                              kappa=0.01)
   inp.system.xloads.modalaero_forces = True
   inp.system.xloads.x = [0.,1.]
-  inp.system.t = [1/3, 2/3, 1]#[0.25, 0.5, 0.75, 1]
+  inp.system.t = [1/6, 1/3, 1/2, 2/3, 5/6, 1]#[0.25, 0.5, 0.75, 1]
   inp.system.aero.c_ref = c_ref
   inp.system.aero.u_inf = u_inf # a0(7000) =312
   inp.system.aero.rho_inf = rho_inf
@@ -2167,13 +2219,13 @@ make gif
 Forces and moments at node 35 and 61
 
 #+NAME: DiscreteLoads
-#+begin_src python :tangle settings_DiscreteLoads.py :session *pyshard3*
+#+begin_src python :tangle settings_ShardDiscreteLoads.py :session *pyshard3*
   <<ImportsFeniaxShard>>
   sol = "cao"
   num_modes = 300
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
-      "./results/DiscreteLoads1")
+      "./results/ShardDiscreteLoads1")
 
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
@@ -2255,7 +2307,7 @@ Forces and moments at node 35 and 61
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
   t1 = time.time()
-  sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+  sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
   t2 = time.time()
   print(f"Time DiscreteLoads: {t2 - t1}")
 #+end_src
@@ -2342,7 +2394,7 @@ Forces and moments at node 35 and 61
           ra_movie=None)
 #+end_src
 
-#+begin_src python :tangle ./results/DiscreteLoads1/paraview/merge.py :session *pyshard3*
+#+begin_src python :tangle ./results/ShardDiscreteLoads1/paraview/merge.py :session *pyshard3*
 
   from paraview.simple import *
   import pathlib
@@ -2395,7 +2447,7 @@ Forces and moments at node 35 and 61
 
 merge all vtu files 
 #+begin_src bash :results none :session shell1
-  # cd results/DiscreteLoads1/paraview/
+  # cd results/ShardDiscreteLoads1/paraview/
   ~/Downloads/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/bin/pvpython merge.py
 #+end_src
 one needs to go to paraview now and save images
@@ -2472,7 +2524,7 @@ make gust video
                           inputs=inputforces)
 
   t1 = time.time()
-  sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+  sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
   t2 = time.time()
   print(f"Time DiscreteLoads MC: {t2 - t1}")
 
@@ -2629,7 +2681,7 @@ make gust video
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
 
-  sol2 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+  sol2 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
   # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
   # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
 #+end_src
@@ -2698,7 +2750,7 @@ make gust video
    inp.system.shard = dict(input_type="pointforces",
                            inputs=inputforces)
 
-   sol3 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+   sol3 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
    # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
    # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
 #+end_src
@@ -2738,12 +2790,11 @@ make gust video
   #rho_rand = np.random.normal(0.6, 0.6*0.15, 500)
   inp.driver.sol_path = pathlib.Path(
       "./results/manoeuvre1Shard")  
-  inputflow = dict(u_inf=np.linspace(190, 240, 8),
-                   rho_inf=np.linspace(0.41, 0.81, 8))
+  inputflow = dict(u_inf=np.linspace(167.7, 251.6, 16),
+                   rho_inf=np.linspace(0.33, 0.5, 16))
   inp.system.shard = dict(input_type="steadyalpha",
                           inputs=inputflow)
-  num_gpus = 8
-  solstatic1shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
+  solstatic1shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
 #+end_src
 
 *** Gust
@@ -2763,8 +2814,7 @@ for local testing:
   inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
 
-  num_gpus = 8
-  solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
+  solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
 #+end_src
 
 #+begin_src python :tangle settings_gust1shard.py :session *pyshard2*
@@ -2782,8 +2832,7 @@ for local testing:
   inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
 
-  num_gpus = 8
-  solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
+  solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
 #+end_src
 
 
