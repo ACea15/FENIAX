@@ -1890,7 +1890,6 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 #+NAME: MainBug
 #+begin_src python
-  device_count = 1
   inp = Inputs()
   inp.engine = "intrinsicmodal"
   inp.fem.eig_type = "inputs"
@@ -2013,7 +2012,11 @@ Forces and moments at node 35 and 61
   inp.driver.sol_path = pathlib.Path(
       "./results/manoeuvre2")  
   config =  configuration.Config(inp)
+  t1 = time.time()
   solstatic1 = feniax.feniax_main.main(input_obj=config)
+  t2 = time.time()
+  print(f"Time Manoeuvre: {t2 - t1}")
+  
 #+end_src
 
 *** Plot
@@ -2048,7 +2051,7 @@ Forces and moments at node 35 and 61
       inp.system.q0treatment = 1
   inp.system.solution = "dynamic"
   inp.system.t1 = 2
-  inp.system.tn = 2501
+  inp.system.tn = 2001
   inp.system.solver_library = "runge_kutta"
   inp.system.solver_function = "ode"
   inp.system.solver_settings = dict(solver_name="rk4")
@@ -2076,7 +2079,11 @@ Forces and moments at node 35 and 61
       f"./results/gust2_{sol}")
 
   config =  configuration.Config(inp)
+  t1 = time.time()  
   sol1 = feniax.feniax_main.main(input_obj=config)
+  t2 = time.time()
+  print(f"Time gust: {t2 - t1}")
+
 #+end_src
 
 *** Plot
@@ -2464,7 +2471,9 @@ make gust video
 #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
   <<ImportsFeniaxShard>>
   sol = "cao"
+  paths = 8*200
   num_modes = 100
+  device_count = 1
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
       f"./results/DiscreteMC1high{num_modes}")
@@ -2501,7 +2510,6 @@ make gust video
           interpolation.append(_interpolation_torsion)
 
   interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
-  paths = 8*200
   sigma0 = 0.15  # percentage of mu for sigma
   mu = _interpolation[-1]
   sigma = (sigma0) * _interpolation[-1]
@@ -2622,7 +2630,6 @@ make gust video
 #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
   <<ImportsFeniaxShard>>
   sol = "cao"
-  num_modes = 50
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
       "./results/DiscreteMC1small")
@@ -2659,7 +2666,6 @@ make gust video
           interpolation.append(_interpolationsmall_torsion)
 
   interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
-  paths = 8*10
   sigma0 = 0.15  # percentage of mu for sigma
   mu = _interpolationsmall[-1]
   sigma = (sigma0) * _interpolationsmall[-1]
@@ -2680,8 +2686,10 @@ make gust video
                      )
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
-
+  t1 = time.time()
   sol2 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+  t2 = time.time()
+  print(f"Time DiscreteLoads MC: {t2 - t1}")
   # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
   # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
 #+end_src
@@ -2690,10 +2698,9 @@ make gust video
  #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
    <<ImportsFeniaxShard>>
    sol = "cao"
-   num_modes = 50
    <<MainBug>>
    inp.driver.sol_path = pathlib.Path(
-       "./results/DiscreteMC1verysmall")
+        "./results/DiscreteMC1verysmall")
 
    inp.simulation.typeof = "single"
    inp.system.name = "s1"
@@ -2728,7 +2735,6 @@ make gust video
            interpolation.append(_interpolationverysmall_torsion)
 
    interpolation = np.array(interpolation)  # num_pointforces x num_interpolationverysmall  
-   paths = 8*10
    sigma0 = 0.15  # percentage of mu for sigma
    mu = _interpolationverysmall[-1]
    sigma = (sigma0) * _interpolationverysmall[-1]
@@ -2749,10 +2755,13 @@ make gust video
                       )
    inp.system.shard = dict(input_type="pointforces",
                            inputs=inputforces)
-
+   t1 = time.time()
    sol3 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-   # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
-   # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
+   t2 = time.time()
+   print(f"Time DiscreteLoads MC: {t2 - t1}")
+
+    # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
+    # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
 #+end_src
 **** Statistics
 #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
@@ -2786,7 +2795,7 @@ make gust video
 #+begin_src python :tangle ./settings_manoeuvre1shard.py :session *pyshard1*
   <<ImportsFeniaxShard>>
   <<ManoeuvreMain>>
-  
+  device_count = 8
   #rho_rand = np.random.normal(0.6, 0.6*0.15, 500)
   inp.driver.sol_path = pathlib.Path(
       "./results/manoeuvre1Shard")  
@@ -2794,7 +2803,11 @@ make gust video
                    rho_inf=np.linspace(0.33, 0.5, 16))
   inp.system.shard = dict(input_type="steadyalpha",
                           inputs=inputflow)
+  t1 = time.time()  
   solstatic1shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+  t2 = time.time()
+  print(f"Time Manoeuvre: {t2 - t1}")
+  
 #+end_src
 
 *** Gust
@@ -2802,19 +2815,22 @@ for local testing:
 #+begin_src python  :session *pyshard2*
   <<ImportsFeniaxShard>>
   <<GustMain>>
-
+  device_count = 4
   inp.driver.sol_path = pathlib.Path(
       f"./results/gust2_{sol}Shard")
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
-  inputflow = dict(length=[25, 75, 150, 240], #np.linspace(25,265,13),
-                   intensity= [1, 10, 15, 20] #np.linspace(0.1, 3, 11),
-                   #rho_inf = [0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+  inputflow = dict(length=np.linspace(25,265,8),
+                   intensity= np.linspace(0.1, 20, 8),
+                   rho_inf = np.linspace(0.3, 0.48, 8)
                  )
   inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
-
+  t1 = time.time()  
   solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+  t2 = time.time()
+  print(f"Time SHARD Gust: {t2 - t1}")
+  
 #+end_src
 
 #+begin_src python :tangle settings_gust1shard.py :session *pyshard2*

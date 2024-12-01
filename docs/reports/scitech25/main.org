@@ -35,8 +35,8 @@
 :END:
 
 #+begin_abstract
-We have extended our newly developed framework for geometrically nonlinear aeroelastic analysis in modern hardware architectures such as GPUs with parallelisation capabilities of multiple load cases. This allows us to perform uncertainty quantification studies and build load envelopes of static and dynamic cases in computational times of only seconds or minutes. 
-We explore a high-aspect-ratio-wing aircraft configuration, showing the ability of the solvers to capture nonlinear effects for loadings inducing large deformations and also the importance these effects when studying modern aircraft concepts. Discrete, manoeuvre and gust loads are assessed for multiple flow and parametric conditions running concurrently. 
+We have extended our newly developed framework for geometrically nonlinear aeroelastic analysis  with parallelisation capabilities of multiple load cases. The software can be deployed in modern hardware architectures and the parallelisation has been tested both on CPUs and GPUs. This allows us to perform uncertainty quantification studies and build load envelopes of static and dynamic cases in computational times of only seconds or minutes. 
+We explore a high-aspect-ratio-wing aircraft configuration, showing the ability of the solvers to capture nonlinear effects for loadings inducing large deformations and also the importance of these effects when studying modern aircraft concepts. Discrete, manoeuvre and gust loads are assessed for multiple flow and parametric conditions running concurrently. 
 #+end_abstract
 
 
@@ -159,7 +159,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
 ** Helper functions
 
 * Introduction
-Aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines.
+Aeroelastic analysis are expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines. 
 As highlighted in cite:&LIVNE2018, formulations that include nonlinear effects should be developed that not only enhance current modelling techniques  but that also allow rapid data turnaround for the industry. Real-time, hardware-in-the-loop flight simulators would also benefit of actively controlled, deformable airplane models. This leads to a more nonlinear landscape, where the overall aerodynamic performance needs to be calculated around a flight shape with large deformations cite:&GRAY2021; the input for efficient control laws account for the steady state and nonlinear couplings cite:&Artola2021; and the loads ultimately sizing the wings are atmospheric disturbances computed in the time-domain cite:&CESNIK2014a.
 This is also the case for more radical configurations that may or may not exhibit high flexibility but whose aeroelastic behaviour is more uncertain.
 A more holistic approach to the design also increases the complexity of the processes exponentially, and the trade-offs and cost-benefit analysis may not be possible until robust computational tools are in-place to simulate the different assumptions.
@@ -185,16 +185,8 @@ The key features of the formulation are:
 - Differentiation and sensitivity analysis: using JAX algorithmic differentiation toolbox, the entire process, from inputs to aeroelastic outputs can be differentiated [[cite:&CEA2024a]].
 
 ** Nonlinear aeroelastic system
-Given a general GFEM as those currently employed a reduced model is obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$. A projection of the state variables, $\pmb{x}_1 = \pmb{\Phi}_1\pmb{q}_1$ and $\pmb{x}_2 = \pmb{\Phi}_2\pmb{q}_2$, a Galerkin projection of the equations of motion leads to system of equations that we will be solving. 
-
-After the intrinsic modes have been computed, a dynamic system is obtained after a Galerkin projection of the equations of motion \cite[Ch. 8]{PALACIOS2023}:
-
-
-where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product.
-
- and can be extended to form the full aeroelastic system with gravity forces, $\bm{\eta}_g$, aerodynamic forces and gust disturbances, $\bm{v}_g$. Control states can also be included [[cite:&CEA2021a]], but they are not necessary for this work.
-
-Aerodynamic forces are obtained via Generalised Aerodynamic Forces (GAFs) using a panel-based DLM solver and Roger's rational function approximation [[cite:&Roger1977]] to bring the forces to the time domain, resulting in modal forces as:
+Given a general GFEM, a reduced model is obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$. A projection of the state variables, velocities $\pmb{x}_1 = \pmb{\Phi}_1\pmb{q}_1$ and stresses $\pmb{x}_2 = \pmb{\Phi}_2\pmb{q}_2$, and a Galerkin projection of the equations of motion leads to the system of ODEs that is solved in time domain. 
+Aerodynamic forces are obtained via Generalised Aerodynamic Forces (GAFs) using a panel-based DLM solver and Roger's rational function approximation[[cite:&Roger1977]] to bring the forces to the time domain, resulting in a modal force component given as:
 
 \begin{equation}\label{eq3:eta_full}
 \begin{split}
@@ -203,8 +195,7 @@ Aerodynamic forces are obtained via Generalised Aerodynamic Forces (GAFs) using 
 \end{split}
 \end{equation}
 Where the $\pmb{\mathcal{A}}_is$ are real matrices, $c$ is the reference chord, $\tfrac12\rho_\infty U_\infty^2$, $\pmb{\lambda}_p$ the aerodynamic states and $N_p$ the number of lags. Note these forces naturally follow the structure given the formulation is written in the material frame of reference. 
-The coupling of the structure and aerodynamic equations combined with the aerodynamic lags gives the final ODE system: 
-
+The coupling of the structure and aerodynamic equations combined with the aerodynamic lags, gravity forces, $\bm{\eta}_g$, and gust disturbances, $\bm{v}_g$, gives the final ODE system: 
 \begin{equation}
 \label{eq2:sol_qs}
 \begin{split}
@@ -215,9 +206,10 @@ The coupling of the structure and aerodynamic equations combined with the aerody
                        -\frac{2U_\infty\gamma_p}{c}\bm{\lambda}_{p}
 \end{split}
 \end{equation}
-in this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$.
+where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ is the tensor product operation and $\pmb{:}$ is the double dot product.
+In this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$.
 The aerodynamic matrices $\hat{\bm{\mathcal{A}}}_{p+2}$ have also been scaled accordingly.
- The nonlinearities in the system are encapsulated in the modal couplings of the third-order tensors  (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation).
+ The nonlinearities in the system are encapsulated in the modal couplings of the third-order tensors $\pmb{\Gamma}_1$ and $\pmb{\Gamma}_2$  (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation).
 \\
 Once the nonlinear solution of the condensed model is computed, the corresponding full 3D state is calculated via two postprocessing steps: firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model.
 This paves the way for a broader multidisciplinary analysis where CFD-based aerodynamic loading could be used for the calculation of the nonlinear static equilibrium, and also with the transfer of the full deformed state back to the original FE solver to study other phenomena such as local buckling. 
@@ -326,7 +318,7 @@ $\bm{r}_a$, $\bm{R}_{a}$   $\longleftarrow$ integration($\bm{X}_{3}$, $\bm{X}_a$
 \caption{Main components in solution process}
 \end{algorithm}
 
-
+2-level parallelisation....
 
 * Results
 In this section we show the main strengths of our solvers to: a) run a representative aircraft model undergoing very large nonlinear displacements; b) leverage on modern hardware architectures and a parallelisation across devices to unlock problems such as quantifying the uncertainties in the nonlinear response given a loading field that is not fully determinate; c) build load envelopes of the dynamic response to atmospheric disturbances.   
@@ -343,6 +335,15 @@ A modal analysis is first showing
 One of the main strengths  
 
 Structural and aeroelastic static simulations follow, all solved via a Newton-Raphson solver with tolerance of $10^{-6}$, as well as an assessment of the aircraft dynamics in response to a gust. 
+
+Model name:             Intel(R) Xeon(R) Silver 4108 CPU @ 1.80GHz
+w    CPU family:           6
+    Model:                85
+    Thread(s) per core:   2
+    Core(s) per socket:   8
+    Socket(s):            1
+    Stepping:             4
+  
 ** Structural static analysis
 Two  exercises are studied to assess two levels of parallisation in the current implementation. That corresponding to the operations within a single solution, and that of multiple load cases. 
 Firstly, a tip load is prescribed as to induce very large deformations such that a big modal basis is needed to accurately capture the response. These extreme cases are very good to be solved in modern hardware architectures that can run many of the operations involving tensors in parallel. Secondly, uncertainty quantification of the nonlinear response is performed to a loading field that is non-deterministic. Hundreds to thousands of simulations are employed to resolve for the statistics in the response, for which parallelisation of the independent simulations become critical. 
@@ -370,10 +371,13 @@ A total of eight different loading cases are computed with tip loads as forces a
 
 Table [[table:times_discrete]]
 #+NAME: table:times_discrete
-|Device  | Time |
+| Device | Time         |
+|        | 31 x 8 = 248 |
+|        |  188         |
+            24
 
-
-*** Uncertainty quantification of nonlinear response 
+*** Uncertainty quantification of nonlinear response
+This example resembles that of 
 Now we prescribe a constant loading force along the wings consisting of follower forces in the $z-$ direction as well as torsional moments, with the characteristic that the force follows a normal distribution with $N(\mu=1.5 \times 10^4 \times \mu_0 \sigma=0.15 \times \mu)$ for the vertical forces and $N(\mu=3 \times 10^4 \times \mu_0 \sigma=0.15 \times \mu)$ for the moments. Three scenarios are studied: one in which nonlinear deformations are induced with $\mu_0 = 1$, and two small loading with  $\mu_0 = 10^{-2}$ and $\mu_0 = 10^{-3}$.
 The distribution of displacements is characterised by means of Montecarlo simulations that run in parallel. The modal base in the simulation consists of a 100 modes.
 
@@ -387,11 +391,32 @@ Table [[table:BUG_mc]] shows the statistics gathered from the response
 #+NAME: table:BUG_mc
 |case|displacem |$\sigma$ |
 
+
+Mean displacement node 35: 11.528521492508435
+std displacement node 35: 1.3697667916587046
+Ratio displacement node 35: 8.41641187588443
+***************
+Mean displacement node 35: 0.14786463975266095
+std displacement node 35: 0.023571080592003465
+ratio displacement node 35: 6.2731379316917835
+***************
+Mean displacement node 35: 0.014748384313162072
+std displacement node 35: 0.0024305352780817045
+ratio displacement node 35: 6.067957312186066
+***************
+
+
 We can see the statistics of the linear response are fully captured by one 
 Table [[table:times_MC]]
 
 #+NAME: table:times_MC
 |Device  | Time |
+
+317.4 4
+369  8
+358 1
+
+67.6
 
 ** Steady manoeuvre loads
 We extend the analysis to an static aeroelastic case for varying angles of attack that represent a manoeuvre scenario. We test the parallelisation by varying the flow density ($\pm 20 \%$ of the reference density 0.41 Kg/ m$^3$) as well and the flow velocity ($\pm 20 \%$ of the reference velocity 209.6 m/s). 16 different points for both density and velocity make a total number of 256 simulations. 
@@ -415,8 +440,13 @@ As the angle of attack, AoA, is increased, the tip displacement falls down the l
 
 Table [[table:times_manoeuvre]] shows the computational times for various
 
+16*16 load cases
 #+NAME: table:times_manoeuvre
 |Device  | Time |
+7.71
+52.8
+49.2
+59
 
 
 ** Dynamic loads at large scale
@@ -438,6 +468,8 @@ Table [[table:times_gust]]
 #+NAME: table:times_gust
 |Device  | Time |
 
+27.8 * 8 * 8 * 8 = 14233.6
+922.6
 
 * Conclusions
 A modal-based, geometrically nonlinear formulation of the aircraft dynamics has been enhanced with multiple load cases parallelisation in modern hardware architectures. 
