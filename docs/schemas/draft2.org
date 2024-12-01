@@ -279,10 +279,15 @@ Systems with labels:
 [[file:UML_software1.png]]
 
 * Algorithms
-Extensive  work carried out into a software architecture that complies with good design principles.
 
 
-#+NAME: alg:componentss
+$N_N$ Number of discretisation condensed nodes in the model
+$N_m$ Number of modal shapes in the solution
+$N_t$ Number of time-steps in the integration scheme.
+$N_c$ Number of cases to be run in parallel
+
+
+#+NAME: alg:process
 \begin{algorithm}[h!]
 \DontPrintSemicolon
 \SetKwInOut{Input}{input}
