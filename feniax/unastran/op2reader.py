@@ -13,8 +13,8 @@ class NastranReader:
         self.op2name = op2name
         self.bdfname = bdfname
         self.static = static
-
-    def readModel(self, asets_only=False):
+        self._read
+    def _readModel(self, asets_only=False):
         if self.op2name:
             self.op2 = OP2()
             self.op2.set_additional_matrices_to_read({b"OPHP": False, b"OUG1": False})
@@ -36,8 +36,6 @@ class NastranReader:
         eig1 = self.op2.eigenvectors[1]
         eigen = eig1.data
         NumNodes = np.shape(eig1.data[0])[0]
-        # model.eigenvectors[1].modes
-        # model.eigenvectors[1]._times
 
     def displacements(self):
         subcases = sorted(self.op2.displacements.keys())

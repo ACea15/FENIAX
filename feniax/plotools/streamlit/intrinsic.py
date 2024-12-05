@@ -44,14 +44,14 @@ def file_selector(folder_path="."):
         return selected_filename
 
 
-def multifolder_selector(folder_path="."):
+def multifolder_selector(folder_path=".", key=0):
     folder_path = pathlib.Path(folder_path)
     names = [folder_path / pathlib.Path(fi) for fi in os.listdir(folder_path)]
     # breakpoint()
     folder_names = [ni for ni in names if ni.is_dir()]
     selected_foldernames = st.multiselect(
         "Select solution folders", [fi.name for fi in folder_names], None
-    )
+        , key=key)
     if selected_foldernames is not None:
         folders = [folder_path / pathlib.Path(sfi) for sfi in selected_foldernames]
         return folders
@@ -597,6 +597,7 @@ def sys_3Dconfiguration0(config):
 
 
 def systems(sol, config):
+
     st.header("Systems")
     show = Enum(
         "States",
@@ -698,6 +699,114 @@ def systems_comparison(sol, config):
             case show.CONFIGURATION3D_PV.name:
                 sys_3Dconfiguration_pv(solsys, config)
 
+class SolShard:
+
+    def __init__(self, q, X1, X2, X3, ra, t):
+
+        self.q = q
+        self.X1 = X1
+        self.X2 = X2
+        self.X3 = X3
+        self.ra = ra
+        self.t = t
+        
+    @classmethod
+    def convert(cls, sys, label=''):
+
+        out = dict()
+        for i, qi in enumerate(sys.q):
+            X1i = sys.X1[i]
+            X2i = sys.X2[i]
+            X3i = sys.X3[i]
+            rai = sys.ra[i]
+            ti = sys.t
+            out[f"{label}_{i}"] = cls(qi, X1i, X2i, X3i, rai, ti)
+
+        return out
+        
+                
+def systems_shard(sol_shard, config_shard, sol=None, config=None):
+    
+    st.header("Comparison")
+    show = Enum(
+        "States",
+        [
+            "STATES",
+            "DISPLACEMENTS",
+            "VELOCITIES",
+            "STRAINS",
+            "INTERNALFORCES",
+            "CONFIGURATION3D",
+            "CONFIGURATION3D_PV",
+        ],
+    )
+
+    
+    sys_names_shard = [
+        mi
+        for mi in dir(list(sol_shard.values())[0].data)
+        if (mi[0] != "_" and "system" in mi)
+    ]
+    sys_optionshard = st.selectbox(
+        "Select a Shard system for the analysis",
+        sys_names_shard,
+        index=None,
+        placeholder="Select system...",
+    )
+
+    st.write("System being analysed:", sys_optionshard)
+    if sys_optionshard is not None:
+        solsys = dict()
+        for k, solk in sol_shard.items():
+            system = getattr(solk.data, sys_optionshard)
+            solsys = solsys | SolShard.convert(system, k)
+        if sol is not None:
+            sys_names = [
+                mi
+                for mi in dir(list(sol.values())[0].data)
+                if (mi[0] != "_" and "system" in mi)
+            ]
+            sys_option = st.selectbox(
+                "Select a Single system for the analysis",
+                sys_names,
+                index=None,
+                placeholder="Select system...",
+                key=10
+            )
+            if sys_option is not None:
+                solsys = solsys | {k: getattr(solk.data, sys_option) for k, solk in sol.items()}
+                config_shard = config_shard | config
+                
+        selected_system_names = st.multiselect(
+            "Select systems to analyse", list(solsys.keys()), None
+            , key=2)
+        if len(selected_system_names) > 0:
+            selected_solsys = {k: solsys[k] for k in selected_system_names}
+            field_option = st.sidebar.radio(
+                "Select what you want to display:", show._member_names_
+            )
+            # breakpoint()
+            match field_option:
+
+                case show.STATES.name:
+                    sys_states_comparison(selected_solsys)
+                case show.DISPLACEMENTS.name:
+                    sys_displacements_comp(selected_solsys, config_shard)
+                case show.VELOCITIES.name:
+                    sys_velocities_comp(selected_solsys)
+                case show.STRAINS.name:
+                    sys_strains_comp(selected_solsys)
+                case show.INTERNALFORCES.name:
+                    sys_internalforces_comp(selected_solsys)
+                case show.CONFIGURATION3D.name:
+                    # fig = sys_3Dconfiguration(selected_solsys, config)
+                    # st.plotly_chart(fig, use_container_width=False)
+                    # st.subheader("Slide")
+                    fig2 = sys_3Dconfiguration_ti(selected_solsys, config_shard)
+                    st.plotly_chart(fig2, use_container_width=False)
+                case show.CONFIGURATION3D_PV.name:
+                    sys_3Dconfiguration_pv(selected_solsys, config_shard)
+                
 
 def modes_3Dconfiguration(mode, config, mode_label, settings=None):
     icomp = putils.IntrinsicStructComponent(config.fem)

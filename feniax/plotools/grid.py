@@ -43,13 +43,13 @@ class AeroGrid:
     in a NASTRAN style fashion
     """
 
-    caeros: list
-    labels: dict
-    npanels: dict
-    npoints: dict
-    panel_ids: dict
-    points: dict
-    cells: dict
+    caeros: list = None
+    labels: dict = None
+    npanels: dict = None
+    npoints: dict = None
+    panel_ids: dict = None
+    points: dict = None
+    cells: dict = None
 
     def get(self, name, label):
         caero = self.labels[label]
@@ -77,6 +77,23 @@ class AeroGrid:
             cells[ci] = _cells
         return cls(caeros, labels, npanels, npoints, panel_ids, points, cells)
 
+
+    @staticmethod
+    def _get_box_x_chord_center(caero, box_id: int, x_chord: float) -> np.ndarray:
+        """
+        The the location of the x_chord of the box along the centerline.
+        """
+        
+        ispan, ichord = caero.get_box_index(box_id)
+
+        le_vector = caero.p4 - caero.p1
+        delta_xyz = le_vector * ((ispan + 0.5)/caero.nspan)
+        yz = delta_xyz[1:3] + caero.p1[1:3]
+        chord = ((ispan + 0.5)/caero.nspan) * (caero.x43 - caero.x12) + caero.x12
+        x = (ichord + x_chord)/caero.nchord * chord + caero.p1[0] + delta_xyz[0]
+        return np.array([x, yz[0], yz[1]])
+    
+    
     @classmethod
     def build_DLMcollocation(cls, model: BDF, collocation_chordwise=0.5):
         npanels = dict()
@@ -92,7 +109,8 @@ class AeroGrid:
             labels[model.caeros[ci].comment.strip()] = ci
             p1234 = model.caeros[ci].get_points()
             normals[ci] = np.cross(p1234[3] - p1234[0], p1234[1] - p1234[0])
-            box_ids = model.caeros[ci]._init_ids()
+            #box_ids = model.caeros[ci]._init_ids()
+            box_ids = model.caeros[ci].box_ids
             nchord = model.caeros[ci].nchord
             nspan = model.caeros[ci].nspan
             panel_ids[ci] = np.zeros((nchord - 1, nspan - 1))
@@ -102,10 +120,14 @@ class AeroGrid:
             _npoints = 0
             for jx in range(nspan):
                 for ix in range(nchord):
-                    box_id = box_ids[ix, jx]
-                    point = model.caeros[ci]._get_box_x_chord_center(
+                    box_id = box_ids[jx, ix]
+                    point = AeroGrid._get_box_x_chord_center(model.caeros[ci],
                         box_id, collocation_chordwise
                     )
+                    # point = model.caeros[ci]._get_box_x_chord_center(
+                    #     box_id, collocation_chordwise
+                    # )
+
                     _points.append(point)
                     _npoints += 1
                     if (ix < nchord - 1) and (jx < nspan - 1):

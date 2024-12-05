@@ -1,15 +1,18 @@
-from feniax.systems.system import System
-import feniax.systems.sollibs as sollibs
-import feniax.intrinsic.dq_static as dq_static
+from functools import partial
+
+import feniax.intrinsic.args as libargs
 import feniax.intrinsic.dq_dynamic as dq_dynamic
+import feniax.intrinsic.dq_static as dq_static
+import feniax.intrinsic.initcond as initcond
 import feniax.intrinsic.postprocess as postprocess
 import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
 import feniax.preprocessor.solution as solution
-import feniax.intrinsic.initcond as initcond
-import feniax.intrinsic.args as libargs
-from functools import partial
+import feniax.systems.sollibs as sollibs
+import feniax.intrinsic.xloads as xloads
+
 import jax
 import jax.numpy as jnp
+from feniax.systems.system import System
 
 
 def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
@@ -73,6 +76,11 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         # self._set_generator()
         # self._set_solver()
 
+    def set_args(self):
+        label = self.settings.label.split("_")[-1]
+        solver_args = getattr(libargs, f"arg_{label}")
+        self.args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
+        
     def set_eta0(self, eta0=None):
         num_modes = self.fem.num_modes
         if eta0 is None:
@@ -80,6 +88,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         else:
             assert len(eta0) == num_modes, "wrong length in eta0"
             self.eta0 = eta0
+        self.set_args()
 
     def set_ic(self, q0):
         if q0 is None:
@@ -118,18 +127,47 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         else:
             self.q0 = q0
 
-    def set_xloading(self):
-        if self.settings.xloads.follower_forces:
-            self.settings.xloads.build_point_follower(
-                self.fem.num_nodes, self.sol.data.modes.C06ab
-            )
-        if self.settings.xloads.dead_forces:
-            self.settings.xloads.build_point_dead(self.fem.num_nodes)
-        if self.settings.xloads.gravity_forces:
+    def set_xloading(self, compute_follower=True, compute_dead=True, compute_gravity=True):
+
+        force_follower = None
+        force_dead = None
+        force_gravity = None
+        if self.settings.xloads.follower_forces and compute_follower:
+           # self.settings.xloads.build_point_follower(
+           #     self.fem.num_nodes, self.sol.data.modes.C06ab
+           # )           
+           force_follower = xloads.build_point_follower(self.settings.xloads.x,
+                                                         self.settings.xloads.follower_points,
+                                                         self.settings.xloads.follower_interpolation,
+                                                         self.fem.num_nodes,
+                                                         self.sol.data.modes.C06ab
+                                                         )
+        if self.settings.xloads.dead_forces and compute_dead:
+            force_dead = xloads.build_point_dead(self.settings.xloads.x,
+                                                 self.settings.xloads.dead_points,
+                                                 self.settings.xloads.dead_interpolation,
+                                                 self.fem.num_nodes,
+                                                 )
+        if self.settings.xloads.gravity_forces and compute_gravity:
             if self.fem.constrainedDoF:
-                self.settings.xloads.build_gravity(self.fem.Ma0s, self.fem.Mfe_order0s)
+                force_gravity = xloads.build_gravity(self.settings.xloads.x,
+                                     self.settings.xloads.gravity,
+                                     self.settings.xloads.gravity_vect,
+                                     self.fem.Ma0s,
+                                     self.fem.Mfe_order0s)
             else:
-                self.settings.xloads.build_gravity(self.fem.Ma, self.fem.Mfe_order)
+                force_gravity = xloads.build_gravity(self.settings.xloads.x,
+                                     self.settings.xloads.gravity,
+                                     self.settings.xloads.gravity_vect,
+                                     self.fem.Ma,
+                                     self.fem.Mfe_order)
+        self.sol.add_container(
+            "PointForces", label="_" + self.settings.name,
+            force_follower=force_follower,
+            force_dead=force_dead,
+            force_gravity=force_gravity,
+            x=self.settings.xloads.x
+        )
 
     def set_states(self):
         self.settings.build_states(self.fem.num_modes, self.fem.num_nodes)
@@ -140,7 +178,6 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         )
 
     def build_connection_eta(self):
-        import feniax.intrinsic.xloads as xloads
 
         elevator_index = self.settings.aero.elevator_index
         elevator_link = self.settings.aero.elevator_link
@@ -188,16 +225,16 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         self.dFq = getattr(dq_static, label)
 
     def solve(self):
-        label = self.settings.label.split("_")[-1]
-        solver_args = getattr(libargs, f"arg_{label}")
-        args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
+        # label = self.settings.label.split("_")[-1]
+        # solver_args = getattr(libargs, f"arg_{label}")
+        # args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
 
         self.qs = _staticSolve(
             self.eqsolver,
             self.dFq,
             self.settings.t,
             self.q0,
-            args1,
+            self.args1,
             self.settings.solver_settings,
         )
         self.build_solution()
@@ -276,6 +313,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
 
 class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
+    
     def set_xloading(self):
         super().set_xloading()
         if self.settings.aero is not None:
@@ -304,12 +342,12 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
         self.dFq = getattr(dq_dynamic, label)
 
     def solve(self):
-        label = self.settings.label.split("_")[-1]
-        solver_args = getattr(libargs, f"arg_{label}")
-        args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
+        # label = self.settings.label.split("_")[-1]
+        # solver_args = getattr(libargs, f"arg_{label}")
+        # args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
         sol = self.eqsolver(
             self.dFq,
-            args1,
+            self.args1,
             self.settings.solver_settings,
             q0=self.q0,
             t0=self.settings.t0,
@@ -415,23 +453,3 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
         )
         if self.settings.save:
             self.sol.save_container("DynamicSystem", label="_" + self.name)
-
-    def build_connection_eta(self):
-        import feniax.intrinsic.xloads as xloads
-
-        elevator_index = self.settings.aero.elevator_index
-        elevator_link = self.settings.aero.elevator_link
-        aero = getattr(self.sol.data, f"modalaeroroger_{self.settings.name}")
-        A0hat = aero.A0hat
-        B0hat = aero.B0hat
-        q = self.qs[-1]
-        states = self.settings.states
-        omega = self.sol.data.modes.omega
-        q2 = q[states["q2"]]
-        q0i = -q2[2:] / omega[2:]
-        q0 = jnp.hstack([q2[:2], q0i])
-        qx = q[states["qx"]]
-        eta_aero = xloads.eta_steadyaero(q0, A0hat)
-        eta_elevator = xloads.eta_controls(qx, B0hat, elevator_index, elevator_link)
-        eta0 = eta_aero + eta_elevator
-        return eta0

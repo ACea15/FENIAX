@@ -13,7 +13,7 @@ _solve = partial(jax.jit, static_argnames=["eqsolver", "dq", "sett"])(isys._stat
 
 
 @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
-def main_30g11_1(
+def main_10g11_1(
     inputs,  # alpha
     q0,
     config,
@@ -48,7 +48,7 @@ def main_30g11_1(
         omega,
         X_xdelta,
         C0ab,
-        C06ab,
+        C06ab
     ) = adcommon._compute_modes(X, Ka, Ma, reduced_eigenvals, reduced_eigenvecs, config)
 
     # gamma1 = couplings.f_gamma1(phi1, psi1)
@@ -86,7 +86,7 @@ def main_30g11_1(
 
 
 @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
-def main_30g11_3(
+def main_10g11_3(
     inputs,  # alpha
     q0,
     config,

@@ -47,9 +47,16 @@ class StaticSystem:
     X3: jnp.ndarray = None
     Cab: jnp.ndarray = None
     ra: jnp.ndarray = None
-    jac: dict = None
+    t: dict = None
+    jac: dict[str,jnp.ndarray] = None
     f_ad: dict = None
 
+@dataclass(slots=True)
+class PointForces:
+    force_follower: jnp.ndarray = None
+    force_dead: jnp.ndarray = None
+    force_gravity: jnp.ndarray = None
+    x: jnp.ndarray = None    
 
 @dataclass(slots=True)
 class ModalAeroRoger:
@@ -95,6 +102,11 @@ class GustRoger:
     Qhj_wsum: jnp.ndarray = None
     Qhjl_wdot: jnp.ndarray = None
 
+@dataclass(slots=True)
+class Shards:
+    points: jnp.ndarray = None
 
+
+    
 # import dataclasses
 # field_types = {field.name: field.type for field in dataclasses.fields(Modes)}

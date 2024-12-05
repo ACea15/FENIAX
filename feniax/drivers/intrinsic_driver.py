@@ -82,7 +82,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         if hasattr(self._config, "systems"):
             for k, v in self._config.systems.mapper.items():
                 print(f"***** Initialising system {k} *****")
-                cls_sys = feniax.systems.factory(f"{v.solution}_intrinsic")
+                cls_sys = feniax.systems.factory(f"{v.solution}{v.operationalmode}_intrinsic")
                 self.systems[k] = cls_sys(
                     k, v, self._config.fem, self.sol, self._config
                 )
@@ -90,7 +90,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         elif hasattr(self._config, "system"):
             print("***** Initialising system sys1*****")
             cls_sys = feniax.systems.factory(
-                f"{self._config.system.solution}_intrinsic"
+                f"{self._config.system.solution}{self._config.system.operationalmode}_intrinsic"
             )
             self.systems["sys1"] = cls_sys(
                 "sys1", self._config.system, self._config.fem, self.sol, self._config

@@ -7,6 +7,7 @@ import feniax.aeromodal.panels as panels
 import feniax.plotools.nastranvtk.bdfdef as bdfdef
 import jax.numpy as jnp
 import jax
+import numpy as np
 
 bdf = BDF()#debug=False)
 bdf.read_bdf("./BUG_103cao.bdf", validate=False)
@@ -61,7 +62,7 @@ model_red = BuildAsetModel(components_ids, bdf, clamped_node=1005)
 WRITE_ASETS= False
 if WRITE_ASETS:
     model_red.write_asets("./Config/asets_clamped_reduced.bdf")
-WRITE_GRID= True
+WRITE_GRID= False
 if WRITE_GRID:
     model_red.write_grid("../FEM/structuralGrid")
 
@@ -82,7 +83,14 @@ aeros = dict(RWing1=dict(nspan=2, nchord=8),
              RWing3=dict(nspan=9, nchord=8),
              RWing4=dict(nspan=6, nchord=8),
              RWing5=dict(nspan=4, nchord=8),
-             RHTP=dict(nspan=6, nchord=8))
+             RHTP=dict(nspan=6, nchord=8),
+             LWing1=dict(nspan=2, nchord=8),
+             LWing2=dict(nspan=3, nchord=8),
+             LWing3=dict(nspan=9, nchord=8),
+             LWing4=dict(nspan=6, nchord=8),
+             LWing5=dict(nspan=4, nchord=8),
+             LHTP=dict(nspan=6, nchord=8)
+             )
 
 aeros2ids = dict(RWing1=3504001,
                  RWing2=3500001,
@@ -91,7 +99,7 @@ aeros2ids = dict(RWing1=3504001,
                  RWing5=3503001,
                  RHTP=3600001)
 
-PRINT_CAEROS = False
+PRINT_CAEROS = True
 if PRINT_CAEROS:
     for ki, vi in bdfaero.caeros.items():
         print(f"*{ki}*-p1: {vi.p1}")
@@ -104,7 +112,12 @@ for ki, i in aeros2ids.items():
     aeros[ki]['p4'] = bdfaero.caeros[i].p4
     aeros[ki]['x12'] = bdfaero.caeros[i].x12
     aeros[ki]['x43'] = bdfaero.caeros[i].x43
-
+    ki_l=('L'+ki[1:])
+    aeros[ki_l]['p1'] = bdfaero.caeros[i].p1*np.array([1.,-1.,1.])
+    aeros[ki_l]['p4'] = bdfaero.caeros[i].p4*np.array([1.,-1.,1.])
+    aeros[ki_l]['x12'] = bdfaero.caeros[i].x12
+    aeros[ki_l]['x43'] = bdfaero.caeros[i].x43
+    
 print(sorted(bdfaero.asets[0].ids))
 print(bdfaero.Nodes([2001, 2003, 2005, 2008, 2010] + list(range(2012, 2053, 2)))) # wing nodes
 
@@ -114,6 +127,13 @@ aeros['RWing3']['set1x'] = list(range(2012, 2030, 2))
 aeros['RWing4']['set1x'] = list(range(2030, 2044, 2))
 aeros['RWing5']['set1x'] = list(range(2044,2053, 2))
 aeros['RHTP']['set1x'] = list(range(4000, 4014))
+#####
+aeros['LWing1']['set1x'] = [1004, 10002001] 
+aeros['LWing2']['set1x'] = [10002003, 10002005, 10002008, 10002010] 
+aeros['LWing3']['set1x'] = list(range(10002012, 10002030, 2))
+aeros['LWing4']['set1x'] = list(range(10002030, 10002044, 2))
+aeros['LWing5']['set1x'] = list(range(10002044,10002053, 2))
+aeros['LHTP']['set1x'] = [4000]+list(range(10004001, 10004014))
 
 dlm = GenDLMPanels.from_dict(aeros) # pass your dictionary with DLM model
 dlm.build_model()

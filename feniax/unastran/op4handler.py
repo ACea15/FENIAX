@@ -1,4 +1,5 @@
 import numpy as np
+import jax.numpy as jnp
 import pyNastran
 from pyNastran.op2.op2 import OP2
 import pyNastran.op4.op4 as op4
@@ -30,3 +31,19 @@ def write_op4modes(
     op4_data.write_op4(op4_name, {matrix_name: (2, modes_reshape)}, is_binary=False)
     if return_modes:
         return eigsdata, modesdata
+
+def read_data(file_name: pathlib.Path | str,
+              data_name: str):
+
+    op4m = op4.OP4()
+    Qop4 = op4m.read_op4(file_name)
+
+    try:
+        data = jnp.array(Qop4[data_name].data)
+    except AttributeError:
+        data = jnp.array(Qop4[data_name][1])
+
+    return data
+
+
+    

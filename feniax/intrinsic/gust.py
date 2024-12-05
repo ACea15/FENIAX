@@ -35,38 +35,52 @@ def _get_spanshape(shape):
 
 # @partial(jax.jit, static_argnames=['min_collocationpoints', 'max_collocationpoints'])
 # @jax.jit
-def _get_gustRogerMc(
-    gust_intensity,
-    dihedral,
-    gust_shift,
-    gust_step,
-    simulation_time,
-    gust_length,
-    u_inf,
-    min_collocationpoints,
-    max_collocationpoints,
-):
-    #
-    gust_totaltime = gust_length / u_inf
-    xgust = jnp.arange(
-        min_collocationpoints,  # jnp.min(collocation_points[:,0]),
-        max_collocationpoints  # jnp.max(collocation_points[:,0]) +
-        + gust_length
-        + gust_step,
-        gust_step,
-    )
-    time_discretization = (gust_shift + xgust) / u_inf
-    if time_discretization[-1] < simulation_time[-1]:
-        time = jnp.hstack(
-            [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
-        )
-    else:
-        time = time_discretization
-    if time[0] != 0.0:
-        time = jnp.hstack([0.0, time[0] - 1e-6, time])
-    ntime = len(time)
-    # npanels = len(collocation_points)
-    return gust_totaltime, xgust, time, ntime
+# def _get_gustRogerMc(
+#     gust_intensity,
+#     dihedral,
+#     gust_shift,
+#     gust_step,
+#     simulation_time,
+#     gust_length,
+#     u_inf,
+#     min_collocationpoints,
+#     max_collocationpoints,
+# ):
+#     #
+#     gust_totaltime = gust_length / u_inf
+#     xgust = jnp.arange(
+#         min_collocationpoints,  # jnp.min(collocation_points[:,0]),
+#         max_collocationpoints  # jnp.max(collocation_points[:,0]) +
+#         + gust_length
+#         + gust_step,
+#         gust_step,
+#     )
+#     time_discretization = (gust_shift + xgust) / u_inf
+#     # if time_discretization[-1] < simulation_time[-1]:
+#     #     time = jnp.hstack(
+#     #         [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
+#     #     )
+#     # else:
+#     #     time = time_discretization
+#     extended_time = jnp.hstack(
+#         [time_discretization, time_discretization[-1] + 1e-6, simulation_time[-1]]
+#     )
+#     time = jax.lax.select(time_discretization[-1] < simulation_time[-1],
+#                           extended_time,
+#                           jnp.hstack([time_discretization,
+#                                       time_discretization[-1] + 1e-6,
+#                                       time_discretization[-1] + 2*1e-6]) # need to be shame shape!!
+#                           )
+    
+#     # if time[0] != 0.0:
+#     #     time = jnp.hstack([0.0, time[0] - 1e-6, time])
+#     time = jax.lax.select(time[0] != 0.0,
+#                           jnp.hstack([0.0, time[0] - 1e-6, time]),
+#                           jnp.hstack([0.0, 1e-6, 2*1e-6, time[1:]]))
+        
+#     ntime = len(time)
+#     # npanels = len(collocation_points)
+#     return gust_totaltime, xgust, time, ntime
 
 
 @partial(jax.jit, static_argnames=["fshape_span"])
@@ -79,7 +93,7 @@ def _downwashRogerMc(
     normals,
     time,
     gust_totaltime,
-    fshape_span,
+    fshape_span
 ):
     """
     NpxNt panel downwash in time
@@ -181,18 +195,22 @@ class GustRogerMc(Gust):
         self.dihedral = self.settings.aero.gust.panels_dihedral
         self.gust_length = self.settings.aero.gust.length
         self.gust_intensity = self.settings.aero.gust.intensity
+        self.gust_totaltime = self.settings.aero.gust.totaltime
+        self.xgust = self.settings.aero.gust.x
+        self.time = self.settings.aero.gust.time
+        self.ntime = self.settings.aero.gust.ntime
         #
-        (self.gust_totaltime, self.xgust, self.time, self.ntime) = _get_gustRogerMc(
-            self.gust_intensity,
-            self.dihedral,
-            self.gust_shift,
-            self.gust_step,
-            self.settings.t,
-            self.gust_length,
-            self.u_inf,
-            jnp.min(self.collocation_points[:, 0]),
-            jnp.max(self.collocation_points[:, 0]),
-        )
+        # (self.gust_totaltime, self.xgust, self.time, self.ntime) = intrinsicmodal.gust_discretisation(
+        #     self.gust_intensity,
+        #     self.dihedral,
+        #     self.gust_shift,
+        #     self.gust_step,
+        #     self.settings.t,
+        #     self.gust_length,
+        #     self.u_inf,
+        #     jnp.min(self.collocation_points[:, 0]),
+        #     jnp.max(self.collocation_points[:, 0]),
+        # )
 
         self.fshape_span = _get_spanshape(self.settings.aero.gust.shape)
 

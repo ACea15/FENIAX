@@ -10,7 +10,7 @@ import feniax.systems.intrinsic_system as isys
 
 
 @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
-def main_40g11_1(
+def main_20g11_1(
     inputs,  # alpha
     q0,
     config,
@@ -110,7 +110,7 @@ def main_40g11_1(
 
 
 @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
-def main_40g11_3(
+def main_20g11_3(
     inputs,  # alpha
     q0,
     config,
@@ -214,7 +214,7 @@ def main_40g11_3(
 
 
 @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
-def main_40g21_2(
+def main_20g21_2(
     inputs,  # gust_intensity, gust_length, u_inf, rho_inf,
     q0,
     config,
@@ -409,7 +409,7 @@ def main_40g21_2(
 
 
 @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
-def main_40g21_3(
+def main_20g21_3(
     inputs,  # gust_intensity, gust_length, u_inf, rho_inf,
     q0,
     config,
@@ -489,17 +489,12 @@ def main_40g21_3(
     D1hat = c_ref * rho_inf * u_inf / 4 * D1
     D2hat = c_ref**2 * rho_inf / 8 * D2
     D3hat = q_inf * D3
-    # gust_intensity = config.system.aero.gust.intensity
-    # gust_length = config.system.aero.gust.length
     gust_shift = config.system.aero.gust.shift
-    gust_step = config.system.aero.gust.step
     dihedral = config.system.aero.gust.panels_dihedral
     time = config.system.t
     collocation_points = config.system.aero.gust.collocation_points
     gust_totaltime = config.system.aero.gust.totaltime
-    xgust = config.system.aero.gust.x
     time = config.system.aero.gust.time
-    ntime = config.system.aero.gust.ntime
     # gust_totaltime, xgust, time, ntime, npanels = igust._get_gustRogerMc(
     #     gust_intensity,
     #     dihedral,
@@ -520,7 +515,6 @@ def main_40g21_3(
     #     jnp.min(collocation_points[:,0]),
     #     jnp.max(collocation_points[:,0])
     # )
-    npanels = len(collocation_points)
     fshape_span = igust._get_spanshape(config.system.aero.gust.shape)
     gust, gust_dot, gust_ddot = igust._downwashRogerMc(
         u_inf,

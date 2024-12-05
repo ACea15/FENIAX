@@ -1,4 +1,4 @@
-# Finite Element models 4 Intrinsic Nonlinear Aeroelastics in JAX
+# Finite Element models 4 Nonlinear Intrinsic Aeroelastics in JAX
 
 FENIAX is an aeroelastic toolbox  written in Python using JAX. It acts as a post-processor of commercial software such as MSC Nastran. 
 
@@ -62,16 +62,16 @@ This example first appeared in the work of Juan Carlos Simo (see [Bio](https://m
     - Linear response validated with MSC Nastran linear aeroelastic solution (sol 146)
 	- Nonlinear response in our solvers takes similar times to the linear Nastran solution!! 
 
-#### Gust clamped model
+<!-- #### Gust clamped model -->
 
-[Notebook](./examples/XRF1/xrf1_nb.md)
-
-
-![XRF1-gustclamped](./media/xrf1_gust_optimized.gif)
+<!-- [Notebook](./examples/industrialAC/main.md) -->
 
 
-#### Gust trimmed flight
-![XRF1-Trim+gust](./media/xrf1_trimgust_optimized.gif)
+<!-- ![XRF1-gustclamped](./media/xrf1_gust_optimized.gif) -->
+
+
+<!-- #### Gust trimmed flight -->
+<!-- ![XRF1-Trim+gust](./media/xrf1_trimgust_optimized.gif) -->
 
 ## Theoretical background
 
