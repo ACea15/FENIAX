@@ -45,7 +45,7 @@ def velocity_ra(): ...
 
 def strains_ra(): ...
 
-
+@jax.jit
 def integrate_node0(X1, dt, ra_n0, Rab_n0):
     v_average = (X1[:-1, :3] + X1[1:, :3]) / 2
     theta_average = (X1[:-1, 3:6] + X1[1:, 3:6]) / 2 * dt

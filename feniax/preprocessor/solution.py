@@ -79,6 +79,8 @@ def save_container(path, container):
         attr_path = path / attr_name
         if isinstance(attr, jnp.ndarray):
             jnp.save(attr_path, attr)
+        elif isinstance(attr, int) or isinstance(attr, float):
+            jnp.save(attr_path, jnp.array(attr))
         elif isinstance(attr, np.ndarray):
             jnp.save(attr_path, attr)
         elif isinstance(attr, (list, dict, tuple)):
@@ -102,7 +104,12 @@ def load_container(path: pathlib.Path, Container):
             if Container.__annotations__[attr_name].__name__ == "Array":
                 kwargs[attr_name] = jnp.load(attr_path.with_suffix(".npy"))
             elif Container.__annotations__[attr_name].__name__ == "ndarray":
-                kwargs[attr_name] = np.load(attr_path.with_suffix(".npy"))
+                kwargs[attr_name] = jnp.load(attr_path.with_suffix(".npy"))
+            elif (Container.__annotations__[attr_name].__name__ == "int"):
+                  kwargs[attr_name] = int(jnp.load(attr_path.with_suffix(".npy")))
+            elif (Container.__annotations__[attr_name].__name__ == "float"):
+                  kwargs[attr_name] = float(jnp.load(attr_path.with_suffix(".npy")))
+                  
             elif (
                 (Container.__annotations__[attr_name].__name__ == "dict")
                 or (Container.__annotations__[attr_name].__name__ == "list")

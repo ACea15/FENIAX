@@ -83,6 +83,8 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
             "Shards",
             label="_" + self.name,
             points=self.xpoints,
+            device_count=jax.device_count(),
+            local_device_count=jax.local_device_count()
         )
         if self.settings.save:
             self.sol.save_container("Shards", label="_" + self.name)

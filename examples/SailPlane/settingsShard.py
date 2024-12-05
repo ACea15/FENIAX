@@ -55,12 +55,12 @@ inputforces = dict(follower_points=[[[25, 2], [48, 2]],
                                     [[20, 5], [43, 5]],
                                     [[15, 5], [38, 5]],
                                     [[10, 5], [33, 5]],
-                                    ],
+                                    ],  # [[[node_i, component_j]..(total_forces per run)],...(parallel forces)[[node_i, component_j]..]]     
                    follower_interpolation= [[[0.,2e5,2.5e5,3.e5,4.e5,4.8e5,5.3e5],
                                             [0.,2e5,2.5e5,3.e5,4.e5,4.8e5,5.3e5]
                                             ]
-                                            ]*8
-                   )
+                                            ]*8  # [[[0,...interpolation points]..(total_forces per run)],...(parallel forces)[[0,...]..]]
+                   )  
 inp.system.shard = dict(input_type="pointforces",
                         inputs=inputforces)
 #config =  configuration.Config(inp)

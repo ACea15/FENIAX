@@ -1,4 +1,4 @@
-#+TITLE: FENIAX.initial architecture
+#+TITLE: FENIAX architecture
 #+AUTHOR: Alvaro Cea
 #+Date: 6/06/2023
 #+STARTUP: inlineimages
@@ -7,7 +7,7 @@
   (setq org-image-actual-width nil)
   (setq org-confirm-babel-evaluate nil)
   (require 'org-tempo)
-  (pyvenv-workon "feniax.)
+  (pyvenv-workon "feniax")
   
 #+end_src
 

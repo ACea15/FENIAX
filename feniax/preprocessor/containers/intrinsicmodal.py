@@ -723,6 +723,8 @@ class Daero(DataContainer):
             object.__setattr__(self, "C", jnp.load(self.C))
         if isinstance(self.D, (str, pathlib.Path)):
             object.__setattr__(self, "D", jnp.load(self.D))
+        if self.qalpha is not None and not isinstance(self.qalpha, jnp.ndarray):
+            object.__setattr__(self, "qalpha", jnp.array(self.qalpha))
 
         self._initialize_attributes()
 

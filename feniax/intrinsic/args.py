@@ -690,6 +690,7 @@ def arg_20g546(
     *args,
     **kwargs,
 ):
+
     eta_0 = kwargs["eta_0"]
     gamma1 = sol.data.couplings.gamma1
     gamma2 = sol.data.couplings.gamma2
@@ -711,20 +712,20 @@ def arg_20g546(
         omega,
         phi1l,
         states,
+        aero.poles,        
         num_modes,
         num_poles,
+        gust.x,
+        c_ref,
         aero.A0hat,
         aero.A1hat,
         aero.A2hatinv,
         aero.A3hat,
         u_inf,
-        c_ref,
-        aero.poles,
-        gust.x,
         F1g,
         Flg,
     )
-
+    
 
 @catter2library
 def arg_20G546(

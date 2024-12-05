@@ -105,7 +105,8 @@ class GustRoger:
 @dataclass(slots=True)
 class Shards:
     points: jnp.ndarray = None
-
+    device_count: int = None
+    local_device_count: int = None
 
     
 # import dataclasses
