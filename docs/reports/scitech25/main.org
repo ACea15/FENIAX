@@ -214,41 +214,18 @@ This paves the way for a broader multidisciplinary analysis where CFD-based aero
 ** Computational implementation
 A new codebase has been recently built for fast computations of aeroelastic problems\footnote{Both implementation and examples can be found at \url{https://github.com/ACea15/FENIAX}}. The focus of this work is the parallelisation of multiple load cases, that for aerospace vehicles can amount to thousands and we want to not only be able to compute the resulting load envelopes fast, but also to gather the boundaries of those and perform additional calculations, such as sensitivity or failure analysis.
 The Python library JAX has been used as the numerical engine for calculations and it also manages the parallelisation, therefore some details on the library are worth describing.
-JAX is designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. It relies on XLA (Accelerated Linear Algebra), a domain-specific compiler for linear algebra that optimizes computations for both CPUs and GPUs. In fact XLA is platform-agnostic and achieves optimised performance on the target architecture orchestrating a complex process encompassing a series of optimizations and transformations from the high-level Python code into efficient, low-level machine-specific instructions: the source code is first converted into HLO (High-Level Optimizer) code, an specialised language derived from a graph representation of the computations. XLA first performs optimisations on the HLO code (geared towards high-level mathematical operations, particularly those in linear algebra and machine learning models), and are independent of the hardware architecture, such as operation fusion. XLA carries then optimisations for the particular architecture in used. From there the LLVM toolkit is leveraged to produce and Intermediate Representation (IR) that the LLVM compiler can understand, perform further optimisations and finally output the machine code. 
-When it comes to leveraging the computational power of (NVIDIA) GPUs, the link between XLA and CUDA kernels is critical. On the one hand JAX utilises CUDA libraries such as cuBLAS for dense linear algebra, cuDNN for deep learning applications or cuFFT for GPU-optimised Fast Fourier Transforms; on the other hand, it is capable of generating custom CUDA kernels for operations that are not efficiently covered by standard libraries. 
+JAX is designed for high-performance numerical computing with focus on machine learning activities \cite{jax2018github}. It relies on XLA (Accelerated Linear Algebra), a domain-specific compiler for linear algebra that optimizes computations for both CPUs and GPUs. In fact XLA is platform-agnostic and achieves optimised performance on the target architecture orchestrating a complex process that encompassing a series of optimizations and transformations: the source code is first converted into HLO (High-Level Optimizer) code, an specialised language derived from a graph representation of the computations; XLA performs optimisations on the HLO code (geared towards high-level mathematical operations, particularly those in linear algebra and machine learning models), and are independent of the hardware architecture, such as operation fusion. It then carries optimisations for the particular architecture in use. From there the LLVM toolkit is leveraged to produce and Intermediate Representation (IR) that the LLVM compiler can understand, perform further optimisations and finally output the machine code. 
+When it comes to leveraging the computational power of (NVIDIA) GPUs, the link between XLA and CUDA kernels is critical. On the one hand JAX utilises CUDA libraries such as cuBLAS for dense linear algebra; on the other hand, it is capable of generating custom CUDA kernels for operations that are not efficiently covered by standard libraries. 
 In order to transform the high level Python to low level optimised code, the source code has to comply with various constraints and feature functional programming characteristics.
 With regards to the parallelisation, JAX follows a Single-Program Multi-Data (SPMD) parallelism, whereby a single program operates on multiple data sets in parallel. This means the same computation graph is compiled and executed across different devices. Inter-device communication and synchronization are managed internally by the library.
 For the implementation, the now deprecated \texttt{pmap} function maps a function across multiple input sets, distributing the workload across available GPUs. Thus being the parallel equivalent to the \texttt{vmap} function.
 The new standard for parallelisation is based on data sharding, either done automatically using the \texttt{shard\_map} function or by sharding the data and passing it to a \texttt{jitted} function specifying input and output shape of the data to be partitioned. Inside the function, the compiler determines the necessary partitions of the data, synchronization, and communication. Collective operations like broadcasts and reductions are available within the \texttt{jax.lax} module. 
 Internally JAX uses NVIDIA Collective Communications Library (NCCL) for low level communication across devices.  
 \\
-JAX also provides automatic differentiation capabilities, which have already been exploited in our previous works [[cite:&CEA2024a]] and it will be the subject of future development aiming at the differentiation of application of coupling between parallelisation and AD. 
-
-*** Two-level parallelisation
-Various parallelism models have been developed in the context of deep learning, for which JAX has been particularly designed, and we try to adapt here those methods to the problem at hand of solving a large system of nonlinear equations in parallel for multiple external forces, i.e. right hand side of the equations.
-Data Parallel (DP) consists of making the large batching into chunks that are fed to a single device
-allows scaling to large data batches:
-In Large Language Models (LLMs), the number of parameters can exceed that of input data, and therefore don't fit in a single device. In this case a tensor parallelism (TP) strategy is employed by which the tensor of weights that are to be optimised is sharded with synchronisation at the end of each step.
-
-
-Data parallelism is used instead as to split the tensor of inputs () 
-
-is a relatively simple strategy, but it allows scaling to large data batches: the training data is partitioned across  distributed workers and fed to the model, which is replicated. The training process is done in parallel: dataloader spits out a batch of the total size , then each worker computes activations, loss values  and model gradients with its independent data split of size 
- 
-. Gradients are then synchronized at the end of each training step
-Our batch of data becomes the multiple inputs that are used to build the external forces for which we want to compute the response.
-The strategy implemented first splits the input data along the leading axis according to the total number of devices available using a data sharding approach. Each device receives the subset of inputs, a closure function that is jitted is called with the respective inputs, and inside the high level function that computes the response (solution of the static response or time marching of the dynamic equations) is vmapped with respect to the subset of inputs such that it runs in parallel within each GPU device or the cores in the CPU processor. 
-Therefore it leverages 
-Fig. shows this two-level parallelisation and how the input data is split and send to each device. 
-
-#+NAME: fig:BUG_manoeuvre3D
-#+CAPTION: Aeroelastic steady equilibrium for increasing angle of attack
-#+ATTR_LATEX: :width 0.8\textwidth 
-[[file:figs_ext/parallelGPU.pdf]]
-
+JAX also provides automatic differentiation capabilities, which have already been exploited in our previous works [[cite:&CEA2024a]] and it will be the subject of future development aiming at the differentiation of application of coupling between parallelisation and AD. The overall solution process and a description of the parallelisation strategy follow next. 
 
 *** Overall solution process
-Algorithm [[alg:process]] shows the main components in the solution process, highlighting the time and space complexities, $O(time, space)$, of the data structures being generated. We assume a single analysis is being run, for instance a dynamic simulation computing the response to multiple gusts that will be run in parallel for a total number of $N_c$ cases. $N_t$ time-steps are used in the integration scheme with a resolution of $N_m$ modal shapes. The FE model has been condensed to $N_N$ number of nodes.
+Algorithm [[alg:process]] shows the main components in the solution process, highlighting the time and space complexities, $O(time, space)$, of the data structures being generated. We assume a single analysis is being run, for instance a dynamic simulation computing the response to multiple gusts that will be run in parallel for a total number of $N_c$ cases. $N_t$ time-steps are used in the integration scheme with a resolution of $N_m$ modal shapes. The FE model has been condensed to $N_N$ number of nodes. 
 \\
 The intrinsic modes, $\bm{\phi}$, $\bm{\psi}$, are computed from the condensed FE nodal positions and matrices; subsequently, the nonlinear terms, $\bm \Gamma$, are obtained as the integral along the reduced domain of the modal couplings; the nonlinear system of equations is built and time-marched in time to yield the solution in modal coordinates, $\bm q$;
 the intrinsic variables of the solution (velocities, $\bm{X}_1$,  internal forces, $\bm{X}_{2}$ and strains, $\bm{X}_{3}$) are recovered from the modal coordinates and the intrinsic modes; finally the positional and rotational field, $\bm{r}_a$, $\bm{R}_{a}$, of the reduced model are computed via integration of the strain field. 
@@ -272,19 +249,70 @@ $\bm{r}_a$, $\bm{R}_{a}$   $\longleftarrow$ integration($\bm{X}_{3}$, $\bm{X}_a$
 }
 \caption{Main components in solution process}
 \end{algorithm}
-
-
-
-mesh = jax.sharding.Mesh(devices=jax.experimental.mesh_utils.create_device_mesh((jax.device_count(),)),
-axis_names=('x'))
-xshard = jax.device_put(xpoints, jax.sharding.NamedSharding(mesh, jax.sharding.PartitionSpec('x')))
-main(xshard,
-        q0=self.q0,
-        config=self.config,
-        args=self.args1)
         
-*** Software architecture
+*** Two-level parallelisation
+Various parallelism models have been developed in the context of deep learning, for which JAX has been particularly designed, and we try to adapt here those methods to the problem at hand of solving a large system of nonlinear equations in parallel for multiple external forces, i.e. right hand side of the equations.
+Data Parallel (DP) consists of making the large batching into chunks that are fed to a single device
+allows scaling to large data batches:
+In Large Language Models (LLMs), the number of parameters can exceed that of input data, and therefore don't fit in a single device. In this case a tensor parallelism (TP) strategy is employed by which the tensor of weights that are to be optimised is sharded with synchronisation at the end of each step.
 
+
+Data parallelism is used instead as to split the tensor of inputs () 
+
+is a relatively simple strategy, but it allows scaling to large data batches: the training data is partitioned across  distributed workers and fed to the model, which is replicated. The training process is done in parallel: dataloader spits out a batch of the total size , then each worker computes activations, loss values  and model gradients with its independent data split of size 
+ 
+. Gradients are then synchronized at the end of each training step
+Our batch of data becomes the multiple inputs that are used to build the external forces for which we want to compute the response.
+The strategy implemented first splits the input data along the leading axis according to the total number of devices available using a data sharding approach. Each device receives the subset of inputs, a closure function that is jitted is called with the respective inputs, and inside the high level function that computes the response (solution of the static response or time marching of the dynamic equations) is vmapped with respect to the subset of inputs such that it runs in parallel within each GPU device or the cores in the CPU processor. 
+Therefore it leverages 
+Fig. shows this two-level parallelisation and how the input data is split and send to each device. 
+
+Cores in the GPU are packed into the so-called streaming processors, each with its own registers and L1 caches. 
+#+NAME: fig:parallelGPU
+#+CAPTION: Input distribution example for multi-GPU runs 
+#+ATTR_LATEX: :width 0.8\textwidth 
+[[file:figs_ext/parallelGPU.pdf]]
+
+
+#+NAME: alg:parallelisation
+\begin{algorithm}[h!]
+\DontPrintSemicolon
+\Begin{
+ \BlankLine
+%
+\SetKwFunction{Fy}{y\_aeroelastic}
+\SetKwFunction{Fyy}{y}
+ \SetKwProg{Fn}{Function}{:}{}
+  \Fn{\Fy {\texttt{inputs}}}{
+   \Fn{\Fyy {\texttt{input}}}{
+   ... \;
+(nonlinear aeroelastic computation)
+\BlankLine
+\KwRet \texttt{q, X1, X2, X3, ra, Rab} \;
+}
+  \texttt{
+  yvmap = jax.vmap(y) \;
+  q\_multi, X1\_multi, X2\_multi, X3\_multi, ra\_multi, Rab\_multi $\longleftarrow$ yvmap(inputs) \;
+  \KwRet dict(q=q\_multi, X1=X1\_multi, X2=X2\_multi, X3=X3\_multi, ra=ra\_multi, Rab=Rab\_multi) \;
+  }}
+
+\texttt{
+num\_devices $\longleftarrow$ jax.device\_count() \;
+mesh $\longleftarrow$  jax.sharding.Mesh( \;
+devices=jax.experimental.mesh\_utils.create\_device\_mesh( \;
+(num\_devices,)), axis\_names=('x')) \;
+inputs = jax.device\_put(inputs, jax.sharding.NamedSharding(mesh, \;  jax.sharding.PartitionSpec('x'))) \;
+y\_aeroelastic $\longleftarrow$ jax.jit(y\_aeroelastic) \;
+sol $\longleftarrow$ y\_aeroelastic(inputs)
+}
+    }
+\caption{Parallelisation multiple load cases}
+\end{algorithm}
+
+*** COMMENT Software architecture
+
+
+\newpage
 * Results
 In this section we show the main strengths of our solvers to: a) run a representative aircraft model undergoing very large nonlinear displacements; b) leverage on modern hardware architectures and a parallelisation across devices to unlock problems such as quantifying the uncertainties in the nonlinear response given a loading field that is not fully determinate; c) build load envelopes of static and dynamic aeroelastic simulations.
 The University of Bristol Ultra-Green (BUG) aircraft model [[cite:&STODIECK2018]] is the chosen platform to demonstrate these capabilities as it showcases high-aspect ratio wings that are built using a representative GFEM of current industrial models and it is not based on proprietary data. The main components of the aeroelastic model are shown in Fig. [[fig:BUG]]. The GFEM is formed of over 16000 grid nodes, 17000 Quad and Triangular shell elements, 16000 beam elements, 400 discrete mass elements, 30 rigid elements and 100 interpolation elements.
@@ -299,13 +327,15 @@ The University of Bristol Ultra-Green (BUG) aircraft model [[cite:&STODIECK2018]
 Structural and aeroelastic static simulations follow, all solved via a Newton-Raphson solver with tolerance of $10^{-6}$, as well as an assessment of the aircraft dynamics in response to a gust. 
 Calculations are carried out on a CPU Intel Xeon Silver 4108 with 1.80GHz speed, 6 cores and a total 12 threads, as well as on an Nvidia GPU A100 80GB SXM. 
 ** Structural static analysis
-Two scenarios are studied to assess two levels of parallisation in the current implementation. That corresponding to the operations within a single solution, and that of multiple load cases. 
+Two scenarios are studied to assess the two levels of parallisation in the current implementation. That corresponding to the operations within a single solution, and that of multiple load cases. 
 Firstly, a tip load is prescribed as to induce very large deformations such that a big modal basis is needed to accurately capture the response. These extreme cases are very good to be solved in modern hardware architectures that can run many of the operations involving tensors in parallel. Secondly, uncertainty quantification is performed to the nonlinear response to a loading field that is non-deterministic. Hundreds to thousands of simulations are employed in Monte Carlo type of analysis to resolve for the statistics, for which parallelisation of the independent simulations become critical. 
 *** Extremely large deformations under discrete loads
 A total of eight different loading cases are computed with tip loads as forces and moments in the $x, y, z$ directions, and a combination of both.
 The number of modes used in the solution is 300. 
 Even though a wing would never undergo such a level of deformations before breaking, we are showing them to demonstrate to both the efficiency and robustness of the solvers.
-Fig. [[fig:BUG_tipL2]] shows the static equilibrium for follower tip forces in the $z$-direction of 2.5 \times 10^4, 4.5 \times 10^4, 1.5 \times 10^5, 2.125 \times 10^5 Newtons; similarly in Fig. [[fig:BUG_tipL0]] $x$-direction forces of 1.25 \times 10^5, 2.25 \times 10^5, 7.5 \times 10^5, 1.125  \times 10^6 are applied; and Fig. [[fig:BUG_tipL4]] results from the application of torsional moments from 1.75 \times 10^5 to 1.4 \times 10^6 N m.   
+Fig. [[fig:BUG_tipL2]] shows the static equilibrium for follower tip forces in the \(z\)-direction of 2.5 \times 10^4, 4.5 \times 10^4, 1.5 \times 10^5, 2.125 \times 10^5 Newtons; similarly in Fig. [[fig:BUG_tipL0]] \(x\)-direction forces of 1.25 \times 10^5, 2.25 \times 10^5, 7.5 \times 10^5, 1.125  \times 10^6 are applied; and Fig. [[fig:BUG_tipL4]] results from the application of torsional moments from 1.75 \times 10^5 to 1.4 \times 10^6 N m.
+Large geometrically nonlinear effects appear on these results, as in Fig. [[fig:BUG_tipL2]] where the more flexible outer part of the wing absorbs most of the additional strain for the largest forces, and the torsional forces in Fig. [[fig:BUG_tipL4]] produce rather difficult to predict paths. 
+
 # 1, 3, 7, 10 -> 2.5e4, 4.5e4, 1.5e5, 2.125e5
 # 1, 3, 7, 11 -> 1.25e5, 2.25e5, 7.5e5, 1.125 e6
 # 1,3,5,6,7,8,9 -> 1.75e5 - 1.4e6 N m 
@@ -325,7 +355,7 @@ Fig. [[fig:BUG_tipL2]] shows the static equilibrium for follower tip forces in t
 [[file:figs_ext/DiscreteL4.pdf]]
 
 Table [[table:times_discrete]] presents the computational times for a single load case in the CPU and therefore the time it would take to run the 8 cases sequentially; for the CPU to run the 8 loads within the parallelised algorithm; and for the GPU to run in parallel. 
-It worth noting the parallelisation on the CPU does not attain a very good speed up, the reason being the modal base is so large and some of the tensor calculations in JAX, which already run in concurrently by default, will be taking 6 cores and 12 threads available in the CPU. The high performance GPU has 6912 CUDA cores that deliver a remarkable increase in performance.  
+It worth noting the parallelisation on the CPU does not attain a very good speed up, the reason being the modal base is so large that some of the tensor calculations in JAX, which already run in concurrently by default, will be taking 6 cores and 12 threads available in the CPU. The high performance GPU has 6912 CUDA cores that deliver a remarkable increase in performance.  
 
 #+CAPTION: Computational times tip-forces 
 #+ATTR_LATEX: :center t
@@ -341,7 +371,7 @@ This example is manufactured to resemble the workflow of flight loads and wing s
 # : the flight physics department would compute the in-flight loads for various conditions and pass the maximum of these loads to the stress engineers who would check the integrity of the airframe in their more detailed models.
 There will always be an element of uncertainty around the computed loads, and what we show here is how for nonlinear assumptions the statistics need to be computed for every distinct loading. And for this, having a parallisation strategy as the one presented could potentially allow the computation of complex correlations and averages that are more easily calculated under linear assumptions. 
 
-A constant loading force is prescribed along the wings consisting of follower forces in the $z$-direction as well as torsional moments, with the characteristic that the force follows a normal distribution $N(\mu=1.5 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the vertical forces and $N(\mu=3 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the moments. Three scenarios are studied: one in which very large nonlinear deformations are induced with $\mu_0 = 1$, and two small loading with  $\mu_0 = 10^{-2}$ and $\mu_0 = 10^{-3}$.
+A constant loading force is prescribed along the wings consisting of follower forces in the \(z\)-direction as well as torsional moments, with the characteristic that the force follows a normal distribution $N(\mu=1.5 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the vertical forces and $N(\mu=3 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the moments. Three scenarios are studied: one in which very large nonlinear deformations are induced with $\mu_0 = 1$, and two small loading with  $\mu_0 = 10^{-2}$ and $\mu_0 = 10^{-3}$.
 The distribution of displacements is characterised by means of Montecarlo simulations that run in parallel for a total of 1600 simulations. The modal resolutions consists of 100 modes.
 Fig. [[fig:BUG_mc]] shows the equilibrium for the high loading calculations for two cases out of the 1600. 
 
@@ -384,28 +414,38 @@ We can see the statistics of the linear response are fully captured by one examp
 | CPU (parallel) |                    317.4 |
 | GPU            |                     67.6 |
 
-
 ** Steady manoeuvre loads
-We extend the analysis to a static aeroelastic case for varying angles of attack that represent a manoeuvre scenario. The number of modes used was 100, more than necessary for this type of response, which indicates even faster calculations are possible on this type of analysis. We test the parallelisation by varying the flow density ($\pm 20 \%$ of the reference density 0.41 Kg/ m$^3$) as well and the flow velocity ($\pm 20 \%$ of the reference velocity 209.6 m/s). 16 different points for both density and velocity make a total number of 256 simulations. 
+We extend the analysis to a static aeroelastic case for varying angles of attack that represent a manoeuvre scenario. The number of modes used was 100, more than necessary for this type of response, which indicates even faster calculations are possible on this type of analysis. We test the parallelisation by varying the flow density ($\pm 20 \%$ of the reference density 0.41 Kg/ m$^3$) as well and the flow velocity ($\pm 20 \%$ of the reference velocity 209.6 m/s). 16 different points for both density and velocity make a total number of 256 simulations. The Mach number is fixed at 0.7 corresponding to the reference flow condition values.
 
-Fig. [[fig:BUG_manoeuvre3D]] illustrates the 3D equilibrium of the airframe at the reference flow values.  
+Fig. [[fig:BUG_manoeuvre3D]] illustrates the 3D equilibrium of the airframe at the reference flight conditions. 
+
 #+NAME: fig:BUG_manoeuvre3D
 #+CAPTION: Aeroelastic steady equilibrium for increasing angle of attack
-#+ATTR_LATEX: :width 0.8\textwidth 
+#+ATTR_LATEX: :width 0.95\textwidth 
 [[file:figs_ext/monoeuvre3D.pdf]]
 
-# Fig. [[fig:BUG_manoeuvreRa]] shows the tip displacement with angle of attack in both the parallel and a single simulation run normally for validation. 
-# #+NAME: fig:BUG_manoeuvreRa
-# #+CAPTION: Aeroelastic steady equilibrium for increasing angle of attack
-# #+ATTR_LATEX: :width 0.8\textwidth 
-# [[file:figs_ext/monoeuvre3D.pdf]]
+In Fig. [[fig:BUG_manoeuvretip]] the tip of the wing in Fig. [[fig:BUG_manoeuvre3D]] is plotted for various angles-of-attach (AoA); the tip position falls down the linear projection between the 0 and 1 degrees AoA as expected. This highlights the potential need for geometrically nonlinear aeroelastic tools in future aircraft configurations under high loading scenarios. 
 
-The simulations show displacements differ if compare to a linear projection for the higher angles, which highlight the potential need for geometrically nonlinear aeroelastic tools in future aircraft configurations under high loading scenarios. 
-# As the angle of attack, AoA, is increased, the tip displacement falls down the linear projection between the 0 and 0.5 AoA as expected.
+#+NAME: fig:BUG_manoeuvretip
+#+CAPTION: wing tip position for increasing angle of attack
+#+ATTR_LATEX: :width 0.65\textwidth 
+[[file:figs/manoeuvre_wingtip.png]]
 
-Table [[table:times_manoeuvre]] shows the computational times of this case, which shows near no overhead in adding a few hundred of static calculations when moving from the single load case in the CPU to the GPU (nearly 8 seconds to 14 seconds, which amounts for 6 seconds cost when adding an extra 255 cases).
+Figures [[fig:manoeuvre_bendingtorsion]] and [[fig:manoeuvre_bendingshear]] show the bending-shear-torsion diagrams at the wing-root for all the multiple points computed. Each point is coloured as $point = \rho_{\infty} / \rho_{max} + u_{\infty} / u_{max}$. The resulting graph is rather predictable with loads increasing with dynamic pressure. A more realistic case could be setup with a trim routine and varying flight condition but the aim of this section was to present the capability to compute multiple manoeuvre loads and compare it with the more interesting case of gust loads as shown in the next section.
 
-#+CAPTION: Computational times multiple manoeuvre problem 
+#+NAME: fig:manoeuvre_bendingtorsion
+#+CAPTION: Manoeuvre case, bending-out-of-plane versus torsion
+#+ATTR_LATEX: :width 0.5\textwidth 
+[[file:figs/manoeuvre_bendingtorsion.png]]
+
+#+NAME: fig:manoeuvre_bendingshear
+#+CAPTION: Manoeuvre case, bending-in-plane versus shear
+#+ATTR_LATEX: :width 0.5\textwidth 
+[[file:figs/manoeuvre_bendingshear.png]]
+
+Table [[table:times_manoeuvre]] shows the computational times to run these simulations, which shows near no overhead in adding a few hundred of static calculations when moving from the single load case in the CPU to the GPU (nearly 8 seconds to 14 seconds, which amounts for 6 seconds cost when adding an extra 255 cases).
+
+#+CAPTION: Computational times for the multiple manoeuvre problem 
 #+ATTR_LATEX: :center t
 #+NAME: table:times_manoeuvre
 | Device         |              Time (sec.) |
@@ -414,10 +454,39 @@ Table [[table:times_manoeuvre]] shows the computational times of this case, whic
 | CPU (parallel) |                     52.8 |
 | GPU            |                     14.4 |
 
-
 ** Dynamic loads at large scale
 In this final example we perform a dynamic aeroelastic analysis to study the response of the aircraft to multiple 1-cos gusts for varying length, intensity and the density of the airflow. The mach number is kept constant at 0.7. A Runge-Kutta solver is employed to march in time the equations with a time step of $10^{-3}$ and the total number of modes used was 100. Note the large size of the aeroelastic ODE system: 2 \times 100 nonlinear equations plus 5 \times 100 linear equations for the aerodynamic states with 5 poles, plus 4 equations for the quaternion tracking the rigid-body motion, for a combined ODE system of 704 equations.  
-In addition, a total of 512 gusts cases are run concurrently for all possible combinations of 8 gust lengths between 25 and 265 meters, 8 gust intensities between 1 and 30 m/s, and 8 flow densities between 0.34 and 0.48 Kg/m$^3$. This means that $512 \times 704 = 360448$ equations are being marched in time, in this case for 2 seconds which is enough to capture peak loads and with a time step of 0.001 seconds. 
+In addition, a total of 512 gusts cases are run concurrently for all possible combinations of 8 gust lengths between 25 and 265 meters, 8 gust intensities between 1 and 30 m/s, and 8 airflow densities between 0.34 and 0.48 Kg/m$^3$. This means that $512 \times 704 = 360448$ equations are being marched in time, in this case for 2 seconds which is enough to capture peak loads. Figs. [[fig:gust_bendingout_torsion]], [[fig:gust_bendingout_shear]] and [[fig:gust_bendingin_shear]] show the load diagrams for the wing root at the maximum gust intensity of 20, varying 16 gust lengths, $L$, in the range previously stated and 8 airflow densities,  with the points plotted as $point = L / L_{max} + \rho_{\infty} / \rho_{max}$. Different load pattern emerge which need further analysis but reflect the importance of running multiple of these simulations to assess the critical loads. 
+
+#+NAME: fig:gust_bendingout_torsion
+#+CAPTION: Gust case, bending-out-of-plane versus torsion
+#+ATTR_LATEX: :width 0.5\textwidth 
+[[file:figs/gust_bendingout_torsion.png]]
+
+#+NAME: fig:gust_bendingout_shear
+#+CAPTION: Gust case, bending-out-of-plane versus shear
+#+ATTR_LATEX: :width 0.5\textwidth 
+[[file:figs/gust_bendingout_shear.png]]
+
+#+NAME: fig:gust_bendingin_shear
+#+CAPTION: Gust case, bending-inplane versus shear
+#+ATTR_LATEX: :width 0.5\textwidth 
+[[file:figs/gust_bendingin_shear.png]]
+
+As a validation of the parallelisation, Fig. [[fig:bug_gusttip]] shows the wing tip time evolution for a gust of 150 m length, intensity of 20 m/s and flow density of 0.41 Kg/m$^3$. Both the results of a single simulation run and that of the 512 parallelised one are shown, which match perfectly.
+
+#+NAME: fig:bug_gusttip
+#+CAPTION: \(z\)-component of wing tip response to 1-cos gust excitation (concurrent and single simulation runs).
+#+ATTR_LATEX: :width 1\textwidth 
+[[file:figs/bug_gusttip.pdf]]
+
+In Fig. [[fig:BUG_Gust3D]] the 3D reconstructed flight shape of the airframe is depicted for the simulation in Fig. [[fig:bug_gusttip]]. 
+
+#+NAME: fig:BUG_Gust3D
+#+CAPTION: Full aircraft Dynamic response to 1-cos gust excitation
+#+ATTR_LATEX: :width 1\textwidth 
+[[file:figs_ext/Gust3D_3.png]]
+
 Table [[table:times_gust]] contains the simulation times of the calculation, which show one order of magnitude increase in performance when running in parallel in the CPU versus a complete single simulation running sequentially, and another order of magnitude when moving from the CPU to a modern GPU.
 
 #+CAPTION: Computational times multiple gust problem 
@@ -428,18 +497,6 @@ Table [[table:times_gust]] contains the simulation times of the calculation, whi
 | CPU (single)   | 27.8 \times 512 = 14233.6 |
 | CPU (parallel) |                     922.6 |
 | GPU            |                      38.2 |
-
-
-Fig. [[fig:BUG_Gust3D]] shows the 3D flight shape of the airframe for a gust of 150 m length, intensity of 20 m/s and flow density of 0.41 Kg/m$^3$. 
-#+NAME: fig:BUG_Gust3D
-#+CAPTION: Dynamic response to 1-cos gust excitation
-#+ATTR_LATEX: :width 1\textwidth 
-[[file:figs_ext/bug_gust3d.pdf]]
-
-# #+NAME: fig:BUG_Gust_envelope
-# #+CAPTION: Load envelope for maximum loads in the dynamic response to 1-cos gust excitation with 
-# #+ATTR_LATEX: :width 1\textwidth 
-# [[file:figs_ext/]]
 
 
 * Conclusions
