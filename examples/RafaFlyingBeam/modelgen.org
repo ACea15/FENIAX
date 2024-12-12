@@ -374,4 +374,26 @@ Set model to be run (mi), initial conditions and whether to include gravity forc
   config =  configuration.Config(inp)
   sol = feniax.feniax_main.main(input_obj=config)
 
+  # all solution data in the sol object (everything are tensors)
+  # for instance: sol.dynamicsystem_sys1.ra position of node [time_step, component, node_id]
+  # sol.dynamicsystem_sys1.X1 for velocities and so on 
+#+end_src
+
+Navigate to streamlit folder and run from terminal as:
+streamlit run Home.py
+
+Geometry, modes, solutions, all plots are produce there automatically.
+
+For MATLAB postprocessing one can save any of the tensors as:
+
+#+begin_src python :tangle no
+  import numpy as np
+  from scipy.io import savemat
+
+  # Create a NumPy array
+  array = np.array([[1, 2, 3], [4, 5, 6]])
+
+  # Save the array to a MAT-file
+  savemat('my_array.mat', {'array': array})
+
 #+end_src

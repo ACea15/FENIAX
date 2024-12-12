@@ -7,7 +7,7 @@ import pathlib
 # FENIAX:1 ends here
 
 # [[file:modelgen.org::*FENIAX][FENIAX:2]]
-v_x = 0.
+v_x = 1.
 v_y = 0.
 v_z = 0.
 omega_x = 0.
@@ -36,8 +36,8 @@ inp.system.name = "s1"
 inp.system.solution = "dynamic"
 inp.system.bc1 = 'free'  
 inp.system.xloads.gravity_forces = gravity_forces
-inp.system.t1 = 2.
-inp.system.tn = 2001
+inp.system.t1 = 1.
+inp.system.tn = 5001
 inp.system.solver_library = "runge_kutta" #"diffrax" #
 inp.system.solver_function = "ode"
 inp.system.solver_settings = dict(solver_name="rk4")
@@ -50,4 +50,8 @@ inp.system.init_states = dict(q1=["nodal_prescribed",
                               )
 config =  configuration.Config(inp)
 sol = feniax.feniax_main.main(input_obj=config)
+
+# all solution data in the sol object (everything are tensors)
+# for instance: sol.dynamicsystem_sys1.ra position of node [time_step, component, node_id]
+# sol.dynamicsystem_sys1.X1 for velocities and so on
 # FENIAX:3 ends here
