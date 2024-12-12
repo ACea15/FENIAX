@@ -334,43 +334,52 @@ class Dfem(DataContainer):
         Ka_name, Ma_name, grid = geometry.find_fem(
             self.folder, self.Ka_name, self.Ma_name, self.grid
         )
-        setobj("Ka_name", os.path.abspath(Ka_name))
-        setobj("Ma_name", os.path.abspath(Ma_name))
-        setobj("grid", os.path.abspath(grid))
+        
         if self.folder is not None:
             setobj("folder", pathlib.Path(self.folder).absolute())
         if self.Ka is None:
             if self.folder is None:
-                setobj("Ka", load_jnp(self.Ka_name))
+                setobj("Ka_name", os.path.abspath(Ka_name))
+                
             else:
-                setobj("Ka", load_jnp(self.folder / self.Ka_name))
+                setobj("Ka_name", self.folder / Ka_name)
+
         if self.Ma is None:
             if self.folder is None:
-                setobj("Ma", load_jnp(self.Ma_name))
+                setobj("Ma_name", os.path.abspath(Ma_name))
+
             else:
-                setobj("Ma", load_jnp(self.folder / self.Ma_name))
-                # setobj("Ma", load_jnp(self.Ma_name))
+                setobj("Ma_name", self.folder / Ma_name)
+
+        setobj("Ka", load_jnp(self.Ka_name))
+        setobj("Ma", load_jnp(self.Ma_name))
+        if self.folder is None:
+            setobj("grid", os.path.abspath(grid))
+
+        else:
+            setobj("grid", self.folder / grid)
+                        
         if self.num_modes is None:
             # full set of modes in the solution
             setobj("num_modes", len(self.Ka))
-        if self.folder is None:
-            df_grid, X, fe_order, component_vect, dof_vect = geometry.build_grid(
-                self.grid,
-                self.X,
-                self.fe_order,
-                self.fe_order_start,
-                self.component_vect,
-                self.dof_vect,
-            )
-        else:
-            df_grid, X, fe_order, component_vect, dof_vect = geometry.build_grid(
-                self.folder / self.grid,
-                self.X,
-                self.fe_order,
-                self.fe_order_start,
-                self.component_vect,
-                self.dof_vect,
-            )
+        # if self.folder is None:
+        #     df_grid, X, fe_order, component_vect, dof_vect = geometry.build_grid(
+        #         self.grid,
+        #         self.X,
+        #         self.fe_order,
+        #         self.fe_order_start,
+        #         self.component_vect,
+        #         self.dof_vect,
+        #     )
+        # else:
+        df_grid, X, fe_order, component_vect, dof_vect = geometry.build_grid(
+            self.grid,
+            self.X,
+            self.fe_order,
+            self.fe_order_start,
+            self.component_vect,
+            self.dof_vect,
+        )
         setobj("df_grid", df_grid)
         setobj("X", X)
         setobj("fe_order", fe_order)
