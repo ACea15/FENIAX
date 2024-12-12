@@ -84,6 +84,20 @@ def dq_20g121(t, q, *args):
     F = _dq_20g121(t, q1i, q2i)
     return F
 
+def dq_20g2(t, q, *args):
+    """Free structural dynamic no external forces."""
+
+    (eta_0, gamma1, gamma2, omega, phi1l, states) = args[0]
+
+    q1 = q[states["q1"]]
+    q2 = q[states["q2"]]
+    qr = q[states["qr"]]    
+    F1, F2 = common.f_12(omega, gamma1, gamma2, q1, q2)
+    F1 += eta_0
+    Fr = common.f_quaternion(phi1l, q1, qr)
+    F = jnp.hstack([F1, F2, Fr])
+    return F
+
 
 def dq_20g22(t, q, *args):
     """Free structural dynamic follower point forces."""

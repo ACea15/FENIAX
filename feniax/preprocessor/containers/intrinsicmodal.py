@@ -5,6 +5,7 @@ Containers for the intrinsic modal solution settings
 import inspect
 import math
 import pathlib
+import os
 from dataclasses import dataclass, fields, is_dataclass
 from enum import Enum
 from functools import wraps
@@ -333,9 +334,9 @@ class Dfem(DataContainer):
         Ka_name, Ma_name, grid = geometry.find_fem(
             self.folder, self.Ka_name, self.Ma_name, self.grid
         )
-        setobj("Ka_name", Ka_name)
-        setobj("Ma_name", Ma_name)
-        setobj("grid", grid)
+        setobj("Ka_name", os.path.abspath(Ka_name))
+        setobj("Ma_name", os.path.abspath(Ma_name))
+        setobj("grid", os.path.abspath(grid))
         if self.folder is not None:
             setobj("folder", pathlib.Path(self.folder).absolute())
         if self.Ka is None:

@@ -360,6 +360,18 @@ def arg_20g121(
         component_father,
     )
 
+@catter2library
+def arg_20g2(
+    sol: solution.IntrinsicSolution, system: intrinsicmodal.Dsystem, *args, **kwargs
+):
+    
+    eta_0 = kwargs["eta_0"]
+    gamma1 = sol.data.couplings.gamma1
+    gamma2 = sol.data.couplings.gamma2
+    omega = sol.data.modes.omega
+    phi1l = sol.data.modes.phi1l    
+    states = system.states
+    return (eta_0, gamma1, gamma2, omega, phi1l, states)
 
 @catter2library
 def arg_20g22(

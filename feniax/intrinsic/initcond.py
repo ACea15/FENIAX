@@ -44,3 +44,10 @@ class Container:
         s = s.reshape((len(s), 1))
         x0 = jnp.array(x0).reshape((6, 1))
         return jnp.tensordot(x0, s, axes=(1, 1))  # 6xNn
+
+    @staticmethod
+    def nodal_prescribed(
+        x_nodes, fem: intrinsicmodal.Dfem, *args, **kwags
+    ):
+        out = jnp.array(x_nodes)
+        return out.T  # 6xNn
