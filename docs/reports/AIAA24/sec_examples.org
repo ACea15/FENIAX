@@ -11,7 +11,7 @@
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
       "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "feniax.ev")
+  (pyvenv-workon "feniax")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -444,7 +444,7 @@ https://plotly.com/python/subplots/
               y10=y1[0]
               print(y10)
           fig = uplotly.lines2d(x1, (y1 - X0[dim])/y10 * scale, fig,
-                                dict(name=f"NMROM-{labels[i]}",
+                                dict(name=f"{labels[i]}",
                                      line=dict(color=colors[i],
                                                dash=dashes[i])
                                  ))
@@ -484,7 +484,7 @@ https://plotly.com/python/subplots/
               y10 = y1[0]
 
           fig = uplotly.lines2d(x1 / x10 * scale1, y1 / y10 * scale2, fig,
-                                dict(name=f"NMROM-{labels[i]}",
+                                dict(name=f"{labels[i]}",
                                      line=dict(color=colors[i],
                                                dash=dashes[i])
                                  ))
@@ -824,7 +824,7 @@ Next we look at the gust response of the aircraft under trimmed conditions. Two 
   ra.append(solxrf1gust1l.data.dynamicsystem_s2.ra)
   ra.append(solxrf1gust2.data.dynamicsystem_s2.ra)
   ra.append(solxrf1gust2l.data.dynamicsystem_s2.ra)
-  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  labels = ["L=67-NL", "L=67-Lin", "L=125-NL", "L=125-Lin"]
   fig, figname = fig_out(name)(subplots_X)(plot_Xtime, t, ra, labels=labels, node=150, scale=1./33.977, x_range=[0,1.5])
   figname
 #+end_src
@@ -844,7 +844,7 @@ Fig. [[fig:xrf1gust_tip][fig:xrf1gust_tip]] presents the time evolution of the w
   X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
   X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
   X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
-  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  labels = ["L=67-NL", "L=67-Lin", "L=125-NL", "L=125-Lin"]
   fig, figname = fig_out(name, update_layout=dict(yaxis_title=r"$\hat{X}_{2z}$",legend=dict(x=0.7, y=0.941), ))(plot_Xtime)(t, X2, dim=2, labels=labels, node=4, scale=1., x_range=[0,1.5])
   figname
 #+end_src
@@ -865,7 +865,7 @@ Fig. [[fig:xrf1gustcomp_root]] shows the load diagram for the normalized shear a
   X2.append(solxrf1gust1l.data.dynamicsystem_s2.X2)
   X2.append(solxrf1gust2.data.dynamicsystem_s2.X2)
   X2.append(solxrf1gust2l.data.dynamicsystem_s2.X2)
-  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  labels = ["L=67-NL", "L=67-Lin", "L=125-NL", "L=125-Lin"]
   fig, figname = fig_out(name)(plot_Xcomponents)(X2, dim1=3, dim2=2, labels=labels, node=4, scale1=1, scale2=1)
   figname
 #+end_src
@@ -878,7 +878,7 @@ Fig. [[fig:xrf1gustcomp_root]] shows the load diagram for the normalized shear a
 
 #+NAME: sol=xrf1gustcomp_root2
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  labels = ["G1-NL", "G1-Lin", "G2-NL", "G2-Lin"]
+  labels = ["L=67-NL", "L=67-Lin", "L=125-NL", "L=125-Lin"]
   fig, figname = fig_out(name)(plot_Xcomponents)(X2, dim1=4, dim2=2, labels=labels, node=4, scale1=1, scale2=1)
   figname
 #+end_src
