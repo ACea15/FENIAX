@@ -1916,7 +1916,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
                        f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
   inp.driver.typeof = "intrinsic"
   inp.fem.num_modes = num_modes
-  inp.driver.typeof = "intrinsic"
+
 #+end_src
 ** Discrete loads
 Forces and moments at node 35 and 61
@@ -2133,7 +2133,7 @@ Forces and moments at node 35 and 61
   print(time1-time2)
 #+end_src
 
-#+begin_src python :tangle ./paraview_3Ddynamic.py
+#+begin_src python :tangle ./paraview_gust.py
   from paraview.simple import *
   import pathlib
 
@@ -2157,7 +2157,7 @@ Forces and moments at node 35 and 61
                     'RBE3.vtu',
                     'CBAR.vtu']
 
-  folder = pathlib.Path("./results1gust/paraview/") # pathlib.Path('./paraview/soldyn1')
+  folder = pathlib.Path("./results/gust2_eao/paraview") # pathlib.Path('./paraview/soldyn1')
   folder_out = folder / "merged"
   folder_out.mkdir(exist_ok=True, parents=True)
   for i, fi in enumerate(folder.glob("bug_*")):
@@ -2182,14 +2182,16 @@ Forces and moments at node 35 and 61
 
 merge all vtu files 
 #+begin_src bash :results none :session shell4
-  ~/Downloads/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/bin/pvpython paraview_3Ddynamic.py
+  ~/Downloads/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/bin/pvpython paraview_gust.py
 #+end_src
 
 make gust video
 #+begin_src bash :session shell4
-  cd ./results1gust/paraview/merged
-  # ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
-  ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 BugGust.mp4
+  cd ./results/gust2_eao/paraview/merged/anim
+  #ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 BugGust.mp4
+  #ffmpeg -ss 00:00:03 -to 00:00:13 -i BugGust.mp4 -c copy BugGustshort.mp4
+  ffmpeg -y -i BugGustshort.mp4 -filter_complex "fps=15,scale=680:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=32[p];[s1][p]paletteuse=dither=bayer" BugGust1.gif
+  #ffmpeg -y -framerate 20 -pattern_type glob -i '*.png' -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" BugGust2.gif 
   cd -
 #+end_src
 
@@ -2197,6 +2199,7 @@ make gif
 #+begin_src bash :session shell4
   cd ./results1gust/paraview/merged
   ffmpeg -i BugGust.mp4  -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" BugGust.gif
+  #ffmpeg -y -i input.mp4 -filter_complex "fps=5,scale=480:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=32[p];[s1][p]paletteuse=dither=bayer" output.gif
   cd -
 #+end_src
 
@@ -2230,6 +2233,7 @@ Forces and moments at node 35 and 61
   <<ImportsFeniaxShard>>
   sol = "cao"
   num_modes = 300
+  device_count = 1
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
       "./results/ShardDiscreteLoads1")
@@ -2401,8 +2405,7 @@ Forces and moments at node 35 and 61
           ra_movie=None)
 #+end_src
 
-#+begin_src python :tangle ./results/ShardDiscreteLoads1/paraview/merge.py :session *pyshard3*
-
+#+begin_src python :tangle ./results/ShardDiscreteLoads1/paraviewM300/merge.py :session *pyshard3*
   from paraview.simple import *
   import pathlib
 
@@ -2453,17 +2456,28 @@ Forces and moments at node 35 and 61
 #+end_src
 
 merge all vtu files 
-#+begin_src bash :results none :session shell1
+#+begin_src bash :results none :session *shell-shard3* :dir ./results/ShardDiscreteLoads1/paraviewM300
+
   # cd results/ShardDiscreteLoads1/paraview/
   ~/Downloads/ParaView-5.10.1-MPI-Linux-Python3.9-x86_64/bin/pvpython merge.py
 #+end_src
 one needs to go to paraview now and save images
 
 make gust video
-#+begin_src bash :session shell1
-  # ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
-  ffmpeg -y -framerate 1 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 BugGust.mp4
-  cd -
+#+begin_src bash :session *shell-shard3* :dir ./results/ShardDiscreteLoads1/paraviewM300
+  loads="0 2 4"
+  for li in $loads
+  do
+    cd "L$li/merged"
+    # ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
+    ffmpeg -y -framerate 2 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 "BugDiscrete_L$li.mp4"
+    #ffmpeg -i "BugDiscrete_L$li.mp4"  -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" "BugDiscrete_L$li.gif"
+    #ffmpeg -y -framerate 2 -pattern_type glob -i '*.png' -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" "BugDiscrete2_L$li.gif"
+    ffmpeg -y -i "BugDiscrete_L$li.mp4" -filter_complex "fps=2,scale=680:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=32[p];[s1][p]paletteuse=dither=bayer" "BugDiscrete3_L$li.gif"
+    
+    cd -
+  done
+
 #+end_src
 
 *** Discrete loads Montecarlo
