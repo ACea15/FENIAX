@@ -61,28 +61,36 @@ This example first appeared in the work of Juan Carlos Simo (see [Bio](https://m
 
 ### Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft
 !!! success
-	- Nonlinear aeroelastic response in our solvers takes similar times to the linear Nastran solution!! 
-	- Concurrent simulations for various loading settings
+	- Nonlinear aeroelastic response in our solvers takes similar times or less to the linear Nastran solution!! 
+	- Concurrent simulations for various loading settings achieve unparalleled computational times.
+	- CPU VS GPU benchmarks available.
 
 #### Wing-tip static loading
 
 - Extremely large deformations
 - Validation of concurrent solution
+- 300 modes in the solution, 8 different loading scenarios running in parallel each with 11 substeps, 24 seconds in total on A100 GPU
 
 ![In-plane](./media/BugDiscrete3_L0.gif)
 ![Out-of-plane](./media/BugDiscrete3_L2.gif)
 ![Torsion](./media/BugDiscrete3_L4.gif)
 
+#### Aeroelastic equilibrium for varying AoA
+
+- Nonlinear effects: follower aerodynamic forces, geometric stiffening, wing shortening.
+- Steady manoeuvre varying flow conditions and AoA for a total 256 cases in 14 seconds.
+
+![Manoeuvre](./img/BUGmonoeuvre3D.jpg)
+
+
 #### Dynamic loads at large scale: gust envelopes
 
-- 512 different gust cases run on A100 GPU NVIDIA in 14 seconds!
+- 512 different gust cases run on A100 GPU NVIDIA in 38 seconds!
+- Rigid body modes included, rigid/elastic nonlinear couplings accounted for.
+- Load envelopes available from the simulation.
 
 ![Gust response](./media/BugGust1.gif)
 
-
-## Theoretical background
-
-## Code base
 	
 ## License
 Please see the [project license](./LICENSE.md) for further details.
