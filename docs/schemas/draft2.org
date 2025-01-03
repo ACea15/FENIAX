@@ -409,14 +409,15 @@ TODO: make automatic label as the first
 | 10G75    | Manoeuvre under qalpha+controls+Gravity         | [1,0,'G',0,1,2]       | N   |
 | 20g1     | Clamped Structural dynamics, free vibrations    | [2,0,'g']             | Y   |
 | 20G2     | Free Structural dynamic with gravity forces     | [2,0,'G',1]           | Y   |
+| 20g2     | Free Structural dynamic                         | [2,0,'g',1]           | Y   |
 | 20g11    | Structural dynamic follower point forces        | [2,0,'g',0,0,0,0,1]   | Y   |
 | 20g121   | Structural dynamic dead point forces            | [2,0,'g',0,0,0,0,2]   | Y   |
 | 20g22    | Free Structural dynamic follower point forces   | [2,0,'g',1,0,0,0,1]   | Y   |
 | 20g242   | Free Structural dynamic dead point forces       | [2,0,'g',1,0,0,0,2]   | Y   |
 | 11G6     | Static trimmed State (elevator-qalpha,          | [1,1,'G',1,1]         | Y   |
-|          |                       no gravity updating)      |                       |     |
+|          | no gravity updating)                            |                       |     |
 | 12G2     | Static trimmed State (elevator-qalpha,          | [1,2,'G',1]           | N   |
-|          |                       gravity updating)         |                       |     |
+|          | gravity updating)                               |                       |     |
 | 21G150   | Dynamic trimmed State                           | [2,1,'G',1,1,2]       | N   |
 | 20g21    | Gust response                                   | [2,0,'g',0,1,0,1]     | Y   |
 | 20g273   | Gust response, q0 obtained via integrator q1    | [2,0,'g',0,1,0,1,0,1] | Y   |

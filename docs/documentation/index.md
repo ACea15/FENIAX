@@ -1,11 +1,13 @@
-# Finite Element models 4 Nonlinear Intrinsic Aeroelastics in JAX
+# Finite Element models 4 Nonlinear Intrinsic Aeroelastics in JAX [FENIAX]
 
 FENIAX is an aeroelastic toolbox  written in Python using JAX. It acts as a post-processor of commercial software such as MSC Nastran. 
 
+Some of the key features of the software are:
 - Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.
-- Nonlinear solutions run very fast, at or close to real time.
-- Algorithmic differentiation (AD) of the response is available via JAX. The code is carefully crafted to perform all computations on tensor data structures and via algorithms available for AD, much like Machine Learning models are built.
-- The code can be run on modern hardware architectures such as GPUs.
+- Leveraging on the numerical library JAX and optimised algorithms, a high performance is achieved that leads to simulation times comparable to the linear counterparts on conventional platforms.
+- The software runs on modern hardware architectures such as GPUs in a addition to standard CPUs.
+- Algorithm differentiation (AD) of the aeroelastic response is available via JAX primitives. 
+- Concurrent simulations for multiple load cases have been developed.
 
 !!! warning 
 	The software is in beta, and while it has been thoroughly tested, new features keep being added and it is likely features for your analysis might be missing. Get in touch if you encounter problems.
@@ -57,21 +59,26 @@ This example first appeared in the work of Juan Carlos Simo (see [Bio](https://m
 #### 3D dynamics
 ![Free flying structure 3D](./media/SimoFFB3D_optimized.gif)
 
-### Industrial Aircraft model
+### Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft
 !!! success
-    - Linear response validated with MSC Nastran linear aeroelastic solution (sol 146)
-	- Nonlinear response in our solvers takes similar times to the linear Nastran solution!! 
+	- Nonlinear aeroelastic response in our solvers takes similar times to the linear Nastran solution!! 
+	- Concurrent simulations for various loading settings
 
-<!-- #### Gust clamped model -->
+#### Wing-tip static loading
 
-<!-- [Notebook](./examples/industrialAC/main.md) -->
+- Extremely large deformations
+- Validation of concurrent solution
 
+![In-plane](./media/BugDiscrete3_L0.gif)
+![Out-of-plane](./media/BugDiscrete3_L2.gif)
+![Torsion](./media/BugDiscrete3_L4.gif)
 
-<!-- ![XRF1-gustclamped](./media/xrf1_gust_optimized.gif) -->
+#### Dynamic loads at large scale: gust envelopes
 
+- 512 different gust cases run on A100 GPU NVIDIA in 14 seconds!
 
-<!-- #### Gust trimmed flight -->
-<!-- ![XRF1-Trim+gust](./media/xrf1_trimgust_optimized.gif) -->
+![Gust response](./media/BugGust1.gif)
+
 
 ## Theoretical background
 
