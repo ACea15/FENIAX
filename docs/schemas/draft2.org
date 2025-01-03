@@ -109,6 +109,36 @@ Systems with labels:
 [[file:~/projects/FENIAX/feniax/systems/intrinsicAD.py::label = f"main_{label_sys}_{label_ad}"][AD_system]]
 [[file:~/projects/FENIAX/feniax/systems/intrinsicShard.py::self.label = f"main_{label_sys}_{label_shard}"][shard_system]]
 
+*** Architecture for the solution of systems
+Chain of requirements between the various ways to run the code.
+Fast needs to use the functions in Flexible:
+Fast -> Flexible  and similarly:
+AD -> Fast
+Shard -> Flexible
+ShardF -> Shard
+
+
+- Flexible: workflow of simulations happening sequentially
+  major functions for the systems to be solved can be found in dq_...:
+  [[file:~/projects/FENIAX/feniax/intrinsic/dq_dynamic.py][dq_dynamic]]
+  [[file:~/projects/FENIAX/feniax/intrinsic/dq_static.py][dq_static]]
+
+  
+- Fast: entire solution within one function such that memory copies to cuda devices are avoided
+  Computation of intrinsic modes, modal couplings, aerodynamic matrices happen within a single function, from within the solution of the system of equations is also called.
+  Importantly, the functions within the dq_[] modules are used for the solution, thereby avoiding code duplication and promoting modular design.
+
+  
+- AD: the entire solution within one function as well, but needs inputs/ outputs for the differentiation to take place
+
+  The function to be differentiated will call the function in the   
+
+- Shard flexible: workflow as in flexible but with inputs over which to build solutions in parallel.
+
+- Shard fast: Similarly, everything happens within a function, 
+
+- Shard AD: shard the inputs, take a function for the output,
+
   
 ** XForces
 *** prescribed_follower
@@ -348,7 +378,6 @@ Flutter and divergence points
 Critical for large design optimisation problems.
 ** Data workflow
 Well in place for Nastran Models  except for the derivatives provided by Nastran using Sol 200.
-
 
 
 * System based solutions :noexport:

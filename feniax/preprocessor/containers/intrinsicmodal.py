@@ -144,6 +144,7 @@ class Ddriver(DataContainer):
     compute_fem: bool = dfield("", default=True)
     save_fem: bool = dfield("", default=True)
     ad_on: bool = dfield("", default=False)
+    fast_on: bool = dfield("", default=False)
 
     def __post_init__(self):
         if self.sol_path is not None:

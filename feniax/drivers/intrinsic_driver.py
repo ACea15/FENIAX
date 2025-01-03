@@ -49,7 +49,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
     def pre_simulation(self):
         # TODO: here the RFA for aerodynamics should be included
         # TODO: condensation methods of K and M should be included
-        if not self._config.driver.ad_on:
+        if not self._config.driver.ad_on and not self._config.driver.fast_on:
             if self._config.driver.compute_fem:
                 self._compute_modalshapes()
                 self._compute_modalcouplings()
