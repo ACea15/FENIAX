@@ -89,7 +89,7 @@ They are also part of a large test suite that is integrated into the development
 
 [Notebook](./docs/examples/SailPlane/sailplane_nb.md)
 
-![Sail Plane static](./docs/img/SailPlane3D_front.png)
+![Sail Plane static](./docs/images/SailPlane3D_front.png)
 
 !!! note
     Take a liner FE model of arbitrary complexity from your favourite FE solver, and turn it into a fully geometrically nonlinear model. You just need a condensation step into the main load paths and the resulting linear stiffness and mass matrices.  
@@ -137,7 +137,7 @@ This example first appeared in the work of Juan Carlos Simo (see [Bio](https://m
 - Nonlinear effects: follower aerodynamic forces, geometric stiffening, wing shortening.
 - Steady manoeuvre varying flow conditions and AoA for a total 256 cases in 14 seconds.
 
-![Manoeuvre](./docs/img/BUGmonoeuvre3D.jpg)
+![Manoeuvre](./docs/images/BUGmonoeuvre3D.jpg)
 
 
 #### Dynamic loads at large scale: gust envelopes
