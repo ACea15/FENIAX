@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#finite-element-models-4-nonlinear-intrinsic-aeroelastics-in-jax" class="md-skip">
+        <a href="#finite-element-models-4-nonlinear-intrinsic-aeroelastics-in-jax-feniax" class="md-skip">
           Skip to content
         </a>
       
@@ -511,9 +511,37 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#industrial-aircraft-model" class="md-nav__link">
+  <a href="#concurrent-aeroelastic-simulations-on-ultra-high-aspect-ratio-aircraft" class="md-nav__link">
     <span class="md-ellipsis">
-      Industrial Aircraft model
+      Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wing-tip-static-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      Wing-tip static loading
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aeroelastic-equilibrium-for-varying-aoa" class="md-nav__link">
+    <span class="md-ellipsis">
+      Aeroelastic equilibrium for varying AoA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-loads-at-large-scale-gust-envelopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dynamic loads at large scale: gust envelopes
     </span>
   </a>
   
@@ -523,22 +551,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#theoretical-background" class="md-nav__link">
-    <span class="md-ellipsis">
-      Theoretical background
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#code-base" class="md-nav__link">
-    <span class="md-ellipsis">
-      Code base
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1171,9 +1186,37 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#industrial-aircraft-model" class="md-nav__link">
+  <a href="#concurrent-aeroelastic-simulations-on-ultra-high-aspect-ratio-aircraft" class="md-nav__link">
     <span class="md-ellipsis">
-      Industrial Aircraft model
+      Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#wing-tip-static-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      Wing-tip static loading
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aeroelastic-equilibrium-for-varying-aoa" class="md-nav__link">
+    <span class="md-ellipsis">
+      Aeroelastic equilibrium for varying AoA
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-loads-at-large-scale-gust-envelopes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dynamic loads at large scale: gust envelopes
     </span>
   </a>
   
@@ -1183,22 +1226,9 @@
     </nav>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#theoretical-background" class="md-nav__link">
-    <span class="md-ellipsis">
-      Theoretical background
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#code-base" class="md-nav__link">
-    <span class="md-ellipsis">
-      Code base
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1226,14 +1256,14 @@
                   
 
 
-<h1 id="finite-element-models-4-nonlinear-intrinsic-aeroelastics-in-jax">Finite Element models 4 Nonlinear Intrinsic Aeroelastics in JAX<a class="headerlink" href="#finite-element-models-4-nonlinear-intrinsic-aeroelastics-in-jax" title="Permanent link">¤</a></h1>
+<h1 id="finite-element-models-4-nonlinear-intrinsic-aeroelastics-in-jax-feniax">Finite Element models 4 Nonlinear Intrinsic Aeroelastics in JAX [FENIAX]<a class="headerlink" href="#finite-element-models-4-nonlinear-intrinsic-aeroelastics-in-jax-feniax" title="Permanent link">¤</a></h1>
 <p>FENIAX is an aeroelastic toolbox  written in Python using JAX. It acts as a post-processor of commercial software such as MSC Nastran. </p>
-<ul>
-<li>Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.</li>
-<li>Nonlinear solutions run very fast, at or close to real time.</li>
-<li>Algorithmic differentiation (AD) of the response is available via JAX. The code is carefully crafted to perform all computations on tensor data structures and via algorithms available for AD, much like Machine Learning models are built.</li>
-<li>The code can be run on modern hardware architectures such as GPUs.</li>
-</ul>
+<p>Some of the key features of the software are:
+- Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.
+- Leveraging on the numerical library JAX and optimised algorithms, a high performance is achieved that leads to simulation times comparable to the linear counterparts on conventional platforms.
+- The software runs on modern hardware architectures such as GPUs in a addition to standard CPUs.
+- Algorithm differentiation (AD) of the aeroelastic response is available via JAX primitives. 
+- Concurrent simulations for multiple load cases have been developed.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>The software is in beta, and while it has been thoroughly tested, new features keep being added and it is likely features for your analysis might be missing. Get in touch if you encounter problems.</p>
@@ -1280,25 +1310,37 @@ They are also part of a large test suite that is integrated into the development
 <p><img alt="Free flying structure 2D" src="media/SimoFFB2D_optimized.gif" /></p>
 <h4 id="3d-dynamics">3D dynamics<a class="headerlink" href="#3d-dynamics" title="Permanent link">¤</a></h4>
 <p><img alt="Free flying structure 3D" src="media/SimoFFB3D_optimized.gif" /></p>
-<h3 id="industrial-aircraft-model">Industrial Aircraft model<a class="headerlink" href="#industrial-aircraft-model" title="Permanent link">¤</a></h3>
+<h3 id="concurrent-aeroelastic-simulations-on-ultra-high-aspect-ratio-aircraft">Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft<a class="headerlink" href="#concurrent-aeroelastic-simulations-on-ultra-high-aspect-ratio-aircraft" title="Permanent link">¤</a></h3>
 <div class="admonition success">
 <p class="admonition-title">Success</p>
 <ul>
-<li>Linear response validated with MSC Nastran linear aeroelastic solution (sol 146)</li>
-<li>Nonlinear response in our solvers takes similar times to the linear Nastran solution!! </li>
+<li>Nonlinear aeroelastic response in our solvers takes similar times or less to the linear Nastran solution!! </li>
+<li>Concurrent simulations for various loading settings achieve unparalleled computational times.</li>
+<li>CPU VS GPU benchmarks available.</li>
 </ul>
 </div>
-<!-- #### Gust clamped model -->
-
-<!-- [Notebook](./examples/industrialAC/main.md) -->
-
-<!-- ![XRF1-gustclamped](./media/xrf1_gust_optimized.gif) -->
-
-<!-- #### Gust trimmed flight -->
-<!-- ![XRF1-Trim+gust](./media/xrf1_trimgust_optimized.gif) -->
-
-<h2 id="theoretical-background">Theoretical background<a class="headerlink" href="#theoretical-background" title="Permanent link">¤</a></h2>
-<h2 id="code-base">Code base<a class="headerlink" href="#code-base" title="Permanent link">¤</a></h2>
+<h4 id="wing-tip-static-loading">Wing-tip static loading<a class="headerlink" href="#wing-tip-static-loading" title="Permanent link">¤</a></h4>
+<ul>
+<li>Extremely large deformations</li>
+<li>Validation of concurrent solution</li>
+<li>300 modes in the solution, 8 different loading scenarios running in parallel each with 11 substeps, 24 seconds in total on A100 GPU</li>
+</ul>
+<p><img alt="In-plane" src="media/BugDiscrete3_L0.gif" />
+<img alt="Out-of-plane" src="media/BugDiscrete3_L2.gif" />
+<img alt="Torsion" src="media/BugDiscrete3_L4.gif" /></p>
+<h4 id="aeroelastic-equilibrium-for-varying-aoa">Aeroelastic equilibrium for varying AoA<a class="headerlink" href="#aeroelastic-equilibrium-for-varying-aoa" title="Permanent link">¤</a></h4>
+<ul>
+<li>Nonlinear effects: follower aerodynamic forces, geometric stiffening, wing shortening.</li>
+<li>Steady manoeuvre varying flow conditions and AoA for a total 256 cases in 14 seconds.</li>
+</ul>
+<p><img alt="Manoeuvre" src="img/BUGmonoeuvre3D.jpg" /></p>
+<h4 id="dynamic-loads-at-large-scale-gust-envelopes">Dynamic loads at large scale: gust envelopes<a class="headerlink" href="#dynamic-loads-at-large-scale-gust-envelopes" title="Permanent link">¤</a></h4>
+<ul>
+<li>512 different gust cases run on A100 GPU NVIDIA in 38 seconds!</li>
+<li>Rigid body modes included, rigid/elastic nonlinear couplings accounted for.</li>
+<li>Load envelopes available from the simulation.</li>
+</ul>
+<p><img alt="Gust response" src="media/BugGust1.gif" /></p>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">¤</a></h2>
 <p>Please see the <a href="LICENSE/">project license</a> for further details.</p>
 

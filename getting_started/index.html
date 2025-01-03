@@ -469,6 +469,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python environment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1007,6 +1022,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Installation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      Python environment
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1041,25 +1071,48 @@
 <div class="highlight"><pre><span></span><code>pip install -e .[all]
 </code></pre></div>
 <ul>
-<li>see setup.py file for the options available. Python 3.9+ is required but 3.11+ is recommended. 
-Although it is not necessary, If conda is being used as package manager, one can make a specific environment as,</li>
+<li>
+<p>see pyproject.toml file for the options available. Python 3.10+ is required.</p>
+</li>
+<li>
+<p>To install with GPU support install jax first:
+<div class="highlight"><pre><span></span><code>pip install -U &quot;jax[cuda12]&quot;
+pip install -e &quot;.[all]&quot;
+</code></pre></div></p>
+</li>
 </ul>
+<h3 id="python-environment">Python environment<a class="headerlink" href="#python-environment" title="Permanent link">¤</a></h3>
+<p>Although it is not necessary, it is recommended that the software is installed in its own environment. Options that have been tested out follow.</p>
+<ul>
+<li><em>Conda</em>:</li>
+</ul>
+<p>Although it is not necessary, If conda is being used as package manager, one can make a specific environment as,</p>
 <div class="highlight"><pre><span></span><code>conda create -n feniax python=3.11
-conda activate fem4inas
+conda activate feniax
+</code></pre></div>
+<p>If pytest has been installed, check everything is OK by running the tests: </p>
+<div class="highlight"><pre><span></span><code>pytest
 </code></pre></div>
 <ul>
-<li>If pytest has been installed, check everything is OK by running the tests: </li>
-</ul>
-<div class="highlight"><pre><span></span><code>pytest tests
-</code></pre></div>
-<ul>
-<li>Thus a typical installation would comprise of these 4 steps:
+<li>
+<p>Thus a typical installation would comprise of these 4 steps:
 <div class="highlight"><pre><span></span><code>conda create -n feniax.python=3.11
-conda activate fem4inas
+conda activate feniax
 pip install -e .[all]
-pytest tests
-</code></pre></div></li>
+pytest
+</code></pre></div></p>
+</li>
+<li>
+<p><em>pyenv</em>: Navigate to the root directory and run the following: </p>
+</li>
 </ul>
+<p><div class="highlight"><pre><span></span><code>  pyenv install 3.11.10
+  pyenv virtualenv 3.11.10 feniax
+  pyenv local feniax
+  pip install -e .[all]
+  pytest
+</code></pre></div>
+By setting pyenv local to feniax, every time one moves to feniax directory the environment is automatically activated</p>
 
 
 
