@@ -78,7 +78,7 @@ The most relevant examples in the code base are shown here, these and more can b
 They are also part of a large test suite that is integrated into the development using CI/CD.
 
 !!! tip
-    Navigate to the code of the various examples, including the simulation input settings and postprocessing of the simulation --exactly as it was used for the articles backing the software. See [examples](./examples.md)
+    Navigate to the code of the various examples, including the simulation input settings and postprocessing of the simulation --exactly as it was used for the articles backing the software. See [examples](./docs/examples.md)
 
 
 ### Nonlinear structural static results
@@ -87,9 +87,9 @@ They are also part of a large test suite that is integrated into the development
 	- AD differentiation of the response verified against finite-differences
 	
 
-[Notebook](./examples/SailPlane/sailplane_nb.md)
+[Notebook](./docs/examples/SailPlane/sailplane_nb.md)
 
-![Sail Plane static](./img/SailPlane3D_front.png)
+![Sail Plane static](./docs/img/SailPlane3D_front.png)
 
 !!! note
     Take a liner FE model of arbitrary complexity from your favourite FE solver, and turn it into a fully geometrically nonlinear model. You just need a condensation step into the main load paths and the resulting linear stiffness and mass matrices.  
@@ -99,22 +99,22 @@ They are also part of a large test suite that is integrated into the development
     - Runs over x100 faster than Nastran 
     - AD differentiation of the response verified against finite-differences
 
-[Notebook](./examples/wingSP/wingSP_nb.md)
+[Notebook](./docs/examples/wingSP/wingSP_nb.md)
 
 
-![Wing free dynamics](./media/wingSP_optimized.gif)
+![Wing free dynamics](./docs/media/wingSP_optimized.gif)
 
 	
 ### Free flying structure
 This example first appeared in the work of Juan Carlos Simo (see [Bio](https://mechanics.stanford.edu/simo))
 , a pioneer in the field of computational structural mechanics and the 
 
-[Notebook](./examples/wingSP/wingSP_nb.md)
+[Notebook](./docs/examples/wingSP/wingSP_nb.md)
 
 #### 2D dynamics
-![Free flying structure 2D](./media/SimoFFB2D_optimized.gif)
+![Free flying structure 2D](./docs/media/SimoFFB2D_optimized.gif)
 #### 3D dynamics
-![Free flying structure 3D](./media/SimoFFB3D_optimized.gif)
+![Free flying structure 3D](./docs/media/SimoFFB3D_optimized.gif)
 
 ### Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft
 !!! success
@@ -128,16 +128,16 @@ This example first appeared in the work of Juan Carlos Simo (see [Bio](https://m
 - Validation of concurrent solution
 - 300 modes in the solution, 8 different loading scenarios running in parallel each with 11 substeps, 24 seconds in total on A100 GPU
 
-![In-plane](./media/BugDiscrete3_L0.gif)
-![Out-of-plane](./media/BugDiscrete3_L2.gif)
-![Torsion](./media/BugDiscrete3_L4.gif)
+![In-plane](./docs/media/BugDiscrete3_L0.gif)
+![Out-of-plane](./docs/media/BugDiscrete3_L2.gif)
+![Torsion](./docs/media/BugDiscrete3_L4.gif)
 
 #### Aeroelastic equilibrium for varying AoA
 
 - Nonlinear effects: follower aerodynamic forces, geometric stiffening, wing shortening.
 - Steady manoeuvre varying flow conditions and AoA for a total 256 cases in 14 seconds.
 
-![Manoeuvre](./img/BUGmonoeuvre3D.jpg)
+![Manoeuvre](./docs/img/BUGmonoeuvre3D.jpg)
 
 
 #### Dynamic loads at large scale: gust envelopes
@@ -146,4 +146,4 @@ This example first appeared in the work of Juan Carlos Simo (see [Bio](https://m
 - Rigid body modes included, rigid/elastic nonlinear couplings accounted for.
 - Load envelopes available from the simulation.
 
-![Gust response](./media/BugGust1.gif)
+![Gust response](./docs/media/BugGust1.gif)
