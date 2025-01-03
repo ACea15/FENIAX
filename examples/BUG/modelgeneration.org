@@ -26,16 +26,17 @@
 #+end_src
 
 #+begin_src shell :tangle ./workflow.sh 
-  python P1_modalsolution.py  
-  source P2_runmodal.sh   # Run Nastran modal solution
-  python P3_dlm.py  
-  source P4_rundihedral.sh  
-  python P5_getdihedral.py  
-  python P6_outputgafs.py  
-  source P7_rungafs.sh  
-  source P8_rungafSteady.sh  
-  python P9_getgafSteady.py  
-  python P10_rogerRFA.py  
+  python P1_buildAsets.py   # Output Nastran ASET and build FENIAX grid 
+  source P2_runmodal.sh    # Run Nastran modal solution
+  python P22_buildFEM.py   # build modal solution for FENIAX and Ka/Ma
+  python P3_dlm.py         # generate dlm model
+  source P4_rundihedral.sh  # run DMAP for normal of panels
+  python P5_getdihedral.py  # save normal of panels
+  python P6_outputgafs.py  # build gafs
+  source P7_rungafs.sh     # run Nastran to get GAFs
+  source P8_rungafSteady.sh   # build gafs manoeuvre
+  python P9_getgafSteady.py    # save gafs manoeuvre
+  python P10_rogerRFA.py    # run roger approx
 #+end_src
 
 * Modal Solution
@@ -52,7 +53,7 @@
   import feniax.plotools.nastranvtk.bdfdef as bdfdef
   import numpy as np
 
-  num_modes = 100
+  num_modes = 200
   sol = "eao" # {c,e}{a,f}{o,p}
   WRITE_GRID= True
   WRITE_ASETS= True
@@ -190,7 +191,7 @@
 #+end_src
 
 *** Clamped, asets, OP2 (cao)
-#+begin_src org :tangle "./NASTRAN/BUG103_cao.bdf"
+#+begin_src org :tangle "./NASTRAN/BUG103_cao.bdf" :noweb no
   <<bdf_BUG103case>>
   <<bdf_BUG103bulk>>
   PARAM,POST,-1
@@ -301,7 +302,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 - Plot the modes in Paraview. 
 - If running a condensed model, pick the nodes where the asets are and save them to a file for use in FENIAX. To be sure there is no mismatch between aero matrices and modes (change of signs for instance).
   
-#+begin_src python :results none  :noweb yes
+#+begin_src python :results none  :noweb yes :tangle P22_buildFEM.py
 
   eigs, modes = op4handler.write_op4modes(f"./NASTRAN/simulations_out/BUG103_{sol}.bdf",
                                           num_modes,
@@ -324,7 +325,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
       np.save(f"./FEM/eigenvals_{sol}{num_modes}.npy", eigs)
 #+end_src
 
-#+begin_src python :results none  :noweb yes
+#+begin_src python :results none  :noweb yes :tangle P22_buildFEM.py
   modes = op4handler.read_data(f"./NASTRAN/data_out/Phi{num_modes}_{sol}.op4", "PHG")
   bdf_file = f"./NASTRAN/BUG103_{sol}.bdf"
   bdf = BDF()
@@ -362,7 +363,7 @@ Plot the modal shapes in Paraview
 ** Read pch
 Read the pch file and save FE matrices to FEM folder
 
-#+begin_src python :noweb yes
+#+begin_src python :noweb yes :tangle P22_buildFEM.py
   import feniax.unastran.matrixbuilder as matrixbuilder
   soli = sol[:-1]
   id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch(f"./NASTRAN/simulations_out/BUG103_{soli}p.pch")
@@ -480,12 +481,15 @@ Build the aero model based on discretisation and the right-hand side aero built 
   dlm = aero.GenDLMPanels.from_dict(dlm_aeros) # pass your dictionary with DLM model
   dlm.build_model()
   dlm.model.write_bdf(f"./NASTRAN/DLMs/{label_dlm}.bdf") # write the bdf file
-  dlm.save_yaml(f"./NASTRAN/DLMs/model_{label_dlm}.bdf") # write the bdf file
+  dlm.save_yaml(f"./NASTRAN/DLMs/model_{label_dlm}.yaml") # write the bdf file
 
 #+end_src
 
 ** DLM grid: Collocation points and Paraview plotting
 
+- Get panel collocation points coordiantes
+- plot panel grid in paraview
+    
 Old method: build panel coordinates out of corner points 
 #+NAME: DLMparaview
 #+begin_src python :results none :tangle no
@@ -1829,7 +1833,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   iterate_vect = list(range(10))
   plot_prod = list(itertools.product(iterate_vect,iterate_vect))
   for li in plot_prod:
-      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 1e-3:
+      if np.linalg.norm(Qhh[:, li[0], li[1]]) > 5e-2:
           roger.plot_gafs(li[0], li[1], Qhh, [Qroger1, Qroger2, Qroger3, Qroger4])
 #+end_src
 
@@ -2050,7 +2054,7 @@ Forces and moments at node 35 and 61
       inp.system.bc1 = 'free'
       inp.system.q0treatment = 1
   inp.system.solution = "dynamic"
-  inp.system.t1 = 2
+  inp.system.t1 = 1.
   inp.system.tn = 2001
   inp.system.solver_library = "runge_kutta"
   inp.system.solver_function = "ode"
@@ -2831,12 +2835,12 @@ for local testing:
   <<GustMain>>
   device_count = 4
   inp.driver.sol_path = pathlib.Path(
-      f"./results/gust2_{sol}Shard")
+      f"./results/gust3_{sol}Shard")
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
-  inputflow = dict(length=np.linspace(25,265,8),
-                   intensity= np.linspace(0.1, 20, 8),
-                   rho_inf = np.linspace(0.3, 0.48, 8)
+  inputflow = dict(length=np.linspace(25,150,2),
+                   intensity= np.linspace(0.1, 20, 2),
+                   rho_inf = np.linspace(0.3, rho_inf, 2)
                  )
   inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
@@ -2852,7 +2856,7 @@ for local testing:
   <<GustMain>>
 
   inp.driver.sol_path = pathlib.Path(
-      f"./results/gust2_{sol}Shard")
+      f"./results/gust3_{sol}Shard")
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
   inputflow = dict(length=np.linspace(25,265,13),
