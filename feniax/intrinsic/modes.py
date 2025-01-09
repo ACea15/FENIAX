@@ -169,12 +169,6 @@ def compute_eigs_scipy(
 def compute_eigs_load(
     num_modes: int, path: pathlib.Path, eig_names: list[str], *args, **kwargs
 ) -> (jnp.ndarray, jnp.ndarray):
-    # eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/w.npy")
-    # eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/SailPlane/FEM/v.npy")
-    # eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/w.npy")
-    # eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisFrame/FEM/v.npy")
-    # eigenvals = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/w.npy")
-    # eigenvecs = jnp.load("/home/ac5015/programs/FEM4INAS/examples/ArgyrisBeam/FEM/v.npy")
     if path is not None:
         eigenvals = jnp.load(path / eig_names[0])
         eigenvecs = jnp.load(path / eig_names[1])

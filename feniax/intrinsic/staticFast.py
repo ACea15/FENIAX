@@ -22,12 +22,40 @@ def main_10g11(
     """
     Static computation with follower forces
     """
-    
-    Ka = kwargs["Ka"] #config.fem.Ka
-    Ma = kwargs["Ma"] #config.fem.Ma
-    reduced_eigenvals = kwargs["eigenvals"] 
-    reduced_eigenvecs = kwargs["eigenvecs"] 
-    t_loads = kwargs["t_loads"]
+
+    kwargs_list = list(kwargs.keys())
+    #print(config.fem.eigenvals)
+    # Ka = jax.lax.select("Ka" in kwargs_list, kwargs.get("Ka"), config.fem.Ka)
+    # Ma = jax.lax.select("Ma" in kwargs_list, kwargs.get("Ma"), config.fem.Ma)
+    # # eigenvals = config.fem.eigenvals #jax.lax.cond("eigenvals" in kwargs_list,
+    # #                          #lambda kwargs: kwargs.get("eigenvals"),
+    # #                          #lambda kwargs: config.fem.eigenvals,
+    # #                          #kwargs)
+    # # eigenvecs = config.fem.eigenvecs #jax.lax.select("eigenvecs" in kwargs_list,
+    # #                            #kwargs.get("eigenvecs"), config.fem.eigenvecs)
+    # # t_loads = kwargs.get("t_loads") #config.system.t #jax.lax.select("t_loads" in kwargs_list,
+    # #                           # kwargs.get("t_loads"), config.system.t)
+    if "Ka" in kwargs_list:
+        Ka = kwargs.get("Ka")
+    else:
+        Ka = config.fem.Ka
+    if "Ma" in kwargs_list:
+        Ma = kwargs.get("Ma")
+    else:
+        Ma = config.fem.Ma
+    if "eigenvals" in kwargs_list:
+        eigenvals = kwargs.get("eigenvals")
+    else:
+        eigenvals = config.fem.eigenvals
+    if "eigenvecs" in kwargs_list:
+        eigenvecs = kwargs.get("eigenvecs")
+    else:
+        eigenvecs = config.fem.eigenvecs
+    if "t_loads" in kwargs_list:
+        t_loads = kwargs.get("t_loads")
+    else:
+        t_loads = config.system.t
+        
     tn = len(t_loads)
     config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
     q2_index = config.system.states["q2"]
@@ -46,7 +74,7 @@ def main_10g11(
         X_xdelta,
         C0ab,
         C06ab
-    ) = adcommon._compute_modes(X, Ka, Ma, reduced_eigenvals, reduced_eigenvecs, config)
+    ) = adcommon._compute_modes(X, Ka, Ma, eigenvals, eigenvecs, config)
 
     gamma2 = couplings.f_gamma2(phi1ml, phi2l, psi2l, X_xdelta)
     eta0 = jnp.zeros(config.fem.num_modes)
@@ -63,20 +91,25 @@ def main_10g11(
         q2, tn, X, phi2l, psi2l, X_xdelta, C0ab, config
     )
     X1 = jnp.zeros_like(X2)
-    return (phi1,psi1,
-            phi2,
-            phi1l,
-            phi1ml,
-            psi1l,
-            phi2l,
-            psi2l,
-            omega,
-            X_xdelta,
-            C0ab,
-            C06ab,
-            gamma2,
-            q,
-            X1, X2, X3, ra, Cab
+    return dict(phi1 = phi1,
+            psi1 = psi1,
+            phi2 = phi2,
+            phi1l = phi1l,
+            phi1ml = phi1ml,
+            psi1l = psi1l,
+            phi2l = phi2l,
+            psi2l = psi2l,
+            omega = omega,
+            X_xdelta = X_xdelta,
+            C0ab = C0ab,
+            C06ab = C06ab,
+            gamma2 = gamma2,
+            q = q,
+            X1 = X1,
+            X2 = X2,
+            X3 = X3,
+            ra = ra,
+            Cab = Cab
             )
 
 

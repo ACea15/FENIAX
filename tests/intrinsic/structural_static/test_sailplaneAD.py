@@ -35,7 +35,6 @@ class TestSailPlaneAD:
         inp.driver.sol_path = None        
         inp.driver.typeof = "intrinsic"
         inp.simulation.typeof = "single"
-        inp.system.name = "s1"
         inp.system.solution = "static"
         inp.system.solver_library = "diffrax"
         inp.system.solver_function = "newton"
@@ -102,7 +101,6 @@ class TestSailPlaneAD:
         inp.driver.sol_path = None        
         inp.driver.typeof = "intrinsic"
         inp.simulation.typeof = "single"
-        inp.system.name = "s1"
         inp.system.solution = "static"
         inp.system.solver_library = "diffrax"
         inp.system.solver_function = "newton"

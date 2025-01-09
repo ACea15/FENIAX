@@ -93,6 +93,9 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
     def save(self):
         pass
 
+    def set_args(self):
+        pass
+    
     def set_eta0(self):
         pass
 
@@ -128,6 +131,7 @@ class StaticADIntrinsic(IntrinsicADSystem, cls_name="staticAD_intrinsic"):
 
 
 class DynamicADIntrinsic(IntrinsicADSystem, cls_name="dynamicAD_intrinsic"):
+    
     def set_system(self):
         label_sys = self.settings.label
         label_ad = self.settings.ad.label

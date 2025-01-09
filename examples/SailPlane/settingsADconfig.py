@@ -33,7 +33,7 @@ inp.driver.sol_path = pathlib.Path(
     f"./results_staticAD")
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
-inp.system.solution = "staticAD"
+inp.system.solution = "static"
 inp.system.solver_library = "diffrax"
 inp.system.solver_function = "newton"
 inp.system.solver_settings = dict(rtol=1e-6,

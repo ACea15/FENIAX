@@ -16,7 +16,7 @@ def main(
     input_dict: dict = None,
     input_obj: configuration.Config = None,
     return_driver: bool = False) -> Solution | Driver:
-    """Main ``FEM4INAS`` routine
+    """Main ``FENIAX`` routine
 
     Parameters
     ----------

@@ -6,7 +6,7 @@ def main(
     input_obj = None,
     return_driver: bool = False,
     device_count: int = None):
-    """Main ``FEM4INAS`` routine
+    """Main ``FENIAX`` routine
 
 
     Parameters

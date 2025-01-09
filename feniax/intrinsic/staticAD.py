@@ -36,27 +36,34 @@ def main_10g11_1(
     eigenvecs = jnp.load(config.fem.folder / config.fem.eig_names[1])
     reduced_eigenvals = eigenvals[: config.fem.num_modes]
     reduced_eigenvecs = eigenvecs[:, : config.fem.num_modes]
-    (phi1,psi1,
-     phi2,
-     phi1l,
-     phi1ml,
-     psi1l,
-     phi2l,
-     psi2l,
-     omega,
-     X_xdelta,
-     C0ab,
-     C06ab,
-     gamma2,
-     q,
-     X1, X2, X3, ra, Cab
-     ) = staticFast.main_10g11(q0,
+
+    sol_dict= staticFast.main_10g11(q0,
                                config,
-                               Ka=Ka,
-                               Ma=Ma,
-                               eigenvals=reduced_eigenvals,
-                               eigenvecs=reduced_eigenvecs,
+                               #Ka=Ka,
+                               #Ma=Ma,
+                               #eigenvals=reduced_eigenvals,
+                               #eigenvecs=reduced_eigenvecs,
                                t_loads=t_loads)
+
+    phi1 = sol_dict.get("phi1"),
+    psi1 = sol_dict.get("psi1"),
+    phi2 = sol_dict.get("phi2"),
+    phi1l = sol_dict.get("phi1l"),
+    phi1ml = sol_dict.get("phi1ml"),
+    psi1l = sol_dict.get("psi1l"),
+    phi2l = sol_dict.get("phi2l"),
+    psi2l = sol_dict.get("psi2l"),
+    omega = sol_dict.get("omega"),
+    X_xdelta = sol_dict.get("X_xdelta"),
+    C0ab = sol_dict.get("C0ab"),
+    C06ab = sol_dict.get("C06a")
+    gamma2 = sol_dict.get("gamma2")
+    q = sol_dict.get("q")
+    X1 = sol_dict.get("X1")
+    X2 = sol_dict.get("X2")
+    X3 = sol_dict.get("X3")
+    ra = sol_dict.get("ra")
+    Cab = sol_dict.get("Cab")
     
     return adcommon._objective_output(
         q=q,
@@ -95,7 +102,6 @@ def main_10g11_3(
         "eigenvecs"
     ]
 
-    t_loads = config.system.t
     config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
     reduced_eigenvals = eigenvals[: config.fem.num_modes]
     reduced_eigenvecs = eigenvecs[:, : config.fem.num_modes]
@@ -120,8 +126,7 @@ def main_10g11_3(
                                Ka=Ka,
                                Ma=Ma,
                                eigenvals=reduced_eigenvals,
-                               eigenvecs=reduced_eigenvecs,
-                               t_loads=t_loads)
+                               eigenvecs=reduced_eigenvecs)
     
     return adcommon._objective_output(
         q=q,

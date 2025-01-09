@@ -7,7 +7,7 @@ def main(
     return_driver: bool = False,
     device_count: int = None
 ) -> Solution | Driver:
-    """Main ``FEM4INAS`` routine
+    """Main ``FENIAX`` routine
 
 
     Parameters

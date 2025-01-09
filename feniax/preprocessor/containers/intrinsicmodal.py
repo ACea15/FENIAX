@@ -23,6 +23,7 @@ from feniax.intrinsic.functions import (
 )
 from feniax.preprocessor.containers.data_container import DataContainer
 from feniax.preprocessor.utils import dfield, initialise_Dclass, load_jnp
+import feniax.intrinsic.utils as iutils
 
 def filter_kwargs(cls):
     @wraps(cls)
@@ -348,12 +349,20 @@ class Dfem(DataContainer):
         if self.Ma is None:
             if self.folder is None:
                 setobj("Ma_name", os.path.abspath(Ma_name))
-
             else:
                 setobj("Ma_name", self.folder / Ma_name)
 
-        setobj("Ka", load_jnp(self.Ka_name))
-        setobj("Ma", load_jnp(self.Ma_name))
+        if self.Ka_name is not None and self.Ka is None:
+            setobj("Ka", load_jnp(self.Ka_name))
+        if self.Ma_name is not None and self.Ma is None:            
+            setobj("Ma", load_jnp(self.Ma_name))
+        if self.eig_names is not None and self.eigenvals is None:
+            eigenvals, eigenvecs = iutils.compute_eigs_load(self.num_modes,
+                                                           self.folder,
+                                                           self.eig_names)
+                                                           
+            setobj("eigenvals", eigenvals)
+            setobj("eigenvecs", eigenvecs)
         if self.folder is None:
             setobj("grid", os.path.abspath(grid))
 
@@ -1233,7 +1242,7 @@ class Dsystem(DataContainer):
 
     """
 
-    name: str = dfield("System name")
+    name: str = dfield("System name", default="sys1")
     _fem: Dfem = dfield("", default=None, yaml_save=False)
     solution: str = dfield(
         "Type of solution to be solved",
@@ -1251,7 +1260,7 @@ class Dsystem(DataContainer):
     )
     operationalmode: str = dfield(
         "",
-        options=["(empty string/default)", "AD", "Shard", "ShardAD"],
+        options=["(empty string/default)", "Fast", "AD", "Shard", "ShardAD"],
         default=""
     )
     
@@ -1371,7 +1380,8 @@ class Dsystem(DataContainer):
                         #_aero=self._aero,
                     ),
                 )
-                
+        elif self.operationalmode == "fast":
+            object.__setattr__(self, "operationalmode", "Fast")
         if self.label is None:
             self.build_label()
         self._initialize_attributes()

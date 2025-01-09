@@ -109,7 +109,6 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         else:
             assert len(eta0) == num_modes, "wrong length in eta0"
             self.eta0 = eta0
-        self.set_args()
 
     def set_ic(self, q0):
         if q0 is None:

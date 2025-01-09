@@ -23,7 +23,6 @@ class TestWingSPad:
         inp.driver.sol_path= None
         inp.driver.save_fem = False
         inp.simulation.typeof = "single"
-        inp.system.name = "s1"
         inp.system.solution = "dynamic"
         inp.system.t1 = 10.
         inp.system.tn = 1001
@@ -63,7 +62,6 @@ class TestWingSPad:
         inp.driver.sol_path= None
         inp.driver.save_fem = False
         inp.simulation.typeof = "single"
-        inp.system.name = "s1"
         inp.system.solution = "dynamic"
         inp.system.t1 = 10.
         inp.system.tn = 1001
