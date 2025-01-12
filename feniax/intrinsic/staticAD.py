@@ -45,19 +45,6 @@ def main_10g11_1(
                                #eigenvecs=reduced_eigenvecs,
                                t_loads=t_loads)
 
-    phi1 = sol_dict.get("phi1"),
-    psi1 = sol_dict.get("psi1"),
-    phi2 = sol_dict.get("phi2"),
-    phi1l = sol_dict.get("phi1l"),
-    phi1ml = sol_dict.get("phi1ml"),
-    psi1l = sol_dict.get("psi1l"),
-    phi2l = sol_dict.get("phi2l"),
-    psi2l = sol_dict.get("psi2l"),
-    omega = sol_dict.get("omega"),
-    X_xdelta = sol_dict.get("X_xdelta"),
-    C0ab = sol_dict.get("C0ab"),
-    C06ab = sol_dict.get("C06a")
-    gamma2 = sol_dict.get("gamma2")
     q = sol_dict.get("q")
     X1 = sol_dict.get("X1")
     X2 = sol_dict.get("X2")

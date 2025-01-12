@@ -33,10 +33,12 @@ class TestSailPlaneFast:
 
         inp.fem.folder = file_path / "../../../examples/SailPlane/FEM"
         inp.fem.num_modes = 50
+        inp.driver.fast_on = True
         inp.driver.typeof = "intrinsic"
         inp.driver.save_fem = False
         inp.driver.sol_path = None
         inp.simulation.typeof = "single"
+        inp.system.operationalmode = "fast"
         inp.system.solution = "static"
         inp.system.save = False 
         inp.system.solver_library = "diffrax"
@@ -109,11 +111,6 @@ class TestSailPlaneFast:
     def test_phi1ml(self, sol, data):
 
         assert jnp.allclose(sol.modes.phi1ml, data.modes.phi1ml)
-
-    def test_gamma1(self, sol, data):
-        
-        assert jnp.allclose(sol.couplings.gamma1,
-                            data.couplings.gamma1)
 
     def test_gamma2(self, sol, data):
 

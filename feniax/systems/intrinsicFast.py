@@ -2,6 +2,7 @@ import itertools
 
 import feniax.intrinsic.dynamicShard as dynamic_shard
 import feniax.intrinsic.staticFast as staticFast
+import feniax.intrinsic.dynamicFast as dynamicFast
 import feniax.intrinsic.xloads as xloads
 from feniax.systems.intrinsic_system import IntrinsicSystem
 
@@ -69,7 +70,7 @@ class StaticFastIntrinsic(IntrinsicFastSystem, cls_name="staticFast_intrinsic"):
 
     def build_solution(self, q, X2, X3, ra, Cab, *args, **kwargs):
         
-        super().build_solution()
+        super().build_solution(**kwargs)
         self.sol.add_container(
             "StaticSystem",
             label="_" + self.name,
@@ -89,11 +90,11 @@ class DynamicFastIntrinsic(IntrinsicFastSystem, cls_name="dynamicFast_intrinsic"
         label_sys = self.settings.label
         self.label = f"main_{label_sys}"
         print(f"***** Setting intrinsic Dynamic Fast system with label {self.label}")
-        self.main = getattr(staticFast, self.label)
+        self.main = getattr(dynamicFast, self.label)
 
-    def build_solution(self, **kwargs):
+    def build_solution(self, q, X1, X2, X3, ra, Cab, **kwargs):
 
-        super().build_solution()
+        super().build_solution(**kwargs)
         self.sol.add_container(
             "DynamicSystem",
             label="_" + self.name,

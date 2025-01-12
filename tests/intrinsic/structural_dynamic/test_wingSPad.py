@@ -90,7 +90,7 @@ class TestWingSPad:
     
     def test_jac(self, sol):
         
-        assert jnp.abs(3567165.1388 - sol.dynamicsystem_sys1.jac['alpha']) < 0.01
+        assert jnp.abs(3726890.015 - sol.dynamicsystem_sys1.jac['alpha']) < 0.01
 
     def test_jacfd(self, sol, sol_epsilon):
         

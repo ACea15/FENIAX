@@ -645,3 +645,52 @@ instance = MyClass(attr1=10, attr2="example")
 # Print the extracted attributes
 for attribute in MyClass.attributes:
     print(attribute)
+
+##########################
+
+import os
+os.environ["XLA_FLAGS"] = '--xla_force_host_platform_device_count=8' # Use 8 CPU devices
+
+import jax
+import jax.numpy as jnp
+from jax.experimental import mesh_utils
+from jax.sharding import Mesh, PartitionSpec as P, NamedSharding
+
+# Create a Sharding object to distribute a value across devices:
+mesh = Mesh(devices=mesh_utils.create_device_mesh((4, 2)),
+            axis_names=('x', 'y'))
+
+# Create an array of random values:
+x = jax.random.normal(jax.random.key(0), (8192, 8192))
+# and use jax.device_put to distribute it across devices:
+y = jax.device_put(x, NamedSharding(mesh, P('x', 'y')))
+jax.debug.visualize_array_sharding(y)
+
+
+@jax.jit
+def f(x):
+
+    # y = jnp.ones((2, 3))
+    y = x * 2 #y.at[0, 2].set(x*2)
+    dy = dict(x=x, y=y)
+    return dy
+
+@jax.jit
+def fshard(x):
+
+    fvmap = jax.vmap(f)
+    y = fvmap(x)
+    return y
+
+mesh = Mesh(devices=mesh_utils.create_device_mesh((8,)),
+            axis_names=('x'))
+
+# Create an array of random values:
+x = jax.random.normal(jax.random.key(0), (80,2,3))
+# and use jax.device_put to distribute it across devices:
+xshard = jax.device_put(x, NamedSharding(mesh, P('x')))
+
+y = fshard(xshard)
+jax.debug.visualize_array_sharding(y[:,0])
+
+#print(y)
