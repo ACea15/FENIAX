@@ -1,0 +1,323 @@
+#  
+engine: intrinsicmodal
+fem:
+  # Connectivities between components
+  connectivity:
+    FusBack:
+    - FusTail
+    - VTP
+    FusFront:
+    RWing:
+    LWing:
+    FusTail:
+    VTP:
+    - HTP
+    - VTPTail
+    HTP:
+    - RHTP
+    - LHTP
+    VTPTail:
+    RHTP:
+    LHTP:
+  # Folder in which to find Ka, Ma, and grid data (with those names)
+  folder:
+  # Condensed stiffness matrix name
+  Ka_name: /home/acea/projects/FENIAX/examples/BUG/FEM/Ka_ca.npy
+  # Condensed mass matrix name
+  Ma_name: /home/acea/projects/FENIAX/examples/BUG/FEM/Ma_ca.npy
+  # Number of modes in the solution
+  num_modes: 50
+  # Calculation of eigenvalues/vectors options=["scipy", "jax_custom", "inputs, input_memory"]
+  eig_type: inputs
+  # Cut-off frequency such that eigenvalues smaller than this are set to 0
+  eig_cutoff: 0.01
+  # name to load eigenvalues/vectors in `folder`
+  eig_names:
+  - ./FEM/eigenvals_cao50.npy
+  - ./FEM/eigenvecs_cao50.npy
+  # Grid file or array with Nodes Coordinates, node ID in the FEM, and associated component
+  grid: /home/acea/projects/FENIAX/examples/BUG/FEM/structuralGrid_ca
+  # Tolerance for building the local frame
+  Cab_xtol: 0.0001
+  # No description available
+  fe_order:
+  - -1
+  - 5
+  - 6
+  - 7
+  - 8
+  - 4
+  - 3
+  - 2
+  - 1
+  - 0
+  - 10
+  - 11
+  - 12
+  - 13
+  - 14
+  - 15
+  - 16
+  - 17
+  - 18
+  - 19
+  - 20
+  - 21
+  - 22
+  - 23
+  - 24
+  - 25
+  - 26
+  - 27
+  - 28
+  - 29
+  - 30
+  - 31
+  - 32
+  - 33
+  - 34
+  - 35
+  - 59
+  - 60
+  - 61
+  - 62
+  - 63
+  - 64
+  - 65
+  - 66
+  - 67
+  - 68
+  - 69
+  - 70
+  - 71
+  - 72
+  - 73
+  - 74
+  - 75
+  - 76
+  - 77
+  - 78
+  - 79
+  - 80
+  - 81
+  - 82
+  - 83
+  - 84
+  - 9
+  - 36
+  - 37
+  - 38
+  - 39
+  - 40
+  - 41
+  - 42
+  - 43
+  - 45
+  - 44
+  - 46
+  - 47
+  - 48
+  - 49
+  - 50
+  - 51
+  - 52
+  - 53
+  - 54
+  - 55
+  - 56
+  - 57
+  - 58
+  - 85
+  - 86
+  - 87
+  - 88
+  - 89
+  - 90
+  - 91
+  - 92
+  - 93
+  - 94
+  - 95
+  - 96
+  - 97
+driver:
+  # Driver to manage the simulation options=["intrinsic"]
+  typeof: intrinsic
+  # Folder path to save results
+  sol_path: resultstest/manoeuvre2
+  # Compute or load presimulation data
+  compute_fem: true
+  # Save presimulation data
+  save_fem: true
+  # Algorithm differentiation ON
+  ad_on: false
+  # No description available
+  fast_on: false
+simulation:
+  # Type of simulation ["single", "serial", "parallel"]
+  typeof: single
+  # Dictionary that defines which system is run after which.
+  workflow:
+system:
+  # No description available
+  name: s1
+  # No description available
+  solution: static
+  # No description available
+  target: Level
+  # No description available
+  bc1: clamped
+  # No description available
+  operationalmode: ''
+  # No description available
+  save: true
+  xloads:
+    # Include point follower forces
+    follower_forces: false
+    # No description available
+    dead_forces: false
+    # No description available
+    gravity_forces: false
+    # No description available
+    modalaero_forces: true
+    # No description available
+    x:
+    - 0.0
+    - 1.0
+    # No description available
+    force_follower:
+    # No description available
+    force_dead:
+    # No description available
+    follower_points:
+    # No description available
+    dead_points:
+    # No description available
+    follower_interpolation:
+    # No description available
+    dead_interpolation:
+    # No description available
+    gravity: 9.807
+    # No description available
+    gravity_vect:
+    - 0
+    - 0
+    - -1
+  aero:
+    # Flow velocity
+    u_inf: 209.62786434059765
+    # Flow density
+    rho_inf: 0.41275511341689247
+    # Reference chord
+    c_ref: 3.0
+    # No description available
+    qalpha:
+    - - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+    - - 0.0
+      - 0.10471975511965977
+      - 0.0
+      - 0.0
+      - 0.0
+      - 0.0
+    # No description available
+    qx:
+    # No description available
+    elevator_index:
+    # No description available
+    elevator_link:
+    # No description available
+    approx: Roger
+    # No description available
+    poles:
+    - 0.05
+    - 0.35
+    - 1.25
+    - 1.55
+    - 1.8499999999999999
+    # No description available
+    num_poles: 5
+    # No description available
+    gust_profile: mc
+    # No description available
+    gust:
+    # No description available
+    controller_name:
+    # No description available
+    controller_settings:
+  # No description available
+  t0: 0.0
+  # No description available
+  t1: 1
+  # No description available
+  tn: 6
+  # No description available
+  dt: 0.16666666666666666
+  # No description available
+  t:
+  - 0.16666666666666666
+  - 0.3333333333333333
+  - 0.5
+  - 0.6666666666666666
+  - 0.8333333333333334
+  - 1
+  # No description available
+  solver_library: diffrax
+  # No description available
+  solver_function: newton
+  solver_settings:
+    # No description available
+    function: newton
+    # No description available
+    rtol: 1e-06
+    # No description available
+    atol: 1e-06
+    # No description available
+    max_steps: 100
+    # No description available
+    norm: linalg_norm
+    # No description available
+    kappa: 0.01
+  # No description available
+  q0treatment: 2
+  # No description available
+  rb_treatment: 1
+  # No description available
+  nonlinear: 1
+  # No description available
+  residualise: false
+  # No description available
+  residual_modes: 0
+  # No description available
+  label: 10g15
+  # No description available
+  label_map:
+    soltype: 1
+    target: 0
+    gravity: g
+    bc1: 0
+    aero_sol: 1
+    aero_steady: 1
+    aero_unsteady: 0
+    point_loads: 0
+    q0treatment: 0
+    nonlinear: ''
+    residualise: ''
+  # No description available
+  states:
+  # No description available
+  num_states:
+  # No description available
+  init_states:
+  # No description available
+  init_mapper:
+    q1: velocity
+    q2: force
+  # No description available
+  ad:
+  # No description available
+  shard:

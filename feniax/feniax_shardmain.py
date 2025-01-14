@@ -26,6 +26,10 @@ def main(
         process.
 
     """
+    # from jax.config import config;
+    import jax
+    jax.config.update("jax_enable_x64", True)
+    
     if device_count is not None:
         import os
         os.environ["XLA_FLAGS"] = f"--xla_force_host_platform_device_count={device_count}"
@@ -33,10 +37,6 @@ def main(
     import feniax.drivers
     import feniax.preprocessor.configuration as configuration  # Config, ValidateConfig
     from feniax.preprocessor.solution import Solution
-
-    # from jax.config import config;
-    import jax
-    jax.config.update("jax_enable_x64", True)
         
     config = configuration.initialise_config(input_file, input_dict, input_obj)
     if config.driver.sol_path is not None:
