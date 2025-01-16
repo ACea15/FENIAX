@@ -135,8 +135,7 @@ def main_20g21_2(
         f_obj=f_obj,
         nodes=jnp.array(obj_args.nodes),
         components=jnp.array(obj_args.components),
-        t=jnp.array(obj_args.t),
-        axis=obj_args.axis,
+        t=jnp.array(obj_args.t)
     )
 
 

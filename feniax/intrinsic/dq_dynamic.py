@@ -261,6 +261,7 @@ def dq_20g21(t, q, *args):
     Flgust = xloads.lags_rogergust(t, xgust, Flgust)  # NlxNm
     # jax.debug.breakpoint()
     Fl += Flgust
+    # jax.debug.print("eta_gust {eta_gust}", eta_gust=xgust)
     # Fl = Fl_tensor.reshape(num_modes * num_poles
     return jnp.hstack([F1, F2, Fl])
 

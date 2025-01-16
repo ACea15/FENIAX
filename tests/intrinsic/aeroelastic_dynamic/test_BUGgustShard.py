@@ -7,7 +7,6 @@ from feniax.preprocessor.inputs import Inputs
 from feniax.preprocessor import solution
 import feniax.feniax_main
 import feniax.feniax_shardmain
-import feniax.plotools.reconstruction as reconstruction
 import pytest
 
 file_path = pathlib.Path(__file__).parent

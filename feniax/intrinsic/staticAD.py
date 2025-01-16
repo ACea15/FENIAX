@@ -20,7 +20,7 @@ def main_10g11_1(
     f_obj,
     obj_args,
     *args,
-    **kwargs,
+    **kwargs
 ):
     """
     Static follower force, pseudo time input

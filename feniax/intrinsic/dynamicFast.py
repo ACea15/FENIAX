@@ -16,7 +16,7 @@ def main_20g1(
     **kwargs,
 ):
     """
-    Dynamic response to Follower load
+    Dynamic response free vibrations
     """
     
     kwargs_list = list(kwargs.keys())
@@ -362,8 +362,7 @@ def main_20g21(
     time = config.system.t
     collocation_points = config.system.aero.gust.collocation_points
     gust_totaltime = config.system.aero.gust.totaltime
-    xgust = config.system.aero.gust.x
-    time = config.system.aero.gust.time
+    timegust = config.system.aero.gust.time
     ntime = config.system.aero.gust.ntime
 
     npanels = len(collocation_points)
@@ -375,7 +374,7 @@ def main_20g21(
         gust_shift,
         collocation_points,
         dihedral,  # normals,
-        time,
+        timegust,
         gust_totaltime,
         fshape_span,
     )
@@ -399,16 +398,16 @@ def main_20g21(
         gamma2,
         omega,
         states,
+        poles,
         num_modes,
         num_poles,
+        timegust,
+        c_ref,        
         A0hat,
         A1hat,
         A2hatinv,
         A3hat,
         u_inf,
-        c_ref,
-        poles,
-        time,
         Q_wsum,
         Ql_wdot,
     )

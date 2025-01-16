@@ -13,8 +13,8 @@ inp = Inputs()
 inp.engine = "intrinsicmodal"
 # WARNING: eigs need to be input as they are implicit in the aero matrices
 inp.fem.eig_type = "input_memory"
-inp.fem.eigenvals = jnp.load("./FEM/Dreal50.npy")
-inp.fem.eigenvecs = jnp.load("./FEM/Vreal50.npy").T
+inp.fem.eigenvals = jnp.load("./FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load("./FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
@@ -22,16 +22,16 @@ inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [26], [], [28], [], [30], [], []]
 inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.grid = "structuralGridc.txt"
-inp.fem.num_modes = 50
+inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
 # inp.driver.sol_path = pathlib.Path(
 #     f"./resultsGust_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    "./resultsGust_g1i2_m50")
+    "./resultsGust_g1i2_m70")
 inp.simulation.typeof = "single"
 inp.systems.sett.s1.solution = "dynamic"
-inp.systems.sett.s1.t1 = 7.5
-inp.systems.sett.s1.tn = 2001
+inp.systems.sett.s1.t1 = 5
+inp.systems.sett.s1.tn = 1001
 inp.systems.sett.s1.solver_library = "runge_kutta"
 inp.systems.sett.s1.solver_function = "ode"
 inp.systems.sett.s1.solver_settings = dict(solver_name="rk4")

@@ -48,8 +48,10 @@ def main_20g21(input1, #gust_intensity, gust_length, u_inf, rho_inf,
     q2_index = jnp.array(range(config.fem.num_modes, 2 * config.fem.num_modes)) #config.system.states['q2']
     q1_index = jnp.array(range(config.fem.num_modes)) #config.system.states['q1']
     #eigenvals, eigenvecs = scipy.linalg.eigh(Ka, Ma)
-    eigenvals = jnp.load(config.fem.folder / config.fem.eig_names[0]).T
-    eigenvecs = jnp.load(config.fem.folder / config.fem.eig_names[1]).T
+    #eigenvals = jnp.load(config.fem.folder / config.fem.eig_names[0]).T
+    #eigenvecs = jnp.load(config.fem.folder / config.fem.eig_names[1]).T
+    eigenvals = config.fem.eigenvals
+    eigenvecs = config.fem.eigenvecs
     reduced_eigenvals = eigenvals[:config.fem.num_modes]
     reduced_eigenvecs = eigenvecs[:, :config.fem.num_modes]
     # solver_args = config.system.solver_settings
@@ -103,7 +105,7 @@ def main_20g21(input1, #gust_intensity, gust_length, u_inf, rho_inf,
     collocation_points = config.system.aero.gust.collocation_points
     gust_totaltime = config.system.aero.gust.totaltime
     xgust = config.system.aero.gust.x
-    time = config.system.aero.gust.time
+    gusttime = config.system.aero.gust.time
     ntime = config.system.aero.gust.ntime
     # gust_totaltime, xgust, time, ntime, npanels = igust._get_gustRogerMc(
     #     gust_intensity,
@@ -133,7 +135,7 @@ def main_20g21(input1, #gust_intensity, gust_length, u_inf, rho_inf,
                                                        gust_shift,
                                                        collocation_points,
                                                        dihedral, #normals,
-                                                       time,
+                                                       gusttime,
                                                        gust_totaltime,
                                                        fshape_span
                                                        )
@@ -150,11 +152,11 @@ def main_20g21(input1, #gust_intensity, gust_length, u_inf, rho_inf,
     num_modes = config.fem.num_modes
     states = config.system.states
     eta0 = jnp.zeros(num_modes)
-    dq_args = (eta0, gamma1, gamma2, omega, states,
-               num_modes, num_poles,
+    dq_args = (eta0, gamma1, gamma2, omega, states, poles,
+               num_modes, num_poles, gusttime, c_ref,
                A0hat, A1hat, A2hatinv, A3hat,
-               u_inf, c_ref, poles,
-               time, Q_wsum, Ql_wdot)
+               u_inf, 
+               Q_wsum, Ql_wdot)
 
     #################
     # import pdb;pdb.set_trace()
@@ -185,15 +187,16 @@ def main_20g21(input1, #gust_intensity, gust_length, u_inf, rho_inf,
                                               psi2l, X_xdelta,
                                               C0ab, config)
     # X1 = jnp.zeros_like(X2)
-    objective = f_obj(X1=X1, X2=X2, X3=X3, ra=ra, Cab=Cab, **obj_args)
-    return jnp.max(ra[:, :, 0], axis=0) #jnp.max(q1[:,0]) #
+    objective = f_obj(q=q, X1=X1, X2=X2, X3=X3, ra=ra, Cab=Cab, **obj_args)
+    return objective
+    # return jnp.max(X2[jnp.ix_(jnp.arange(tn), jnp.array([0,1,2,3,4,5]), jnp.array([5]))], axis=0) #jnp.max(q1[:,0]) #
 
 inp = Inputs()
 inp.engine = "intrinsicmodal"
-inp.fem.eig_names = ["Dreal50.npy", "Vreal50.npy"]
-#inp.fem.eig_type = "input_memory"
-#inp.fem.eigenvals = jnp.load("./FEM/Dreal50.npy")
-#inp.fem.eigenvecs = jnp.load("./FEM/Vreal50.npy").T
+# WARNING: eigs need to be input as they are implicit in the aero matrices
+inp.fem.eig_type = "input_memory"
+inp.fem.eigenvals = jnp.load("./FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load("./FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
@@ -201,22 +204,20 @@ inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [26], [], [28], [], [30], [], []]
 inp.fem.folder = pathlib.Path('./FEM/')
 inp.fem.grid = "structuralGridc.txt"
-inp.fem.num_modes = 50
+inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
 # inp.driver.sol_path = pathlib.Path(
 #     f"./resultsGust_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}")
 inp.driver.sol_path = pathlib.Path(
-    "./resultsGust_g1i2_m50")
+    "./resultsGust_g1i2_m70")
 inp.simulation.typeof = "single"
-inp.system.name = "s1"
 inp.system.solution = "dynamic"
-inp.system.t1 = 1
-inp.system.tn = 500
+inp.system.t1 = 5
+inp.system.tn = 1001
 inp.system.solver_library = "runge_kutta"
 inp.system.solver_function = "ode"
 inp.system.solver_settings = dict(solver_name="rk4")
 inp.system.xloads.modalaero_forces = True
-inp.system.xloads.gravity_forces = True
 inp.system.q0treatment = 2
 inp.system.aero.c_ref = 7.271
 inp.system.aero.u_inf = 200.
@@ -235,25 +236,23 @@ inp.system.aero.gust.collocation_points = "./NASTRAN/AERO/Control_nodes.npy"
 # path2config = pathlib.Path("./config.yaml")
 config =  configuration.Config(inp)
 
-
-
 jfwd = jax.jacfwd(main_20g21)
 jrev = jax.jacrev(main_20g21)
 
 
 
 Ff = jfwd((config.system.aero.gust.intensity,
-                 config.system.aero.gust.length,
-                 config.system.aero.u_inf,
-                 config.system.aero.rho_inf),
-                 #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
-                 q0=jnp.zeros(config.fem.num_modes*(2 + config.system.aero.num_poles)),
-                 Ka=config.fem.Ka,
-                 Ma=config.fem.Ma,
-                 config=config,
-                 f_obj=objectives.X2_MAX,
-                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
-                               components=jnp.arange(6),axis=0)
+           config.system.aero.gust.length,
+           config.system.aero.u_inf,
+           config.system.aero.rho_inf),
+          #t_array=jnp.array([1,2,3,4,5]), #jnp.array(config.system.t[:-1]),
+          q0=jnp.zeros(config.fem.num_modes*(2 + config.system.aero.num_poles)),
+          Ka=config.fem.Ka,
+          Ma=config.fem.Ma,
+          config=config,
+          f_obj=objectives.X2_MAX,
+          obj_args=dict(nodes=jnp.array([5]),t=jnp.arange(len(config.system.t)),
+                        components=jnp.arange(6))
                  )
 
 Fr = jrev((config.system.aero.gust.intensity,
@@ -266,10 +265,10 @@ Fr = jrev((config.system.aero.gust.intensity,
                  Ma=config.fem.Ma,
                  config=config,
                  f_obj=objectives.X2_MAX,
-                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
-                               components=jnp.arange(6),axis=0)
+                 obj_args=dict(nodes=jnp.array([5]),t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6))          
                  )
-epsilon = 1e-4
+epsilon = 1e-2
 F11 = main_20g21((config.system.aero.gust.intensity,
                  config.system.aero.gust.length,
                  config.system.aero.u_inf,
@@ -280,8 +279,8 @@ F11 = main_20g21((config.system.aero.gust.intensity,
                  Ma=config.fem.Ma,
                  config=config,
                  f_obj=objectives.X2_MAX,
-                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
-                               components=jnp.arange(6),axis=0)
+                 obj_args=dict(nodes=jnp.array([5]),t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6))
                  )
 F12 = main_20g21((config.system.aero.gust.intensity+epsilon,
                  config.system.aero.gust.length,
@@ -293,8 +292,8 @@ F12 = main_20g21((config.system.aero.gust.intensity+epsilon,
                  Ma=config.fem.Ma,
                  config=config,
                  f_obj=objectives.X2_MAX,
-                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
-                               components=jnp.arange(6),axis=0)
+                 obj_args=dict(nodes=jnp.array([5]),t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6))
                  )
 F1dp = (F12 - F11) / epsilon
 
@@ -308,8 +307,8 @@ F22 = main_20g21((config.system.aero.gust.intensity,
                  Ma=config.fem.Ma,
                  config=config,
                  f_obj=objectives.X2_MAX,
-                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
-                               components=jnp.arange(6),axis=0)
+                 obj_args=dict(nodes=jnp.array([5]),t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6))
                  )
 F2dp = (F22 - F11) / epsilon
 
@@ -325,8 +324,8 @@ F32 = main_20g21((config.system.aero.gust.intensity,
                  Ma=config.fem.Ma,
                  config=config,
                  f_obj=objectives.X2_MAX,
-                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
-                               components=jnp.arange(6),axis=0)
+                 obj_args=dict(nodes=jnp.array([5]),t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6))
                  )
 F3dp = (F32 - F11) / epsilon2
 
@@ -340,8 +339,8 @@ F42 = main_20g21((config.system.aero.gust.intensity,
                  Ma=config.fem.Ma,
                  config=config,
                  f_obj=objectives.X2_MAX,
-                 obj_args=dict(nodes=5,t=jnp.arange(len(config.system.t)),
-                               components=jnp.arange(6),axis=0)
+                 obj_args=dict(nodes=jnp.array([5]),t=jnp.arange(len(config.system.t)),
+                               components=jnp.arange(6))
                  )
 F4dp = (F42 - F11) / epsilon
 

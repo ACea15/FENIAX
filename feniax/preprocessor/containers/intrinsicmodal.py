@@ -471,7 +471,7 @@ def gust_discretisation(
     min_collocationpoints,
     max_collocationpoints,
 ):
-    #
+    # TODO: change 1e-6 as option
     gust_totaltime = gust_length / u_inf
     xgust = jnp.arange(
         min_collocationpoints,  # jnp.min(collocation_points[:,0]),
