@@ -8,6 +8,7 @@ import pathlib
 
 file_path = pathlib.Path(__file__).parent
 
+@pytest.mark.private
 class TestXRF1:
 
     @pytest.fixture(scope="class")
