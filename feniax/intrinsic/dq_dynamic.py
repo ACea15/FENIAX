@@ -210,7 +210,7 @@ def dq_20g242(t, q, *args):
 # @jax.jit
 # @partial(jax.jit, static_argnames=['q'])
 def dq_20g21(t, q, *args):
-    """Gust response."""
+    """Gust response, clamped model"""
 
     (
         eta_0,

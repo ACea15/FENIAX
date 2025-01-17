@@ -8,17 +8,8 @@ import feniax.intrinsic.couplings as couplings
 import feniax.intrinsic.dq_dynamic as dq_dynamic
 import feniax.systems.intrinsic_system as isys
 
-@partial(jax.jit, static_argnames=["config"])
-def main_20g1(
-    q0,
-    config,
-    *args,
-    **kwargs,
-):
-    """
-    Dynamic response free vibrations
-    """
-    
+def _get_inputs(config, **kwargs):
+
     kwargs_list = list(kwargs.keys())
     if "Ka" in kwargs_list:
         Ka = kwargs.get("Ka")
@@ -40,108 +31,15 @@ def main_20g1(
         alpha = kwargs.get("alpha")
     else:
         alpha = 1.
-    
-    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
-    q2_index = config.system.states["q2"]
-    q1_index = config.system.states["q1"]
-    eigenvals = jnp.load(config.fem.folder / config.fem.eig_names[0])
-    eigenvecs = jnp.load(config.fem.folder / config.fem.eig_names[1])
-    eigenvals = eigenvals[: config.fem.num_modes]
-    eigenvecs = eigenvecs[:, : config.fem.num_modes]
-    # solver_args = config.system.solver_settings
-    X = config.fem.X
-    (
-        phi1,
-        psi1,
-        phi2,
-        phi1l,
-        phi1ml,
-        psi1l,
-        phi2l,
-        psi2l,
-        omega,
-        X_xdelta,
-        C0ab,
-        C06ab,
-    ) = adcommon._compute_modes(X, Ka, Ma, eigenvals, eigenvecs, config)
 
-    gamma1 = couplings.f_gamma1(phi1, psi1)
-    gamma2 = couplings.f_gamma2(phi1ml, phi2l, psi2l, X_xdelta)
-    config.system.xloads.build_point_follower(config.fem.num_nodes, C06ab)
-    x_forceinterpol = config.system.xloads.x
-    y_forceinterpol = alpha * config.system.xloads.force_follower
-    states = config.system.states
-    eta0 = jnp.zeros(config.fem.num_modes)
-    dq_args = (
-        eta0,
-        gamma1,
-        gamma2,
-        omega,
-        states,
-    )
+    input_dict = dict(Ka=Ka, Ma=Ma, eigenvals=eigenvals,
+                      eigenvecs=eigenvecs,
+                      alpha=alpha
+                      )
+    return input_dict
 
-    states_puller, eqsolver = sollibs.factory(
-        config.system.solver_library, config.system.solver_function
-    )
+def _get_inputs_aero(config, **kwargs):
 
-    sol = eqsolver(
-        dq_dynamic.dq_20g1,
-        dq_args,
-        config.system.solver_settings,
-        q0=q0,
-        t0=config.system.t0,
-        t1=config.system.t1,
-        tn=config.system.tn,
-        dt=config.system.dt,
-        t=config.system.t,
-    )
-    q = states_puller(sol)
-
-    # q = _solve(dq_static.dq_10g11, t_loads, q0, dq_args, config.system.solver_settings)
-    # q = _solve(dq_static.dq_10g11, t_loads, q0, dq_args, config.system.solver_settings)
-    q1 = q[:, q1_index]
-    q2 = q[:, q2_index]
-    # X2, X3, ra, Cab = recover_staticfields(q, tn, X, q2_index,
-    #                                        phi2l, psi2l, X_xdelta, C0ab, config.fem)
-    tn = len(q)
-    X1, X2, X3, ra, Cab = isys.recover_fields(
-        q1, q2, tn, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config
-    )
-
-    return dict(phi1 = phi1,
-                psi1 = psi1,
-                phi2 = phi2,
-                phi1l = phi1l,
-                phi1ml = phi1ml,
-                psi1l = psi1l,
-                phi2l = phi2l,
-                psi2l = psi2l,
-                omega = omega,
-                X_xdelta = X_xdelta,
-                C0ab = C0ab,
-                C06ab = C06ab,
-                gamma1 = gamma1,
-                gamma2 = gamma2,
-                q = q,
-                X1 = X1,
-                X2 = X2,
-                X3 = X3,
-                ra = ra,
-                Cab = Cab
-                )
-
-
-@partial(jax.jit, static_argnames=["config"])
-def main_20g11(
-    q0,
-    config,
-    *args,
-    **kwargs,
-):
-    """
-    Dynamic response to Follower load
-    """
-    
     kwargs_list = list(kwargs.keys())
     if "Ka" in kwargs_list:
         Ka = kwargs.get("Ka")
@@ -163,128 +61,6 @@ def main_20g11(
         alpha = kwargs.get("alpha")
     else:
         alpha = 1.
-    
-    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
-    q2_index = config.system.states["q2"]
-    q1_index = config.system.states["q1"]
-    eigenvals = jnp.load(config.fem.folder / config.fem.eig_names[0])
-    eigenvecs = jnp.load(config.fem.folder / config.fem.eig_names[1])
-    eigenvals = eigenvals[: config.fem.num_modes]
-    eigenvecs = eigenvecs[:, : config.fem.num_modes]
-    # solver_args = config.system.solver_settings
-    X = config.fem.X
-    (
-        phi1,
-        psi1,
-        phi2,
-        phi1l,
-        phi1ml,
-        psi1l,
-        phi2l,
-        psi2l,
-        omega,
-        X_xdelta,
-        C0ab,
-        C06ab,
-    ) = adcommon._compute_modes(X, Ka, Ma, eigenvals, eigenvecs, config)
-
-    gamma1 = couplings.f_gamma1(phi1, psi1)
-    gamma2 = couplings.f_gamma2(phi1ml, phi2l, psi2l, X_xdelta)
-    config.system.xloads.build_point_follower(config.fem.num_nodes, C06ab)
-    x_forceinterpol = config.system.xloads.x
-    y_forceinterpol = alpha * config.system.xloads.force_follower
-    states = config.system.states
-    eta0 = jnp.zeros(config.fem.num_modes)
-    dq_args = (
-        eta0,
-        gamma1,
-        gamma2,
-        omega,
-        phi1l,
-        x_forceinterpol,
-        y_forceinterpol,
-        states,
-    )
-
-    states_puller, eqsolver = sollibs.factory(
-        config.system.solver_library, config.system.solver_function
-    )
-
-    sol = eqsolver(
-        dq_dynamic.dq_20g11,
-        dq_args,
-        config.system.solver_settings,
-        q0=q0,
-        t0=config.system.t0,
-        t1=config.system.t1,
-        tn=config.system.tn,
-        dt=config.system.dt,
-        t=config.system.t,
-    )
-    q = states_puller(sol)
-
-    # q = _solve(dq_static.dq_10g11, t_loads, q0, dq_args, config.system.solver_settings)
-    # q = _solve(dq_static.dq_10g11, t_loads, q0, dq_args, config.system.solver_settings)
-    q1 = q[:, q1_index]
-    q2 = q[:, q2_index]
-    # X2, X3, ra, Cab = recover_staticfields(q, tn, X, q2_index,
-    #                                        phi2l, psi2l, X_xdelta, C0ab, config.fem)
-    tn = len(q)
-    X1, X2, X3, ra, Cab = isys.recover_fields(
-        q1, q2, tn, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config
-    )
-
-    return dict(phi1 = phi1,
-                psi1 = psi1,
-                phi2 = phi2,
-                phi1l = phi1l,
-                phi1ml = phi1ml,
-                psi1l = psi1l,
-                phi2l = phi2l,
-                psi2l = psi2l,
-                omega = omega,
-                X_xdelta = X_xdelta,
-                C0ab = C0ab,
-                C06ab = C06ab,
-                gamma1 = gamma1,
-                gamma2 = gamma2,
-                q = q,
-                X1 = X1,
-                X2 = X2,
-                X3 = X3,
-                ra = ra,
-                Cab = Cab
-                )
-
-
-@partial(jax.jit, static_argnames=["config"])
-def main_20g21(
-    q0,
-    config,
-    *args,
-    **kwargs,
-):
-    """
-    Gust response
-    """
-
-    kwargs_list = list(kwargs.keys())
-    if "Ka" in kwargs_list:
-        Ka = kwargs.get("Ka")
-    else:
-        Ka = config.fem.Ka
-    if "Ma" in kwargs_list:
-        Ma = kwargs.get("Ma")
-    else:
-        Ma = config.fem.Ma
-    if "eigenvals" in kwargs_list:
-        eigenvals = kwargs.get("eigenvals")
-    else:
-        eigenvals = config.fem.eigenvals
-    if "eigenvecs" in kwargs_list:
-        eigenvecs = kwargs.get("eigenvecs")
-    else:
-        eigenvecs = config.fem.eigenvecs
     if "gust_intensity" in kwargs_list:
         gust_intensity = kwargs.get("gust_intensity")
     else:
@@ -301,18 +77,18 @@ def main_20g21(
         rho_inf = kwargs.get("rho_inf")
     else:
         rho_inf = config.system.aero.rho_inf
-    
-    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
-    q2_index = jnp.array(
-        range(config.fem.num_modes, 2 * config.fem.num_modes)
-    )  # config.system.states['q2']
-    q1_index = jnp.array(range(config.fem.num_modes))  # config.system.states['q1']
-    # eigenvals, eigenvecs = scipy.linalg.eigh(Ka, Ma)
-    eigenvals = jnp.load(config.fem.folder / config.fem.eig_names[0]).T
-    eigenvecs = jnp.load(config.fem.folder / config.fem.eig_names[1]).T
-    reduced_eigenvals = eigenvals[: config.fem.num_modes]
-    reduced_eigenvecs = eigenvecs[:, : config.fem.num_modes]
-    # solver_args = config.system.solver_settings
+
+    input_dict = dict(Ka=Ka, Ma=Ma, eigenvals=eigenvals,
+                      eigenvecs=eigenvecs,
+                      alpha=alpha,
+                      gust_intensity=gust_intensity,
+                      gust_length=gust_length, u_inf=u_inf, rho_inf=rho_inf
+                      )
+    return input_dict
+
+def _build_intrinsic(get_inputs, config, **kwargs):
+
+    input_dict = get_inputs(config, **kwargs)
     X = config.fem.X
     (
         phi1,
@@ -326,30 +102,123 @@ def main_20g21(
         omega,
         X_xdelta,
         C0ab,
-        C06ab,
-    ) = adcommon._compute_modes(X, Ka, Ma, reduced_eigenvals, reduced_eigenvecs, config)
-    #################
+        C06ab
+    ) = adcommon._compute_modes(X,
+                                input_dict['Ka'],
+                                input_dict['Ma'],
+                                input_dict['eigenvals'],
+                                input_dict['eigenvecs'],
+                                config)
     gamma1 = couplings.f_gamma1(phi1, psi1)
     gamma2 = couplings.f_gamma2(phi1ml, phi2l, psi2l, X_xdelta)
+    output_dict = dict(phi1 = phi1,
+                       psi1 = psi1,
+                       phi2 = phi2,
+                       phi1l = phi1l,
+                       phi1ml = phi1ml,
+                       psi1l = psi1l,
+                       phi2l = phi2l,
+                       psi2l = psi2l,
+                       omega = omega,
+                       X_xdelta = X_xdelta,
+                       C0ab = C0ab,
+                       C06ab = C06ab,
+                       gamma1=gamma1,
+                       gamma2 = gamma2,
+                       )
+    return output_dict, input_dict
 
-    #################
+def _build_solution(q, output_dict, config):
+
+    X = config.fem.X
+    tn = len(q)
+    q1_index = config.system.states["q1"]                                      
+    q2_index = config.system.states["q2"]
+    q1 = q[:, q1_index]
+    q2 = q[:, q2_index]
+    X1, X2, X3, ra, Cab = isys.recover_fields(
+        q1,
+        q2,
+        tn,
+        X,
+        output_dict['phi1l'],
+        output_dict['phi2l'],
+        output_dict['psi2l'],
+        output_dict['X_xdelta'],
+        output_dict['C0ab'],
+        config
+    )
+    output_dict['q'] = q
+    output_dict['X1'] = X1
+    output_dict['X2'] = X2
+    output_dict['X3'] = X3    
+    output_dict['ra'] = ra
+    output_dict['Cab'] = Cab
+
+def _build_solutionRB(q, output_dict, config):
+
+    X = config.fem.X
+    tn = config.system.tn #len(q) WARNING: needs to be static for the recover 
+    dt = config.system.dt 
+    q1_index = config.system.states["q1"]                                      
+    q2_index = config.system.states["q2"]
+    q1 = q[:, q1_index]
+    q2 = q[:, q2_index]
+    X1, X2, X3, ra, Cab = isys.recover_fieldsRB(
+        q1,
+        q2,
+        tn,
+        dt,
+        X,
+        output_dict['phi1l'],
+        output_dict['phi2l'],
+        output_dict['psi2l'],
+        output_dict['X_xdelta'],
+        output_dict['C0ab'],
+        config
+    )
+    output_dict['q'] = q
+    output_dict['X1'] = X1
+    output_dict['X2'] = X2
+    output_dict['X3'] = X3    
+    output_dict['ra'] = ra
+    output_dict['Cab'] = Cab
+
+    
+def _get_aero(u_inf, rho_inf, config):
+
+    q_inf = 0.5 * rho_inf * u_inf ** 2 
     A0 = config.system.aero.A[0]
     A1 = config.system.aero.A[1]
     A2 = config.system.aero.A[2]
-    A3 = config.system.aero.A[3:]
-    D0 = config.system.aero.D[0]
-    D1 = config.system.aero.D[1]
-    D2 = config.system.aero.D[2]
-    D3 = config.system.aero.D[3:]
-    # u_inf = config.system.aero.u_inf
-    # rho_inf = config.system.aero.rho_inf
-    q_inf = 0.5 * rho_inf * u_inf**2  # config.system.aero.q_inf
+    A3 = config.system.aero.A[3:]    
     c_ref = config.system.aero.c_ref
+    poles = config.system.aero.poles
     A0hat = q_inf * A0
     A1hat = c_ref * rho_inf * u_inf / 4 * A1
     A2hat = c_ref**2 * rho_inf / 8 * A2
     A3hat = q_inf * A3
     A2hatinv = jnp.linalg.inv(jnp.eye(len(A2hat)) - A2hat)
+    return (q_inf,
+            c_ref,
+            poles,
+            A0hat,
+            A1hat,
+            A2hatinv,
+            A3hat
+            )
+    
+def _get_gust(input_dict, q_inf, c_ref, config):
+
+    u_inf = input_dict['u_inf']
+    rho_inf = input_dict['rho_inf']
+    gust_intensity = input_dict['gust_intensity']
+    gust_length = input_dict['gust_length']
+    
+    D0 = config.system.aero.D[0]
+    D1 = config.system.aero.D[1]
+    D2 = config.system.aero.D[2]
+    D3 = config.system.aero.D[3:]    
     D0hat = q_inf * D0
     D1hat = c_ref * rho_inf * u_inf / 4 * D1
     D2hat = c_ref**2 * rho_inf / 8 * D2
@@ -387,16 +256,139 @@ def main_20g21(
         gust_dot,
         gust_ddot,
     )
-    poles = config.system.aero.poles
+    return timegust, Q_wsum, Ql_wdot
+
+#@partial(jax.jit, static_argnames=["config"])
+def main_20g1(
+    q0,
+    config,
+    *args,
+    **kwargs,
+):
+    """
+    Dynamic response free vibrations
+    """
+
+    output, input_dict = _build_intrinsic(_get_inputs, config, **kwargs)
+        
+    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)    
+    states = config.system.states
+    eta0 = jnp.zeros(config.fem.num_modes)
+    dq_args = (
+        eta0,
+        output['gamma1'],
+        output['gamma2'],
+        output['omega'],
+        states,
+    )
+
+    states_puller, eqsolver = sollibs.factory(
+        config.system.solver_library, config.system.solver_function
+    )
+
+    sol = eqsolver(
+        dq_dynamic.dq_20g1,
+        dq_args,
+        config.system.solver_settings,
+        q0=q0,
+        t0=config.system.t0,
+        t1=config.system.t1,
+        tn=config.system.tn,
+        dt=config.system.dt,
+        t=config.system.t,
+    )
+    q = states_puller(sol)
+    _build_solution(q, output, config)                      
+    return output
+
+#@partial(jax.jit, static_argnames=["config"])
+def main_20g11(
+    q0,
+    config,
+    *args,
+    **kwargs,
+):
+    """
+    Dynamic response to Follower load
+    """
+
+    output, input_dict = _build_intrinsic(_get_inputs, config, **kwargs)
+        
+    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)    
+    config.system.xloads.build_point_follower(config.fem.num_nodes, output['C06ab'])
+    
+    x_forceinterpol = config.system.xloads.x
+    y_forceinterpol = input_dict['alpha'] * config.system.xloads.force_follower
+    states = config.system.states
+    eta0 = jnp.zeros(config.fem.num_modes)
+    dq_args = (
+        eta0,
+        output['gamma1'],
+        output['gamma2'],
+        output['omega'],
+        output['phi1l'],
+        x_forceinterpol,
+        y_forceinterpol,
+        states,
+    )
+
+    states_puller, eqsolver = sollibs.factory(
+        config.system.solver_library, config.system.solver_function
+    )
+
+    sol = eqsolver(
+        dq_dynamic.dq_20g11,
+        dq_args,
+        config.system.solver_settings,
+        q0=q0,
+        t0=config.system.t0,
+        t1=config.system.t1,
+        tn=config.system.tn,
+        dt=config.system.dt,
+        t=config.system.t,
+    )
+    q = states_puller(sol)
+    _build_solution(q, output, config)                      
+    return output
+    
+
+#@partial(jax.jit, static_argnames=["config"])
+def main_20g21(
+    q0,
+    config,
+    *args,
+    **kwargs,
+):
+    """
+    Gust response, clamped model
+    """
+
+    output, input_dict = _build_intrinsic(_get_inputs_aero, config, **kwargs)    
+    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
+
+    #################
+    (q_inf,
+     c_ref,
+     poles,
+     A0hat,
+     A1hat,
+     A2hatinv,
+     A3hat
+     ) = _get_aero(input_dict['u_inf'], input_dict['rho_inf'], config)
+
+    timegust, Q_wsum, Ql_wdot = _get_gust(input_dict,
+                                          q_inf,
+                                          c_ref,
+                                          config)
     num_poles = config.system.aero.num_poles
     num_modes = config.fem.num_modes
     states = config.system.states
     eta0 = jnp.zeros(num_modes)
     dq_args = (
         eta0,
-        gamma1,
-        gamma2,
-        omega,
+        output['gamma1'],
+        output['gamma2'],
+        output['omega'],
         states,
         poles,
         num_modes,
@@ -407,7 +399,7 @@ def main_20g21(
         A1hat,
         A2hatinv,
         A3hat,
-        u_inf,
+        input_dict['u_inf'],
         Q_wsum,
         Ql_wdot,
     )
@@ -430,36 +422,75 @@ def main_20g21(
         t=config.system.t,
     )
     q = states_puller(sol)
+    _build_solution(q, output, config)                      
+    return output
 
-    # q = _solve(dq_static.dq_10g11, t_loads, q0, dq_args, config.system.solver_settings)
-    # q = _solve(dq_static.dq_10g11, t_loads, q0, dq_args, config.system.solver_settings)
-    q1 = q[:, q1_index]
-    q2 = q[:, q2_index]
-    tn = len(q)
-    # X2, X3, ra, Cab = isys.recover_staticfields(q2, tn, X,
-    #                                        phi2l, psi2l, X_xdelta, C0ab, config.fem)
-    X1, X2, X3, ra, Cab = isys.recover_fields(
-        q1, q2, tn, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config
+def main_20g546(q0,
+                config,
+                *args,
+                **kwargs
+                ):
+    """Gust response free flight, q0 obtained via integrator q1."""
+
+    output, input_dict = _build_intrinsic(_get_inputs_aero, config, **kwargs)    
+    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
+
+    #################
+    (q_inf,
+     c_ref,
+     poles,
+     A0hat,
+     A1hat,
+     A2hatinv,
+     A3hat
+     ) = _get_aero(input_dict['u_inf'], input_dict['rho_inf'], config)
+
+    timegust, Q_wsum, Ql_wdot = _get_gust(input_dict,
+                                          q_inf,
+                                          c_ref,
+                                          config)
+    num_poles = config.system.aero.num_poles
+    num_modes = config.fem.num_modes
+    states = config.system.states
+    eta0 = jnp.zeros(num_modes)
+    dq_args = (
+        eta0,
+        output['gamma1'],
+        output['gamma2'],
+        output['omega'],
+        output['phi1l'],
+        states,
+        poles,
+        num_modes,
+        num_poles,
+        timegust,
+        c_ref,        
+        A0hat,
+        A1hat,
+        A2hatinv,
+        A3hat,
+        input_dict['u_inf'],
+        Q_wsum,
+        Ql_wdot,
     )
 
-    return dict(phi1 = phi1,
-                psi1 = psi1,
-                phi2 = phi2,
-                phi1l = phi1l,
-                phi1ml = phi1ml,
-                psi1l = psi1l,
-                phi2l = phi2l,
-                psi2l = psi2l,
-                omega = omega,
-                X_xdelta = X_xdelta,
-                C0ab = C0ab,
-                C06ab = C06ab,
-                gamma1 = gamma1,
-                gamma2 = gamma2,
-                q = q,
-                X1 = X1,
-                X2 = X2,
-                X3 = X3,
-                ra = ra,
-                Cab = Cab
-                )    
+    #################
+    states_puller, eqsolver = sollibs.factory(
+        config.system.solver_library, config.system.solver_function
+    )
+
+    sol = eqsolver(
+        dq_dynamic.dq_20g546,
+        dq_args,
+        config.system.solver_settings,
+        q0=q0,
+        t0=config.system.t0,
+        t1=config.system.t1,
+        tn=config.system.tn,
+        dt=config.system.dt,
+        t=config.system.t,
+    )
+    q = states_puller(sol)
+    _build_solutionRB(q, output, config)                      
+    return output
+    

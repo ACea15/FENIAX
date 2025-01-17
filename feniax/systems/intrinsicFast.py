@@ -7,6 +7,7 @@ import feniax.intrinsic.xloads as xloads
 from feniax.systems.intrinsic_system import IntrinsicSystem
 
 import jax
+from functools import partial
 
 class IntrinsicFastSystem(IntrinsicSystem, cls_name="Fast_intrinsic"):
 
@@ -66,7 +67,8 @@ class StaticFastIntrinsic(IntrinsicFastSystem, cls_name="staticFast_intrinsic"):
         label_sys = self.settings.label
         self.label = f"main_{label_sys}"
         print(f"***** Setting intrinsic static Fast system with label {self.label}")
-        self.main = getattr(staticFast, self.label)
+        self.main = partial(jax.jit, static_argnames=["config"])(
+            getattr(staticFast, self.label))
 
     def build_solution(self, q, X2, X3, ra, Cab, *args, **kwargs):
         
@@ -90,7 +92,8 @@ class DynamicFastIntrinsic(IntrinsicFastSystem, cls_name="dynamicFast_intrinsic"
         label_sys = self.settings.label
         self.label = f"main_{label_sys}"
         print(f"***** Setting intrinsic Dynamic Fast system with label {self.label}")
-        self.main = getattr(dynamicFast, self.label)
+        self.main = partial(jax.jit, static_argnames=["config"])(
+            getattr(dynamicFast, self.label))
 
     def build_solution(self, q, X1, X2, X3, ra, Cab, **kwargs):
 

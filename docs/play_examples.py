@@ -694,3 +694,24 @@ y = fshard(xshard)
 jax.debug.visualize_array_sharding(y[:,0])
 
 #print(y)
+
+#################################
+
+import jax
+from jax import jit
+from functools import partial
+
+
+def inner_function(x, static_val):
+    # The behavior of `static_val` in JIT context depends on how it was passed
+    return x + static_val
+
+def outer_function(x, static_val):
+    return inner_function(x, static_val)
+
+# JIT-compile the outer function where the second argument is treated as static
+compiled_function = jit(outer_function, static_argnums=(1,))
+
+# Call the compiled function with a static argument
+result = compiled_function(3, 10)
+print(result)  # Expected to print 13

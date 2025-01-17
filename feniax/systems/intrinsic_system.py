@@ -78,7 +78,6 @@ def recover_staticfields(q2, tn, X, phi2l, psi2l, X_xdelta, C0ab, config):
 
     return X2, X3, ra, Cab
 
-
 class IntrinsicSystem(System, cls_name="intrinsic"):
     def __init__(
         self,
