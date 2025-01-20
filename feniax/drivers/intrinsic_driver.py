@@ -1,5 +1,7 @@
+import logging
 from feniax.drivers.driver import Driver
-
+from feniax.ulogger.setup import  get_logger
+logger = get_logger(__name__)
 import feniax.simulations
 from feniax.preprocessor import solution, configuration
 import feniax.intrinsic.modes as modes
@@ -62,7 +64,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
     def run_case(self):
         if self.num_systems == 0:
-            print("no systems in the simulation")
+            logger.warning("no systems in the simulation")
         else:
             self.simulation.trigger()
 
@@ -74,29 +76,29 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
                 self.systems, self.sol, self._config.simulation
             )
         else:
-            print("no simulation settings")
+            logger.error("no simulation settings")
 
     def _set_systems(self):
-        print("***** Setting systems *****")
+        logger.info("Setting systems")
         self.systems = dict()
         if hasattr(self._config, "systems"):
             for k, v in self._config.systems.mapper.items():
-                print(f"***** Initialising system {k} *****")
+                logger.info(f"Initialising system {k}")
                 cls_sys = feniax.systems.factory(f"{v.solution}{v.operationalmode}_intrinsic")
                 self.systems[k] = cls_sys(
                     k, v, self._config.fem, self.sol, self._config
                 )
-                print(f"***** Initialised {v.solution}_intrinsic *****")
+                logger.info(f"Initialised {v.solution}{v.operationalmode}_intrinsic")
         elif hasattr(self._config, "system"):
             name = self._config.system.name
-            print(f"***** Initialising system {name}*****")
+            logger.info(f"Initialising system {name}")
             cls_sys = feniax.systems.factory(
                 f"{self._config.system.solution}{self._config.system.operationalmode}_intrinsic"
             )
             self.systems[name] = cls_sys(
                 name, self._config.system, self._config.fem, self.sol, self._config
             )
-            print(f"***** {self._config.system.solution}_intrinsic *****")
+            logger.info(f"Initialised {self._config.system.solution}{self._config.system.operationalmode}_intrinsic")
 
         self.num_systems = len(self.systems)
 
@@ -123,7 +125,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
             eigenvals=self._config.fem.eigenvals,
             eigenvecs=self._config.fem.eigenvecs,
         )
-        print(f"***** Computing eigen problem from {eig_type} *****")
+        logger.debug(f"Computing eigenvalue problem from {eig_type}")
         return eigenvals, eigenvecs
 
     def _compute_modalshapes(self):

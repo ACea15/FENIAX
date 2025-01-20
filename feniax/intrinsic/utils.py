@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 import pathlib
+import logging
 
 class Registry:
     _registry = {}
@@ -7,7 +8,7 @@ class Registry:
     @classmethod
     def register(cls, key):
         def decorator(factory_class):
-            print(f"***** Registering {key} *****")
+            #print(f"***** Registering {key} *****")
             cls._registry[key] = factory_class
             return factory_class
 
@@ -16,7 +17,7 @@ class Registry:
     @classmethod
     def create_instance(cls, key, *args, **kwargs):
         if key in cls._registry:
-            print(f"***** Creating instance of {key} *****")
+            logging.info(f"Creating instance of {key}")
             factory_class = cls._registry[key]
             return factory_class(*args, **kwargs)
         else:

@@ -41,7 +41,7 @@ class Config:
 
     def __defaults(self):
         self.__MOD_DEFAULT = dict(optionsjax=["jax_np", "jax_scipy"])
-        self.__CONTAINER_DEFAULT = dict(intrinsicmodal="const")
+        self.__CONTAINER_DEFAULT = dict(intrinsicmodal=["const", "log"])
 
     def __set_defaults(self):
         # default modules
@@ -52,11 +52,12 @@ class Config:
                     container_k = getattr(_container, "".join(["D", i]))
                     setattr(self, i, container_k())
         # default containers within self.engine module
-        for k, v in self.__CONTAINER_DEFAULT.items():
+        for k, vlist in self.__CONTAINER_DEFAULT.items():
             if self.engine == k:
-                if not hasattr(self, v):
-                    container_v = getattr(self.__container, "".join(["D", v]))
-                    setattr(self, v, container_v())
+                for v in vlist:
+                    if not hasattr(self, v):
+                        container_v = getattr(self.__container, "".join(["D", v]))
+                        setattr(self, v, container_v())
 
     def __build(self):
         if self.engine == "intrinsicmodal":  # needs some specialisation here

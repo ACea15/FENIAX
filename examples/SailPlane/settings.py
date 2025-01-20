@@ -8,6 +8,7 @@ from feniax.preprocessor.inputs import Inputs
 import feniax.feniax_main
 
 inp = Inputs()
+inp.log.level="debug"
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "inputs"
 inp.fem.connectivity = dict(FuselageFront=['RWingInner',

@@ -11,7 +11,10 @@ import feniax.intrinsic.objectives as objectives
 from functools import partial
 import jax
 import jax.numpy as jnp
+import logging
+from feniax.ulogger.setup import get_logger
 
+logger = get_logger(__name__)
 
 class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
     def __init__(
@@ -111,7 +114,7 @@ class StaticADIntrinsic(IntrinsicADSystem, cls_name="staticAD_intrinsic"):
         label_sys = self.settings.label
         label_ad = self.settings.ad.label
         label = f"main_{label_sys}_{label_ad}"
-        print(f"***** Setting intrinsic Dynamic system with label {label}")
+        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
         self.dFq = getattr(static_ad, label)
 
     def build_solution(self, jac, objective, q, X1, X2, X3, ra, Cab, *args, **kwargs):
@@ -136,7 +139,7 @@ class DynamicADIntrinsic(IntrinsicADSystem, cls_name="dynamicAD_intrinsic"):
         label_sys = self.settings.label
         label_ad = self.settings.ad.label
         label = f"main_{label_sys}_{label_ad}"
-        print(f"***** Setting intrinsic Dynamic system with label {label}")
+        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
         self.dFq = getattr(dynamic_ad, label)
 
     def build_solution(

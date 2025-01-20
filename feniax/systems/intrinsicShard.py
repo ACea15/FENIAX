@@ -5,12 +5,14 @@ import feniax.intrinsic.staticShard as static_shard
 import feniax.intrinsic.xloads as xloads
 from feniax.systems.intrinsic_system import IntrinsicSystem
 import feniax.intrinsic.argshard as argshard
-
+import logging
 import jax
 from jax.sharding import NamedSharding
 from jax.sharding import Mesh, PartitionSpec as P
 from jax.experimental import mesh_utils
+from feniax.ulogger.setup import get_logger
 
+logger = get_logger(__name__)
 
 class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
 
@@ -95,7 +97,7 @@ class StaticShardIntrinsic(IntrinsicShardSystem, cls_name="staticShard_intrinsic
         label_sys = self.settings.label
         label_shard = self.settings.shard.label
         self.label = f"main_{label_sys}_{label_shard}"
-        print(f"***** Setting intrinsic static shard system with label {self.label}")
+        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
         self.main = getattr(static_shard, self.label)
 
     def build_solution(self, q, X2, X3, ra, Cab, *args, **kwargs):
@@ -121,7 +123,7 @@ class DynamicShardIntrinsic(IntrinsicShardSystem, cls_name="dynamicShard_intrins
         label_sys = self.settings.label
         label_shard = self.settings.shard.label
         label = f"main_{label_sys}_{label_shard}"
-        print(f"***** Setting intrinsic dynamic shard system with label {label}")
+        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
         self.main = getattr(dynamic_shard, label)
 
 

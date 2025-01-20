@@ -1,5 +1,5 @@
 from functools import partial
-
+import logging
 import feniax.intrinsic.args as libargs
 import feniax.intrinsic.dq_dynamic as dq_dynamic
 import feniax.intrinsic.dq_static as dq_static
@@ -13,7 +13,9 @@ import feniax.intrinsic.xloads as xloads
 import jax
 import jax.numpy as jnp
 from feniax.systems.system import System
+from feniax.ulogger.setup import get_logger
 
+logger = get_logger(__name__)
 
 def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
     def _iter(qim1, t):
@@ -240,7 +242,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
     def set_system(self):
         label = f"dq_{self.settings.label}"
-        print(f"***** Setting intrinsinc static system with label {label}")
+        logger.debug(f"Setting {self.__class__.__name__} with label {label}")        
         self.dFq = getattr(dq_static, label)
 
     def solve(self):
@@ -357,7 +359,7 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
     def set_system(self):
         label = f"dq_{self.settings.label}"
-        print(f"***** Setting intrinsinc Dynamic system with label {label}")
+        logger.debug(f"Setting {self.__class__.__name__} with label {label}")                      
         self.dFq = getattr(dq_dynamic, label)
 
     def solve(self):

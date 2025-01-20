@@ -6,8 +6,12 @@ import feniax.intrinsic.dynamicFast as dynamicFast
 import feniax.intrinsic.xloads as xloads
 from feniax.systems.intrinsic_system import IntrinsicSystem
 
+import logging
 import jax
 from functools import partial
+from feniax.ulogger.setup import get_logger
+
+logger = get_logger(__name__)
 
 class IntrinsicFastSystem(IntrinsicSystem, cls_name="Fast_intrinsic"):
 
@@ -66,7 +70,7 @@ class StaticFastIntrinsic(IntrinsicFastSystem, cls_name="staticFast_intrinsic"):
     def set_system(self):
         label_sys = self.settings.label
         self.label = f"main_{label_sys}"
-        print(f"***** Setting intrinsic static Fast system with label {self.label}")
+        logger.debug(f"Setting {self.__class__.__name__} with label {self.label}")
         self.main = partial(jax.jit, static_argnames=["config"])(
             getattr(staticFast, self.label))
 
@@ -91,7 +95,7 @@ class DynamicFastIntrinsic(IntrinsicFastSystem, cls_name="dynamicFast_intrinsic"
     def set_system(self):
         label_sys = self.settings.label
         self.label = f"main_{label_sys}"
-        print(f"***** Setting intrinsic Dynamic Fast system with label {self.label}")
+        logger.debug(f"Setting intrinsic Dynamic Fast system with label {self.label}")
         self.main = partial(jax.jit, static_argnames=["config"])(
             getattr(dynamicFast, self.label))
 

@@ -97,6 +97,41 @@ class Dconst(DataContainer):
         object.__setattr__(self, "EMATT", self.EMAT.T)
         self._initialize_attributes()
 
+@Ddataclass
+class Dlog(DataContainer):
+    """Simulation settings for the management the way each system is run.
+    
+    Parameters
+    ----------
+    typeof : str
+        Type of simulation ["single", "serial", "parallel"]
+    workflow : dict
+        Dictionary that defines which system is run after which.
+        The default None implies systems are run in order of the input
+    """
+
+    to_console: bool = dfield(
+        "Output to console", default=True
+    )
+    to_file: bool = dfield(
+        "Output to file", default=True
+    )    
+    level: str = dfield(
+        "Logging level", default="info", options=["notset", "debug", "info", "warning", "error", "critical"]
+    )
+    file_name: str = dfield("Name of log file",
+        default="feniax",
+    )
+    file_mode: str = dfield(
+        "Mode for writing log file", default="w", options=["w", "a"]
+    )
+    
+    path: str = dfield("Path to log file",
+        default="./",
+    ) 
+    def __post_init__(self):
+        object.__setattr__(self, "path", pathlib.Path(self.path))
+        self._initialize_attributes()
 
 @Ddataclass
 class Dsimulation(DataContainer):
@@ -266,7 +301,7 @@ class Dfem(DataContainer):
         options=["scipy", "jax_custom", "inputs, input_memory"],
     )
     eigenvals: jnp.ndarray = dfield("", default=None, yaml_save=False)
-    eigenvecs: jnp.ndarray = dfield("", default=None, yaml_save=False)
+    eigenvecs: jnp.ndarray = dfield("", default=None, yaml_save=False)  # [6Nn x Nm]
     eig_cutoff: float = dfield(
         "",
         default=1e-2,
