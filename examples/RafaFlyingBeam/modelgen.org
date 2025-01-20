@@ -56,22 +56,23 @@ Parameters in the problem:
   class Config:  
       L: float = 1.
       THETA0: float = 0.
-      M: float = 10.
+      M: float = 1000.
       I: float = 1.
       Im: float = M * L **2 /2
       OFFSET_x: float = 0.
       OFFSET_z: float = 0.
-      E: float = 1e2
-      A: float = 5.
-      J: float = 10 * I 
+      E: float = 1e6
+      A: float = 0.5
+      J: float = I 
       omega: float = None
 
       def __post_init__(self):
 
-          self.omega = (24*self.E * self.I / (self.M * self.L ** 3) )**0.5
+          #self.omega = (24*self.E * self.I / (self.M * self.L ** 3) )**0.5
+          self.omega = (12*self.E * self.I / (self.M * self.L ** 3) )**0.5
 
   def build_bdf(config: Config):
-      
+
       mesh=BDF(debug=True)
       ############################
       node1 = ['GRID', 1, None, 0., 0., 0., None, None, None]
@@ -103,11 +104,11 @@ Parameters in the problem:
       mesh.add_card(conm23, 'CONM2')
       ############################  
       # mat1 = ['MAT1',id_mat,Em,None,Nu,rho1]
-      mat1 = ['MAT1',21, config.E, None,None,None]
+      mat1 = ['MAT1',21, config.E, None,0.3,None]
       mesh.add_card(mat1, 'MAT1')
       ############################  
       # pbeam = ['PBEAM',id_p,id_mat,Aa,I1a,I2a,I12a,Ja]
-      pbeam = ['PBEAM', 31, 21, config.A, config.I, config.I, 0., config.J]
+      pbeam = ['PBEAM', 31, 21, config.A, config.I, 0.001, 0., config.J]
       mesh.add_card(pbeam, 'PBEAM')
       ############################  
       # cbeam=['CBEAM',EID,PID,GA,GB,X1,X2,X3]
@@ -129,7 +130,7 @@ Parameters in the problem:
   DISPLACEMENT=ALL
   METHOD = 900
   BEGIN BULK
-  EIGRL,900,,,18
+  EIGRL,900,,,30
 #+end_src
 
 ** Model 1
@@ -279,11 +280,131 @@ Inclined 30 degrees bar, 0.1 offset
   cd -
 #+end_src
 
+** Model 5
+PBAR model by Rafa
+
+
+#+begin_src org :tangle ./NASTRAN/Model5init.bdf :comments no
+  SOL 103
+  CEND
+  $
+  ECHO=UNSORT
+  DISP=ALL
+  SPCF=ALL
+  SPC    = 100
+  METHOD = 1
+  $
+  TITLE=FREE-FREE BEAM
+  LABEL=MODAL ANALYSIS
+  $
+  BEGIN BULK
+  $     
+  $23456781234567812345678123456781234567812345678123456781234567812345678
+  EIGR           1    MGIV                              10                +
+  +           MASS
+  $
+  $     DEFINE GRID POINTS
+  GRID           1              0.      0.      0.
+  GRID          21             0.5      0.      0.
+  GRID          22              1.      0.      0.
+  GRID          31            -0.5      0.      0.
+  GRID          32             -1.      0.      0.
+  $
+  SPC          100       1    1246
+  $
+  $     DEFINE CBAR ELEMENTS
+  CBAR           1     101       1      21      0.      1.      0.
+  CBAR           2     101      21      22      0.      1.      0.
+  CBAR           3     101       1      31      0.      1.      0.
+  CBAR           4     101      31      32      0.      1.      0.
+  $
+  $      DEFINE CBAR ELEMENT CROSS SECTIONAL PROPERTIES
+  PBAR         101     201      .5      1.    .001      1.
+  $
+  $      DEFINE MATERIAL PROPERTIES
+  MAT1         201    1.E6              .3
+  CONM2         11       1          0.50E3                                +
+  +           100.           1.E-8                   1.E-8
+  CONM2         12      22          0.25E3                                +
+  +           100.           1.E-8                   1.E-8
+  CONM2         13      32          0.25E3                                +
+  +           100.           1.E-8                   1.E-8
+  $
+  ENDDATA
+#+end_src
+
+*** Create nastran files for FE extraction
+#+begin_src org :tangle ./NASTRAN/model5.bdf :comments no
+  $     DEFINE GRID POINTS
+  GRID           1              0.      0.      0.
+  GRID          21             0.5      0.      0.
+  GRID          22              1.      0.      0.
+  GRID          31            -0.5      0.      0.
+  GRID          32             -1.      0.      0.
+  $
+  $ SPC          100       1    1246
+  $
+  $     DEFINE CBAR ELEMENTS
+  CBAR           1     101       1      21      0.      1.      0.
+  CBAR           2     101      21      22      0.      1.      0.
+  CBAR           3     101       1      31      0.      1.      0.
+  CBAR           4     101      31      32      0.      1.      0.
+  $
+  $      DEFINE CBAR ELEMENT CROSS SECTIONAL PROPERTIES
+  PBAR         101     201      .5      1.    .001      1.
+  $
+  $      DEFINE MATERIAL PROPERTIES
+  MAT1         201    1.E6              .3
+  CONM2         11       1          0.50E3                                +
+  +           100.           1.E-8                   1.E-8
+  CONM2         12      22          0.25E3                                +
+  +           100.           1.E-8                   1.E-8
+  CONM2         13      32          0.25E3                                +
+  +           100.           1.E-8                   1.E-8
+  $
+#+end_src
+
+- For eigenvectors:
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model5_103op2.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,POST,-1
+  INCLUDE 'model5.bdf'
+  ENDDATA
+#+end_src
+
+- pch for FE matrices
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model5_103pch.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,EXTOUT,DMIGPCH  
+  INCLUDE 'model5.bdf'
+  ENDDATA
+#+end_src
+
+*** Run nastran
+#+begin_src bash :session shell1  :tangle P2_runmodal.sh
+  source ../../feniax/unastran/run_nastran.sh
+  cd ./NASTRAN
+  run_nastran Model5_103op2.bdf
+  move_outputs Model5_103op2.bdf
+  run_nastran Model5_103pch.bdf
+  move_outputs Model5_103pch.bdf
+  cd -
+#+end_src
+
+#+begin_src bash :session shell1  :tangle P2_runmodal.sh
+  source ../../feniax/unastran/run_nastran.sh
+  cd ./NASTRAN
+  run_nastran Model5init.bdf
+  move_outputs Model5init.bdf
+  cd -
+#+end_src
+
+
 ** Read and save FEM and FENIAX grid
 
 - Save Ka, Ma, eigenvalues and eigenvectors
 #+begin_src python
-  num_models = 4
+  num_models = 5
   eigenvalues_list = []
   eigenvectors_list = []
   for i in range(1, num_models + 1):
@@ -293,7 +414,10 @@ Inclined 30 degrees bar, 0.1 offset
       eigenvectors = op2.eigenvectors()
       eigenvalues_list.append(eigenvalues)
       eigenvectors_list.append(eigenvectors)
-      v = eigenvectors.reshape((18,18)).T
+      if i == 5: # Model 5
+          v = eigenvectors.reshape((18,5*6)).T
+      else:
+          v = eigenvectors.reshape((18,18)).T
       np.save(f"./FEM/eigenvals_m{i}.npy", eigenvalues)
       np.save(f"./FEM/eigenvecs_m{i}.npy", v)
 
@@ -308,7 +432,10 @@ Inclined 30 degrees bar, 0.1 offset
 
       bdf = BDF()
       bdf.read_bdf(f"./NASTRAN/Model{i}_103op2.bdf", validate=False)
-      components = dict(rbeam=[1,2], lbeam=[3])
+      if i == 5: # Model 5
+          components = dict(rbeam=[1,21, 22], lbeam=[31, 32])
+      else:
+          components = dict(rbeam=[1,2], lbeam=[3])
       model = BuildAsetModel(components, bdf)          
       model.write_grid(f"./FEM/structuralGrid_m{i}")
 
@@ -349,7 +476,7 @@ Set model to be run (mi), initial conditions and whether to include gravity forc
   inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
                        f"./FEM/eigenvecs_{label}.npy"]
   inp.fem.grid = f"./FEM/structuralGrid_{label}"
-  inp.fem.num_modes = 18
+  inp.fem.num_modes = 18  # use 12 for model 5!
   inp.fem.eig_type = "inputs"
   inp.driver.typeof = "intrinsic"
   inp.driver.sol_path= pathlib.Path(

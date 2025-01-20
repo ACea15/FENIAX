@@ -17,19 +17,20 @@ pathlib.Path('./NASTRAN/simulations_out').mkdir(parents=True, exist_ok=True)
 class Config:  
     L: float = 1.
     THETA0: float = 0.
-    M: float = 10.
+    M: float = 1000.
     I: float = 1.
     Im: float = M * L **2 /2
     OFFSET_x: float = 0.
     OFFSET_z: float = 0.
-    E: float = 1e2
-    A: float = 5.
-    J: float = 10 * I 
+    E: float = 1e6
+    A: float = 0.5
+    J: float = I 
     omega: float = None
 
     def __post_init__(self):
 
-        self.omega = (24*self.E * self.I / (self.M * self.L ** 3) )**0.5
+        #self.omega = (24*self.E * self.I / (self.M * self.L ** 3) )**0.5
+        self.omega = (12*self.E * self.I / (self.M * self.L ** 3) )**0.5
 
 def build_bdf(config: Config):
 
@@ -64,11 +65,11 @@ def build_bdf(config: Config):
     mesh.add_card(conm23, 'CONM2')
     ############################  
     # mat1 = ['MAT1',id_mat,Em,None,Nu,rho1]
-    mat1 = ['MAT1',21, config.E, None,None,None]
+    mat1 = ['MAT1',21, config.E, None,0.3,None]
     mesh.add_card(mat1, 'MAT1')
     ############################  
     # pbeam = ['PBEAM',id_p,id_mat,Aa,I1a,I2a,I12a,Ja]
-    pbeam = ['PBEAM', 31, 21, config.A, config.I, config.I, 0., config.J]
+    pbeam = ['PBEAM', 31, 21, config.A, config.I, 0.001, 0., config.J]
     mesh.add_card(pbeam, 'PBEAM')
     ############################  
     # cbeam=['CBEAM',EID,PID,GA,GB,X1,X2,X3]
@@ -105,7 +106,7 @@ mesh4.write_bdf("./NASTRAN/model4.bdf", size=8, is_double=False, close=True)
 # Create nastran files for FE extraction:1 ends here
 
 # [[file:modelgen.org::*Read and save FEM and FENIAX grid][Read and save FEM and FENIAX grid:1]]
-num_models = 4
+num_models = 5
 eigenvalues_list = []
 eigenvectors_list = []
 for i in range(1, num_models + 1):
@@ -115,7 +116,10 @@ for i in range(1, num_models + 1):
     eigenvectors = op2.eigenvectors()
     eigenvalues_list.append(eigenvalues)
     eigenvectors_list.append(eigenvectors)
-    v = eigenvectors.reshape((18,18)).T
+    if i == 5: # Model 5
+        v = eigenvectors.reshape((18,5*6)).T
+    else:
+        v = eigenvectors.reshape((18,18)).T
     np.save(f"./FEM/eigenvals_m{i}.npy", eigenvalues)
     np.save(f"./FEM/eigenvecs_m{i}.npy", v)
 
@@ -129,7 +133,10 @@ for i in range(1, num_models + 1):
 
     bdf = BDF()
     bdf.read_bdf(f"./NASTRAN/Model{i}_103op2.bdf", validate=False)
-    components = dict(rbeam=[1,2], lbeam=[3])
+    if i == 5: # Model 5
+        components = dict(rbeam=[1,21, 22], lbeam=[31, 32])
+    else:
+        components = dict(rbeam=[1,2], lbeam=[3])
     model = BuildAsetModel(components, bdf)          
     model.write_grid(f"./FEM/structuralGrid_m{i}")
 # Read and save FEM and FENIAX grid:2 ends here

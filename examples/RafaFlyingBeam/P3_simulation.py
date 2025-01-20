@@ -26,7 +26,7 @@ inp.fem.Ma_name = f"./FEM/Ma_{label}.npy"
 inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
                      f"./FEM/eigenvecs_{label}.npy"]
 inp.fem.grid = f"./FEM/structuralGrid_{label}"
-inp.fem.num_modes = 18
+inp.fem.num_modes = 18  # use 12 for model 5!
 inp.fem.eig_type = "inputs"
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
