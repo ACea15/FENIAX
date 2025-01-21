@@ -1,7 +1,7 @@
 import itertools
 
-import feniax.intrinsic.dynamicShard as dynamic_shard
-import feniax.intrinsic.staticShard as static_shard
+import feniax.intrinsic.dynamicShard as dynamicShard
+import feniax.intrinsic.staticShard as staticShard
 import feniax.intrinsic.xloads as xloads
 from feniax.systems.intrinsic_system import IntrinsicSystem
 import feniax.intrinsic.argshard as argshard
@@ -11,6 +11,7 @@ from jax.sharding import NamedSharding
 from jax.sharding import Mesh, PartitionSpec as P
 from jax.experimental import mesh_utils
 from feniax.ulogger.setup import get_logger
+from functools import partial
 
 logger = get_logger(__name__)
 
@@ -98,7 +99,7 @@ class StaticShardIntrinsic(IntrinsicShardSystem, cls_name="staticShard_intrinsic
         label_shard = self.settings.shard.label
         self.label = f"main_{label_sys}_{label_shard}"
         logger.debug(f"Setting {self.__class__.__name__} with label {label}")
-        self.main = getattr(static_shard, self.label)
+        self.main = partial(jax.jit, static_argnames=["config"])(getattr(staticShard, self.label))
 
     def build_solution(self, q, X2, X3, ra, Cab, *args, **kwargs):
         
@@ -124,8 +125,7 @@ class DynamicShardIntrinsic(IntrinsicShardSystem, cls_name="dynamicShard_intrins
         label_shard = self.settings.shard.label
         label = f"main_{label_sys}_{label_shard}"
         logger.debug(f"Setting {self.__class__.__name__} with label {label}")
-        self.main = getattr(dynamic_shard, label)
-
+        self.main = partial(jax.jit, static_argnames=["config"])(getattr(dynamicShard, label))
 
     def build_solution(self, q, X1, X2, X3, ra, Cab, *args, **kwargs):
         

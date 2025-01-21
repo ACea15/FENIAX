@@ -12,7 +12,7 @@ import feniax.intrinsic.dq_dynamic as dq_dynamic
 import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
 
 
-@partial(jax.jit, static_argnames=["config"])
+# @partial(jax.jit, static_argnames=["config"])
 def main_20g21_3(
     inputs,  # 
     q0,
@@ -152,7 +152,7 @@ def main_20g21_3(
     results = main_vmap(inputs)
     return results
 
-@partial(jax.jit, static_argnames=["config"])
+# @partial(jax.jit, static_argnames=["config"])
 def main_20g546_3(
     inputs,  # 
     q0,

@@ -15,7 +15,7 @@ newton = partial(jax.jit, static_argnames=["F", "sett"])(libdiffrax.newton)
 _solve = partial(jax.jit, static_argnames=["eqsolver", "dq", "sett"])(isys._staticSolve)
 
 
-@partial(jax.jit, static_argnames=["config"])
+#@partial(jax.jit, static_argnames=["config"])
 def main_10g11_1(
     inputs,  # 
     q0,
@@ -48,7 +48,7 @@ def main_10g11_1(
     results = main_vmap(inputs)
     return results
 
-@partial(jax.jit, static_argnames=["config"])
+#@partial(jax.jit, static_argnames=["config"])
 def main_10g15_2(
     inputs,  # 
     q0,
