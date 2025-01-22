@@ -399,7 +399,6 @@ PBAR model by Rafa
   cd -
 #+end_src
 
-
 ** Read and save FEM and FENIAX grid
 
 - Save Ka, Ma, eigenvalues and eigenvectors
