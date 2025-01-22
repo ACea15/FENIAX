@@ -87,7 +87,7 @@ They are also part of a large test suite that is integrated into the development
 	- AD differentiation of the response verified against finite-differences
 	
 
-[Notebook](./docs/examples/SailPlane/sailplane_nb.md)
+[Notebook](./docs/documentation/examples/SailPlane/sailplane_nb.md)
 
 ![Sail Plane static](./docs/images/SailPlane3D_front.png)
 
@@ -99,7 +99,7 @@ They are also part of a large test suite that is integrated into the development
     - Runs over x100 faster than Nastran 
     - AD differentiation of the response verified against finite-differences
 
-[Notebook](./docs/examples/wingSP/wingSP_nb.md)
+[Notebook](./docs/documentation/examples/wingSP/wingSP_nb.md)
 
 
 ![Wing free dynamics](./docs/media/wingSP_optimized.gif)
@@ -109,7 +109,7 @@ They are also part of a large test suite that is integrated into the development
 This example first appeared in the work of Juan Carlos Simo (see [Bio](https://mechanics.stanford.edu/simo))
 , a pioneer in the field of computational structural mechanics and the 
 
-[Notebook](./docs/examples/wingSP/wingSP_nb.md)
+[Notebook](./docs/documentation/examples/wingSP/wingSP_nb.md)
 
 #### 2D dynamics
 ![Free flying structure 2D](./docs/media/SimoFFB2D_optimized.gif)
