@@ -1295,7 +1295,7 @@ class Dsystem(DataContainer):
     )
     operationalmode: str = dfield(
         "",
-        options=["(empty string/default)", "Fast", "AD", "Shard", "ShardAD"],
+        options=["(empty string/default)", "Fast", "AD", "Shard", "ShardMap", "ShardAD"],
         default=""
     )
     
@@ -1402,7 +1402,10 @@ class Dsystem(DataContainer):
             else:
                 object.__setattr__(self, "operationalmode", "AD")
         elif self.shard is not None:
-            object.__setattr__(self, "operationalmode", "Shard")            
+            if self.operationalmode is None:
+                object.__setattr__(self, "operationalmode", "Shard")
+            else:
+                object.__setattr__(self, "operationalmode", self.operationalmode.capitalize())
             if isinstance(self.shard, dict):
                 libsettings_class = globals()["DShard"]
                 object.__setattr__(

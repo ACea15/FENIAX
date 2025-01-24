@@ -12,6 +12,7 @@ from jax.sharding import Mesh, PartitionSpec as P
 from jax.experimental import mesh_utils
 from feniax.ulogger.setup import get_logger
 from functools import partial
+from jax.experimental.shard_map import shard_map
 
 logger = get_logger(__name__)
 
@@ -143,4 +144,63 @@ class DynamicShardIntrinsic(IntrinsicShardSystem, cls_name="dynamicShard_intrins
         )
         if self.settings.save:
             self.sol.save_container("DynamicSystem", label="_" + self.name)
+
+class StaticShardMapIntrinsic(IntrinsicShardSystem, cls_name="staticShardmap_intrinsic"):
+    
+    def set_system(self):
+        label_sys = self.settings.label
+        label_shard = self.settings.shard.label
+        self.label = f"main_{label_sys}_{label_shard}"
+        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
+        self.mesh = Mesh(devices=mesh_utils.create_device_mesh((jax.device_count(),)),
+                         axis_names=('x'))
+        f = getattr(dynamicShard, label)
+        self.main = partial(shard_map, mesh=self.mesh, in_specs=P('x'), out_specs=P('x'))
         
+    def build_solution(self, q, X2, X3, ra, Cab, *args, **kwargs):
+        
+        super().build_solution()
+        self.sol.add_container(
+            "StaticSystem",
+            label="_" + self.name,
+            q=q,
+            X2=X2,
+            X3=X3,
+            Cab=Cab,
+            ra=ra,
+            t=self.settings.t,
+        )
+        if self.settings.save:
+            self.sol.save_container("StaticSystem", label="_" + self.name)
+
+
+class DynamicShardMapIntrinsic(IntrinsicShardSystem, cls_name="dynamicShardmap_intrinsic"):
+    
+    def set_system(self):
+        label_sys = self.settings.label
+        label_shard = self.settings.shard.label
+        label = f"main_{label_sys}_{label_shard}"
+        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
+        self.mesh = Mesh(devices=mesh_utils.create_device_mesh((jax.device_count(),)),
+                         axis_names=('x'))
+        f = getattr(dynamicShard, label)
+        self.main = partial(shard_map, mesh=self.mesh, in_specs=P('x'), out_specs=P('x'))
+
+    def build_solution(self, q, X1, X2, X3, ra, Cab, *args, **kwargs):
+        
+        super().build_solution()
+        self.sol.add_container(
+            "DynamicSystem",
+            label="_" + self.name,
+            q=q,
+            X1=X1,
+            X2=X2,
+            X3=X3,
+            Cab=Cab,
+            ra=ra,
+            t=self.settings.t,
+        )
+        if self.settings.save:
+            self.sol.save_container("DynamicSystem", label="_" + self.name)
+            
+            
