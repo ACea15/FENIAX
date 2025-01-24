@@ -1,4 +1,7 @@
 from feniax.simulations.simulation import Simulation
+from feniax.ulogger.setup import  get_logger
+
+logger = get_logger(__name__)
 
 
 class SingleSimulation(Simulation, cls_name="single"):
@@ -10,6 +13,7 @@ class SingleSimulation(Simulation, cls_name="single"):
         # Implement _run for SerialSimulation
 
         for k, sys in self.systems.items():  # only one item in the loop
+            logger.info(f"Running System {k}")
             sys.set_system()
             sys.set_solver()
             sys.set_xloading()

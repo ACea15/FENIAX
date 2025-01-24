@@ -8,6 +8,7 @@ import pathlib
 
 file_path = pathlib.Path(__file__).parent
 
+@pytest.mark.legacy
 class Test2PointDead:
 
     @pytest.fixture(scope="class")

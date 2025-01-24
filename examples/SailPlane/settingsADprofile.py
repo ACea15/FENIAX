@@ -73,4 +73,4 @@ inp.system.ad = dict(inputs=dict(t=5.5),
                      )
 config =  configuration.Config(inp)
 sol31 = feniax.feniax_main.main(input_obj=config)
-jax.profiler.save_device_memory_profile("memoryAD.prof")
+# jax.profiler.save_device_memory_profile("memoryAD.prof")

@@ -11,15 +11,15 @@ inp = Inputs()
 inp.engine = "intrinsicmodal"
 # WARNING: eigs need to be input as they are implicit in the aero matrices
 inp.fem.eig_type = "input_memory"
-# inp.fem.eigenvals = jnp.load("./FEM/Dreal50.npy")
-# inp.fem.eigenvecs = jnp.load("./FEM/Vreal50.npy").T
+inp.fem.eigenvals = jnp.load("./FEM/Dreal70.npy")
+inp.fem.eigenvecs = jnp.load("./FEM/Vreal70.npy").T
 inp.fem.connectivity = [[1, 7, 13, 31], [2], [3], [4, 5], [27], [6], [],
                         [8], [9], [10, 11], [29], [12], [],
                         [14], [15], [16, 21], [17, 23, 25],
                         [18], [19], [20], [], [22], [], [24], [],
                         [26], [], [28], [], [30], [], []]
 inp.fem.folder = pathlib.Path('./FEM/')
-inp.fem.eig_names = ["Dreal70.npy", "Vreal70.npy"]
+# inp.fem.eig_names = ["Dreal70.npy", "Vreal70.npy"]
 inp.fem.grid = "structuralGridc.txt"
 inp.fem.num_modes = 70
 inp.driver.typeof = "intrinsic"
@@ -116,72 +116,75 @@ if ad_check:
 
     #################################################################################
 
-import feniax.intrinsic.objectives as objectives
-inp.fem.eigenvals = jnp.load("./FEM/Dreal70.npy")
-inp.fem.eigenvecs = jnp.load("./FEM/Vreal70.npy").T
-inp.system.ad = None
-inp.driver.ad_on = False
-inp.driver.sol_path = pathlib.Path(
-    "./resultsGustAD3")
+ad_checkFD = False
+if ad_checkFD:
 
-node = 5
-config3 =  configuration.Config(inp)
-sol3 = feniax.feniax_main.main(input_obj=config3)
-fobj3 = objectives.X2_MAX(sol3.dynamicsystem_s1.X2,
-                          nodes=jnp.array([node]),
-                          components=jnp.array([0,1,2,3,4,5]),
-                          t=jnp.arange(config3.system.tn),
-                          axis=0)
-#################################################################################
-inp.driver.sol_path = pathlib.Path(
-    "./resultsGustAD4")
-epsilon = 1e-4
-inp.system.aero.gust.intensity = 14.0732311562*2 + epsilon
-config4 =  configuration.Config(inp)
-sol4 = feniax.feniax_main.main(input_obj=config4)
-fobj4 = objectives.X2_MAX(sol4.dynamicsystem_s1.X2,
-                          nodes=jnp.array([node]),
-                          components=jnp.array([0,1,2,3,4,5]),
-                          t=jnp.arange(config4.system.tn),
-                          axis=0)
+    import feniax.intrinsic.objectives as objectives
+    inp.fem.eigenvals = jnp.load("./FEM/Dreal70.npy")
+    inp.fem.eigenvecs = jnp.load("./FEM/Vreal70.npy").T
+    inp.system.ad = None
+    inp.driver.ad_on = False
+    inp.driver.sol_path = pathlib.Path(
+        "./resultsGustAD3")
 
-print((fobj4 - fobj3) / epsilon)
-print(sol.dynamicsystem_s1.jac['intensity'])
+    node = 5
+    config3 =  configuration.Config(inp)
+    sol3 = feniax.feniax_main.main(input_obj=config3)
+    fobj3 = objectives.X2_MAX(sol3.dynamicsystem_s1.X2,
+                              nodes=jnp.array([node]),
+                              components=jnp.array([0,1,2,3,4,5]),
+                              t=jnp.arange(config3.system.tn),
+                              axis=0)
+    #################################################################################
+    inp.driver.sol_path = pathlib.Path(
+        "./resultsGustAD4")
+    epsilon = 1e-4
+    inp.system.aero.gust.intensity = 14.0732311562*2 + epsilon
+    config4 =  configuration.Config(inp)
+    sol4 = feniax.feniax_main.main(input_obj=config4)
+    fobj4 = objectives.X2_MAX(sol4.dynamicsystem_s1.X2,
+                              nodes=jnp.array([node]),
+                              components=jnp.array([0,1,2,3,4,5]),
+                              t=jnp.arange(config4.system.tn),
+                              axis=0)
 
-#################################################################################
-epsilon = 1e-4
-inp.system.aero.gust.intensity = 14.0732311562*2
-inp.system.aero.gust.length = 67. + epsilon
+    print((fobj4 - fobj3) / epsilon)
+    print(sol.dynamicsystem_s1.jac['intensity'])
 
-inp.driver.sol_path = pathlib.Path(
-    "./resultsGustAD5")
+    #################################################################################
+    epsilon = 1e-4
+    inp.system.aero.gust.intensity = 14.0732311562*2
+    inp.system.aero.gust.length = 67. + epsilon
 
-config5 =  configuration.Config(inp)
-sol5 = feniax.feniax_main.main(input_obj=config5)
-fobj5 = objectives.X2_MAX(sol5.dynamicsystem_s1.X2,
-                          nodes=jnp.array([node]),
-                          components=jnp.array([0,1,2,3,4,5]),
-                          t=jnp.arange(config5.system.tn),
-                          axis=0)
+    inp.driver.sol_path = pathlib.Path(
+        "./resultsGustAD5")
 
-print((fobj5 - fobj3) / epsilon)
-print(sol.dynamicsystem_s1.jac['length'])
-#################################################################################
-epsilon = 1e-4
-inp.system.aero.gust.intensity = 14.0732311562*2
-inp.system.aero.gust.length = 67.
-inp.system.aero.rho_inf = 1.225 + epsilon
+    config5 =  configuration.Config(inp)
+    sol5 = feniax.feniax_main.main(input_obj=config5)
+    fobj5 = objectives.X2_MAX(sol5.dynamicsystem_s1.X2,
+                              nodes=jnp.array([node]),
+                              components=jnp.array([0,1,2,3,4,5]),
+                              t=jnp.arange(config5.system.tn),
+                              axis=0)
 
-inp.driver.sol_path = pathlib.Path(
-    "./resultsGustAD6")
+    print((fobj5 - fobj3) / epsilon)
+    print(sol.dynamicsystem_s1.jac['length'])
+    #################################################################################
+    epsilon = 1e-4
+    inp.system.aero.gust.intensity = 14.0732311562*2
+    inp.system.aero.gust.length = 67.
+    inp.system.aero.rho_inf = 1.225 + epsilon
 
-config6 =  configuration.Config(inp)
-sol6 = feniax.feniax_main.main(input_obj=config6)
-fobj6 = objectives.X2_MAX(sol6.dynamicsystem_s1.X2,
-                          nodes=jnp.array([node]),
-                          components=jnp.array([0,1,2,3,4,5]),
-                          t=jnp.arange(config6.system.tn),
-                          axis=0)
+    inp.driver.sol_path = pathlib.Path(
+        "./resultsGustAD6")
 
-print((fobj6 - fobj3) / epsilon)
-print(sol.dynamicsystem_s1.jac['rho_inf'])
+    config6 =  configuration.Config(inp)
+    sol6 = feniax.feniax_main.main(input_obj=config6)
+    fobj6 = objectives.X2_MAX(sol6.dynamicsystem_s1.X2,
+                              nodes=jnp.array([node]),
+                              components=jnp.array([0,1,2,3,4,5]),
+                              t=jnp.arange(config6.system.tn),
+                              axis=0)
+
+    print((fobj6 - fobj3) / epsilon)
+    print(sol.dynamicsystem_s1.jac['rho_inf'])

@@ -3,6 +3,9 @@ import pathlib
 import jax.numpy as jnp
 import numpy as np
 import pickle
+from feniax.ulogger.setup import  get_logger
+
+logger = get_logger(__name__)
 
 
 class Solution(ABC):
@@ -10,6 +13,7 @@ class Solution(ABC):
     def set_solcontainer(): ...
 
     def __init__(self, path: str | pathlib.Path = None):
+        
         self.set_solcontainer()
         if path is not None:
             self.path = pathlib.Path(path)
@@ -27,6 +31,7 @@ class Solution(ABC):
                 f"Container {name} is not a valid name \
             in {self.sol_container.__file__}"
             )
+        logger.info(f"Setting Container {name.lower() + label} for solution data object")
         setattr(self.data, name.lower() + label, Container(*args, **kwargs))
         self.containers.append(name + label)
 

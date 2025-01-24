@@ -100,6 +100,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
     def set_args(self):
         label = self.settings.label.split("_")[-1]
+        logger.info(f"Setting arguments for System main function with label {label}")
         solver_args = getattr(libargs, f"arg_{label}")
         self.args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
         
@@ -112,6 +113,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             self.eta0 = eta0
 
     def set_ic(self, q0):
+        logger.info(f"Setting initial conditions for the System (qs(0))")
         if q0 is None:
             self.q0 = jnp.zeros(self.settings.num_states)
             if self.settings.init_states is not None:
@@ -150,6 +152,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
     def set_xloading(self, compute_follower=True, compute_dead=True, compute_gravity=True):
 
+        logger.info(f"Setting external loads data for the System")        
         force_follower = None
         force_dead = None
         force_gravity = None
@@ -194,12 +197,14 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         self.settings.build_states(self.fem.num_modes, self.fem.num_nodes)
 
     def set_solver(self):
+        logger.info(f"Setting library to solve the equations ({self.settings.solver_library})")
         self.states_puller, self.eqsolver = sollibs.factory(
             self.settings.solver_library, self.settings.solver_function
         )
 
     def build_connection_eta(self):
 
+        logger.info(f"Building eta0 for system connection")
         elevator_index = self.settings.aero.elevator_index
         elevator_link = self.settings.aero.elevator_link
         aero = getattr(self.sol.data, f"modalaeroroger_{self.settings.name}")
@@ -242,14 +247,14 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
     def set_system(self):
         label = f"dq_{self.settings.label}"
-        logger.debug(f"Setting {self.__class__.__name__} with label {label}")        
+        logger.info(f"Setting {self.__class__.__name__} with label {label}")        
         self.dFq = getattr(dq_static, label)
 
     def solve(self):
         # label = self.settings.label.split("_")[-1]
         # solver_args = getattr(libargs, f"arg_{label}")
         # args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
-
+        logger.info(f"Running System solution")
         self.qs = _staticSolve(
             self.eqsolver,
             self.dFq,
@@ -261,6 +266,10 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         self.build_solution()
 
     def solve_forloop(self):
+        """
+        Deprecated function. Left it for info about other implementation
+        """
+        
         label = self.settings.label.split("_")[-1]
         solver_args = getattr(libargs, f"arg_{label}")
         qs = [self.q0]
@@ -274,6 +283,8 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         self.qs = jnp.array(qs[1:])
 
     def build_solution(self):
+        
+        logger.info(f"Building postprocessing fields (strains, velocities, positions, etc.)")
         q2_index = self.settings.states["q2"]
         q2 = self.qs[:, q2_index]
         tn = len(self.qs)
@@ -301,6 +312,10 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             self.sol.save_container("StaticSystem", label="_" + self.name)
 
     def build_solution_loop(self):
+        """
+        Deprecated function. Left it for info about other implementation
+        """
+        
         # q1 = qs[self.settings.q1_index, :]
         # q2 = qs[self.settings.q2_index, :]
         X2 = []
@@ -363,9 +378,8 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
         self.dFq = getattr(dq_dynamic, label)
 
     def solve(self):
-        # label = self.settings.label.split("_")[-1]
-        # solver_args = getattr(libargs, f"arg_{label}")
-        # args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
+
+        logger.info(f"Running System solution")
         sol = self.eqsolver(
             self.dFq,
             self.args1,
@@ -381,9 +395,10 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
         self.build_solution()
 
     def build_solution_loop(self):
-        # return
-        # q1 = qs[self.settings.q1_index, :]
-        # q2 = qs[self.settings.q2_index, :]
+        """
+        Deprecated function. Left it for info about other implementation
+        """
+
         X2 = []
         X3 = []
         Cab = []
@@ -433,6 +448,7 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
 
         # q1 = qs[self.settings.q1_index, :]
         # q2 = qs[self.settings.q2_index, :]
+        logger.info(f"Building postprocessing fields (strains, velocities, positions, etc.)")        
         X1 = postprocess.compute_velocities(
             self.sol.data.modes.phi1l, self.qs[:, self.settings.states["q1"]]
         )

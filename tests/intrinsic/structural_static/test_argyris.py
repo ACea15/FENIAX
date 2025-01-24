@@ -8,17 +8,7 @@ import pathlib
 
 file_path = pathlib.Path(__file__).parent
 
-# sol_path = "./data/ArgyrisFrame3D"#"./data/ArgyrisBeam"
-# sol = solution.IntrinsicSolution(sol_path)
-# sol.load_container("Modes")
-# sol.load_container("Couplings")
-# sol.load_container("StaticSystem", label="_s1")
-# sol_path2 = "./ArgyrisBeam"
-# sol2 = solution.IntrinsicSolution(sol_path2)
-# sol2.load_container("Modes")
-# sol2.load_container("Couplings")
-# sol2.load_container("StaticSystem", label="_s1")
-
+@pytest.mark.legacy
 class TestBeamModal:
 
     @pytest.fixture(scope="class")
@@ -98,6 +88,7 @@ class TestBeamModal:
         assert jnp.allclose(sol.couplings.gamma2,
                             data.couplings.gamma2)
 
+@pytest.mark.legacy
 class TestBeamSolution:
 
     @pytest.fixture(scope="class")
@@ -174,6 +165,7 @@ class TestBeamSolution:
         assert jnp.allclose(sol.staticsystem_s1.Cab,
                             data.staticsystem_s1.Cab[:2])
 
+@pytest.mark.legacy
 class TestFrameModal:
 
     @pytest.fixture(scope="class")
@@ -253,6 +245,7 @@ class TestFrameModal:
         assert jnp.allclose(sol.couplings.gamma2,
                             data.couplings.gamma2)
 
+@pytest.mark.legacy
 class TestFrameSolution:
 
     @pytest.fixture(scope="class")
@@ -332,6 +325,7 @@ class TestFrameSolution:
         assert jnp.allclose(sol.staticsystem_s1.Cab,
                             data.staticsystem_s1.Cab[:3])
 
+@pytest.mark.legacy        
 class TestFrame3D:
 
     @pytest.fixture(scope="class")

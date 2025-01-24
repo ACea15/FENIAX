@@ -64,16 +64,17 @@ path2config = pathlib.Path("./config.yaml")
 
 sol = feniax.feniax_main.main(input_obj=config)
 
-
-import importlib
-importlib.reload(upyvista)
-istruct = putils.IntrinsicStruct(config.fem)
-cstruct = putils.IntrinsicStructComponent(config.fem)
-istruct.add_solution(sol.staticsystem_s1.ra)
-cstruct.add_solution(sol.staticsystem_s1.ra)
-pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
-pl.show_grid()
-pl.view_xy()
-for k, v in istruct.map_ra.items():
-    pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
-pl.show()
+PLOT = False
+if PLOT:
+    import importlib
+    importlib.reload(upyvista)
+    istruct = putils.IntrinsicStruct(config.fem)
+    cstruct = putils.IntrinsicStructComponent(config.fem)
+    istruct.add_solution(sol.staticsystem_s1.ra)
+    cstruct.add_solution(sol.staticsystem_s1.ra)
+    pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
+    pl.show_grid()
+    pl.view_xy()
+    for k, v in istruct.map_ra.items():
+        pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
+    pl.show()

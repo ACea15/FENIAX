@@ -1,13 +1,13 @@
 import logging
 from feniax.drivers.driver import Driver
 from feniax.ulogger.setup import  get_logger
-logger = get_logger(__name__)
 import feniax.simulations
 from feniax.preprocessor import solution, configuration
 import feniax.intrinsic.modes as modes
 import feniax.intrinsic.couplings as couplings
 import feniax.systems
 
+logger = get_logger(__name__)
 
 class IntrinsicDriver(Driver, cls_name="intrinsic"):
     """Driver for the modal intrinsic theory
@@ -71,6 +71,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
     def _set_simulation(self):
         # Configure the simulation
         if hasattr(self._config, "simulation"):
+            logger.info(f"Initialising Simulation {self._config.simulation.typeof}")
             cls_simulation = feniax.simulations.factory(self._config.simulation.typeof)
             self.simulation = cls_simulation(
                 self.systems, self.sol, self._config.simulation
