@@ -14,13 +14,13 @@ class SingleSimulation(Simulation, cls_name="single"):
 
         for k, sys in self.systems.items():  # only one item in the loop
             logger.info(f"Running System {k}")
-            sys.set_system()
             sys.set_solver()
             sys.set_xloading()
             sys.set_states()
             sys.set_eta0()
             sys.set_args()
             sys.set_ic(q0=None)
+            sys.set_system()            
             sys.solve()
             # sys.build_solution()
             # self._post_run(k, sol_obj)

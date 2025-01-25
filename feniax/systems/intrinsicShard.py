@@ -99,7 +99,7 @@ class StaticShardIntrinsic(IntrinsicShardSystem, cls_name="staticShard_intrinsic
         label_sys = self.settings.label
         label_shard = self.settings.shard.label
         self.label = f"main_{label_sys}_{label_shard}"
-        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
+        logger.info(f"Setting {self.__class__.__name__} with label {label}")
         self.main = partial(jax.jit, static_argnames=["config"])(getattr(staticShard, self.label))
 
     def build_solution(self, q, X2, X3, ra, Cab, *args, **kwargs):
@@ -125,7 +125,7 @@ class DynamicShardIntrinsic(IntrinsicShardSystem, cls_name="dynamicShard_intrins
         label_sys = self.settings.label
         label_shard = self.settings.shard.label
         label = f"main_{label_sys}_{label_shard}"
-        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
+        logger.info(f"Setting {self.__class__.__name__} with label {label}")
         self.main = partial(jax.jit, static_argnames=["config"])(getattr(dynamicShard, label))
 
     def build_solution(self, q, X1, X2, X3, ra, Cab, *args, **kwargs):
@@ -151,11 +151,11 @@ class StaticShardMapIntrinsic(IntrinsicShardSystem, cls_name="staticShardmap_int
         label_sys = self.settings.label
         label_shard = self.settings.shard.label
         self.label = f"main_{label_sys}_{label_shard}"
-        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
+        logger.info(f"Setting {self.__class__.__name__} with label {self.label}")
         self.mesh = Mesh(devices=mesh_utils.create_device_mesh((jax.device_count(),)),
                          axis_names=('x'))
-        f = getattr(dynamicShard, label)
-        self.main = partial(shard_map, mesh=self.mesh, in_specs=P('x'), out_specs=P('x'))
+        f = getattr(staticShard, self.label)
+        self.main = shard_map(f, mesh=self.mesh, in_specs=P('x'), out_specs=P('x'))
         
     def build_solution(self, q, X2, X3, ra, Cab, *args, **kwargs):
         
@@ -180,12 +180,30 @@ class DynamicShardMapIntrinsic(IntrinsicShardSystem, cls_name="dynamicShardmap_i
         label_sys = self.settings.label
         label_shard = self.settings.shard.label
         label = f"main_{label_sys}_{label_shard}"
-        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
+        logger.info(f"Setting {self.__class__.__name__} with label {label}")
         self.mesh = Mesh(devices=mesh_utils.create_device_mesh((jax.device_count(),)),
                          axis_names=('x'))
         f = getattr(dynamicShard, label)
-        self.main = partial(shard_map, mesh=self.mesh, in_specs=P('x'), out_specs=P('x'))
+        self.main = partial(shard_map, mesh=self.mesh, in_specs=P('x'), out_specs=P('x'))(partial(f,
+                                                                                                  q0=self.q0,
+                                                                                                  config=self.config,
+                                                                                                  args=self.args1
+                                                                                                  )
+                                                                                          )
 
+    def solve(self):
+        
+        xshard = jax.device_put(self.xpoints, NamedSharding(self.mesh, P('x')))
+
+        results = self.main(xshard,
+                            #q0=self.q0,
+                            #config=self.config,
+                            #args=self.args1
+                            #eqsolver=self.eqsolver
+                            )
+        
+        self.build_solution(**results)
+        
     def build_solution(self, q, X1, X2, X3, ra, Cab, *args, **kwargs):
         
         super().build_solution()

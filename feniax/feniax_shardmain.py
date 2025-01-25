@@ -1,4 +1,6 @@
 """Main FENIAX."""
+from feniax.ulogger.setup import set_logging, get_logger
+import time
 
 def main(
     input_file: str = None,
@@ -26,6 +28,10 @@ def main(
         process.
 
     """
+    print("____________________FENIAX____________________")
+    start_wall = time.perf_counter()
+    start_cpu = time.process_time()
+    
     # from jax.config import config;
     import jax
     jax.config.update("jax_enable_x64", True)
@@ -39,6 +45,10 @@ def main(
     from feniax.preprocessor.solution import Solution
         
     config = configuration.initialise_config(input_file, input_dict, input_obj)
+    set_logging(config)
+    logger = get_logger(__name__)
+    logger.info("Simulation running...")
+    
     if config.driver.sol_path is not None:
         configuration.dump_to_yaml(
             config.driver.sol_path / "config.yaml", config, with_comments=True
@@ -48,6 +58,11 @@ def main(
     driver.pre_simulation()
     driver.run_case()
 
+    elapsed_wall = time.perf_counter() - start_wall
+    elapsed_cpu = time.process_time() - start_cpu
+    logger.info(f"Simulation ellapsed wall-time: {elapsed_wall}")
+    logger.info(f"Simulation ellapsed CPU-time: {elapsed_cpu}")
+    print("_____________________END______________________")    
     if return_driver:  # return driver object for inspection
         return driver
     else:  # just return the solution data

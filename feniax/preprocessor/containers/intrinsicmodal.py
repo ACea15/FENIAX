@@ -1402,7 +1402,7 @@ class Dsystem(DataContainer):
             else:
                 object.__setattr__(self, "operationalmode", "AD")
         elif self.shard is not None:
-            if self.operationalmode is None:
+            if self.operationalmode == "":
                 object.__setattr__(self, "operationalmode", "Shard")
             else:
                 object.__setattr__(self, "operationalmode", self.operationalmode.capitalize())
