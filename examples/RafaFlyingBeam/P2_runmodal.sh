@@ -51,9 +51,7 @@ cd -
 # [[file:modelgen.org::*Run nastran][Run nastran:2]]
 source ../../feniax/unastran/run_nastran.sh
 cd ./NASTRAN
-run_nastran Model5_103op2.bdf
-move_outputs Model5_103op2.bdf
-run_nastran Model5_103pch.bdf
-move_outputs Model5_103pch.bdf
+run_nastran Model5init.bdf
+move_outputs Model5init.bdf
 cd -
 # Run nastran:2 ends here

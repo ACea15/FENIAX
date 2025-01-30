@@ -14,7 +14,8 @@ pathlib.Path('./NASTRAN/simulations_out').mkdir(parents=True, exist_ok=True)
 
 # [[file:modelgen.org::*Build Nastran models][Build Nastran models:2]]
 @dataclass
-class Config:  
+class Config:
+    BAR: bool = False
     L: float = 1.
     THETA0: float = 0.
     M: float = 1000.
@@ -23,14 +24,14 @@ class Config:
     OFFSET_x: float = 0.
     OFFSET_z: float = 0.
     E: float = 1e6
-    A: float = 0.5
-    J: float = I 
+    A: float = 0.05
+    J: float = I * 5
     omega: float = None
 
     def __post_init__(self):
 
-        #self.omega = (24*self.E * self.I / (self.M * self.L ** 3) )**0.5
-        self.omega = (12*self.E * self.I / (self.M * self.L ** 3) )**0.5
+        self.omega = (24*self.E * self.I / (self.M * self.L ** 3) )**0.5
+        #self.omega = (12*self.E * self.I / (self.M * self.L ** 3) )**0.5
 
 def build_bdf(config: Config):
 
@@ -49,7 +50,7 @@ def build_bdf(config: Config):
     #        self.inp.I31[i][k],self.inp.I32[i][k],self.inp.I33[i][k]]
     conm21 = ['CONM2', 11, 1, 0, config.M / 2,
               config.OFFSET_x, 0., config.OFFSET_z, None,
-              config.Im, 0., config.Im, 0., 0., config.Im
+              1e-5, 0., config.Im, 0., 0., 1e-5
               ]
     conm22 = ['CONM2', 12, 2, 0, config.M / 4,
               0., 0., 0. , None,
@@ -69,14 +70,26 @@ def build_bdf(config: Config):
     mesh.add_card(mat1, 'MAT1')
     ############################  
     # pbeam = ['PBEAM',id_p,id_mat,Aa,I1a,I2a,I12a,Ja]
-    pbeam = ['PBEAM', 31, 21, config.A, config.I, 0.001, 0., config.J]
-    mesh.add_card(pbeam, 'PBEAM')
+    if config.BAR:
+        pbeam = ['PBAR', 31, 21, config.A, config.I, config.I * 1e-3, config.J]
+        mesh.add_card(pbeam, 'PBAR')
+    else:
+        pbeam = ['PBEAM', 31, 21, config.A, config.I, config.I * 1e-3, 0., config.J]
+        mesh.add_card(pbeam, 'PBEAM')
+
     ############################  
     # cbeam=['CBEAM',EID,PID,GA,GB,X1,X2,X3]
-    cbeam1= ['CBEAM', 41, 31, 1, 2, 0., 1., 0.]
-    cbeam2= ['CBEAM', 42, 31, 1, 3, 0., 1., 0.]  
-    mesh.add_card(cbeam1, 'CBEAM')
-    mesh.add_card(cbeam2, 'CBEAM')
+    if config.BAR:
+        cbeam1= ['CBAR', 41, 31, 1, 2, 0., 1., 0.]
+        cbeam2= ['CBAR', 42, 31, 1, 3, 0., 1., 0.]  
+        mesh.add_card(cbeam1, 'CBAR')
+        mesh.add_card(cbeam2, 'CBAR')
+    else:
+        cbeam1= ['CBEAM', 41, 31, 1, 2, 0., 1., 0.]
+        cbeam2= ['CBEAM', 42, 31, 1, 3, 0., 1., 0.]
+        mesh.add_card(cbeam1, 'CBEAM')
+        mesh.add_card(cbeam2, 'CBEAM')
+
     ############################
     return mesh
 # Build Nastran models:2 ends here
@@ -116,10 +129,10 @@ for i in range(1, num_models + 1):
     eigenvectors = op2.eigenvectors()
     eigenvalues_list.append(eigenvalues)
     eigenvectors_list.append(eigenvectors)
-    if i == 5: # Model 5
-        v = eigenvectors.reshape((18,5*6)).T
-    else:
-        v = eigenvectors.reshape((18,18)).T
+    # if i == 5: # Model 5
+    #     v = eigenvectors.reshape((18,5*6)).T
+    # else:
+    v = eigenvectors.reshape((18,18)).T
     np.save(f"./FEM/eigenvals_m{i}.npy", eigenvalues)
     np.save(f"./FEM/eigenvecs_m{i}.npy", v)
 
@@ -133,10 +146,10 @@ for i in range(1, num_models + 1):
 
     bdf = BDF()
     bdf.read_bdf(f"./NASTRAN/Model{i}_103op2.bdf", validate=False)
-    if i == 5: # Model 5
-        components = dict(rbeam=[1,21, 22], lbeam=[31, 32])
-    else:
-        components = dict(rbeam=[1,2], lbeam=[3])
+    # if i == 5: # Model 5
+    #     components = dict(rbeam=[1,21, 22], lbeam=[31, 32])
+    # else:
+    components = dict(rbeam=[1,2], lbeam=[3])
     model = BuildAsetModel(components, bdf)          
     model.write_grid(f"./FEM/structuralGrid_m{i}")
 # Read and save FEM and FENIAX grid:2 ends here
