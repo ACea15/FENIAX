@@ -9,7 +9,7 @@ import feniax.intrinsic.dq_dynamic as dq_dynamic
 import feniax.systems.intrinsic_system as isys
 import feniax.intrinsic.dynamicFast as dynamicFast
 
-@partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
+# @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
 def main_20g11_1(
     inputs,  # alpha
     q0,
@@ -47,7 +47,7 @@ def main_20g11_1(
     )
 
 
-@partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
+# @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
 def main_20g11_3(
         inputs,  # Ka, Ma
     q0,
@@ -96,7 +96,7 @@ def main_20g11_3(
         axis=obj_args.axis,
     )
 
-@partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
+# @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
 def main_20g21_2(
     inputs,  # gust_intensity, gust_length, u_inf, rho_inf,
     q0,
@@ -139,7 +139,7 @@ def main_20g21_2(
     )
 
 
-@partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
+# @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
 def main_20g21_3(
     inputs,  
     q0,
@@ -187,7 +187,7 @@ def main_20g21_3(
         axis=obj_args.axis,
     )
 
-@partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
+# @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
 def main_20g546_2(
     inputs,  # gust_intensity, gust_length, u_inf, rho_inf,
     q0,
@@ -230,7 +230,7 @@ def main_20g546_2(
     )
 
 
-@partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
+# @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
 def main_20g546_3(
     inputs,  
     q0,

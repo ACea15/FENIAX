@@ -74,7 +74,15 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
                 raise ValueError(f"Incorrect solver {self.settings.ad.grad_type}")
 
     def solve(self):
-        fprime = self.eqsolver(self.dFq, has_aux=True)  # call to jax.grad..etc
+        # TODO: option to jit at the end, jit dFq, or not jit at all.
+        if True: # not working with diffrax static solver
+            fprime = partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])(self.eqsolver(self.dFq, has_aux=True))  # call to jax.grad..etc
+        elif False:
+            fprime = (self.eqsolver(partial(jax.jit,
+                                            static_argnames=["config", "f_obj", "obj_args"])(self.dFq),
+                                    has_aux=True))  # call to jax.grad..etc
+        else:
+            fprime = self.eqsolver(self.dFq, has_aux=True)
         if self.settings.ad.grad_type == "value_grad":
             ((val, fout), jac) = fprime(
                 self.settings.ad.inputs,

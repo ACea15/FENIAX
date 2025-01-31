@@ -7,7 +7,9 @@ import jax
 import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
 from feniax.preprocessor.inputs import Inputs
 import feniax.feniax_main
-
+import warnings
+warnings.filterwarnings("default", category=DeprecationWarning,
+                                   )
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.eig_type = "inputs"
@@ -47,20 +49,20 @@ inp.system.xloads.follower_points = [[25, 2], [48, 2]]
 
 inp.system.xloads.x = [0, 1, 2, 3, 4, 5, 6]
 inp.system.xloads.follower_interpolation = [[0.,
-                                                      2e5,
-                                                      2.5e5,
-                                                      3.e5,
-                                                      4.e5,
-                                                      4.8e5,
-                                                      5.3e5],
-                                                     [0.,
-                                                      2e5,
-                                                      2.5e5,
-                                                      3.e5,
-                                                      4.e5,
-                                                      4.8e5,
-                                                      5.3e5]
-                                                     ]
+                                             2e5,
+                                             2.5e5,
+                                             3.e5,
+                                             4.e5,
+                                             4.8e5,
+                                             5.3e5],
+                                            [0.,
+                                             2e5,
+                                             2.5e5,
+                                             3.e5,
+                                             4.e5,
+                                             4.8e5,
+                                             5.3e5]
+                                            ]
 
 # load at t = 5.5
 inp.system.t = [1, 2, 3, 4, 5]

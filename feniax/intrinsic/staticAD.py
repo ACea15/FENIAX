@@ -12,7 +12,7 @@ newton = partial(jax.jit, static_argnames=["F", "sett"])(libdiffrax.newton)
 _solve = partial(jax.jit, static_argnames=["eqsolver", "dq", "sett"])(isys._staticSolve)
 
 
-@partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
+# @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
 def main_10g11_1(
     inputs,  # alpha
     q0,
@@ -66,7 +66,7 @@ def main_10g11_1(
     )
 
 
-@partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
+# @partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])
 def main_10g11_3(
     inputs,  # alpha
     q0,
