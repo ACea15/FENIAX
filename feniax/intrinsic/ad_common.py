@@ -16,7 +16,7 @@ def _compute_modes(X, Ka, Ma, eigenvals, eigenvecs, config):
     return modes.scale(*modal_analysis)
 
 
-@partial(jax.jit, static_argnames=["f_obj"])
+#@partial(jax.jit, static_argnames=["f_obj"])
 def _objective_output(q, X1, X2, X3, ra, Cab, f_obj, *args, **kwargs):
     obj = f_obj(X1=X1, X2=X2, X3=X3, ra=ra, Cab=Cab, **kwargs)
     #objective = jnp.hstack(jnp.hstack(obj))

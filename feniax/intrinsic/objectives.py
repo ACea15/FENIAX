@@ -70,3 +70,23 @@ def ra_MAX(ra, nodes, components, t, axis=None, *args, **kwargs):
 @partial(jax.jit, static_argnames=["axis"])
 def ra_MIN(ra, nodes, components, t, axis=None, *args, **kwargs):
     return jnp.min(ra[jnp.ix_(t, components, nodes)], axis=axis)
+
+
+@name
+@partial(jax.jit, static_argnames=["axis"])
+def ra_PMAX(ra, nodes, components, t, axis=None, *args, **kwargs):
+    if axis is None:
+        axis = 0
+    axis += 1
+    ra_max = jnp.max(ra[jnp.ix_(t, components, nodes)], axis=axis)
+    return jnp.lax.pmax(ra, axis_name="i")
+
+
+@name
+@partial(jax.jit, static_argnames=["axis"])
+def ra_PMIN(ra, nodes, components, t, axis=None, *args, **kwargs):
+    if axis is None:
+        axis = 0
+    axis += 1
+    ra_min = jnp.min(ra[jnp.ix_(t, components, nodes)], axis=axis)
+    return jnp.lax.pmin(ra, axis_name="i")
