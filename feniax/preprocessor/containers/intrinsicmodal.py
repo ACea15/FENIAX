@@ -1399,9 +1399,23 @@ class Dsystem(DataContainer):
                     ),
                 )
             if self.shard is not None:
-                object.__setattr__(self, "operationalmode", "ShardAD")
+                object.__setattr__(self, "operationalmode", "ADShard")
+                if isinstance(self.shard, dict):
+                    libsettings_class = globals()["DShard"]
+                    object.__setattr__(
+                        self,
+                        "shard",
+                        initialise_Dclass(
+                            self.shard,
+                            libsettings_class,
+                            #_fem=self._fem,
+                            #_aero=self._aero,
+                        ),
+                    )
+                
             else:
                 object.__setattr__(self, "operationalmode", "AD")
+                
         elif self.shard is not None:
             if self.operationalmode == "":
                 object.__setattr__(self, "operationalmode", "Shard")

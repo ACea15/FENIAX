@@ -73,10 +73,11 @@ inp.driver.sol_path = pathlib.Path(
     f"./results/gust2_{sol}Shard")
 inp.system.aero.gust.fixed_discretisation = [150, u_inf]
 # Shard inputs
-inputflow = dict(length=np.linspace(25,265,13),
-                 intensity=np.linspace(0.1, 3, 11),
-                 rho_inf = np.linspace(0.34,0.48,8)
+inputflow = dict(length=np.linspace(25,265,2),
+                 intensity=np.linspace(0.1, 3, 2),
+                 rho_inf = np.linspace(0.34,0.48,2)
                )
+inp.system.operationalmode = "shardmap"
 inp.system.shard = dict(input_type="gust1",
                       inputs=inputflow)
 

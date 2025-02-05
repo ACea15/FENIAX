@@ -44,7 +44,7 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
         match self.settings.ad.grad_type:
             case "grad":
                 raise ValueError(
-                    "Drop support for grad as it requires value-function output which prevents generalisations"
+                    "Dropped support for grad as it requires value-function output which prevents generalisations"
                 )
                 # self.eqsolver = jax.grad
                 # obj_label = f"{self.settings.ad.objective_var}_{self.settings.ad.objective_fun.upper()}grad"
@@ -52,7 +52,7 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
 
             case "value_grad":
                 raise ValueError(
-                    "Drop support for grad as it requires value-function output which prevents generalisations"
+                    "Dropped support for grad as it requires value-function output which prevents generalisations"
                 )
                 # self.eqsolver = jax.value_and_grad
                 # self.eqsolver = jax.grad
@@ -73,13 +73,13 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
             case _:
                 raise ValueError(f"Incorrect solver {self.settings.ad.grad_type}")
 
-    def solve(self):
+    def solve(self, static_argnames=["config", "f_obj", "obj_args"], *args, **kwargs):
         # TODO: option to jit at the end, jit dFq, or not jit at all.
         if True: # not working with diffrax static solver
-            fprime = partial(jax.jit, static_argnames=["config", "f_obj", "obj_args"])(self.eqsolver(self.dFq, has_aux=True))  # call to jax.grad..etc
+            fprime = partial(jax.jit, static_argnames=static_argnames)(self.eqsolver(self.dFq, has_aux=True))  # call to jax.grad..etc
         elif False:
             fprime = (self.eqsolver(partial(jax.jit,
-                                            static_argnames=["config", "f_obj", "obj_args"])(self.dFq),
+                                            static_argnames=static_argnames)(self.dFq),
                                     has_aux=True))  # call to jax.grad..etc
         else:
             fprime = self.eqsolver(self.dFq, has_aux=True)
@@ -90,6 +90,8 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
                 config=self.config,
                 f_obj=self.f_obj,
                 obj_args=self.settings.ad.objective_args,
+                *args,
+                **kwargs
             )
         else:
             jac, fout = fprime(
@@ -98,6 +100,8 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
                 config=self.config,
                 f_obj=self.f_obj,
                 obj_args=self.settings.ad.objective_args,
+                *args,
+                **kwargs                
             )
         self.build_solution(jac, *fout)
 

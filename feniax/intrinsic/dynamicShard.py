@@ -22,7 +22,7 @@ def main_20g21_3(
 ):
 
     X = config.fem.X
-    phi1l, phi2l, psi2l, X_xdelta, C0ab, A, D, c_ref,  _dqargs = args
+    phi1l, phi2l, psi2l, X_xdelta, C0ab, A, D, c_ref, _dqargs = args
     states = _dqargs[4]
     q1_index = states["q1"]
     q2_index = states["q2"]

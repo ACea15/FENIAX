@@ -755,3 +755,144 @@ def allclose(a, b):
   return tree_all(tree_map(partial(jnp.allclose, atol=1e-2, rtol=1e-2), a, b))
 
 allclose(c[:,:,2], jnp.dot(a, b))
+
+
+import os
+os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=4"
+
+import jax
+import jax.numpy as jnp
+from jax.experimental.shard_map import shard_map
+from jax.sharding import PartitionSpec as P
+
+print(jax.__version__, jax.devices())
+
+mesh = jax.make_mesh((2,), ('i',))
+x = jnp.arange(4., dtype=jnp.float32)
+y = jnp.arange(8.*3, dtype=jnp.float32).reshape((8,3))
+z = jnp.arange(8.*3*2, dtype=jnp.float32).reshape((8,3,2))
+ 
+
+f = shard_map(lambda x: jax.lax.pmax(x, 'i'),
+              mesh=mesh, in_specs=P('i'), out_specs=P(None))
+f(x)
+
+fy = shard_map(lambda x: jax.lax.pmax(jnp.max(x,axis=1), 'i'),
+              mesh=mesh, in_specs=P('i'), out_specs=P('i'))
+fy(y)
+fy(z)
+
+
+fy2 = shard_map(lambda x: jnp.max(x,axis=1), mesh=mesh, in_specs=P('i'), out_specs=P('i'))
+fy2(y)
+
+fy3 = shard_map(lambda x: jax.lax.pmax(x,"i"), mesh=mesh, in_specs=P('i'), out_specs=P(None))
+fy3(y)
+
+def dfy(inputs):
+
+    fy = shard_map(lambda x: 2*jax.lax.pmax(jnp.max(x**2,axis=1), 'i'),
+                   mesh=mesh, in_specs=P('i'), out_specs=P())
+    out = jnp.max(fy(inputs), axis=0)
+    return out, fy(inputs)
+
+d, fd = jax.jacrev(dfy)(y)
+
+def dfy(inputs):
+
+    fy = shard_map(lambda x: 2*jax.lax.pmean(jnp.max(x**2,axis=1), 'i'),
+                   mesh=mesh, in_specs=P('i'), out_specs=P())
+    out = jnp.max(fy(inputs), axis=0)
+    return out, fy(inputs)
+
+d, fd = jax.jacrev(dfy)(y)
+
+
+
+def dfy(inputs):
+
+    fy = shard_map(lambda x: 2*jnp.max(x**2,axis=1),
+                   mesh=mesh, in_specs=P('i'), out_specs=P('i'))
+    out = jnp.max(fy(inputs), axis=0)
+    return out, fy(inputs)
+
+d, fd = jax.jacrev(dfy)(y)
+
+
+##########################################################################
+## Inheritance
+
+class A:
+    def method(self):
+        print("A method")
+
+
+class B(A):
+    def method(self):
+        print("B method")
+        super().method()  # This will call E's method
+
+class C(A):
+    def method(self):
+        print("C method")
+
+class D(B, C):
+    pass
+
+d = D()
+d.method()
+D.__mro__
+
+
+class A:
+    def method(self):
+        print("A method")
+
+class E:
+    def method(self):
+        print("E method")
+
+class B(E, A):
+    def method(self):
+        print("B method")
+        super().method()  # This will call E's method
+
+class C(A):
+    def method(self):
+        print("C method")
+
+class D(B, C):
+    pass
+
+
+d = D()
+d.method()
+D.__mro__
+
+
+class A:
+    def method(self):
+        print("A method")
+
+class E(A):
+    def method(self):
+        print("E method")
+
+class B(E):
+    def method(self):
+        print("B method")
+        super().method()  # This will call E's method
+
+class C(A):
+    def method(self):
+        print("C method")
+
+class D(B, C):
+    pass
+
+
+d = D()
+d.method()
+D.__mro__
+
+
