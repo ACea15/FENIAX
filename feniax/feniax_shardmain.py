@@ -56,7 +56,7 @@ def main(
     Driver = feniax.drivers.factory(config.driver.typeof)
     driver = Driver(config)
     driver.pre_simulation()
-    driver.run_case()
+    driver.run_cases()
 
     elapsed_wall = time.perf_counter() - start_wall
     elapsed_cpu = time.process_time() - start_cpu

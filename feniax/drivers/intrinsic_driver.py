@@ -62,7 +62,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
                 self._load_modalshapes()
                 self._load_modalcouplings()
 
-    def run_case(self):
+    def run_cases(self):
         if self.num_systems == 0:
             logger.warning("no systems in the simulation")
         else:

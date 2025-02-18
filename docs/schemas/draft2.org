@@ -41,12 +41,18 @@ If for instance one wants to set an optimisation with boundaries on the maximum 
 *** Perform calculations on different models in a single run
 Via the supercase option of driver. This might be used to compute finite differences; or if the response of if the response of a fractured component is to be compared.
 
+* Physical models
+** Downwash for DLM
+Collocation-points-Normals_atCollocation-Downwash-AIC*Downwash
+
+
 * Code design and software architecture :noexport:
 - Config object with input settings.
 - Driver class: initialises all relevant objects such as the simulation, and the systems that will solved in the solution process.
 - Simulation class: responsible for running the various systems appropriately, including setting the initial conditions from one system to another.
 - System class: set the computations to solve the corresponding system of equations, including the solver library that should be called, the system of equations and the arguments to the solvers.  
 
+  
 ** Config
 config.engine = intrinsic
 config.supercase.fems[dict]
@@ -59,19 +65,30 @@ config.systems[]
 config.system.name
 config.system.solver.library
 config.system.solver.settings
+** Main files
+*** main
+*** shardmain
+for gpu testing, it mimics 
+*** mpi main
+features mpi for parallel computations
+
 ** Driver
-(only driver gets to modify object)
-run_cases
-  -- set_case
-  -- integration.pre_simulation()
+[[file:~/projects/FENIAX/feniax/drivers/driver.py::class Driver(ABC):][Class]]
+Initialises objects in the simulation
+
+pre_simulation()
+run_cases()
   -- simulation.trigger()
-  -- 
-set_case
-(modifies config object)
-  -- Supercase
-  -- Subcase
-set_integration
-set_simulation -> simulation
+post_simulation()
+
+
+  
+*** Specialisations
+**** intrinsic_driver
+[[file:~/projects/FENIAX/feniax/drivers/intrinsic_driver.py::class IntrinsicDriver(Driver, cls_name="intrinsic"):][Class]]
+
+**** intrinsicmeta_driver
+
 ** Integration
 run
   -- calculate_modalshapes
@@ -139,7 +156,35 @@ ShardF -> Shard
 
 - Shard AD: shard the inputs, take a function for the output,
 
+
+** Forager
+
+- run()
   
+- collector(sol)
+  gets data from the sol object
+  - single
+  - mpi
+
+ for instance a bunch of gust simulations
+
+filter
+based on the collected data, builds new configs
+but how?
+the original config object is copied and 3 dictionaries are needed:
+1) entries to remove from config
+2)  
+list of dictionaries is setup:  
+
+
+
+spawn 
+
+instantiate driver
+
+
+
+
 ** XForces
 *** prescribed_follower
 *** prescribed_dead
@@ -309,7 +354,6 @@ ShardF -> Shard
 [[file:UML_software1.png]]
 
 * Algorithms
-
 
 $N_N$ Number of discretisation condensed nodes in the model
 $N_m$ Number of modal shapes in the solution
