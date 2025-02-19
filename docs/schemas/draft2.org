@@ -45,7 +45,6 @@ Via the supercase option of driver. This might be used to compute finite differe
 ** Downwash for DLM
 Collocation-points-Normals_atCollocation-Downwash-AIC*Downwash
 
-
 * Code design and software architecture :noexport:
 - Config object with input settings.
 - Driver class: initialises all relevant objects such as the simulation, and the systems that will solved in the solution process.
@@ -177,13 +176,13 @@ the original config object is copied and 3 dictionaries are needed:
 list of dictionaries is setup:  
 
 
-
 spawn 
 
 instantiate driver
 
-
-
+forager name (gust)
+system_name -> ad 
+connection between the shard and the ad settings
 
 ** XForces
 *** prescribed_follower
@@ -379,7 +378,6 @@ $\bm{r}_a$, $\bm{R}_{a}$   $\longleftarrow$ integration($\bm{X}_{3}$, $\bm{X}_a$
 }
 \caption{Main components in solution process}
 \end{algorithm}
-
 
 * Simulation inputs :noexport:
 trim

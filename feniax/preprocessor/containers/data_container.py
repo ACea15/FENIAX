@@ -10,6 +10,9 @@ class DataContainer:
     #         cls._initialize_attributes()
     #     return super().__new__(cls)
 
+    def set_value(self, name, value):
+        self.__setattr__(self, name, value)
+        
     @classmethod
     def _initialize_attributes(cls):
         docstring = cls.__doc__

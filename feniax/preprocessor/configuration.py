@@ -95,6 +95,9 @@ class Config:
         yaml_dict = yaml.load(pathlib.Path(file_dir))
         return cls(yaml_dict)
 
+    def clone(self):
+
+        return copy.deepcopy(self)
 
 class ValidateConfig:
     @staticmethod

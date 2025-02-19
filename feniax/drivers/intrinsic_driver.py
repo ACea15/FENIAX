@@ -68,6 +68,16 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         else:
             self.simulation.trigger()
 
+    def post_simulation(self):
+        
+        if hasattr(self._config, "forager"):
+            cls_forager = feniax.foragers.factory()
+            forager = cls_forager(self._config,
+                                  self.sol,
+                                  self.systems)
+            forager.build_configs()
+            forager.spawn()
+            
     def _set_simulation(self):
         # Configure the simulation
         if hasattr(self._config, "simulation"):

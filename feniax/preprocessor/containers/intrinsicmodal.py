@@ -1204,20 +1204,11 @@ class DShard_gust1(DataContainer):
     
 @Ddataclass
 class DShard(DataContainer):
-    """Algorithm differentiation settings
+    """ settings
 
     Parameters
     ----------
-    function : str
-    inputs : dict
     input_type : str
-    grad_type : str
-    objective_fun : str
-    objective_var : str
-    objective_args : dict
-    _numnodes : int
-    _numtime : int
-    _numcomponents : int
     label : str
 
     """
