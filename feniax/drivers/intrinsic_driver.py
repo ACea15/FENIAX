@@ -71,7 +71,8 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
     def post_simulation(self):
         
         if hasattr(self._config, "forager"):
-            cls_forager = feniax.foragers.factory()
+            cls_forager = feniax.foragers.factory(
+                f"intrinsic_{self._config.forager.typeof}")
             forager = cls_forager(self._config,
                                   self.sol,
                                   self.systems)

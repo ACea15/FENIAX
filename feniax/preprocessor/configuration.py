@@ -12,6 +12,7 @@ import copy
 
 
 class Config:
+    
     def __init__(self, sett: dict):
         self.__sett = copy.copy(sett)
         self.__serial_data = None

@@ -1036,7 +1036,7 @@ class DdiffraxNewton(Dlibrary):
 
 
 @Ddataclass
-class DobjectiveArgs(Dlibrary):
+class DobjectiveArgs(DataContainer):
     """Settings for the objective function in the AD
 
     Parameters
@@ -1077,7 +1077,7 @@ class ADinputType(Enum):
 
 
 @Ddataclass
-class DtoAD(Dlibrary):
+class DtoAD(DataContainer):
     """Algorithm differentiation settings
 
     Parameters
@@ -1575,7 +1575,49 @@ class Dsystems(DataContainer):
         object.__setattr__(self, "mapper", mapper)
         self._initialize_attributes()
 
+class ForagerinputType(Enum):
+    SHARD2ADGUST= 1
+        
+@Ddataclass
+class Dforager(Dlibrary):
 
+    typeof: str = dfield("Type of forager",
+                         default=None,
+                         options=ForagerinputType._member_names_)
+    settings: dict = dfield("", default=None)
+    
+    def __post_init__(self):
+        libsettings_class = globals()[f"Dforager_{self.typeof}"]
+        object.__setattr__(
+            self,
+            "settings",
+            initialise_Dclass(
+                **self.settings
+            ),
+        )
+        
+        self._initialize_attributes()
+
+@Ddataclass
+class Dforager_shard2adgust(DataContainer):
+
+    gathersystem_name: str = dfield("", default=None)
+    scattersystems_name: str = dfield("", default=None)
+    ad: dict = dfield("", default=None)
+    
+    def __post_init__(self):
+        libsettings_class = globals()["DtoAD"]
+        object.__setattr__(
+            self,
+            "ad",
+            initialise_Dclass(
+                self.ad,
+                libsettings_class,
+                    ),
+                )
+        
+        self._initialize_attributes()
+        
 def generate_docstring(cls: Any) -> Any:
     """
     Generate a docstring for a data class based on its fields.
@@ -1585,8 +1627,9 @@ def generate_docstring(cls: Any) -> Any:
 
     lines = [f"{cls.__name__}:\n"]
     for field in fields(cls):
-        field_type = field.type.__name__ if hasattr(field.type, "__name__") else str(field.type)
-        lines.append(f"    {field.name} : {field_type}")
+        field_type = field.type.__name__ if hasattr(field.type,
+                                                    "__name__") else str(field.type)
+        lines.append(f"{field.name} : {field_type}")
         # Here you could add more detailed documentation for each field if needed
     cls.__doc__ = "\n".join(lines)
     return cls
