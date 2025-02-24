@@ -135,11 +135,17 @@ def serialize(obj: Config | DataContainer):
                         obj.__dataclass_fields__[k].init
                         and obj.__dataclass_fields__[k].metadata["yaml_save"]
                     ):
-                        dictionary[k] = [
-                            v,
-                            # obj.__dataclass_fields__[k].metadata["description"],
-                            obj.attributes.get(k, "No description available")
-                        ]
+                        metadata_description = obj.__dataclass_fields__[k].metadata["description"]
+                        if len(metadata_description) > 0:
+                            dictionary[k] = [
+                                v,
+                                metadata_description,
+                            ]
+                        else:
+                            dictionary[k] = [
+                                v,
+                                obj.attributes.get(k, "No description available")
+                            ]
                 else:
                     dictionary[k] = [v, " "]
     return dictionary

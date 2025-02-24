@@ -15,6 +15,9 @@ class DataContainer:
         
     @classmethod
     def _initialize_attributes(cls):
+        """
+        Parses the docstring of the class and places the description to the dictionary attributes
+        """
         docstring = cls.__doc__
         attributes = {}
         in_attributes_section = False

@@ -71,7 +71,7 @@ inp.system.aero.gust.shift = 0.
 inp.system.aero.gust.panels_dihedral = f"./AERO/Dihedral_{label_dlm}.npy"
 inp.system.aero.gust.collocation_points = f"./AERO/Collocation_{label_dlm}.npy"
 inp.driver.sol_path = pathlib.Path(
-    f"./results/gust2_{sol}")
+    f"./gust2_{sol}")
 
 config =  configuration.Config(inp)
 sol1 = feniax.feniax_main.main(input_obj=config)

@@ -47,23 +47,10 @@ Collocation-points-Normals_atCollocation-Downwash-AIC*Downwash
 
 * Code design and software architecture :noexport:
 - Config object with input settings.
-- Driver class: initialises all relevant objects such as the simulation, and the systems that will solved in the solution process.
-- Simulation class: responsible for running the various systems appropriately, including setting the initial conditions from one system to another.
-- System class: set the computations to solve the corresponding system of equations, including the solver library that should be called, the system of equations and the arguments to the solvers.  
+- Driver class: initialises all relevant objects in the computation such as the simulation, and the systems objects that will solved in the solution process.
+- Simulation class: responsible for running the various systems appropriately, including setting the initial conditions and passing data from one system of equations to another.
+- System class: sets the computations to solve the corresponding system of equations, including the solver library that should be called, the system of equations and the arguments to the solvers.
 
-  
-** Config
-config.engine = intrinsic
-config.supercase.fems[dict]
-config.subcase.system[].xloads
-config.simulation.typeof[Serial, parallel, Single]
-config.simulation.build_grads
-config.simulation.optimize
-config.
-config.systems[]
-config.system.name
-config.system.solver.library
-config.system.solver.settings
 ** Main files
 *** main
 *** shardmain
@@ -71,8 +58,32 @@ for gpu testing, it mimics
 *** mpi main
 features mpi for parallel computations
 
+** Config
+[[file:~/projects/FENIAX/feniax/preprocessor/configuration.py::class Config:][Class]]
+
+- Builds configuration settings of the simulation
+- Static object in jit functions
+- The config object encapsulates a set of containers that are data classes with the simulation variables
+- The object is serialised and saved into a .yaml file.
+- This config .yaml file is needed if postprocessing in Streamlit is to be deployed
+- The
+- Work still needed in terms of , contributions are welcome.
+*** Containers
+- Branchless programming: critical optimisation technique. Avoid conditional statements in core computational subroutines.
+  https://en.algorithmica.org/hpc/pipelining/branchless/
+- In FENIAX most conditionals happen at this level. 
+**** Intrinsic Modal
+[[file:~/projects/FENIAX/feniax/preprocessor/containers/intrinsicmodal.py::"""][Module]]
+***** fields
+- value
+- description: leave empty and place the description in the docstring, that way it will be available in the docs and also in the comments of the yaml file. This is the parser: [[file:~/projects/FENIAX/feniax/preprocessor/containers/data_container.py::def _initialize_attributes(cls):][initialise_attributes]], and here the [[file:~/projects/FENIAX/feniax/preprocessor/configuration.py::if (][serialize]].
+- default
+- options
+***** Docs
+See in the documentation: [[https://acea15.github.io/FENIAX/api/inputs/][Inputs]]
+  
 ** Driver
-[[file:~/projects/FENIAX/feniax/drivers/driver.py::class Driver(ABC):][Class]]
+See [[file:~/projects/FENIAX/feniax/drivers/driver.py::class Driver(ABC):][AbstractClass]] for the contract defining the 
 Initialises objects in the simulation
 
 pre_simulation()
@@ -80,13 +91,11 @@ run_cases()
   -- simulation.trigger()
 post_simulation()
 
-
   
-*** Specialisations
 **** intrinsic_driver
 [[file:~/projects/FENIAX/feniax/drivers/intrinsic_driver.py::class IntrinsicDriver(Driver, cls_name="intrinsic"):][Class]]
 
-**** intrinsicmeta_driver
+**** intrinsicMPI_driver
 
 ** Integration
 run
@@ -95,19 +104,21 @@ run
 derivatives
 
 ** Simulation
+See [[file:~/projects/FENIAX/feniax/simulations/simulation.py::class Simulation(ABC):][AbstractClass]] 
 - trigger
 - _prerun
 - _run
   -- system.set_init
 - _pull_solution
 - _postrun
+*** SingleSimulation
+- _run
 *** SerialSimulation
 -_run
 *** ParallelSimulation
--_run
-*** SingleSimulation
-- _run
+
 ** System
+
 - set_init -> q0
 - set_name
 - set_generator -> dq
@@ -126,6 +137,8 @@ Systems with labels:
 [[file:~/projects/FENIAX/feniax/systems/intrinsicShard.py::self.label = f"main_{label_sys}_{label_shard}"][shard_system]]
 
 *** Architecture for the solution of systems
+
+
 Chain of requirements between the various ways to run the code.
 Fast needs to use the functions in Flexible:
 Fast -> Flexible  and similarly:
@@ -154,7 +167,7 @@ ShardF -> Shard
 - Shard fast: Similarly, everything happens within a function, 
 
 - Shard AD: shard the inputs, take a function for the output,
-
+  
 
 ** Forager
 
@@ -184,19 +197,11 @@ forager name (gust)
 system_name -> ad 
 connection between the shard and the ad settings
 
-** XForces
-*** prescribed_follower
+** ExternalForces
+*** prescribed follower and dead point forces
 *** prescribed_dead
 *** gravity
 *** modal_aero
-** inputs
-*** container
-*** fields
-- value
-- description
-- default
-- options
-
 
 ** UML
 
@@ -352,6 +357,14 @@ connection between the shard and the ad settings
 #+RESULTS: classes_architecture
 [[file:UML_software1.png]]
 
+* MPI
+
+- feniax_MPImain called with multiple configs.
+  The question is whether to have the MPI
+- intrinsicMPI_driver:
+  - pre_simulation: 
+  - run_cases also unmodified
+  - post_simulation 
 * Algorithms
 
 $N_N$ Number of discretisation condensed nodes in the model
@@ -420,7 +433,6 @@ Flutter and divergence points
 Critical for large design optimisation problems.
 ** Data workflow
 Well in place for Nastran Models  except for the derivatives provided by Nastran using Sol 200.
-
 
 * System based solutions :noexport:
 TODO: make automatic label as the first

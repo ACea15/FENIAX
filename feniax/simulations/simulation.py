@@ -8,6 +8,7 @@ __SIMULATION_DICT__ = dict()
 
 
 class Simulation(ABC):
+    
     def __init__(self, systems: dict[system.System], sol: solution.Solution, settings):
         self.systems = systems
         self.sol = sol

@@ -398,6 +398,13 @@ class Dfem(DataContainer):
                                                            
             setobj("eigenvals", eigenvals)
             setobj("eigenvecs", eigenvecs)
+            if self.folder is None:
+                setobj("eig_names", [os.path.abspath(self.eig_names[0]),
+                                     os.path.abspath(self.eig_names[1])])
+            else:
+                setobj("eig_names", [os.path.abspath(self.folder / self.eig_names[0]),
+                                     os.path.abspath(self.folder / self.eig_names[1])])
+
         if self.folder is None:
             setobj("grid", os.path.abspath(grid))
 
@@ -589,14 +596,14 @@ class DGustMc(DGust):
     """
 
     u_inf: float = dfield("", default=None)
-    simulation_time: jnp.ndarray = dfield("", default=None)
+    simulation_time: jnp.ndarray = dfield("", default=None, yaml_save=False)
     intensity: float = dfield("", default=None)
     step: float = dfield("", default=None)
     time_epsilon: float = dfield("", default=1e-6)
     length: float = dfield("", default=None)
     shift: float = dfield("", default=0.0)
-    panels_dihedral: str | jnp.ndarray = dfield("", default=None)
-    collocation_points: str | jnp.ndarray = dfield("", default=None)
+    panels_dihedral: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
+    collocation_points: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
     shape: str = dfield("", default="const")
     fixed_discretisation: dict[str: float] = dfield("", default=None)
     totaltime: float = dfield("", init=False)
@@ -1297,7 +1304,7 @@ class Dsystem(DataContainer):
     t1: float = dfield("Final time", default=1.0)
     tn: int = dfield("Number of time steps", default=None)
     dt: float = dfield("Delta time", default=None)
-    t: jnp.ndarray = dfield("Time vector", default=None)
+    t: jnp.ndarray = dfield("Time vector", default=None, yaml_save=False)
     solver_library: str = dfield("Library solving our system of equations", default=None)
     solver_function: str = dfield(
         "Name for the solver of the previously defined library", default=None

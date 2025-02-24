@@ -5,17 +5,10 @@ __SYSTEM_DICT__ = dict()
 
 
 class System(ABC):
+    
     def __init__(self, name: str, settings: data_container.DataContainer):
         self.name = name
         self.settings = settings
-
-    # @abstractmethod
-    # def set_init(self):
-    #     pass
-
-    # @abstractmethod
-    # def set_name(self):
-    #     pass
 
     @abstractmethod
     def set_system(self):
@@ -23,10 +16,15 @@ class System(ABC):
 
     @abstractmethod
     def set_solver(self):
+        
         pass
 
     @abstractmethod
     def solve(self):
+        """
+        Solves the system of equations
+        """
+        
         pass
 
     @abstractmethod
