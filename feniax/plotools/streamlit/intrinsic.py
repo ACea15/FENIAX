@@ -708,7 +708,7 @@ def systems_comparison(sol, config):
             case show.DISPLACEMENTS.name:
                 sys_displacements_comp(solsys, config)
             case show.POSITIONS.name:
-                sys_positions(solsys)                
+                sys_positions_comp(solsys)                
             case show.VELOCITIES.name:
                 sys_velocities_comp(solsys)
             case show.STRAINS.name:

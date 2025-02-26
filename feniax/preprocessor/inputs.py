@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-
+import copy
 
 class Inputs(dict):
     """Represents configuration options, works like a dict."""
@@ -17,6 +17,9 @@ class Inputs(dict):
     def __setattr__(self, name, val):
         self[name] = val
 
+    def clone(self):
+
+        return copy.deepcopy(self)
 
 def dict2object(config: dict | Inputs):
     """Convert dictionary into instance allowing access dot notation."""
