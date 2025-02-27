@@ -53,6 +53,7 @@ def main(
     driver = Driver(config)
     driver.pre_simulation()
     driver.run_cases()
+    driver.post_simulation()
     
     elapsed_wall = time.perf_counter() - start_wall
     elapsed_cpu = time.process_time() - start_cpu

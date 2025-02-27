@@ -1,10 +1,11 @@
 __all__ = ["factory"]
 import os
 import importlib
-from feniax.simulations.simulation import __SIMULATION_DICT__
+from feniax.simulations.simulation import __SIMULATION_DICT__, Simulation
+from typing import Type
 
 
-def factory(name):
+def factory(name) -> Type[Simulation]:
     return __SIMULATION_DICT__[name]
 
 

@@ -1,10 +1,11 @@
 __all__ = ["factory"]
 import os
 import importlib
-from feniax.systems.system import __SYSTEM_DICT__
+from feniax.systems.system import __SYSTEM_DICT__, System
+from typing import Type
 
 
-def factory(name):
+def factory(name) -> Type[System]:
     return __SYSTEM_DICT__[name]
 
 

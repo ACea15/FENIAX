@@ -1,10 +1,10 @@
 __all__ = ["factory"]
 import os
 import importlib
-from feniax.foragers.forager import __FORAGER_DICT__
+from feniax.foragers.forager import __FORAGER_DICT__, Forager
+from typing import Type
 
-
-def factory(name):
+def factory(name) -> Type[Forager]:
     return __FORAGER_DICT__[name]
 
 
