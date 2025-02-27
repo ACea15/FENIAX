@@ -46,16 +46,19 @@ Via the supercase option of driver. This might be used to compute finite differe
 Collocation-points-Normals_atCollocation-Downwash-AIC*Downwash
 
 * Code design and software architecture :noexport:
+- feniax main: entry point of the simulation
 - Config object with input settings.
-- Driver class: initialises all relevant objects in the computation such as the simulation, and the systems objects that will solved in the solution process.
+- Driver class: initialises all relevant objects in the computation such as the simulation, and the systems objects.
 - Simulation class: responsible for running the various systems appropriately, including setting the initial conditions and passing data from one system of equations to another.
 - System class: sets the computations to solve the corresponding system of equations, including the solver library that should be called, the system of equations and the arguments to the solvers.
 
 ** Main files
 *** main
+[[file:~/projects/FENIAX/feniax/feniax_main.py::"""Main FENIAX."""][file]]
+
 *** shardmain
-for gpu testing, it mimics 
-*** mpi main
+for gpu testing, it mimics a GPU if running from the CPU.
+*** mpimain
 features mpi for parallel computations
 
 ** Config
@@ -83,15 +86,16 @@ features mpi for parallel computations
 See in the documentation: [[https://acea15.github.io/FENIAX/api/inputs/][Inputs]]
   
 ** Driver
-See [[file:~/projects/FENIAX/feniax/drivers/driver.py::class Driver(ABC):][AbstractClass]] for the contract defining the 
-Initialises objects in the simulation
+- See [[file:~/projects/FENIAX/feniax/drivers/driver.py::class Driver(ABC):][AbstractClass]] for the contract between this family of classes and the rest of the code.  
+- Initialises objects in the simulation
 
 pre_simulation()
+  galerkin projection: [[file:~/projects/FENIAX/feniax/intrinsic/galerkin.py::class Galerkin:][Class]]
 run_cases()
   -- simulation.trigger()
 post_simulation()
+  -- forager()
 
-  
 **** intrinsic_driver
 [[file:~/projects/FENIAX/feniax/drivers/intrinsic_driver.py::class IntrinsicDriver(Driver, cls_name="intrinsic"):][Class]]
 
@@ -106,17 +110,18 @@ derivatives
 ** Simulation
 See [[file:~/projects/FENIAX/feniax/simulations/simulation.py::class Simulation(ABC):][AbstractClass]] 
 - trigger
-- _prerun
-- _run
-  -- system.set_init
-- _pull_solution
-- _postrun
+  
 *** SingleSimulation
-- _run
+[[file:~/projects/FENIAX/feniax/simulations/single_simulation.py::class SingleSimulation(Simulation, cls_name="single"):][Class]]
+Only one system of equations solved
 *** SerialSimulation
--_run
-*** ParallelSimulation
+[[file:~/projects/FENIAX/feniax/simulations/serial_simulation.py::class SerialSimulation(Simulation, cls_name="serial"):][Class]]
 
+A group of system of equations is solved in series:
+For example: trim-gust-flutter...
+*** ParallelSimulation
+Not implemented
+For example: trim solution -> [gust-flutter (in parallel)]
 ** System
 
 - set_init -> q0

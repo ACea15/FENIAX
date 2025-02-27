@@ -530,33 +530,35 @@ For MATLAB postprocessing one can save any of the tensors as:
 Multiple cases
 #+begin_src python
 
-  vz = [0.2, 0.3, 0.4, 0.5, 0.6]
-  for i, vzi in enumerate(vz):
-      label_i = label + f"vz{i}"
-      inp.driver.sol_path= pathlib.Path(
-          f"./results_sym{label_i}")
-      inp.system.init_states = dict(q1=["nodal_prescribed",
-                                        ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                          [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
-                                          [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z]]
-                                         ,)
-                                        ]
-                                    )
-      config =  configuration.Config(inp)
-      sol = feniax.feniax_main.main(input_obj=config)
+  RUN_MULTIPLE = False
+  if RUN_MULTIPLE:
+      vz = [0.2, 0.3, 0.4, 0.5, 0.6]
+      for i, vzi in enumerate(vz):
+          label_i = label + f"vz{i}"
+          inp.driver.sol_path= pathlib.Path(
+              f"./results_sym{label_i}")
+          inp.system.init_states = dict(q1=["nodal_prescribed",
+                                            ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z]]
+                                             ,)
+                                            ]
+                                        )
+          config =  configuration.Config(inp)
+          sol = feniax.feniax_main.main(input_obj=config)
+    
+          inp.driver.sol_path= pathlib.Path(
+              f"./results_antisym{label_i}")
+          inp.system.init_states = dict(q1=["nodal_prescribed",
+                                            ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z - vzi, omega_x, omega_y, omega_z]]
+                                             ,)
+                                            ]
+                                        )
+          config =  configuration.Config(inp)
+          sol = feniax.feniax_main.main(input_obj=config)
 
-      inp.driver.sol_path= pathlib.Path(
-          f"./results_antisym{label_i}")
-      inp.system.init_states = dict(q1=["nodal_prescribed",
-                                        ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                          [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
-                                          [v_x, v_y, v_z - vzi, omega_x, omega_y, omega_z]]
-                                         ,)
-                                        ]
-                                    )
-      config =  configuration.Config(inp)
-      sol = feniax.feniax_main.main(input_obj=config)
-      
   # all solution data in the sol object (everything are tensors)
   # for instance: sol.dynamicsystem_sys1.ra position of node [time_step, component, node_id]
   # sol.dynamicsystem_sys1.X1 for velocities and so on 
