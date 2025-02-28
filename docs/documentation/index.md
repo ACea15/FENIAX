@@ -3,10 +3,15 @@
 FENIAX is an aeroelastic toolbox  written in Python using JAX. It acts as a post-processor of commercial software such as MSC Nastran. 
 
 Some of the key features of the software are:
-- Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.
+
+- Arbitrary finite-element models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space unsteady aerodynamics about nonlinear equilibrium.
+  
 - Leveraging on the numerical library JAX and optimised algorithms, a high performance is achieved that leads to simulation times comparable to the linear counterparts on conventional platforms.
+  
 - The software runs on modern hardware architectures such as GPUs in a addition to standard CPUs.
-- Algorithm differentiation (AD) of the aeroelastic response is available via JAX primitives. 
+  
+- Algorithm differentiation (AD) of the aeroelastic response is available via JAX primitives.
+  
 - Concurrent simulations for multiple load cases have been developed.
 
 !!! warning 
