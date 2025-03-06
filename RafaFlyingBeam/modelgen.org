@@ -1,0 +1,565 @@
+#+TITLE: Example 6.1 of Dynamics of Flexible Aircraft
+
+* House keeping
+#+begin_src elisp :results none
+  (setq org-confirm-babel-evaluate nil)
+  (require 'org-tempo)
+  (pyvenv-workon "feniax")
+#+end_src
+
+* Problem description
+
+Problem: free dynamics of a 3-mass flexible system
+
+[[./img/3mass_system.png]]
+
+
+Parameters in the problem:
+- L: Arm
+- THETA0: Initial inclination
+- M: parameter mass
+- I: Moment of Inertia (Izz & Iyy)
+- J: Moment of inertia Ixx 
+- Im: Mass moment of inertia = M * L **2 /2
+- OFFSET_x: Offset in x of the central mass with respect to the grid node
+- OFFSET_z: Offset in z of the central mass with respect to the grid node
+- E: young modulus
+- A: cross-sectional area
+- omega: theoretical natural frquency
+
+  We will build various FE models in Nastran first, then simulate the free dynamics in FENIAX.
+  
+* Build Nastran models
+:PROPERTIES:
+:header-args: :tangle ./P1_modalsolution.py :session *pyshell* :comments yes :results none
+:END:
+
+#+begin_src python 
+  from pyNastran.bdf.bdf import BDF
+  import numpy as np
+  from dataclasses import dataclass
+  import pathlib
+  import feniax.unastran.matrixbuilder as matrixbuilder
+  import feniax.unastran.op2reader as op2reader
+  from feniax.unastran.asetbuilder import BuildAsetModel
+  
+  pathlib.Path('./FEM').mkdir(parents=True, exist_ok=True)
+  pathlib.Path('./NASTRAN/data_out').mkdir(parents=True, exist_ok=True)
+  pathlib.Path('./NASTRAN/simulations_out').mkdir(parents=True, exist_ok=True)
+
+#+end_src
+
+
+#+begin_src python
+
+  @dataclass
+  class Config:
+      BAR: bool = False
+      L: float = 1.
+      THETA0: float = 0.
+      M: float = 1000.
+      I: float = 1.
+      Im: float = M * L **2 /2
+      OFFSET_x: float = 0.
+      OFFSET_z: float = 0.
+      E: float = 1e6
+      A: float = 0.05
+      J: float = I * 5
+      omega: float = None
+
+      def __post_init__(self):
+
+          self.omega = (24*self.E * self.I / (self.M * self.L ** 3) )**0.5
+          #self.omega = (12*self.E * self.I / (self.M * self.L ** 3) )**0.5
+
+  def build_bdf(config: Config):
+
+      mesh=BDF(debug=True)
+      ############################
+      node1 = ['GRID', 1, None, 0., 0., 0., None, None, None]
+      node2 = ['GRID', 2, None, config.L * np.cos(config.THETA0), 0., config.L * np.sin(config.THETA0), None, None, None]
+      node3 = ['GRID', 3, None, -config.L * np.cos(config.THETA0), 0., -config.L * np.sin(config.THETA0), None, None, None]
+      mesh.add_card(node1, 'GRID')
+      mesh.add_card(node2, 'GRID')
+      mesh.add_card(node3, 'GRID')
+      ############################  
+      # CONM2=['CONM2',Eid,RefGid,0,self.inp.mass[i][k],
+      #        self.inp.X1[i][k],self.inp.X2[i][k],self.inp.X3[i][k],None,
+      #        self.inp.I11[i][k],self.inp.I21[i][k], self.inp.I22[i][k],
+      #        self.inp.I31[i][k],self.inp.I32[i][k],self.inp.I33[i][k]]
+      conm21 = ['CONM2', 11, 1, 0, config.M / 2,
+                config.OFFSET_x, 0., config.OFFSET_z, None,
+                1e-5, 0., config.Im, 0., 0., 1e-5
+                ]
+      conm22 = ['CONM2', 12, 2, 0, config.M / 4,
+                0., 0., 0. , None,
+                1e-5, 0., 1e-5, 0., 0., 1e-5
+                ]
+      conm23 = ['CONM2', 13, 3, 0, config.M / 4,
+                0., 0., 0. ,None,
+                1e-5, 0., 1e-5, 0., 0., 1e-5
+                ]
+
+      mesh.add_card(conm21, 'CONM2')
+      mesh.add_card(conm22, 'CONM2')
+      mesh.add_card(conm23, 'CONM2')
+      ############################  
+      # mat1 = ['MAT1',id_mat,Em,None,Nu,rho1]
+      mat1 = ['MAT1',21, config.E, None,0.3,None]
+      mesh.add_card(mat1, 'MAT1')
+      ############################  
+      # pbeam = ['PBEAM',id_p,id_mat,Aa,I1a,I2a,I12a,Ja]
+      if config.BAR:
+          pbeam = ['PBAR', 31, 21, config.A, config.I, config.I * 1e-3, config.J]
+          mesh.add_card(pbeam, 'PBAR')
+      else:
+          pbeam = ['PBEAM', 31, 21, config.A, config.I, config.I * 1e-3, 0., config.J]
+          mesh.add_card(pbeam, 'PBEAM')
+
+      ############################  
+      # cbeam=['CBEAM',EID,PID,GA,GB,X1,X2,X3]
+      if config.BAR:
+          cbeam1= ['CBAR', 41, 31, 1, 2, 0., 1., 0.]
+          cbeam2= ['CBAR', 42, 31, 1, 3, 0., 1., 0.]  
+          mesh.add_card(cbeam1, 'CBAR')
+          mesh.add_card(cbeam2, 'CBAR')
+      else:
+          cbeam1= ['CBEAM', 41, 31, 1, 2, 0., 1., 0.]
+          cbeam2= ['CBEAM', 42, 31, 1, 3, 0., 1., 0.]
+          mesh.add_card(cbeam1, 'CBEAM')
+          mesh.add_card(cbeam2, 'CBEAM')
+
+      ############################
+      return mesh
+
+#+end_src
+
+#+NAME: bdf103bulk
+#+begin_src org :tangle no 
+  SOL 103
+  CEND
+  TITLE=Rafa's flying beam model #                                 
+  ECHO=NONE                      	  
+  DISPLACEMENT=ALL
+  METHOD = 900
+  BEGIN BULK
+  EIGRL,900,,,18
+#+end_src
+
+** Model 1
+
+Horizontal bar, no offset
+*** Create nastran files for FE extraction
+#+begin_src python
+  config1 = Config()
+  mesh1 = build_bdf(config1)
+  mesh1.write_bdf("./NASTRAN/model1.bdf", size=8, is_double=False, close=True)
+#+end_src
+
+- For eigenvectors:
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model1_103op2.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,POST,-1
+  INCLUDE 'model1.bdf'
+  ENDDATA
+#+end_src
+
+- pch for FE matrices
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model1_103pch.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,EXTOUT,DMIGPCH  
+  INCLUDE 'model1.bdf'
+  ENDDATA
+#+end_src
+
+*** Run nastran
+#+begin_src bash :session shell1  :tangle P2_runmodal.sh
+  source ../../feniax/unastran/run_nastran.sh
+  cd ./NASTRAN
+  run_nastran Model1_103op2.bdf
+  move_outputs Model1_103op2.bdf
+  run_nastran Model1_103pch.bdf
+  move_outputs Model1_103pch.bdf
+  cd -
+#+end_src
+
+** Model 2
+
+Horizontal bar, 0.1 offset
+*** Create nastran files for FE extraction
+#+begin_src python
+  config2 = Config(OFFSET_z = -0.1)
+  mesh2 = build_bdf(config2)
+  mesh2.write_bdf("./NASTRAN/model2.bdf", size=8, is_double=False, close=True)
+#+end_src
+
+- For eigenvectors:
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model2_103op2.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,POST,-1
+  INCLUDE 'model2.bdf'
+  ENDDATA
+#+end_src
+
+- pch for FE matrices
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model2_103pch.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,EXTOUT,DMIGPCH  
+  INCLUDE 'model2.bdf'
+  ENDDATA
+#+end_src
+
+*** Run nastran
+#+begin_src bash :session shell1  :tangle P2_runmodal.sh
+  source ../../feniax/unastran/run_nastran.sh
+  cd ./NASTRAN
+  run_nastran Model2_103op2.bdf
+  move_outputs Model2_103op2.bdf
+  run_nastran Model2_103pch.bdf
+  move_outputs Model2_103pch.bdf
+  cd -
+#+end_src
+
+** Model 3
+
+Inclined 30 degrees bar, no offset
+*** Create nastran files for FE extraction
+#+begin_src python
+  config3 = Config(THETA0=30*np.pi/180)
+  mesh3 = build_bdf(config3)
+  mesh3.write_bdf("./NASTRAN/model3.bdf", size=8, is_double=False, close=True)
+#+end_src
+
+- For eigenvectors:
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model3_103op2.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,POST,-1
+  INCLUDE 'model3.bdf'
+  ENDDATA
+#+end_src
+
+- pch for FE matrices
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model3_103pch.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,EXTOUT,DMIGPCH  
+  INCLUDE 'model3.bdf'
+  ENDDATA
+#+end_src
+
+*** Run nastran
+#+begin_src bash :session shell1  :tangle P2_runmodal.sh
+  source ../../feniax/unastran/run_nastran.sh
+  cd ./NASTRAN
+  run_nastran Model3_103op2.bdf
+  move_outputs Model3_103op2.bdf
+  run_nastran Model3_103pch.bdf
+  move_outputs Model3_103pch.bdf
+  cd -
+#+end_src
+
+** Model 4
+Inclined 30 degrees bar, 0.1 offset
+*** Create nastran files for FE extraction
+#+begin_src python
+  config4 = Config(OFFSET_z = -0.1, THETA0=30*np.pi/180,)
+  mesh4 = build_bdf(config4)
+  mesh4.write_bdf("./NASTRAN/model4.bdf", size=8, is_double=False, close=True)
+#+end_src
+
+- For eigenvectors:
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model4_103op2.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,POST,-1
+  INCLUDE 'model4.bdf'
+  ENDDATA
+#+end_src
+
+- pch for FE matrices
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model4_103pch.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,EXTOUT,DMIGPCH  
+  INCLUDE 'model4.bdf'
+  ENDDATA
+#+end_src
+
+*** Run nastran
+#+begin_src bash :session shell1  :tangle P2_runmodal.sh
+  source ../../feniax/unastran/run_nastran.sh
+  cd ./NASTRAN
+  run_nastran Model4_103op2.bdf
+  move_outputs Model4_103op2.bdf
+  run_nastran Model4_103pch.bdf
+  move_outputs Model4_103pch.bdf
+  cd -
+#+end_src
+
+** Model 5
+PBAR model by Rafa
+
+
+#+begin_src org :tangle ./NASTRAN/Model5init.bdf :comments no
+  SOL 103
+  CEND
+  $
+  ECHO=UNSORT
+  DISP=ALL
+  SPC    = 100
+  METHOD = 1
+  $
+  TITLE=FREE-FREE BEAM
+  LABEL=MODAL ANALYSIS
+  $
+  BEGIN BULK
+  $     
+  $23456781234567812345678123456781234567812345678123456781234567812345678
+  $ EIGR           1    MGIV                              18                +
+  EIGR           1     LAN                              18                +
+  +           MASS
+  $
+  $     DEFINE GRID POINTS
+  GRID           1              0.      0.      0.
+  GRID           2              1.      0.      0.
+  GRID           3             -1.      0.      0.
+  $
+  SPC          100       1     246
+  $
+  $     DEFINE CBAR ELEMENTS
+  CBAR           1     101       1       2      0.      1.      0.
+  CBAR           2     101       3       1      0.      1.      0.
+  $
+  $      DEFINE CBAR ELEMENT CROSS SECTIONAL PROPERTIES
+  PBAR         101     201     .05      1.    .001      5.
+  $
+  $      DEFINE MATERIAL PROPERTIES
+  MAT1         201    1.E6              .3
+  CONM2         11       1          0.50E3           1.E-8                +
+  +          1.E-8          0.50E3                    
+  CONM2         12       2          0.25E3                                +
+  +            10.           1.E-8                   1.E-8
+  CONM2         13       3          0.25E3                                +
+  +            10.           1.E-8                   1.E-8
+  ENDDATA
+#+end_src
+
+*** Create nastran files for FE extraction
+#+begin_src org :tangle ./NASTRAN/model5.bdf :comments no
+  $     DEFINE GRID POINTS
+  GRID           1              0.      0.      0.
+  GRID           2              1.      0.      0.
+  GRID           3             -1.      0.      0.
+  $
+  SPC          100       1     246
+  $
+  $     DEFINE CBAR ELEMENTS
+  CBAR           1     101       1       2      0.      1.      0.
+  CBAR           2     101       3       1      0.      1.      0.
+  $
+  $      DEFINE CBAR ELEMENT CROSS SECTIONAL PROPERTIES
+  PBAR         101     201     .05      1.    .001      5.
+  $
+  $      DEFINE MATERIAL PROPERTIES
+  MAT1         201    1.E6              .3
+  CONM2         11       1          0.50E3                                +
+  +          1.E-8          0.50E3                   1.E-8 
+  CONM2         12       2          0.25E3                                +
+  +            10.           1.E-8                   1.E-8
+  CONM2         13       3          0.25E3                                +
+  +            10.           1.E-8                   1.E-8
+#+end_src
+
+- For eigenvectors:
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model5_103op2.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,POST,-1
+  INCLUDE 'model5.bdf'
+  ENDDATA
+#+end_src
+
+- pch for FE matrices
+#+begin_src org  :noweb yes :tangle ./NASTRAN/Model5_103pch.bdf :comments no
+  <<bdf103bulk>>
+  PARAM,EXTOUT,DMIGPCH  
+  INCLUDE 'model5.bdf'
+  ENDDATA
+#+end_src
+
+*** Run nastran
+#+begin_src bash :session shell1  :tangle P2_runmodal.sh
+  source ../../feniax/unastran/run_nastran.sh
+  cd ./NASTRAN
+  run_nastran Model5_103op2.bdf
+  move_outputs Model5_103op2.bdf
+  run_nastran Model5_103pch.bdf
+  move_outputs Model5_103pch.bdf
+  cd -
+#+end_src
+
+#+begin_src bash :session shell1  :tangle P2_runmodal.sh
+  source ../../feniax/unastran/run_nastran.sh
+  cd ./NASTRAN
+  run_nastran Model5init.bdf
+  move_outputs Model5init.bdf
+  cd -
+#+end_src
+
+** Read and save FEM and FENIAX grid
+
+- Save Ka, Ma, eigenvalues and eigenvectors
+#+begin_src python
+  num_models = 5
+  eigenvalues_list = []
+  eigenvectors_list = []
+  for i in range(1, num_models + 1):
+      op2 = op2reader.NastranReader(op2name=f"./NASTRAN/simulations_out/Model{i}_103op2.op2")
+      op2.readModel()
+      eigenvalues = op2.eigenvalues()
+      eigenvectors = op2.eigenvectors()
+      eigenvalues_list.append(eigenvalues)
+      eigenvectors_list.append(eigenvectors)
+      # if i == 5: # Model 5
+      #     v = eigenvectors.reshape((18,5*6)).T
+      # else:
+      v = eigenvectors.reshape((18,18)).T
+      np.save(f"./FEM/eigenvals_m{i}.npy", eigenvalues)
+      np.save(f"./FEM/eigenvecs_m{i}.npy", v)
+
+      id_list,stiffnessMatrix,massMatrix = matrixbuilder.read_pch(f"./NASTRAN/simulations_out/Model{i}_103pch.pch")
+      np.save(f"./FEM/Ka_m{i}.npy", stiffnessMatrix)
+      np.save(f"./FEM/Ma_m{i}.npy", massMatrix)
+#+end_src
+
+- save Grid file
+#+begin_src python
+  for i in range(1, num_models + 1):
+
+      bdf = BDF()
+      bdf.read_bdf(f"./NASTRAN/Model{i}_103op2.bdf", validate=False)
+      # if i == 5: # Model 5
+      #     components = dict(rbeam=[1,21, 22], lbeam=[31, 32])
+      # else:
+      components = dict(rbeam=[1,2], lbeam=[3])
+      model = BuildAsetModel(components, bdf)          
+      model.write_grid(f"./FEM/structuralGrid_m{i}")
+
+#+end_src
+
+* FENIAX
+:PROPERTIES:
+:header-args: :tangle ./P3_simulation.py :session *pyfeniax* :comments yes :results none
+:END:
+
+Load simulation modules
+#+begin_src python
+  import feniax.preprocessor.configuration as configuration  
+  from feniax.preprocessor.inputs import Inputs
+  import feniax.feniax_main
+  import jax.numpy as jnp
+  import pathlib
+#+end_src
+
+Set model to be run (mi), initial conditions and whether to include gravity forces:
+#+begin_src python
+  v_x = 1.
+  v_y = 0.
+  v_z = 0.
+  omega_x = 0.
+  omega_y = 1.
+  omega_z = 0.
+  gravity_forces = False
+  label = 'm1'  
+#+end_src
+
+#+begin_src python
+  inp = Inputs()
+  inp.engine = "intrinsicmodal"
+  inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
+  inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
+  inp.fem.Ma_name = f"./FEM/Ma_{label}.npy"
+  inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
+                       f"./FEM/eigenvecs_{label}.npy"]
+  inp.fem.grid = f"./FEM/structuralGrid_{label}"
+  inp.fem.num_modes = 13  # use 12 for model 5!
+  inp.fem.eig_type = "inputs"
+  inp.driver.typeof = "intrinsic"
+  inp.driver.sol_path= pathlib.Path(
+      f"./results_{label}")
+  inp.simulation.typeof = "single"
+  inp.system.name = "s1"
+  inp.system.solution = "dynamic"
+  inp.system.bc1 = 'free'
+  inp.system.xloads.gravity_forces = gravity_forces
+  inp.system.t1 = 2.
+  inp.system.tn = 25001
+  inp.system.solver_library = "runge_kutta" #"diffrax" #
+  inp.system.solver_function = "ode"
+  inp.system.solver_settings = dict(solver_name="rk4")
+  inp.system.init_states = dict(q1=["nodal_prescribed",
+                                    ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
+                                      [v_x, v_y, v_z, omega_x, omega_y, omega_z],
+                                      [v_x, v_y, v_z, omega_x, omega_y, omega_z]]
+                                     ,)
+                                    ]
+                                )
+  config =  configuration.Config(inp)
+  sol = feniax.feniax_main.main(input_obj=config)
+
+  # all solution data in the sol object (everything are tensors)
+  # for instance: sol.dynamicsystem_sys1.ra position of node [time_step, component, node_id]
+  # sol.dynamicsystem_s1.X1 for velocities and so on 
+#+end_src
+
+Navigate to streamlit folder and run from terminal as:
+streamlit run Home.py
+
+Geometry, modes, solutions, all plots are produce there automatically.
+
+For MATLAB postprocessing one can save any of the tensors as:
+
+#+begin_src python :tangle no
+  import numpy as np
+  from scipy.io import savemat
+
+  # Create a NumPy array
+  array = np.array([[1, 2, 3], [4, 5, 6]])
+
+  # Save the array to a MAT-file
+  savemat('my_array.mat', {'array': array})
+
+#+end_src
+
+Multiple cases
+#+begin_src python
+
+  RUN_MULTIPLE = False
+  if RUN_MULTIPLE:
+      vz = [0.2, 0.3, 0.4, 0.5, 0.6]
+      for i, vzi in enumerate(vz):
+          label_i = label + f"vz{i}"
+          inp.driver.sol_path= pathlib.Path(
+              f"./results_sym{label_i}")
+          inp.system.init_states = dict(q1=["nodal_prescribed",
+                                            ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z]]
+                                             ,)
+                                            ]
+                                        )
+          config =  configuration.Config(inp)
+          sol = feniax.feniax_main.main(input_obj=config)
+    
+          inp.driver.sol_path= pathlib.Path(
+              f"./results_antisym{label_i}")
+          inp.system.init_states = dict(q1=["nodal_prescribed",
+                                            ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z - vzi, omega_x, omega_y, omega_z]]
+                                             ,)
+                                            ]
+                                        )
+          config =  configuration.Config(inp)
+          sol = feniax.feniax_main.main(input_obj=config)
+
+  # all solution data in the sol object (everything are tensors)
+  # for instance: sol.dynamicsystem_sys1.ra position of node [time_step, component, node_id]
+  # sol.dynamicsystem_sys1.X1 for velocities and so on 
+#+end_src

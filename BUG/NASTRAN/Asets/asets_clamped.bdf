@@ -1,0 +1,9 @@
+$pyNastran: version=msc
+$pyNastran: punch=True
+$pyNastran: encoding=utf-8
+$pyNastran: nnodes=0
+$pyNastran: nelements=0
+$SETS
+ASET1     123456    1000    THRU    1004    1006    THRU    1010    2000
+            THRU    2052    3000    THRU    3010    4000    THRU    4013
+        10002001    THRU1000205210004001    THRU10004013

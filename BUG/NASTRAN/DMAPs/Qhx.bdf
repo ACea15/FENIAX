@@ -1,0 +1,104 @@
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+$       * * *   DMAP code by ANDREA CASTRICHINI  * * *
+$                andrea.castrichini@gmail.com
+$   K : AERODYNAMIC DOF = 2 * N AERO BOX
+$   A : STRUCTURAL DOF  = 6 * N GRID
+$   J : N AERO BOX 
+$   H : N MODES 
+$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$ Retrieve the Spline Matrices form AERO0 and store them in DBALL
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+COMPILE AERO0
+ALTER 'CALL.*PLINOUT.*AECASE.*AEBGPDTS.*AEUSETS.*GPGK0.*GDGK0'                                                       
+EQUIVX GPGK0/SPL_F_AK/ALWAYS 
+EQUIVX GDGK0/SPL_D_AK/ALWAYS $                              
+CALL DBSTORE SPL_F_AK,,,,//111/112/'DBALL'/0 $        
+CALL DBSTORE SPL_D_AK,,,,//113/114/'DBALL'/0 $                 
+$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$ Retrieve the Matrices AJJ DJX SKJ form PFAERO and store them in DBALL
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+COMPILE PFAERO
+ALTER 'ADG.*CONTROL.*CSTMA.*AERO.*AECOMP.*W2GJ.*ACPT' 
+EQUIVX WJVBRL/D_JX/ALWAYS $                                 
+CALL DBSTORE D_JX,,,,//121/122/'DBALL'/0 $    
+ALTER 'AMG.*ACPT/'                                                                                             
+EQUIVX SKJ/S_KJ/ALWAYS $                                                       
+EQUIVX SKJ/S_KJnc/ALWAYS $                                                       
+IF ( YESWKK ) THEN $   
+    EQUIVX WKK/W_KK/ALWAYS $                                           
+    MPYAD W_KK,S_KJ,/WS_KJ $ 
+    EQUIVX WS_KJ/S_KJ/ALWAYS $                             
+ENDIF $                     
+CALL DBSTORE S_KJ,,,,//117/118/'DBALL'/0 $    
+IF ( NOFA2J < 0 ) THEN
+    MPYAD S_KJnc,FA2J,/FA2J_K $ 
+   IF (NOFA2DMI) THEN
+   ELSE
+       PARAML  S_KJnc//'TRAILER'/2/S,N,ROW
+       MATGEN ,/FA2J_K/7/ROW/1 
+   ENDIF
+ENDIF
+CALL DBSTORE FA2J_K,,,,//119/120/'DBALL'/0 $  
+$   
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$ Retrieve the stored Matrices and evaluate:
+$ Q_AX=SPL_F_AK*S_KJ*INV(A_JJ)*D_JX
+$ Q_AA=SPL_F_AK*S_KJ*INV(A_JJ)*D_JK*SPL_D_KA
+$ S_KJ=Area Matrix, D_JK=Derivative Matrix, A_JJ=AIC Matrix     
+$ WKK=Correction Matrix not defined
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$
+COMPILE AESTATRS $                                         
+ALTER 'AEKX.*DGAK.*WSKJ.*LAJJ.*UAJJ.*D1JK.*AEQGDKL.*URLR.*PURLR' 
+TYPE PARM,,I,N,EXIST $                           
+CALL DBFETCH /SPL_F_AK,,,,/111/112/0/0/S,EXIST $       
+CALL DBFETCH /SPL_D_AK,,,,/113/114/0/0/S,EXIST $       
+CALL DBFETCH /S_KJ,,,,/117/118/0/0/S,EXIST $    
+CALL DBFETCH /FA2J_K,,,,/119/120/0/0/S,EXIST $    
+CALL DBFETCH /D_JX,,,,/121/122/0/0/S,EXIST $         
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$    
+$
+$    EVALUATE THE QAA_ MATRIX:
+$
+$    Q_AX=SPL_F_AK*S_KJ*INV(A_JJ)*D_JX
+$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ 
+FBS LAJJ,UAJJ,D_JX/Q_JX $    
+MPYAD S_KJ,Q_JX,/Q_KX $                                         
+MPYAD SPL_F_AK,Q_KX,/Q_AX $   
+OUTPUT4 Q_AX,,,,//0/11///8 $ 
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$    
+$
+$    EVALUATE THE QAA_ MATRIX:
+$
+$    Q_AH=SPL_F_AK*S_KJ*INV(A_JJ)*D_JK*SPL_D_KA*Phi_AH
+$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+INPUTT4 /Phi_AH,,,,/1/90 $
+TRNSP Phi_AH/Phi_HA $  
+TRNSP D1JK/D_JK $                                                                                     
+TRNSP SPL_D_AK/SPL_D_KA $                                                                                      
+MPYAD D_JK,SPL_D_KA,/D_JA $                                                  
+FBS LAJJ,UAJJ,D_JA/Q_JA $                                              
+MPYAD S_KJ,Q_JA,/Q_KA $                                         
+MPYAD SPL_F_AK,Q_KA,/Q_AA $ 
+MPYAD Q_AA,Phi_AH,/Q_AH $                                                                                 
+OUTPUT4 Q_AH,,,,//0/12///8 $   
+
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$    
+$
+$    EVALUATE THE QAA_ MATRIX:
+$
+$    Q_HX=Phi_HA*SPL_F_AK*S_KJ*INV(A_JJ)*D_JX
+$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ 
+$FBS LAJJ,UAJJ,D_JX/Q_JX $    
+$MPYAD S_KJ,Q_JX,/Q_KX $                                         
+$MPYAD SPL_F_AK,Q_KX,/Q_AX $   
+MPYAD Phi_HA,Q_AX,/Q_HX $                                                                                 
+OUTPUT4 Q_HX,,,,//0/13///8 $ 

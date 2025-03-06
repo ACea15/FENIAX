@@ -1,0 +1,37 @@
+#  
+engine: intrinsicmodal
+fem:
+  # Connectivities of components
+  connectivity:
+  - 1
+  # Folder in which to find Ka, Ma, and grid data (with those names)
+  folder:
+  # Condensed stiffness matrix
+  Ka:
+  # Condensed mass matrix
+  Ma:
+  # Number of modes in the solution
+  num_modes:
+  # Grid file or array with Nodes Coordinates,
+  #     node ID in the FEM and component
+  grid:
+  # Grid coordinates
+  X:
+  # node ID in the FEM
+  fe_order:
+  # Grid coordinates
+  node_component:
+  # Name of components defining the structure
+  components:
+  # Grid coordinates
+  clamped_dof:
+  # Grid coordinates
+  clamped_nodes:
+  # Grid coordinates
+  num_nodes:
+driver:
+
+  subcases:
+    a: 4
+
+  supercases:
