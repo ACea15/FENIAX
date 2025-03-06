@@ -19,6 +19,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0  # Full history is needed for subtree operations
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
