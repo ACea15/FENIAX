@@ -1,5 +1,0 @@
-* DLM output analysis
-** GAFs:
-- Qhh:
-- Qhj:
-** DLM points
