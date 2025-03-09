@@ -479,6 +479,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Python environment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#venv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Venv
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uv" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyenv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pyenv
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conda" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conda
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1032,6 +1074,48 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Python environment">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#venv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Venv
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#uv" class="md-nav__link">
+    <span class="md-ellipsis">
+      UV
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pyenv" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pyenv
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#conda" class="md-nav__link">
+    <span class="md-ellipsis">
+      Conda
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
       </ul>
@@ -1058,54 +1142,54 @@
 <p>Welcome to the <code>Getting Started</code> guide for <strong>FENIAX</strong>.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">¤</a></h2>
 <ul>
-<li>Currently the code has been tested and is developed in Linux and MacOS.</li>
-<li>
-<p>A minimum installation into the current environment is possible by navigating to the main directory and
+<li>Currently the code has been tested and is developed in Linux and MacOS. Get the code from GitHub first, and move to the directory:
+<div class="highlight"><pre><span></span><code>git clone https://github.com/ACea15/FENIAX.git
+cd FENIAX
+</code></pre></div></li>
+<li>see pyproject.toml file for the options available. Python 3.10+ is required.</li>
+<li>A minimum installation into the current environment is possible by navigating to the main directory and
 <div class="highlight"><pre><span></span><code>pip install .
-</code></pre></div></p>
-</li>
-<li>
+</code></pre></div></li>
+</ul>
 <p>However developer mode is recommended and also installing the full set of packages which include testing and visualisation capabilities:</p>
-</li>
-</ul>
-<div class="highlight"><pre><span></span><code>pip install -e .[all]
+<p><div class="highlight"><pre><span></span><code>pip install -e .[all]
 </code></pre></div>
-<ul>
-<li>
-<p>see pyproject.toml file for the options available. Python 3.10+ is required.</p>
-</li>
-<li>
-<p>To install with GPU support install jax first:
-<div class="highlight"><pre><span></span><code>pip install -U &quot;jax[cuda12]&quot;
-pip install -e &quot;.[all]&quot;
+or do the following if no visualisation is required or visualisation libraries give issues:
+<div class="highlight"><pre><span></span><code>pip install -e .[dev]
 </code></pre></div></p>
-</li>
-</ul>
-<h3 id="python-environment">Python environment<a class="headerlink" href="#python-environment" title="Permanent link">¤</a></h3>
-<p>Although it is not necessary, it is recommended that the software is installed in its own environment. Options that have been tested out follow.</p>
 <ul>
-<li><em>Conda</em>:</li>
+<li>check everything is OK by running the tests: </li>
 </ul>
-<p>Although it is not necessary, If conda is being used as package manager, one can make a specific environment as,</p>
-<div class="highlight"><pre><span></span><code>conda create -n feniax python=3.11
-conda activate feniax
-</code></pre></div>
-<p>If pytest has been installed, check everything is OK by running the tests: </p>
 <div class="highlight"><pre><span></span><code>pytest
 </code></pre></div>
 <ul>
-<li>
-<p>Thus a typical installation would comprise of these 4 steps:
-<div class="highlight"><pre><span></span><code>conda create -n feniax.python=3.11
-conda activate feniax
-pip install -e .[all]
+<li>To install with GPU support install jax first:
+<div class="highlight"><pre><span></span><code>pip install -U &quot;jax[cuda12]&quot;
+pip install -e &quot;.[all]&quot;
+</code></pre></div></li>
+</ul>
+<h3 id="python-environment">Python environment<a class="headerlink" href="#python-environment" title="Permanent link">¤</a></h3>
+<p>Although it is not necessary, it is recommended that the software is installed in its own environment. Options that have been tested out follow.</p>
+<h4 id="venv">Venv<a class="headerlink" href="#venv" title="Permanent link">¤</a></h4>
+<p>venv is the python native virtual environment. In the root of the project directory run 
+<div class="highlight"><pre><span></span><code>python -m venv name_env
+source name_env/bin/activate
+</code></pre></div>
+Then install as above and all the required packages will be installed in the local bin folder. As always pytest to check everything runs fine.</p>
+<h4 id="uv">UV<a class="headerlink" href="#uv" title="Permanent link">¤</a></h4>
+<p>UV is a new python package manager, very fast as it is written in Rust. Once installed, the workflow is similar to that of Venv. 
+Install the python version you want to use:
+<div class="highlight"><pre><span></span><code>uv python install 3.11
+</code></pre></div>
+Now similar to venv, create a folder in the project root, activate the environment, install the code (note uv comes first than pip and a python version is selected as many might be available), run tests:
+<div class="highlight"><pre><span></span><code>uv venv name_env --python 3.11
+source name_env/bin/activate
+uv pip install -e .[all]
 pytest
 </code></pre></div></p>
-</li>
-<li>
-<p><em>pyenv</em>: Navigate to the root directory and run the following: </p>
-</li>
-</ul>
+<h4 id="pyenv">Pyenv<a class="headerlink" href="#pyenv" title="Permanent link">¤</a></h4>
+<p>pyenv is a good way to maintain various python version in your system, lighter than conda and also provides a centralised solution for all your virtual environments.
+Navigate to the root directory and run the following: </p>
 <p><div class="highlight"><pre><span></span><code>  pyenv install 3.11.10
   pyenv virtualenv 3.11.10 feniax
   pyenv local feniax
@@ -1113,6 +1197,17 @@ pytest
   pytest
 </code></pre></div>
 By setting pyenv local to feniax, every time one moves to feniax directory the environment is automatically activated</p>
+<h4 id="conda">Conda<a class="headerlink" href="#conda" title="Permanent link">¤</a></h4>
+<p>If conda is being used as package manager, one can make a specific environment as,</p>
+<div class="highlight"><pre><span></span><code>conda create -n feniax python=3.11
+conda activate feniax
+</code></pre></div>
+<p>Thus a typical installation would comprise of these 4 steps:
+<div class="highlight"><pre><span></span><code>conda create -n feniax.python=3.11
+conda activate feniax
+pip install -e .[all]
+pytest
+</code></pre></div></p>
 
 
 
