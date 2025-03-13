@@ -127,10 +127,11 @@ class Dlog(DataContainer):
     )
     
     path: str = dfield("Path to log file",
-        default="./",
+        default=None,
     ) 
     def __post_init__(self):
-        object.__setattr__(self, "path", pathlib.Path(self.path))
+        if self.path is not None:
+            object.__setattr__(self, "path", pathlib.Path(self.path))
         self._initialize_attributes()
 
 @Ddataclass
@@ -185,6 +186,8 @@ class Ddriver(DataContainer):
     def __post_init__(self):
         if self.sol_path is not None:
             object.__setattr__(self, "sol_path", pathlib.Path(self.sol_path))
+            self.sol_path.mkdir(parents=True, exist_ok=True)
+            
         self._initialize_attributes()
 
 

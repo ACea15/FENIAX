@@ -450,7 +450,7 @@ TODO: make automatic label as the first
 | 3 staticPL   | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
 | 3 dynamicPL  | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
 | 3 staticPLAD | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
-| 3   | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
+| 3            | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
 
 | 3 Stability | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
 | 4 Multibody |        |            |            |           |              |              |             |           |                      |                        |              |
