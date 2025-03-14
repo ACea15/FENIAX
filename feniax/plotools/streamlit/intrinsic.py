@@ -5,12 +5,12 @@ import feniax.plotools.uplotly as uplotly
 import feniax.plotools.upyvista as upyvista
 import jax.numpy as jnp
 import pandas as pd
-import pyvista as pv
+#import pyvista as pv
 import pathlib
 import plotly.express as px
 from enum import Enum
 import os
-from stpyvista import stpyvista
+#from stpyvista import stpyvista
 
 
 def home():
@@ -63,24 +63,24 @@ def multifolder_selector(folder_path=".", key=0):
 #     bdfdef.vtk_fromop2(bdf_file, op2_file, scale = 100., modes2plot=None)
 
 
-def show_vtu(vtu_folder, stream_out="streamlit"):
-    """
-    Reads .vtu files and converts them to pyvista
-    """
+# def show_vtu(vtu_folder, stream_out="streamlit"):
+#     """
+#     Reads .vtu files and converts them to pyvista
+#     """
 
-    folder = pathlib.Path(vtu_folder)
-    pl = pv.Plotter()
-    reader1 = pv.get_reader(folder / "CQUAD4.vtu")
-    mesh1 = reader1.read()
-    pl.add_mesh(mesh1)
-    reader2 = pv.get_reader(folder / "CBAR.vtu")
-    mesh2 = reader2.read()
-    pl.add_mesh(mesh2)
-    if stream_out == "streamlit":
-        ## Pass a key to avoid re-rendering at each time something changes in the page
-        stpyvista(pl, key="pv_cube")
-    elif stream_out == "pyvista":
-        pl.show()
+#     folder = pathlib.Path(vtu_folder)
+#     pl = pv.Plotter()
+#     reader1 = pv.get_reader(folder / "CQUAD4.vtu")
+#     mesh1 = reader1.read()
+#     pl.add_mesh(mesh1)
+#     reader2 = pv.get_reader(folder / "CBAR.vtu")
+#     mesh2 = reader2.read()
+#     pl.add_mesh(mesh2)
+#     if stream_out == "streamlit":
+#         ## Pass a key to avoid re-rendering at each time something changes in the page
+#         stpyvista(pl, key="pv_cube")
+#     elif stream_out == "pyvista":
+#         pl.show()
 
 
 def df_geometry(fem):
@@ -375,12 +375,29 @@ def sys_positions_comp(solsys):
 
     ra = [x.ra for i, x in enumerate(Xvs)]
     sys_X_comparison(ra, t, labels, "Positions", mode)
+
+def sys_positionslessrb_comp(solsys):
+    labels = list(solsys.keys())
+    Xvs = list(solsys.values())
+    if hasattr(Xvs[0], "t"):
+        t = [x.t for x in Xvs]
+        mode = "lines"
+    else:
+        t = [list(range(len(qi))) for qi in Xvs[0].q]
+        mode = "lines+markers"
+
+    ra = [x.ra - x.ra[0] for i, x in enumerate(Xvs)]
+    sys_X_comparison(ra, t, labels, "Positions_lessRB", mode)
     
 def sys_displacements(solsys, config):
     sys_X(solsys.ra - config.fem.X.T, solsys, label="Displacements")
 
 def sys_positions(solsys):
     sys_X(solsys.ra, solsys, label="Positions")
+    
+def sys_positions_lessrb(solsys):
+    
+    sys_X(solsys.ra - solsys.ra[0], solsys, label="Positions_lessRB")
     
 def sys_velocities_comp(solsys):
     
@@ -496,48 +513,48 @@ def sys_3Dconfiguration_ti(solsys, config, settings=None):
     return fig
 
 
-def sys_3Dconfiguration_pv(solsys, config, ti=None, settings=None):
-    istruct = putils.IntrinsicStruct(config.fem)
-    pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
-    if ti is None:
-        istruct.add_solution(solsys.ra)
-    else:
-        istruct.add_solution(solsys.ra[ti])
-    if settings is None:
-        settings = {}
-    pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
-    pl.show_grid()
-    # pl.view_xy()
-    for k, v in istruct.map_ra.items():
-        pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
+# def sys_3Dconfiguration_pv(solsys, config, ti=None, settings=None):
+#     istruct = putils.IntrinsicStruct(config.fem)
+#     pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
+#     if ti is None:
+#         istruct.add_solution(solsys.ra)
+#     else:
+#         istruct.add_solution(solsys.ra[ti])
+#     if settings is None:
+#         settings = {}
+#     pl = upyvista.render_wireframe(points=config.fem.X, lines=istruct.lines)
+#     pl.show_grid()
+#     # pl.view_xy()
+#     for k, v in istruct.map_ra.items():
+#         pl = upyvista.render_wireframe(points=v, lines=istruct.lines, pl=pl)
 
-    # ipythreejs does not support scalar bars :(
-    pv.global_theme.show_scalar_bar = False
+#     # ipythreejs does not support scalar bars :(
+#     pv.global_theme.show_scalar_bar = False
 
-    st.title("A cube")
-    st.info(
-        """Code adapted from https://docs.pyvista.org/user-guide/jupyter/pythreejs.html#scalars-support"""
-    )
+#     st.title("A cube")
+#     st.info(
+#         """Code adapted from https://docs.pyvista.org/user-guide/jupyter/pythreejs.html#scalars-support"""
+#     )
 
-    ## Initialize a plotter object
-    plotter = pv.Plotter(window_size=[400, 400])
+#     ## Initialize a plotter object
+#     plotter = pv.Plotter(window_size=[400, 400])
 
-    ## Create a mesh with a cube
-    mesh = pv.Cube(center=(0, 0, 0))
+#     ## Create a mesh with a cube
+#     mesh = pv.Cube(center=(0, 0, 0))
 
-    ## Add some scalar field associated to the mesh
-    mesh["myscalar"] = mesh.points[:, 2] * mesh.points[:, 0]
+#     ## Add some scalar field associated to the mesh
+#     mesh["myscalar"] = mesh.points[:, 2] * mesh.points[:, 0]
 
-    ## Add mesh to the plotter
-    plotter.add_mesh(mesh, scalars="myscalar", cmap="bwr", line_width=1)
+#     ## Add mesh to the plotter
+#     plotter.add_mesh(mesh, scalars="myscalar", cmap="bwr", line_width=1)
 
-    ## Final touches
-    plotter.view_isometric()
-    plotter.background_color = "white"
+#     ## Final touches
+#     plotter.view_isometric()
+#     plotter.background_color = "white"
 
-    ## Send to streamlit
-    stpyvista(plotter, key="pv_cube")
-    # stpyvista(pl, key="pv_cube")
+#     ## Send to streamlit
+#     stpyvista(plotter, key="pv_cube")
+#     # stpyvista(pl, key="pv_cube")
 
 
 def sys_3Dconfiguration0(config):
@@ -624,11 +641,12 @@ def systems(sol, config):
             "STATES",
             "DISPLACEMENTS",
             "POSITIONS",
+            "POSITIONS_lessRB",            
             "VELOCITIES",
             "STRAINS",
             "INTERNALFORCES",
             "CONFIGURATION3D",
-            "CONFIGURATION3D_PV",
+            #"CONFIGURATION3D_PV",
         ],
     )
     sys_names = [mi for mi in dir(sol.data) if (mi[0] != "_" and "system" in mi)]
@@ -651,7 +669,9 @@ def systems(sol, config):
             case show.DISPLACEMENTS.name:
                 sys_displacements(solsys, config)
             case show.POSITIONS.name:
-                sys_positions(solsys)                
+                sys_positions(solsys)
+            case show.POSITIONS_lessRB.name:
+                sys_positions_lessrb(solsys)
             case show.VELOCITIES.name:
                 sys_velocities(solsys)
             case show.STRAINS.name:
@@ -664,8 +684,8 @@ def systems(sol, config):
                 # st.subheader("Slide")
                 fig2 = sys_3Dconfiguration_ti(solsys, config)
                 st.plotly_chart(fig2, use_container_width=False)
-            case show.CONFIGURATION3D_PV.name:
-                sys_3Dconfiguration_pv(solsys, config)
+            # case show.CONFIGURATION3D_PV.name:
+            #     sys_3Dconfiguration_pv(solsys, config)
 
 
 def systems_comparison(sol, config):
@@ -675,12 +695,13 @@ def systems_comparison(sol, config):
         [
             "STATES",
             "DISPLACEMENTS",
-            "POSITIONS",            
+            "POSITIONS",
+            "POSITIONS_lessRB",     
             "VELOCITIES",
             "STRAINS",
             "INTERNALFORCES",
             "CONFIGURATION3D",
-            "CONFIGURATION3D_PV",
+            #"CONFIGURATION3D_PV",
         ],
     )
     sys_names = [
@@ -708,7 +729,9 @@ def systems_comparison(sol, config):
             case show.DISPLACEMENTS.name:
                 sys_displacements_comp(solsys, config)
             case show.POSITIONS.name:
-                sys_positions_comp(solsys)                
+                sys_positions_comp(solsys)
+            case show.POSITIONS_lessRB.name:
+                sys_positionslessrb_comp(solsys)                
             case show.VELOCITIES.name:
                 sys_velocities_comp(solsys)
             case show.STRAINS.name:
@@ -721,8 +744,8 @@ def systems_comparison(sol, config):
                 # st.subheader("Slide")
                 fig2 = sys_3Dconfiguration_ti(solsys, config)
                 st.plotly_chart(fig2, use_container_width=False)
-            case show.CONFIGURATION3D_PV.name:
-                sys_3Dconfiguration_pv(solsys, config)
+            # case show.CONFIGURATION3D_PV.name:
+            #     sys_3Dconfiguration_pv(solsys, config)
 
 class SolShard:
 
@@ -763,7 +786,7 @@ def systems_shard(sol_shard, config_shard, sol=None, config=None):
             "STRAINS",
             "INTERNALFORCES",
             "CONFIGURATION3D",
-            "CONFIGURATION3D_PV",
+            #"CONFIGURATION3D_PV",
         ],
     )
 
@@ -832,8 +855,8 @@ def systems_shard(sol_shard, config_shard, sol=None, config=None):
                     # st.subheader("Slide")
                     fig2 = sys_3Dconfiguration_ti(selected_solsys, config_shard)
                     st.plotly_chart(fig2, use_container_width=False)
-                case show.CONFIGURATION3D_PV.name:
-                    sys_3Dconfiguration_pv(selected_solsys, config_shard)
+                # case show.CONFIGURATION3D_PV.name:
+                #     sys_3Dconfiguration_pv(selected_solsys, config_shard)
                 
 
 def modes_3Dconfiguration(mode, config, mode_label, settings=None):
