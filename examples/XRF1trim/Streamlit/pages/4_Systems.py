@@ -1,3 +1,5 @@
+# import feniax.plotools.streamlit.pages.Systems
+# import not working for systems (due to global state??)
 import feniax.plotools.streamlit.intrinsic as sti
 import streamlit as st
 import importlib
@@ -11,4 +13,5 @@ st.set_page_config(
 )
 
 stt.intrinsic_systems()
+
 sti.systems(st.session_state.sol, st.session_state.config)

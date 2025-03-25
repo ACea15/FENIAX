@@ -14,7 +14,7 @@ stt.intrinsic_couplings()
 st.divider()
 st.header('Modal couplings')
 
-st.link_button("Code","https://github.com/ACea15/FENIAX/blob/a54b758c10b53e203268a810d6bf813160b34320/fem4inas/intrinsic/couplings.py#L9")
+st.link_button("Code","https://github.com/ACea15/FENIAX/blob/master/fem4inas/intrinsic/couplings.py#L9")
 
 
 st.divider()
