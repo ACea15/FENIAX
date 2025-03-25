@@ -12,5 +12,10 @@ st.set_page_config(
 
 stt.intrinsic_couplings()
 st.divider()
+st.header('Modal couplings')
 
+st.link_button("Code","https://github.com/ACea15/FENIAX/blob/master/fem4inas/intrinsic/couplings.py#L9")
+
+
+st.divider()
 sti.df_couplings(st.session_state.sol)

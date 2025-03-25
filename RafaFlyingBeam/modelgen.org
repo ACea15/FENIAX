@@ -445,7 +445,7 @@ PBAR model by Rafa
 
 * FENIAX
 :PROPERTIES:
-:header-args: :tangle ./P3_simulation.py :session *pyfeniax* :comments yes :results none
+:header-args: :tangle ./P3_settings.py :session *pyfeniax* :comments yes :results none
 :END:
 
 Load simulation modules
@@ -469,8 +469,10 @@ Set model to be run (mi), initial conditions and whether to include gravity forc
   label = 'm1'  
 #+end_src
 
+** only-RB modes 
 #+begin_src python
   inp = Inputs()
+  # inp.log.level="debug"
   inp.engine = "intrinsicmodal"
   inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
   inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
@@ -478,7 +480,7 @@ Set model to be run (mi), initial conditions and whether to include gravity forc
   inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
                        f"./FEM/eigenvecs_{label}.npy"]
   inp.fem.grid = f"./FEM/structuralGrid_{label}"
-  inp.fem.num_modes = 13  # use 12 for model 5!
+  inp.fem.num_modes = 6  
   inp.fem.eig_type = "inputs"
   inp.driver.typeof = "intrinsic"
   inp.driver.sol_path= pathlib.Path(
@@ -488,15 +490,15 @@ Set model to be run (mi), initial conditions and whether to include gravity forc
   inp.system.solution = "dynamic"
   inp.system.bc1 = 'free'
   inp.system.xloads.gravity_forces = gravity_forces
-  inp.system.t1 = 2.
-  inp.system.tn = 25001
+  inp.system.t1 = 2.*10
+  inp.system.tn = 20000 * 10 + 1
   inp.system.solver_library = "runge_kutta" #"diffrax" #
   inp.system.solver_function = "ode"
   inp.system.solver_settings = dict(solver_name="rk4")
   inp.system.init_states = dict(q1=["nodal_prescribed",
                                     ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                      [v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                      [v_x, v_y, v_z, omega_x, omega_y, omega_z]]
+                                      [v_x, v_y, v_z - omega_y * 1, omega_x, omega_y, omega_z],
+                                      [v_x, v_y, v_z + omega_y * 1, omega_x, omega_y, omega_z]]
                                      ,)
                                     ]
                                 )
@@ -527,20 +529,20 @@ For MATLAB postprocessing one can save any of the tensors as:
 
 #+end_src
 
-Multiple cases
+** Multiple cases
 #+begin_src python
-
-  RUN_MULTIPLE = False
+  RUN_MULTIPLE = True
   if RUN_MULTIPLE:
-      vz = [0.2, 0.3, 0.4, 0.5, 0.6]
+      inp.fem.num_modes = 13
+      vz = [0., 0.2, 0.3, 0.4, 0.5, 0.6]
       for i, vzi in enumerate(vz):
           label_i = label + f"vz{i}"
           inp.driver.sol_path= pathlib.Path(
               f"./results_sym{label_i}")
           inp.system.init_states = dict(q1=["nodal_prescribed",
                                             ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z]]
+                                              [v_x, v_y, v_z - omega_y * 1 + vzi, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + omega_y * 1 + vzi, omega_x, omega_y, omega_z]]
                                              ,)
                                             ]
                                         )
@@ -551,15 +553,71 @@ Multiple cases
               f"./results_antisym{label_i}")
           inp.system.init_states = dict(q1=["nodal_prescribed",
                                             ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z + vzi, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z - vzi, omega_x, omega_y, omega_z]]
+                                              [v_x, v_y, v_z - omega_y * 1 + vzi, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + omega_y * 1 - vzi, omega_x, omega_y, omega_z]]
                                              ,)
                                             ]
                                         )
           config =  configuration.Config(inp)
-          sol = feniax.feniax_main.main(input_obj=config)
-
+          sol = feniax.feniax_main.main(input_obj=config)          
   # all solution data in the sol object (everything are tensors)
   # for instance: sol.dynamicsystem_sys1.ra position of node [time_step, component, node_id]
-  # sol.dynamicsystem_sys1.X1 for velocities and so on 
+  # sol.dynamicsystem_s1.X1 for velocities and so on 
 #+end_src
+
+* Postprocess
+:PROPERTIES:
+:header-args: :tangle ./P4_postprocess.py :session *pyfeniax* :comments yes :results none
+:END:
+
+#+begin_src python
+  import feniax.plotools.utils as putils
+  import feniax.plotools.uplotly as uplotly
+  import feniax.preprocessor.solution as solution  
+  sol0 = solution.IntrinsicReader("./results_m1")
+  x, y = putils.pickIntrinsic2D(sol0.data.dynamicsystem_s1.t,
+                                sol0.data.dynamicsystem_s1.X1,
+                                fixaxis2=dict(node=1, dim=2)) # given 2 data
+  fig = uplotly.lines2d(x, y)
+  fig.show()
+#+end_src
+
+** Symmetric velocities
+#+begin_src python
+  fig = None
+  for i in range(6):
+      sol_as = solution.IntrinsicReader(f"./results_symm1vz{i}")
+      x, y = putils.pickIntrinsic2D(sol_as.data.dynamicsystem_s1.t,
+                                    sol_as.data.dynamicsystem_s1.X1,
+                                    fixaxis1=None,
+                                    fixaxis2=dict(node=0, dim=4)) # given 2 data
+      fig = uplotly.lines2d(x, y, fig)
+  fig.show()
+
+#+end_src
+** Antisymmetric velocities
+#+begin_src python
+  fig = None
+  for i in range(6):
+      sol_as = solution.IntrinsicReader(f"./results_antisymm1vz{i}")
+      x, y = putils.pickIntrinsic2D(sol_as.data.dynamicsystem_s1.t,
+                                    sol_as.data.dynamicsystem_s1.X1,
+                                    fixaxis1=None,
+                                    fixaxis2=dict(node=0, dim=4)) # given 2 data
+      fig = uplotly.lines2d(x, y, fig)
+  fig.show()
+#+end_src
+
+Removing of RB model, it will not work since it can't capture velocities
+#+begin_src python :tangle no
+  # fig = None
+  # sol_m5 = solution.IntrinsicReader(f"./resultsRB_symm1vz4")
+  # sol_m5s = solution.IntrinsicReader("./results_symm1vz4")
+  # t = sol_m5s.data.dynamicsystem_s1.t
+  # ra1 = sol_m5s.data.dynamicsystem_s1.ra[:, 2, 1] - sol_m5.data.dynamicsystem_s1.ra[:, 2, 1]
+  # ra2 = sol_m5s.data.dynamicsystem_s1.ra[:, 2, 2] - sol_m5.data.dynamicsystem_s1.ra[:, 2, 2]
+  # fig = uplotly.lines2d(t, ra1 - ra2, fig)
+  # fig.show()
+#+end_src
+
+

@@ -1387,6 +1387,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 #+NAME: parameters_gafs0
 #+begin_src python :noweb yes
   import numpy as np
+  import json
   import feniax.unastran.aero as nasaero
   import feniax.unastran.op4handler as op4handler
   from feniax.utils import standard_atmosphere
@@ -1856,7 +1857,7 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
 
 * FENIAX
 :PROPERTIES:
-:header-args: :session *pybug* :comments yes :noweb yes :results none
+:header-args: :session *pybug1* :comments yes :noweb yes :results none
 :END:
 
 #+NAME: ImportsFeniax
@@ -2055,7 +2056,7 @@ Forces and moments at node 35 and 61
       inp.system.q0treatment = 1
   inp.system.solution = "dynamic"
   inp.system.t1 = 1.
-  inp.system.tn = 2001
+  inp.system.tn = 2501
   inp.system.solver_library = "runge_kutta"
   inp.system.solver_function = "ode"
   inp.system.solver_settings = dict(solver_name="rk4")
@@ -2067,8 +2068,8 @@ Forces and moments at node 35 and 61
   inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
   inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
   inp.system.aero.gust_profile = "mc"
-  inp.system.aero.gust.intensity = 20
-  inp.system.aero.gust.length = 150.
+  inp.system.aero.gust.intensity = 30 #25
+  inp.system.aero.gust.length = 200. #150.
   inp.system.aero.gust.step = 0.1
   inp.system.aero.gust.shift = 0.
   inp.system.aero.gust.panels_dihedral = f"./AERO/Dihedral_{label_dlm}.npy"
@@ -2080,13 +2081,10 @@ Forces and moments at node 35 and 61
   <<ImportsFeniax>>
   <<GustMain>>
   inp.driver.sol_path = pathlib.Path(
-      f"./results/gust2_{sol}")
+      f"./results/gust{int(inp.system.aero.gust.length)}_{sol}")
 
   config =  configuration.Config(inp)
-  t1 = time.time()  
   sol1 = feniax.feniax_main.main(input_obj=config)
-  t2 = time.time()
-  print(f"Time gust: {t2 - t1}")
 
 #+end_src
 
@@ -2095,8 +2093,8 @@ Forces and moments at node 35 and 61
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   import feniax.plotools.uplotly as uplotly
   import feniax.plotools.utils as putils
-  x, y = putils.pickIntrinsic2D(sol1.dynamicsystem_sys1.t,
-                                sol1.dynamicsystem_sys1.ra,
+  x, y = putils.pickIntrinsic2D(sol1.dynamicsystem_s1.t,
+                                sol1.dynamicsystem_s1.ra,
                                 fixaxis2=dict(node=35, dim=2))
   fig = None
   fig = uplotly.lines2d(x, (y), fig,
@@ -2105,7 +2103,7 @@ Forces and moments at node 35 and 61
                                #         dash=dash[i % 3])
                                
                                ),
-                          dict(xaxis_range=[0,2],yaxis_range=[0,5]))
+                          dict(xaxis_range=[0,2],yaxis_range=[0,10]))
   figname = f"./figs/try1.png"
   fig.write_image(figname, scale=1)
   fig.show()
@@ -2117,17 +2115,20 @@ Forces and moments at node 35 and 61
 
 #+NAME: 3Ddynamic
 #+begin_src python :tangle ./paraview_3Ddynamic.py
+  frames_second = 20
+  video_length = 6 #seconds
+  time_interval = int(inp.system.tn / (frames_second * video_length))
   import time
   time1 = time.time()
   rintrinsic, uintrinsic = reconstruction.rbf_based(
           nastran_bdf="./NASTRAN/BUG103.bdf",
           X=config.fem.X,
           time=config.system.t, #range(len(inp.system.t)),
-          ra=sol1.dynamicsystem_sys1.ra,
-          Rab=sol1.dynamicsystem_sys1.Cab,
+          ra=sol1.dynamicsystem_s1.ra,
+          Rab=sol1.dynamicsystem_s1.Cab,
           R0ab=sol1.modes.C0ab,
           vtkpath=inp.driver.sol_path /"paraview/bug",
-          plot_timeinterval=4,
+          plot_timeinterval=time_interval,
           plot_ref=False,
           tolerance=1e-3,
           size_cards=8,
@@ -2137,6 +2138,7 @@ Forces and moments at node 35 and 61
   print(time1-time2)
 #+end_src
 
+Tangle this block and run as bash in next block
 #+begin_src python :tangle ./paraview_gust.py
   from paraview.simple import *
   import pathlib
@@ -2161,7 +2163,7 @@ Forces and moments at node 35 and 61
                     'RBE3.vtu',
                     'CBAR.vtu']
 
-  folder = pathlib.Path("./results/gust2_eao/paraview") # pathlib.Path('./paraview/soldyn1')
+  folder = pathlib.Path("./results/gust200_eao/paraview") # pathlib.Path('./paraview/soldyn1')
   folder_out = folder / "merged"
   folder_out.mkdir(exist_ok=True, parents=True)
   for i, fi in enumerate(folder.glob("bug_*")):
@@ -2190,16 +2192,29 @@ merge all vtu files
 #+end_src
 
 make gust video
+
+
+#+begin_src bash :session shell4 :dir 
+  # cd ~/projects/FENIAXexamples/BUG/results/gust100_200_eao/
+  # ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
+  # ffmpeg -y -framerate 15 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 BugGust_100_200.mp4
+  ffmpeg -y -framerate 15 -pattern_type glob -i '*.png'  BugGust_100_200.mp4
+  # cd -
+#+end_src
+
+make gif
+
+
 #+begin_src bash :session shell4
-  cd ./results/gust2_eao/paraview/merged/anim
+  #cd ./results/gust2_eao/paraview/merged/anim
   #ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 BugGust.mp4
   #ffmpeg -ss 00:00:03 -to 00:00:13 -i BugGust.mp4 -c copy BugGustshort.mp4
-  ffmpeg -y -i BugGustshort.mp4 -filter_complex "fps=15,scale=680:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=32[p];[s1][p]paletteuse=dither=bayer" BugGust1.gif
+  video_name=BugGust_100_200
+  ffmpeg -y -i $video_name.mp4  -filter_complex "fps=15,scale=680:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=32[p];[s1][p]paletteuse=dither=bayer" $video_name.gif
   #ffmpeg -y -framerate 20 -pattern_type glob -i '*.png' -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" BugGust2.gif 
   cd -
 #+end_src
 
-make gif
 #+begin_src bash :session shell4
   cd ./results1gust/paraview/merged
   ffmpeg -i BugGust.mp4  -filter_complex "[0:v] split [a][b];[a] palettegen [p];[b][p] paletteuse" BugGust.gif
@@ -2208,12 +2223,6 @@ make gif
 #+end_src
 
 
-#+begin_src bash :session shell4
-  cd ./results1gust/paraview/merged
-  # ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mpeg4 -qscale:v 1 BugGust.mp4
-  ffmpeg -y -framerate 20 -pattern_type glob -i '*.png'  -c:v mjpeg -qscale:v 1 BugGust.mp4
-  cd -
-#+end_src
 
 
 #+RESULTS:
@@ -2833,21 +2842,18 @@ for local testing:
 #+begin_src python  :session *pyshard2*
   <<ImportsFeniaxShard>>
   <<GustMain>>
-  device_count = 4
+  device_count = 1
   inp.driver.sol_path = pathlib.Path(
-      f"./results/gust3_{sol}Shard")
+      f"./results/gust1_{sol}Shard")
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
-  inputflow = dict(length=np.linspace(25,150,2),
-                   intensity= np.linspace(0.1, 20, 2),
-                   rho_inf = np.linspace(0.3, rho_inf, 2)
+  inputflow = dict(length=np.linspace(50,200,11),
+                   intensity= np.linspace(5, 25, 11),
+                   #rho_inf = np.linspace(0.3, rho_inf, 2)
                  )
   inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
-  t1 = time.time()  
   solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-  t2 = time.time()
-  print(f"Time SHARD Gust: {t2 - t1}")
   
 #+end_src
 
@@ -2868,6 +2874,110 @@ for local testing:
 
   solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
 #+end_src
+
+**** Plot
+
+#+begin_src python  :session *pyshard2*
+  import plotly.graph_objects as go
+  import plotly.io as pio
+  import jax.numpy as jnp
+  node = 13
+  points = solgust21shard.shards_s1.points
+
+  gust_wn = 11
+  gust_w = points[:gust_wn,3]
+  gust_l = points[::gust_wn,2]
+  gust_ln = 11
+  x2max = jnp.max(solgust21shard.dynamicsystem_s1.X2[:,:, :, node], axis=1) # points,6
+  x2min = jnp.min(solgust21shard.dynamicsystem_s1.X2[:,:, :, node], axis=1)
+  x2max_mesh = x2max.reshape((gust_ln, gust_wn,6)) # contour: wn is x, ln is y
+  x2min_mesh = x2min.reshape((gust_ln, gust_wn,6))
+
+#+end_src
+
+plotly color scales:
+
+- Blackbody
+- Bluered
+- Cividis
+- Earth
+- Electric
+- Greens
+- Greys
+- Hot
+- Jet
+- Picnic
+- Portland
+- Rainbow
+- RdBu
+- Reds
+- Viridis
+- YlGnBu
+- YlOrRd
+
+#+begin_src python  :session *pyshard2*
+  scale_quality = 6
+  def fig_update(fig):
+      fig.update_xaxes(
+          #tickfont = dict(size=20),
+          #title_font_size=20,
+          mirror=True,
+          ticks='outside',
+          showline=True,
+          linecolor='black'
+          )
+      fig.update_yaxes(#title_font_size=20,
+                       #zeroline=True,
+                       mirror=True,
+                       ticks='outside',
+                       showline=True,
+                       linecolor='black',
+                       #gridcolor='lightgrey'
+                       )
+      fig.update_layout(font_size=20,
+                        margin=dict(
+                            autoexpand=True,
+                            l=0,
+                            r=0,
+                            t=2,
+                            b=0
+                        ))
+      fig.update_yaxes(title="Gust length")
+      fig.update_xaxes(title="Gust intensity")
+      # fig.update_coloraxes(colorbar=dict(tickfont=dict(color='red',size=30)))
+
+  for i in range(6):
+      fig = go.Figure(data =
+                      go.Contour(
+                          z= x2max_mesh[:,:,i],
+                          x=gust_w, # horizontal axis
+                          y=gust_l, # vertical axis
+                          colorscale='Blues',
+                          colorbar=dict(
+                              tickfont=dict(size=20)
+                          )  # Set tick font size
+                      )
+                      )
+      fig_update(fig)
+      pio.write_image(fig, f"./figs/x2max_c{i}.pdf", scale=scale_quality)
+      fig.show()  
+          
+      fig = go.Figure(data =
+                      go.Contour(
+                          z= -x2min_mesh[:,:,i],
+                          x=gust_w, # horizontal axis
+                          y=gust_l, # vertical axis
+                          colorscale='Blues',
+                          colorbar=dict(
+                              tickfont=dict(size=20)
+                          )  # Set tick font size
+                      )
+                      )
+      fig_update(fig)
+      pio.write_image(fig, f"./figs/x2min_c{i}.pdf", scale=scale_quality)
+      fig.show()  
+#+end_src
+
 
 
 * Gust solution (146)

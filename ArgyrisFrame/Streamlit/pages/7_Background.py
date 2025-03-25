@@ -5,7 +5,7 @@ import feniax.preprocessor.configuration as configuration
 import importlib
 import feniax.plotools.streamlit.intrinsic as sti
 importlib.reload(sti)
-import fem4inas
+import feniax
 
 st.set_page_config(
     page_title="Background page",

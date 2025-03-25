@@ -1,10 +1,75 @@
-This is the list of examples that
+This is the list of examples that have been tested in the [[https://github.com/ACea15/FENIAX/blob/master/][FENIAX]] program. The examples and their categories are expected to keep growing.
 
-* Structural-only exercises
+- Usually inside each example there is a form of settings.py file that when run as "python settings.py" generates a results folder with the output of the simulation (don't forget to activate your python environment if using a package manager).
+- For postprocessing, we have develop a small dashboard application intended for productivity: plots of the various inputs and outputs of the program are generated automatically allowing fast visualisation and results assessment.
+  - Plotly is used as the back-end for interactive graphics generation and Streamlit is the front-end for the user (they are installed when ~pip install .[all]~ is used). 
+  - Navigate to Streamlit folder and launch as "streamlit run Home.py". This launches a process in your web browser.
+  - In the Home page select your results folder from previous step and start navigating the app to explore results. 
+- Most of these examples have also been made into a test case of the FENIAX repository, check [[https://github.com/ACea15/FENIAX/blob/master/tests/intrinsic][link]]. 
+  
+* Structural-only simulations
 ** Static problems
 *** ArgyrisBeam
-Simple cantilever beam under follower tip loads.
-https://www.sciencedirect.com/science/article/pii/0045782581901316?via%3Dihub
+- Simple cantilever beam under follower tip loads.
+- From: https://www.sciencedirect.com/science/article/pii/0045782581901316?via%3Dihub
+
 *** ArgyrisFrame
-Clamped framed structure under follower loads. Two components used.
+Clamped framed structure under follower loads.
 https://www.sciencedirect.com/science/article/pii/0045782581901316?via%3Dihub
+*** EbnerBeam
+- Simple cantilever beam under follower tip loads.
+- From: https://www.sciencedirect.com/science/article/abs/pii/0045794972900557?via%3Dihub
+*** Simo45Beam
+- Curved cantilever wing under follower and dead tip forces.
+- From: https://www.sciencedirect.com/science/article/pii/0045782586900794?via%3Dihub
+  
+*** SailPlane
+- Representative aircraft configuration made out of composite shells.
+- Nonlinear static response for wing tip follower forces verified and benchmarked against MSC Nastran sol 400.
+- AD on static problems verified against Finite-differences.
+  
+** Dynamic problems
+*** Pendulum
+- Rigid pendulum free-falling under gravity.
+- Comparison against analytical solution.
+- Used to validate implementation of gravity forces.
+*** RafaBeam
+- Clamped, slender cantilever made out of shell elements undergoing nonlinear free vibrations in response to initial velocity field.
+- From: https://arc.aiaa.org/doi/10.2514/1.J057556
+- Verified against Nastran and literature.
+*** RafaFlyingBeam
+- 3-mass beam in-plane free flying.
+- Comparison with analytical solution.
+*** SimoFSpaguetti
+- Free flying very flexible structure (originally a beam model that we made into a shell structure).
+- From: https://www.sciencedirect.com/science/article/pii/0045782588900734?via%3Dihub
+*** wingSP
+- Sail Plane clamped wing.
+- Nonlinear dynamic response for wing tip follower forces verified and benchmarked against MSC Nastran sol 400.
+- AD on dynamic problems verified against Finite-differences.
+
+* Aeroelastic simulations
+
+*Note:* The XRF1 is not an open-source model and therefore cannot be openly run. It is however the largest model we have run and an important element to keep maintained as to ensure the code works on industrial platforms. Therefore private tests have been setup for validation as the codebase evolves.
+
+** Static problems
+
+*** XRF1trim
+- Nonlinear aircraft trim for various load conditions.
+- Validated against MSc Nastran for small deformations.
+
+** Dynamic problems
+
+*** XRF1
+- Gust responses on clamped aircraft.
+- Validated against Nastran for small deformations.
+- AD on gust response verified against Finite-differences.
+
+* Parallel simulations
+
+*** BUG
+- See [[https://github.com/ACea15/FENIAX/blob/master/examples/BUG/modelgeneration.org][link]] for a tour on how the whole model is setup
+- Parallel structural simulations.
+- Montecarlo simulations run in parallel for Uncertainty Quantification.
+- Gust responses on free aircraft, single and parallel simulations verified against each other.
+
