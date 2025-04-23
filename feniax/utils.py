@@ -30,6 +30,32 @@ def flatten_list(lis):
 
     return l
 
+def remove_zeros(Mat,retd=None,rtol=1e-05,atol=1e-08):
+    M = copy.copy(Mat)
+    dofx = np.shape(M)[0]
+    dofy = np.shape(M)[1]
+    count=0
+    dx=[]
+    dy=[]
+    for i in range(dofx):
+        if np.allclose(Mat[i,:],np.zeros(dofy),rtol=rtol,atol=atol):
+             M = np.delete(M,i-count,0)
+             count+=1
+             dx.append(i)
+    count=0
+    for i in range(dofy):
+        #print M[:,i]
+        #print np.zeros(dofx)
+        if np.allclose(Mat[:,i],np.zeros(dofx),rtol=rtol,atol=atol):
+             M =np.delete(M,i-count,1)
+             count+=1
+             dy.append(i)
+    if retd:
+        return M,dx,dy
+    else:
+        return M
+
+
 def standard_atmosphere(h, k=0.0065, R=287.05, g=9.806, gamma=1.4, T_0=288.16, rho_0=1.225):
     n = 1 / (1 - k * R / g)
     if h < 11000.0:

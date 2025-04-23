@@ -176,7 +176,7 @@ class Ddriver(DataContainer):
         Algorithm differentiation ON
     """
 
-    typeof: str = dfield("", default=True, options=["intrinsic"])
+    typeof: str = dfield("", default=True, options=["intrinsic", "intrinsicmultibody"])
     sol_path: str | pathlib.Path = dfield("", default="./")
     compute_fem: bool = dfield("", default=True)
     save_fem: bool = dfield("", default=True)
@@ -607,8 +607,11 @@ class DGustMc(DGust):
     shift: float = dfield("", default=0.0)
     panels_dihedral: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
     collocation_points: str | jnp.ndarray = dfield("", default=None, yaml_save=False)
-    shape: str = dfield("", default="const")
-    fixed_discretisation: dict[str: float] = dfield("", default=None)
+    collocation_points_path: str = dfield("", default=None)
+    shape: str = dfield("",
+                        default="const")
+    fixed_discretisation: dict[str: float] = dfield("",
+                                                    default=None)
     totaltime: float = dfield("", init=False)
     x: jnp.ndarray = dfield("", init=False)
     time: jnp.ndarray = dfield("", init=False)
@@ -618,8 +621,18 @@ class DGustMc(DGust):
         if isinstance(self.panels_dihedral, (str, pathlib.Path)):
             object.__setattr__(self, "panels_dihedral", jnp.load(self.panels_dihedral))
         if isinstance(self.collocation_points, (str, pathlib.Path)):
+            object.__setattr__(self,
+                               "collocation_points_path",
+                               os.path.abspath(self.collocation_points)
+                               )            
             object.__setattr__(self, "collocation_points", jnp.load(self.collocation_points))
-
+            
+        elif self.collocation_points_path is not None:
+            object.__setattr__(self, "collocation_points", jnp.load(self.collocation_points_path))
+            object.__setattr__(self,
+                               "collocation_points_path",
+                               os.path.abspath(self.collocation_points_path)
+                               )
         object.__setattr__(self, "panels_dihedral", jnp.array(self.panels_dihedral))
         object.__setattr__(self, "collocation_points", jnp.array(self.collocation_points))    
         # self.panels_dihedral = jnp.array(self.panels_dihedral)
@@ -1585,6 +1598,24 @@ class Dsystems(DataContainer):
         object.__setattr__(self, "mapper", mapper)
         self._initialize_attributes()
 
+@Ddataclass
+class Dmultibody(DataContainer):
+    """ settings
+
+    Parameters
+    ----------
+
+    """
+
+    num_body: int = dfield("", default=0)
+    input_type: str = dfield("", default=None, options=ShardinputType._member_names_)
+    label: str = dfield("", default=None, init=False)
+
+    def __post_init__(self):
+        
+        self._initialize_attributes()
+
+        
 class ForagerinputType(Enum):
     SHARD2ADGUST= 1
         

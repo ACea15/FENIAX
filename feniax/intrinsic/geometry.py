@@ -576,6 +576,11 @@ def compute_Mfe_order(
 
 
 def compute_Mconstrained(Ka, Ma, fe_order, clamped_nodes, clampedDoF):
+    """
+    Computes stiffness and mass matrices when some DoF have been removed.
+
+    This is the case for instance in a pendulum's first node
+    """
     Ka2 = Ka.copy()
     Ma2 = Ma.copy()
     for cni in clamped_nodes:

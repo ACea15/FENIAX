@@ -11,6 +11,13 @@ import feniax.intrinsic.couplings as couplings
 
 logger = get_logger(__name__)
 
+EIG_FUNCS = dict(
+    scipy=modes.compute_eigs_scipy,
+    jax_custom=modes.compute_eigs,
+    inputs=modes.compute_eigs_load,
+    input_memory=modes.compute_eigs_pass,
+)
+
 
 class Galerkin:
     
@@ -41,15 +48,9 @@ class Galerkin:
                 self._load_modalcouplings()
 
     def _compute_eigs(self):
-        eig_funcs = dict(
-            scipy=modes.compute_eigs_scipy,
-            jax_custom=modes.compute_eigs,
-            inputs=modes.compute_eigs_load,
-            input_memory=modes.compute_eigs_pass,
-        )
 
         eig_type = self.config.fem.eig_type
-        eig_solver = eig_funcs[eig_type]
+        eig_solver = EIG_FUNCS[eig_type]
         eigenvals, eigenvecs = eig_solver(
             Ka=self.config.fem.Ka,
             Ma=self.config.fem.Ma,

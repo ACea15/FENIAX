@@ -440,21 +440,21 @@ Critical for large design optimisation problems.
 Well in place for Nastran Models  except for the derivatives provided by Nastran using Sol 200.
 
 * System based solutions :noexport:
-TODO: make automatic label as the first
-| Type         | Target | Gravity    | BC1        | ModalAero | SteadyAero   | UnsteadyAero | Point loads | q0 approx | Rigid-body           | Nonlinearities         | residualised |
-|--------------+--------+------------+------------+-----------+--------------+--------------+-------------+-----------+----------------------+------------------------+--------------|
-| 1 static     | Level  | False: "g" | Clamped    | None      | None         | None         | None        | via q2    | 1-quaternion+strains | All -> ""              | None -> ""   |
-| 2 Dynamic    | TRIM1  | True: "G"  | Free       | Rogers    | qalpha       | gust         | follower    | via q1    | All-quaternions      | Linear sys -> "l"      | True -> "r"  |
-| 3 staticAD   |        |            |            |           |              |              |             |           |                      |                        |              |
-| 4 dynamicAD  |        |            |            |           |              |              |             |           |                      |                        |              |
-| 3 staticPL   | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
-| 3 dynamicPL  | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
-| 3 staticPLAD | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
-| 3            | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
 
+Systems:
+{solution=Type}{operationalmode="","fast", "AD"..}_intrinsic
+solution, target, BC: [[file:~/projects/FENIAX/feniax/preprocessor/containers/intrinsicmodal.py::class SystemSolution(Enum):][Types]]
+Operational Mode: [[file:~/projects/FENIAX/feniax/preprocessor/containers/intrinsicmodal.py::operationalmode: str = dfield(][operationalmode]]
+
+Multibody systems (defined at driver level: [[file:~/projects/FENIAX/feniax/preprocessor/containers/intrinsicmodal.py::typeof: str = dfield("", default=True, options=\["intrinsic", ""\])][typeof]])
+{solution=Type}{operationalmode="","fast", "AD"..}_intrinsicmultibody
+
+| Type        | Target | Gravity    | BC1        | ModalAero | SteadyAero   | UnsteadyAero | Point loads | q0 approx | Rigid-body           | Nonlinearities         | residualised |
+|-------------+--------+------------+------------+-----------+--------------+--------------+-------------+-----------+----------------------+------------------------+--------------|
+| 1 static    | Level  | False: "g" | Clamped    | None      | None         | None         | None        | via q2    | 1-quaternion+strains | All -> ""              | None -> ""   |
+| 2 Dynamic   | TRIM1  | True: "G"  | Free       | Rogers    | qalpha       | gust         | follower    | via q1    | All-quaternions      | Linear sys -> "l"      | True -> "r"  |
 | 3 Stability | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
-| 4 Multibody |        |            |            |           |              |              |             |           |                      |                        |              |
-| 5 Control   |        |            |            |           |              |              |             |           |                      |                        |              |
+| 4 Control   |        |            |            |           |              |              |             |           |                      |                        |              |
 
 | Sol name |                                                 | label                 | Imp |
 |----------+-------------------------------------------------+-----------------------+-----|

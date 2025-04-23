@@ -36,12 +36,12 @@ v2 = jnp.insert(v2, 8, 0., axis=0)
 inp = Inputs()
 inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'0': None}
-inp.fem.folder = pathlib.Path('./FEM2nodes')
+#inp.fem.folder = pathlib.Path('./FEM2nodes')
 inp.fem.num_modes = 3
-inp.fem.Ka = Ka2
-inp.fem.Ma = Ma2
-inp.fem.eigenvecs = v2
-inp.fem.grid = "structuralGrid"
+inp.fem.Ka = Ka
+inp.fem.Ma = Ma
+inp.fem.eigenvecs = v
+inp.fem.grid = "structuralGridConstrained"
 #inp.fem.grid = "structuralGrid"
 inp.fem.eig_type = "input_memory"
 inp.fem.eigenvals = jnp.hstack([jnp.array([0, 0, 0]), w[3:]])
