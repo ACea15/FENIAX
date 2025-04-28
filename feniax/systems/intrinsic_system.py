@@ -6,10 +6,10 @@ import feniax.intrinsic.dq_static as dq_static
 import feniax.intrinsic.initcond as initcond
 import feniax.intrinsic.postprocess as postprocess
 import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
-import feniax.preprocessor.solution as solution
 import feniax.systems.sollibs as sollibs
 import feniax.intrinsic.xloads as xloads
-import feniax.intrinsic.quaternions as quaternions
+from feniax.preprocessor import solution, configuration
+
 import jax
 import jax.numpy as jnp
 from feniax.systems.system import System
@@ -18,10 +18,6 @@ from feniax.ulogger.setup import get_logger
 logger = get_logger(__name__)
 
 def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
-    """
-    Function to solve static system via a ramping load mechanism
-    """
-    
     def _iter(qim1, t):
         args = dq_args + (t,)
         sol = eqsolver(dq, qim1, args, sett)
@@ -34,9 +30,6 @@ def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
 
 @partial(jax.jit, static_argnames=["config", "tn"])
 def recover_fields(q1, q2, tn, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config):
-    """
-    Computes postprocessing quantities from modal solution (clamped model)
-    """    
     ra0 = jnp.broadcast_to(X[0], (tn, 3))
     Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
     X1 = postprocess.compute_velocities(phi1l, q1)
@@ -49,10 +42,6 @@ def recover_fields(q1, q2, tn, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config):
 
 @partial(jax.jit, static_argnames=["config", "tn", "dt"])
 def recover_fieldsRB(q1, q2, tn, dt, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config):
-    """
-    Computes postprocessing quantities from modal solution (Rigid body dynamics)
-    """
-    
     ra_n0 = X[0]
     Rab_n0 = jnp.eye(3)
     X1 = postprocess.compute_velocities(phi1l, q1)
@@ -72,39 +61,9 @@ def recover_fieldsRB(q1, q2, tn, dt, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, con
         config,
     )
     return X1, X2, X3, ra, Cab
-
-@partial(jax.jit, static_argnames=["config", "tn", "dt"])
-def recover_fieldsRBq(q1, q2, tn, dt, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config):
-    """
-    Computes postprocessing quantities from modal solution (rigid body dynamics with quaternions)
-    """
-    
-    ra_n0 = X[0]
-    Rab_n0 = jnp.eye(3)
-    X1 = postprocess.compute_velocities(phi1l, q1)
-    X2 = postprocess.compute_internalforces(phi2l, q2)
-    X3 = postprocess.compute_strains(psi2l, q2)
-    
-    Cab0, ra0 = postprocess.integrate_node0(
-        X1[:, :, 0], dt, ra_n0, Rab_n0
-    )
-    Cab, ra = postprocess.integrate_strains_t(
-        ra0,
-        Cab0,
-        X3,
-        X_xdelta,
-        C0ab,
-        config,
-    )
-    return X1, X2, X3, ra, Cab
-
 
 @partial(jax.jit, static_argnames=["config", "tn"])
 def recover_staticfields(q2, tn, X, phi2l, psi2l, X_xdelta, C0ab, config):
-    """
-    Computes postprocessing quantities from modal solution (clamped model)
-    """
-    
     ra0 = jnp.broadcast_to(X[0], (tn, 3))
     Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
     X2 = postprocess.compute_internalforces(phi2l, q2)
@@ -128,7 +87,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         settings: intrinsicmodal.Dsystem,
         fem: intrinsicmodal.Dfem,
         sol: solution.IntrinsicSolution,
-        config
+        config: configuration.Config,
     ):
         self.name = name
         self.settings = settings
@@ -138,7 +97,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         # self._set_xloading()
         # self._set_generator()
         # self._set_solver()
-
+        
     def set_args(self):
         label = self.settings.label.split("_")[-1]
         logger.info(f"Setting arguments for System main function with label {label}")
@@ -154,9 +113,6 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             self.eta0 = eta0
 
     def set_ic(self, q0):
-        """
-        Set initial conditions
-        """
         logger.info(f"Setting initial conditions for the System (qs(0))")
         if q0 is None:
             self.q0 = jnp.zeros(self.settings.num_states)
@@ -195,24 +151,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             self.q0 = q0
 
     def set_xloading(self, compute_follower=True, compute_dead=True, compute_gravity=True):
-        """Set external loading
 
-        Parameters
-        ----------
-        compute_follower : bool
-            Calculate follower forces
-        compute_dead : bool
-            Calculate dead forces
-        compute_gravity : bool
-            Calculate gravity loads
-
-        Examples
-        --------
-        FIXME: Add docs.
-
-
-        """
-        
         logger.info(f"Setting external loads data for the System")        
         force_follower = None
         force_dead = None
@@ -255,26 +194,16 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         )
 
     def set_states(self):
-        """
-        Build states dictionary that will be used in the construction of the system of equations
-        """
         self.settings.build_states(self.fem.num_modes, self.fem.num_nodes)
 
     def set_solver(self):
-        """
-        Set solver for the main system
-        """
         logger.info(f"Setting library to solve the equations ({self.settings.solver_library})")
         self.states_puller, self.eqsolver = sollibs.factory(
             self.settings.solver_library, self.settings.solver_function
         )
 
     def build_connection_eta(self):
-        """
-        Build connection between system of equations via an eta term that is carried forward.
 
-        For instance between one trim solution and a later dynamic simulation
-        """
         logger.info(f"Building eta0 for system connection")
         elevator_index = self.settings.aero.elevator_index
         elevator_link = self.settings.aero.elevator_link
@@ -298,7 +227,11 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
 
 
 class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
-    
+    # def set_ic(self, q0):
+    #     if q0 is None:
+    #         self.q0 = jnp.zeros(self.fem.num_modes)
+    #     else:
+    #         self.q0 = q0
 
     def set_xloading(self):
         super().set_xloading()
@@ -318,10 +251,9 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
         self.dFq = getattr(dq_static, label)
 
     def solve(self):
-        """
-        Solve system of equations
-        """
-
+        # label = self.settings.label.split("_")[-1]
+        # solver_args = getattr(libargs, f"arg_{label}")
+        # args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
         logger.info(f"Running System solution")
         self.qs = _staticSolve(
             self.eqsolver,
@@ -331,8 +263,7 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             self.args1,
             self.settings.solver_settings,
         )
-        
-        self.build_solution() # postprocess quantities from modal solution
+        self.build_solution()
 
     def solve_forloop(self):
         """
@@ -418,9 +349,6 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
 
 class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
-    """
-    Solves dynamics problems
-    """
     
     def set_xloading(self):
         super().set_xloading()
@@ -450,7 +378,7 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
         self.dFq = getattr(dq_dynamic, label)
 
     def solve(self):
-        
+
         logger.info(f"Running System solution")
         sol = self.eqsolver(
             self.dFq,
@@ -501,38 +429,54 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
             self.sol.save_container("DynamicSystem", label="_" + self.name)
 
     def build_solution(self):
-        """
-        Computes postprocessing quantities such as velocities, strains and positions
-        """
-        
-        logger.info(f"Building postprocessing fields (strains, velocities, positions, etc.)")                
-        q1 = self.qs[:, self.settings.states["q1"]]
-        q2 = self.qs[:, self.settings.states["q2"]]
-        tn = len(self.qs)
-        if self.settings.bc1.lower() == "clamped":
-            X1, X2, X3, ra, Cab = recover_fields(q1,
-                                                   q2,
-                                                   tn,
-                                                   self.fem.X,
-                                                   self.sol.data.modes.phi1l,
-                                                   self.sol.data.modes.phi2l,
-                                                   self.sol.data.modes.psi2l,
-                                                   self.sol.data.modes.X_xdelta,
-                                                   self.sol.data.modes.C0ab,
-                                                   self.config)         
+        # q1_index = self.settings.states['q1']
+        # q2_index = self.settings.states['q2']
+        # q1 = self.qs[:, q1_index]
+        # q2 = self.qs[:, q2_index]
+        # tn = len(self.qs)
+        # X1, X2, X3, ra, Cab = recover_fields(q1,
+        #                                      q2,
+        #                                      tn,
+        #                                      self.fem.X,
+        #                                      self.sol.data.modes.phi1l,
+        #                                      self.sol.data.modes.phi2l,
+        #                                      self.sol.data.modes.psi2l,
+        #                                      self.sol.data.modes.X_xdelta,
+        #                                      self.sol.data.modes.C0ab,
+        #                                      self.config
+        #                                      )
 
+        # q1 = qs[self.settings.q1_index, :]
+        # q2 = qs[self.settings.q2_index, :]
+        logger.info(f"Building postprocessing fields (strains, velocities, positions, etc.)")        
+        X1 = postprocess.compute_velocities(
+            self.sol.data.modes.phi1l, self.qs[:, self.settings.states["q1"]]
+        )
+        X2 = postprocess.compute_internalforces(
+            self.sol.data.modes.phi2l, self.qs[:, self.settings.states["q2"]]
+        )
+        X3 = postprocess.compute_strains(
+            self.sol.data.modes.psi2l, self.qs[:, self.settings.states["q2"]]
+        )
+        if self.settings.bc1.lower() == "clamped":
+            tn = len(self.qs)
+            ra0 = jnp.broadcast_to(self.fem.X[0], (tn, 3))
+            Cab0 = jnp.broadcast_to(jnp.eye(3), (tn, 3, 3))
         else:
-            X1, X2, X3, ra, Cab = recover_fieldsRB(q1,
-                                                   q2,
-                                                   tn,
-                                                   self.settings.dt,
-                                                   self.fem.X,
-                                                   self.sol.data.modes.phi1l,
-                                                   self.sol.data.modes.phi2l,
-                                                   self.sol.data.modes.psi2l,
-                                                   self.sol.data.modes.X_xdelta,
-                                                   self.sol.data.modes.C0ab,
-                                                   self.config)
+            if self.settings.rb_treatment == 1:
+                ra_n0 = self.fem.X[0]
+                Rab_n0 = jnp.eye(3)
+                Cab0, ra0 = postprocess.integrate_node0(
+                    X1[:, :, 0], self.settings.dt, ra_n0, Rab_n0
+                )
+        Cab, ra = postprocess.integrate_strains_t(
+            ra0,
+            Cab0,
+            X3,
+            self.sol.data.modes.X_xdelta,
+            self.sol.data.modes.C0ab,
+            self.config,
+        )
         self.sol.add_container(
             "DynamicSystem",
             label="_" + self.name,

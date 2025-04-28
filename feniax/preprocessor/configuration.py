@@ -22,57 +22,6 @@ class Config:
         self.__defaults()
         self.__set_defaults()
 
-    def serialize(self, data=None):
-
-        if data is None:
-            data = self
-            #in_self = True
-        #else:
-            #in_self=False
-        dictionary = dict()
-        post_init = [vi for vi in list(self.__CONTAINER_DEFAULT.values())[0]]
-        post_init += [vi for vi in list(self.__MOD_DEFAULT.values())[0]]
-        container_data = [ki[1:] for ki in self.__container.__dict__.keys()]
-        for k, v in data.__dict__.items():
-            if (k not in container_data and k in post_init):
-                continue    
-            else:
-                # serialise if it is ndarray
-                if isinstance(v, jnp.ndarray) or isinstance(v, np.ndarray):
-                    v = v.tolist()
-                if isinstance(v, pathlib.Path):
-                    v = str(v)
-                if k == "systems":
-                    dictionary[k] = dict(sett={})
-                    for k2, v2 in self.systems.mapper.items():
-                        dictionary[k]["sett"][k2] = self.serialize(v2)
-                    continue
-                # ensure the field is public
-                if k[0] != "_":
-                    if isinstance(v, DataContainer):
-                        dictionary[k] = self.serialize(v)
-                    else:
-                        # ensure v is not an uninitialised field, which should not be saved
-                        if isinstance(data, DataContainer):
-                            if (
-                                    data.__dataclass_fields__[k].init
-                                    and data.__dataclass_fields__[k].metadata["yaml_save"]
-                            ):
-                                metadata_description = data.__dataclass_fields__[k].metadata["description"]
-                                if len(metadata_description) > 0:
-                                    dictionary[k] = [
-                                        v,
-                                        metadata_description,
-                                    ]
-                                else:
-                                    dictionary[k] = [
-                                        v,
-                                        data.attributes.get(k, "No description available")
-                                    ]
-                        else:
-                            dictionary[k] = [v, " "]
-        return dictionary
-        
     def __extract_attr(self):
         """Extracts attributes that do not belong to a container.
         This attributes are located at the first level of the input settings."""
@@ -119,10 +68,7 @@ class Config:
             setattr(self, k, container_k_initialised)
             for k, v in self.__sett.items():
                 if k != "fem":
-                    try:
-                        container_k = getattr(self.__container, "".join(["D", k]))
-                    except AttributeError:
-                        continue
+                    container_k = getattr(self.__container, "".join(["D", k]))
                     if k == "systems" or k == "system":  # pass Dfem
                         container_k_initialised = container_k(
                             **(v | dict(_fem=self.fem))
@@ -164,11 +110,51 @@ class ValidateConfig:
         assert hasattr(config, "driver"), "No 'driver' attr in config object"
         assert hasattr(config, "fem"), "No 'fem' attr in config object"
 
+def serialize(obj: Config | DataContainer):
+    dictionary = dict()
+    for k, v in obj.__dict__.items():
+        # serialise if it is ndarray
+        if isinstance(v, jnp.ndarray) or isinstance(v, np.ndarray):
+            v = v.tolist()
+        if isinstance(v, pathlib.Path):
+            v = str(v)
+        if k == "systems":
+            dictionary[k] = dict(sett={})
+            for k2, v2 in obj.systems.mapper.items():
+                dictionary[k]["sett"][k2] = serialize(v2)
+            continue
+        # ensure the field is public
+        if k[0] != "_":
+            if isinstance(v, DataContainer):
+                dictionary[k] = serialize(v)
+            else:
+                # ensure v is not an uninitialised field, which should not be saved
+                if isinstance(obj, DataContainer):
+                    if (
+                        obj.__dataclass_fields__[k].init
+                        and obj.__dataclass_fields__[k].metadata["yaml_save"]
+                    ):
+                        metadata_description = obj.__dataclass_fields__[k].metadata["description"]
+                        if len(metadata_description) > 0:
+                            dictionary[k] = [
+                                v,
+                                metadata_description,
+                            ]
+                        else:
+                            dictionary[k] = [
+                                v,
+                                obj.attributes.get(k, "No description available")
+                            ]
+                else:
+                    dictionary[k] = [v, " "]
+    return dictionary
+
+
 def dump_to_yaml(file_out: str | pathlib.Path, config: Config, with_comments=True):
     yaml = YAML()
     file_out = pathlib.Path(file_out)
     file_out.parent.mkdir(parents=True, exist_ok=True)
-    data_dict = config.serialize()
+    data_dict = serialize(config)
     data = utils.dump_inputs(data_dict, with_comments=with_comments)
     with open(file_out, "w") as f:
         yaml.dump(data, f)

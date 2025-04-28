@@ -94,8 +94,6 @@ class Dconst(DataContainer):
     EMATT: jnp.ndarray = dfield("3x3 Identity matrix", init=False)
 
     def __post_init__(self):
-        
-        object.__setattr__(self, "EMAT", jnp.array(self.EMAT))
         object.__setattr__(self, "EMATT", self.EMAT.T)
         self._initialize_attributes()
 
@@ -976,16 +974,6 @@ SimulationTarget = Enum("TARGET", ["LEVEL", "TRIM", "MANOEUVRE", "TURBULENCE"])
 BoundaryCond = Enum("BC1", ["CLAMPED", "FREE", "PRESCRIBED"])
 
 
-class StateTrack:
-    def __init__(self):
-        self.states = dict()
-        self.num_states = 0
-
-    def update(self, **kwargs):
-        for k, v in kwargs.items():
-            self.states[k] = jnp.arange(self.num_states, self.num_states + v)
-            self.num_states += v
-
 
 @Ddataclass
 class Dlibrary(DataContainer):
@@ -1456,23 +1444,12 @@ class Dsystem(DataContainer):
         self._initialize_attributes()
 
     def build_states(self, num_modes: int, num_nodes: int):
-        tracker = StateTrack()
-        # TODO: keep upgrading/ add residualise
-        if self.solution == "static" or self.solution == "staticAD":
-            tracker.update(q2=num_modes)
-            if self.target.lower() == "trim":
-                tracker.update(qx=1)
-        elif self.solution == "dynamic" or self.solution == "dynamicAD":
-            tracker.update(q1=num_modes, q2=num_modes)
-            if self.label_map["aero_sol"] and self.aero.approx.lower() == "roger":
-                tracker.update(ql=self.aero.num_poles * num_modes)
-            if self.q0treatment == 1:
-                tracker.update(q0=num_modes)
-            if self.bc1.lower() != "clamped":
-                if self.rb_treatment == 1:
-                    tracker.update(qr=4)
-                elif self.rb_treatment == 2:
-                    tracker.update(qr=4 * num_nodes)
+        
+        num_poles = 0
+        if self.label_map["aero_sol"] and self.aero.approx.lower() == "roger":
+            num_poles = self.aero.num_poles
+        tracker = iutils.build_systemstates(self.solution, self.target, self.bc1, self.rb_treatment, self.q0treatment, num_poles, num_modes, num_nodes)
+    
         # if self.solution == "static":
         #     state_dict.update(m, kwargs)
         object.__setattr__(self, "states", tracker.states)
@@ -1600,21 +1577,43 @@ class Dsystems(DataContainer):
         object.__setattr__(self, "mapper", mapper)
         self._initialize_attributes()
 
+
+@Ddataclass
+class Dconstraint(DataContainer):
+
+    type_name: str = dfield("", default="spherical")
+    node: int = dfield("", default=None)
+    body: str = dfield("", default=None)
+    node_father: int = dfield("", default=None)
+    body_father: str = dfield("", default=None)    
+    axis: jnp.ndarray = dfield("", default=None)
+    
+    def __post_init__(self):
+        self._initialize_attributes()
+        
 @Ddataclass
 class Dmultibody(DataContainer):
-    """ settings
-
-    Parameters
-    ----------
-
-    """
 
     num_body: int = dfield("", default=0)
-    input_type: str = dfield("", default=None, options=ShardinputType._member_names_)
-    label: str = dfield("", default=None, init=False)
-
+    num_constraints: int = dfield("", default=0)    
+    name_body: list[str] = dfield("", default=None)
+    fems: dict[str: Dfem] = dfield("", default=None)
+    fems_input: dict =dfield("", default=None, yaml_save=False)
+    systems: dict[str: Dsystem] = dfield("", default=None)
+    systems_input: dict = dfield("", default=None, yaml_save=False)
+    constraints: dict[str: Dconstraint] = dfield("", default=None)
+    constraints_input: dict = dfield("", default=None)
+    
     def __post_init__(self):
-        
+        object.__setattr__(self, "fems", dict())
+        object.__setattr__(self, "systems", dict())
+        object.__setattr__(self, "constraints", dict())
+        for k, v in self.fems_input.items():
+            self.fems[k] = Dfem(**v)
+        for k, v in self.systems_input.items():            
+            self.systems[k] = Dsystem(**v, _fem=self.fems[k])
+        for k, v in self.constraints_input.items():            
+            self.constraints[k] = Dconstraint(**v)
         self._initialize_attributes()
 
         

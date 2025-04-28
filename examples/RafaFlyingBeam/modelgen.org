@@ -25,7 +25,7 @@ Parameters in the problem:
 - OFFSET_z: Offset in z of the central mass with respect to the grid node
 - E: young modulus
 - A: cross-sectional area
-- omega: theoretical natural frequency
+- omega: theoretical natural frquency
 
   We will build various FE models in Nastran first, then simulate the free dynamics in FENIAX.
   

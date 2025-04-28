@@ -20,8 +20,17 @@ EIG_FUNCS = dict(
 
 
 class Galerkin:
+    """Performs a Galerkin projection of the intrinsic nonlinear equations
+
+    Computes instrinsic modes and nonlinear modal couplings
+
+    Parameters
+    ----------
+
+    """
     
-    def __init__(self, config: configuration.Config, sol: solution.IntrinsicSolution):
+    
+    def __init__(self, config: configuration.Config, sol: solution.IntrinsicSolution, label=""):
         """
 
         Parameters
@@ -33,7 +42,8 @@ class Galerkin:
 
         self.config = config
         self.sol = sol
-
+        self.label = label
+        
     def compute(self):
         
         if not self.config.driver.ad_on and not self.config.driver.fast_on:
@@ -115,3 +125,5 @@ class Galerkin:
 
     def _load_modalcouplings(self):
         self.sol.load_container("Couplings")
+
+
