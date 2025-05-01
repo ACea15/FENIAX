@@ -5,7 +5,7 @@ import jax.numpy as jnp
 
 @dataclass(slots=True)
 class Modes:
-    phi1: jnp.ndarray
+    phi1: jnp.ndarray   # (Nm, 6, Nn)
     psi1: jnp.ndarray
     phi2: jnp.ndarray
     phi1l: jnp.ndarray
@@ -21,9 +21,9 @@ class Modes:
 
 @dataclass(slots=True)
 class Couplings:
-    alpha1: jnp.ndarray = None
+    alpha1: jnp.ndarray = None  # Nm x Nm
     alpha2: jnp.ndarray = None
-    gamma1: jnp.ndarray = None
+    gamma1: jnp.ndarray = None  # Nm x Nm x Nm
     gamma2: jnp.ndarray = None
 
 

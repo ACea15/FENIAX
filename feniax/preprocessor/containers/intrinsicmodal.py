@@ -1594,7 +1594,7 @@ class Dconstraint(DataContainer):
 @Ddataclass
 class Dmultibody(DataContainer):
 
-    num_body: int = dfield("", default=0)
+    num_bodies: int = dfield("", default=0)
     num_constraints: int = dfield("", default=0)    
     name_body: list[str] = dfield("", default=None)
     fems: dict[str: Dfem] = dfield("", default=None)

@@ -1,8 +1,10 @@
-def lambda12(F11, Fz1, F12, Fz2, G1, G1T, G2, G2T):
+import jax.numpy as jnp
 
-    Ginv = jnp.linalg.inv(G1.dot(G1T)+G2.dot(G2T))
-    lagrange_multiplier = Ginv @ (G1 @ jnp.hstack([F11, Fz1]) +
-                   G2 @ jnp.hstack([F11, Fz2]))
+def lambda12(F11, F12, Fr1, Fr2, Gq, GqT, Gr, GrT):
+
+    Ginv = jnp.linalg.inv(Gq.dot(GqT)+Gr.dot(GrT))
+    lagrange_multiplier = Ginv @ (Gq @ jnp.hstack([F11, F12]) +
+                   Gr @ jnp.hstack([Fr1, Fr2]))
     return lagrange_multiplier
 
 def rotation_quaternion(quaternion):
