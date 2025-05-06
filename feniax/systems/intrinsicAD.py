@@ -122,6 +122,7 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
 
 
 class StaticADIntrinsic(IntrinsicADSystem, cls_name="staticAD_intrinsic"):
+    
     def set_system(self):
         label_sys = self.settings.label
         label_ad = self.settings.ad.label

@@ -2245,7 +2245,7 @@ Forces and moments at node 35 and 61
 #+begin_src python :tangle settings_ShardDiscreteLoads.py :session *pyshard3*
   <<ImportsFeniaxShard>>
   sol = "cao"
-  num_modes = 300
+  num_modes = 100
   device_count = 1
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
@@ -2330,10 +2330,7 @@ Forces and moments at node 35 and 61
                    )  
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
-  t1 = time.time()
   sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-  t2 = time.time()
-  print(f"Time DiscreteLoads: {t2 - t1}")
 #+end_src
 
 **** Plot results
@@ -2498,7 +2495,7 @@ make gust video
 #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
   <<ImportsFeniaxShard>>
   sol = "cao"
-  paths = 8*200
+  paths = 8*100
   num_modes = 100
   device_count = 1
   <<MainBug>>
@@ -2558,10 +2555,7 @@ make gust video
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
 
-  t1 = time.time()
   sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-  t2 = time.time()
-  print(f"Time DiscreteLoads MC: {t2 - t1}")
 
   # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
   # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
@@ -2590,7 +2584,6 @@ make gust video
           ra_movie=None
       )
 #+end_src
-
 
 #+NAME: discrete loads
 #+begin_src python :session *pyshard4*
@@ -2815,7 +2808,6 @@ make gust video
   print(f"std displacement node 35: {u_std3}") 
   print(f"ratio displacement node 35: {u_mean3/u_std3}") 
   print("***************") 
-  
 #+end_src
 
 *** Manoeuvre
