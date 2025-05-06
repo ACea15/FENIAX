@@ -1,0 +1,111 @@
+\begin{thebibliography}{10}
+
+\bibitem{LIVNE2018}
+Eli Livne.
+\newblock Aircraft {{Active Flutter Suppression}}: {{State}} of the {{Art}} and
+  {{Technology Maturation Needs}}.
+\newblock {\em Journal of Aircraft}, 55(1):410--452, January 2018.
+
+\bibitem{JONSSON2023}
+Eirikur Jonsson, Cristina Riso, Bernardo~Bahia Monteiro, Alasdair~C. Gray,
+  Joaquim R. R.~A. Martins, and Carlos E.~S. Cesnik.
+\newblock High-{{Fidelity Gradient-Based Wing Structural Optimization Including
+  Geometrically Nonlinear Flutter Constraint}}.
+\newblock {\em AIAA Journal}, 61(7):3045--3061, July 2023.
+
+\bibitem{Artola2021}
+Marc Artola, Norberto Goizueta, Andrew Wynn, and Rafael Palacios.
+\newblock Aeroelastic control and estimation with a minimal nonlinear modal
+  description.
+\newblock {\em AIAA Journal}, 59(7):2697--2713, 2021.
+
+\bibitem{CESNIK2014}
+Carlos~E.S. Cesnik, Rafael Palacios, and Eric~Y. Reichenbach.
+\newblock Reexamined {{Structural Design Procedures}} for {{Very Flexible
+  Aircraft}}.
+\newblock {\em Journal of Aircraft}, 51(5):1580--1591, September 2014.
+
+\bibitem{Kier2017}
+Thiemo~M Kier.
+\newblock An integrated model for lateral gust loads analysis and dutch roll
+  flight dynamics using a 3d panel method.
+\newblock International {{Forum}} on {{Aeroelasticity}} and {{Structural
+  Dynamics}} 2013, 2017.
+
+\bibitem{CEA2023}
+Alvaro Cea and Rafael Palacios.
+\newblock Geometrically {{Nonlinear Effects}} on the {{Aeroelastic Response}}
+  of a {{Transport Aircraft Configuration}}.
+\newblock {\em Journal of Aircraft}, 60(1):205--220, January 2023.
+
+\bibitem{CEA2024}
+Alvaro Cea and Rafael Palacios.
+\newblock A {{Nearly-Real Time Nonlinear Aeroelastic Simulation Architecture
+  Based}} on {{JAX}}.
+\newblock In {\em {{AIAA SCITECH}} 2024 {{Forum}}}, Orlando, FL, January 2024.
+
+\bibitem{ALVAROCEA2024}
+{Alvaro Cea} and {Rafael Palacios}.
+\newblock Geometrically {{Nonlinear Analysis}} of {{Flexible Aircraft}} on
+  {{Modern Hardware Architectures}}.
+\newblock {\em AIAA JOURNAL}, 2024 (pending publication).
+
+\bibitem{BEZGIN2023}
+Deniz~A. Bezgin, Aaron~B. Buhendwa, and Nikolaus~A. Adams.
+\newblock {{JAX-Fluids}}: {{A}} fully-differentiable high-order computational
+  fluid dynamics solver for compressible two-phase flows.
+\newblock {\em Computer Physics Communications}, 282:108527, January 2023.
+
+\bibitem{XUE2023}
+Tianju Xue, Shuheng Liao, Zhengtao Gan, Chanwook Park, Xiaoyu Xie, Wing~Kam
+  Liu, and Jian Cao.
+\newblock {{JAX-FEM}}: {{A}} differentiable {{GPU-accelerated 3D}} finite
+  element solver for automatic inverse design and mechanistic data science.
+\newblock {\em Computer Physics Communications}, 291:108802, October 2023.
+
+\bibitem{HODGES2003}
+Dewey~H. Hodges.
+\newblock Geometrically {{Exact}}, {{Intrinsic Theory}} for {{Dynamics}} of
+  {{Curved}} and {{Twisted Anisotropic Beams}}.
+\newblock {\em AIAA Journal}, 41(6):1131--1137, June 2003.
+
+\bibitem{PALACIOS2011}
+Rafael Palacios and Bodgan Epureanu.
+\newblock An intrinsic description of the nonlinear aeroelasticity of very
+  flexible wings.
+\newblock {\em 52nd AIAA/ASME/ASCE/AHS/ASC Structures, Structural Dynamics and
+  Materials Conference}, (April):1--15, 2011.
+
+\bibitem{CEA2021a}
+Alvaro Cea.
+\newblock {\em A Geometrically Nonlinear Approach for the Aeroelastic Analysis
+  of Commercial Transport Aircraft}.
+\newblock PhD thesis, Imperial College London, 2021.
+
+\bibitem{CEA2024a}
+Alvaro Cea and Rafael Palacios.
+\newblock Differentiable {{Aeroelastic Framework Suitable For Industrial
+  Modelling Of Nonlinear Loads On Accelerators}}.
+\newblock {\em International Forum on Aeroelasticity and Structural Dynamics
+  2024, IFASD 2024}, 2024.
+
+\bibitem{Roger1977}
+Kenneth~L Roger.
+\newblock Airplane math modeling methods for active control design.
+\newblock {\em Structural Aspects of Active Controls, AGARD CP-228}, pages
+  4.1--4.11, 1977.
+
+\bibitem{BRADBURY2018}
+James Bradbury, Roy Frostig, Peter Hawkins, Matthew~James Johnson, Chris Leary,
+  Dougal Maclaurin, George Necula, Adam Paszke, Jake VanderPlas, Skye
+  {Wanderman-Milne}, and Qiao Zhang.
+\newblock {{JAX}}: Composable transformations of {{Python}}+{{NumPy}} programs,
+  2018.
+
+\bibitem{STODIECK2018}
+O.~Stodieck, J.~E. Cooper, S.~A. Neild, M.~H. Lowenberg, and L.~Iorga.
+\newblock Slender-{{Wing Beam Reduction Method}} for {{Gradient-Based
+  Aeroelastic Design Optimization}}.
+\newblock {\em AIAA Journal}, 56(11):4529--4545, November 2018.
+
+\end{thebibliography}
