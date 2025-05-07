@@ -1,4 +1,5 @@
-#+TITLE: Differentiable and Nonlinear Aircraft Loads at Large Scale Using an Accelerator-Based Concurrent Solution
+# Differentiable and Nonlinear Aircraft Loads at Large Scale Using an Accelerator-Based Concurrent Solution
+#+TITLE: Fully Differentiable Nonlinear Aircraft Loads at Large Scale Using a GPU-Based Concurrent Solution 
 # A Concurrent Accelerator-Based Framework for Differentiable and Nonlinear Aircraft Loads at Scale
 # Differentiable-Parallel Aircraft Nonlinear Loads at Large Scale Using an Accelerator-Based Solution
 #+AUTHOR: Alvaro Cea\footnote{Research Associate, CAGB 308, South Kensington Campus. (alvaro.cea-esteban15@imperial.ac.uk)}, Rafael Palacios\footnote{Professor in Computational Aeroelasticity, CAGB 310, South Kensington Campus. AIAA Associate Fellow (r.palacios@imperial.ac.uk)}

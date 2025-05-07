@@ -38,9 +38,9 @@ def compute_eigs_load(
 
 
 class StateTrack:
-    def __init__(self):
+    def __init__(self, initial=0):
         self.states = dict()
-        self.num_states = 0
+        self.num_states = initial
 
     def update(self, **kwargs):
         for k, v in kwargs.items():
@@ -48,9 +48,9 @@ class StateTrack:
             self.num_states += v
 
             
-def build_systemstates(solution: str, target: str, bc1:str, rb_treatment: int, q0treatment: int, num_poles:int, num_modes: int, num_nodes: int):
+def build_systemstates(solution: str, target: str, bc1:str, rb_treatment: int, q0treatment: int, num_poles:int, num_modes: int, num_nodes: int, initial=0):
     
-    tracker = StateTrack()
+    tracker = StateTrack(initial)
     # TODO: keep upgrading/ add residualise
     if solution == "static" or solution == "staticAD":
         tracker.update(q2=num_modes)

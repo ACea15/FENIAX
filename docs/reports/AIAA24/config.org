@@ -1,4 +1,5 @@
 #+TITLE: Geometrically Nonlinear Analysis of Flexible Aircraft on Modern Hardware Architectures
+#+TITLE: Geometrically Nonlinear and Multibody Analysis of Flexible Aircraft on Modern Hardware Architectures
 #+AUTHOR: Alvaro Cea and Rafael Palacios
 #+BIBLIOGRAPHY:/home/acea/Documents/Engineering.bib
 :LATEX_PROPERTIES:

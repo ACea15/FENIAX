@@ -1596,13 +1596,15 @@ class Dmultibody(DataContainer):
 
     num_bodies: int = dfield("", default=0)
     num_constraints: int = dfield("", default=0)    
-    name_body: list[str] = dfield("", default=None)
+    name_bodies: list[str] = dfield("", default=None)
     fems: dict[str: Dfem] = dfield("", default=None)
     fems_input: dict =dfield("", default=None, yaml_save=False)
     systems: dict[str: Dsystem] = dfield("", default=None)
     systems_input: dict = dfield("", default=None, yaml_save=False)
     constraints: dict[str: Dconstraint] = dfield("", default=None)
     constraints_input: dict = dfield("", default=None)
+    states_global: dict = dfield("", default=None)
+    states_system: dict = dfield("", default=None)
     
     def __post_init__(self):
         object.__setattr__(self, "fems", dict())
@@ -1616,6 +1618,24 @@ class Dmultibody(DataContainer):
             self.constraints[k] = Dconstraint(**v)
         self._initialize_attributes()
 
+    def build_states(self, fem0: Dfem, system0: Dsystem):
+
+        states_global = dict()
+        states_system = dict()
+        num_modes = fem0.num_modes
+        num_nodes = fem0.num_nodes
+        num_poles = 0
+        if system.label_map["aero_sol"] and system.aero.approx.lower() == "roger":
+            num_poles = system.aero.num_poles
+        tracker = iutils.build_systemstates(system.solution, system.target, system.bc1, system.rb_treatment, system.q0treatment, num_poles, num_modes, num_nodes)
+        states_system['b0'] = tracker.states
+        states_global = iutils.StateTrack()
+        states_global.update()
+        # if self.solution == "static":
+        #     state_dict.update(m, kwargs)
+        object.__setattr__(self, "states", tracker.states)
+        object.__setattr__(self, "num_states", tracker.num_states)
+        
         
 class ForagerinputType(Enum):
     SHARD2ADGUST= 1

@@ -17,6 +17,75 @@ from feniax.ulogger.setup import get_logger
 
 logger = get_logger(__name__)
 
+def f_xloading(settings: intrinsicmodal.Dsystem,
+               fem: intrinsicmodal.Dfem,
+               sol: solution.IntrinsicSolution,
+               compute_follower=True, compute_dead=True, compute_gravity=True,
+               dynamic=False,
+               ):
+
+    force_follower = None
+    force_dead = None
+    force_gravity = None
+    if settings.xloads.follower_forces and compute_follower:
+       # settings.xloads.build_point_follower(
+       #     fem.num_nodes, sol.data.modes.C06ab
+       # )           
+       force_follower = xloads.build_point_follower(settings.xloads.x,
+                                                     settings.xloads.follower_points,
+                                                     settings.xloads.follower_interpolation,
+                                                     fem.num_nodes,
+                                                     sol.data.modes.C06ab
+                                                     )
+    if settings.xloads.dead_forces and compute_dead:
+        force_dead = xloads.build_point_dead(settings.xloads.x,
+                                             settings.xloads.dead_points,
+                                             settings.xloads.dead_interpolation,
+                                             fem.num_nodes,
+                                             )
+    if settings.xloads.gravity_forces and compute_gravity:
+        if fem.constrainedDoF:
+            force_gravity = xloads.build_gravity(settings.xloads.x,
+                                 settings.xloads.gravity,
+                                 settings.xloads.gravity_vect,
+                                 fem.Ma0s,
+                                 fem.Mfe_order0s)
+        else:
+            force_gravity = xloads.build_gravity(settings.xloads.x,
+                                 settings.xloads.gravity,
+                                 settings.xloads.gravity_vect,
+                                 fem.Ma,
+                                 fem.Mfe_order)
+    sol.add_container(
+        "PointForces", label="_" + settings.name,
+        force_follower=force_follower,
+        force_dead=force_dead,
+        force_gravity=force_gravity,
+        x=settings.xloads.x
+    )
+
+    if settings.aero is not None:
+        import feniax.intrinsic.aero as aero
+
+        approx = settings.aero.approx.capitalize()
+        aeroobj = aero.Registry.create_instance(
+            f"Aero{approx}", settings, sol
+        )
+        aeroobj.get_matrices()
+        aeroobj.save_sol()
+        if dynamic and settings.aero.gust is not None:
+            import feniax.intrinsic.gust as gust
+
+            profile = settings.aero.gust_profile.capitalize()
+            gustobj = gust.Registry.create_instance(
+                f"Gust{approx}{profile}", settings, sol
+            )
+            gustobj.calculate_normals()
+            gustobj.calculate_downwash()
+            gustobj.set_solution(sol, settings.name)
+    
+
+
 def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
     def _iter(qim1, t):
         args = dq_args + (t,)
@@ -26,7 +95,6 @@ def _staticSolve(eqsolver, dq, t_loads, q0, dq_args, sett):
 
     qcarry, qs = jax.lax.scan(_iter, q0, jnp.array(t_loads))
     return qs
-
 
 @partial(jax.jit, static_argnames=["config", "tn"])
 def recover_fields(q1, q2, tn, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config):
@@ -153,45 +221,14 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
     def set_xloading(self, compute_follower=True, compute_dead=True, compute_gravity=True):
 
         logger.info(f"Setting external loads data for the System")        
-        force_follower = None
-        force_dead = None
-        force_gravity = None
-        if self.settings.xloads.follower_forces and compute_follower:
-           # self.settings.xloads.build_point_follower(
-           #     self.fem.num_nodes, self.sol.data.modes.C06ab
-           # )           
-           force_follower = xloads.build_point_follower(self.settings.xloads.x,
-                                                         self.settings.xloads.follower_points,
-                                                         self.settings.xloads.follower_interpolation,
-                                                         self.fem.num_nodes,
-                                                         self.sol.data.modes.C06ab
-                                                         )
-        if self.settings.xloads.dead_forces and compute_dead:
-            force_dead = xloads.build_point_dead(self.settings.xloads.x,
-                                                 self.settings.xloads.dead_points,
-                                                 self.settings.xloads.dead_interpolation,
-                                                 self.fem.num_nodes,
-                                                 )
-        if self.settings.xloads.gravity_forces and compute_gravity:
-            if self.fem.constrainedDoF:
-                force_gravity = xloads.build_gravity(self.settings.xloads.x,
-                                     self.settings.xloads.gravity,
-                                     self.settings.xloads.gravity_vect,
-                                     self.fem.Ma0s,
-                                     self.fem.Mfe_order0s)
-            else:
-                force_gravity = xloads.build_gravity(self.settings.xloads.x,
-                                     self.settings.xloads.gravity,
-                                     self.settings.xloads.gravity_vect,
-                                     self.fem.Ma,
-                                     self.fem.Mfe_order)
-        self.sol.add_container(
-            "PointForces", label="_" + self.settings.name,
-            force_follower=force_follower,
-            force_dead=force_dead,
-            force_gravity=force_gravity,
-            x=self.settings.xloads.x
-        )
+        f_xloading(settings=self.settings,
+                   fem=self.fem,
+                   sol=self.sol,
+                   compute_follower=compute_follower,
+                   compute_dead=compute_dead,
+                   compute_gravity=compute_gravity,
+                   dynamic=False
+                   )
 
     def set_states(self):
         self.settings.build_states(self.fem.num_modes, self.fem.num_nodes)
@@ -350,27 +387,16 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
 
 class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
     
-    def set_xloading(self):
-        super().set_xloading()
-        if self.settings.aero is not None:
-            import feniax.intrinsic.aero as aero
-
-            approx = self.settings.aero.approx.capitalize()
-            aeroobj = aero.Registry.create_instance(
-                f"Aero{approx}", self.settings, self.sol
-            )
-            aeroobj.get_matrices()
-            aeroobj.save_sol()
-            if self.settings.aero.gust is not None:
-                import feniax.intrinsic.gust as gust
-
-                profile = self.settings.aero.gust_profile.capitalize()
-                gustobj = gust.Registry.create_instance(
-                    f"Gust{approx}{profile}", self.settings, self.sol
-                )
-                gustobj.calculate_normals()
-                gustobj.calculate_downwash()
-                gustobj.set_solution(self.sol, self.settings.name)
+    def set_xloading(self, compute_follower=True, compute_dead=True, compute_gravity=True):
+        
+        f_xloading(settings=self.settings,
+                   fem=self.fem,
+                   sol=self.sol,
+                   compute_follower=compute_follower,
+                   compute_dead=compute_dead,
+                   compute_gravity=compute_gravity,
+                   dynamic=True
+                   )
 
     def set_system(self):
         label = f"dq_{self.settings.label}"

@@ -11,7 +11,7 @@
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"
       "latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode -output-directory=%o %f"))
-  (pyvenv-workon "feniax.)
+  (pyvenv-workon "feniax")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
@@ -200,6 +200,23 @@ Table [[table:jaxbenchmark]] shows
 | CPP-f3        | 5.98 \pm 0.08 |
 | CPP-f2        | 7.71 \pm 0.09 |
 | CPP-f1        | 17.6 \pm 0.6  |
+
+
+#+NAME: jaxvscuda
+#+begin_src python :results raw  :var name=(org-element-property :name (org-element-context))
+  tbenchu = dict()
+  tbenchu['times_jax']=   jnp.array([2.71, 2.56, 2.57, 2.56, 2.49])
+  tbenchu['times_cuda']=jnp.array([2.54, 2.53, 2.57, 2.6, 2.56])
+  tbenchu2 = dict()
+  for k, v in tbenchu.items():
+     tbenchu2[f"{k}_mean"] = v.mean()
+     tbenchu2[f"{k}_std"] = v.std()
+#+end_src
+
+#+RESULTS: jaxvscuda
+None
+None
+None
 
 
 bibliographystyle:plain
