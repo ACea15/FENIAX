@@ -39,7 +39,7 @@ The most relevant examples in the code base are shown here, these and more can b
 They are also part of a large test suite that is integrated into the development using CI/CD.
 
 !!! tip
-    Navigate to the code of the various examples, including the simulation input settings and postprocessing of the simulation --exactly as it was used for the articles backing the software. See [examples](./docs/examples.md)
+    Navigate to the code of the various examples, including the simulation input settings and postprocessing of the simulation --exactly as it was used for the articles backing the software. See [examples](https://acea15.github.io/FENIAX/examples/) for further details.
 
 
 ### Nonlinear structural static results
