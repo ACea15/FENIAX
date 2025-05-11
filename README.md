@@ -12,12 +12,12 @@ Some of the key features of the software are:
 ## Installation
 
 - Currently the code has been tested and is developed in Linux and MacOS. It can be run from Windows using the Windows Subsystem for Linux (WSL).  
-- A minimum installation into the current environment is possible by navigating to the main directory and
+- For advanced installation options, please go to [Getting Started](https://acea15.github.io/FENIAX/getting_started/). A minimum installation into the current environment is possible by navigating to the main directory and
 ```
 pip install .
 ```
 
-- However developer mode is recommended and also installing the full set of packages which include testing and visualisation capabilities:
+- However, developer mode is recommended, which also installs the full set of packages, including testing and visualisation capabilities:
 
 ```
 pip install -e .[all]
