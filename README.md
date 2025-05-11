@@ -11,13 +11,13 @@ Some of the key features of the software are:
 
 ## Installation
 
-- Currently the code has been tested and is developed in Linux and MacOS.
-- A minimum installation into the current environment is possible by navigating to the main directory and
+- Currently the code has been tested and is developed in Linux and MacOS. It can be run from Windows using the Windows Subsystem for Linux (WSL).  
+- For advanced installation options, please go to [Getting Started](https://acea15.github.io/FENIAX/getting_started/). A minimum installation into the current environment is possible by navigating to the main directory and
 ```
 pip install .
 ```
 
-- However developer mode is recommended and also installing the full set of packages which include testing and visualisation capabilities:
+- However, developer mode is recommended, which also installs the full set of packages, including testing and visualisation capabilities:
 
 ```
 pip install -e .[all]
@@ -39,7 +39,7 @@ The most relevant examples in the code base are shown here, these and more can b
 They are also part of a large test suite that is integrated into the development using CI/CD.
 
 !!! tip
-    Navigate to the code of the various examples, including the simulation input settings and postprocessing of the simulation --exactly as it was used for the articles backing the software. See [examples](./docs/examples.md)
+    Navigate to the code of the various examples, including the simulation input settings and postprocessing of the simulation --exactly as it was used for the articles backing the software. See [examples](https://acea15.github.io/FENIAX/examples/) for further details.
 
 
 ### Nonlinear structural static results
