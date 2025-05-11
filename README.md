@@ -11,7 +11,7 @@ Some of the key features of the software are:
 
 ## Installation
 
-- Currently the code has been tested and is developed in Linux and MacOS.
+- Currently the code has been tested and is developed in Linux and MacOS. It can be run from Windows using the Windows Subsystem for Linux (WSL).  
 - A minimum installation into the current environment is possible by navigating to the main directory and
 ```
 pip install .
