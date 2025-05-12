@@ -113,40 +113,41 @@ class ValidateConfig:
 def serialize(obj: Config | DataContainer):
     dictionary = dict()
     for k, v in obj.__dict__.items():
-        # serialise if it is ndarray
-        if isinstance(v, jnp.ndarray) or isinstance(v, np.ndarray):
-            v = v.tolist()
-        if isinstance(v, pathlib.Path):
-            v = str(v)
-        if k == "systems":
-            dictionary[k] = dict(sett={})
-            for k2, v2 in obj.systems.mapper.items():
-                dictionary[k]["sett"][k2] = serialize(v2)
-            continue
-        # ensure the field is public
-        if k[0] != "_":
-            if isinstance(v, DataContainer):
-                dictionary[k] = serialize(v)
-            else:
-                # ensure v is not an uninitialised field, which should not be saved
-                if isinstance(obj, DataContainer):
-                    if (
-                        obj.__dataclass_fields__[k].init
-                        and obj.__dataclass_fields__[k].metadata["yaml_save"]
-                    ):
-                        metadata_description = obj.__dataclass_fields__[k].metadata["description"]
-                        if len(metadata_description) > 0:
-                            dictionary[k] = [
-                                v,
-                                metadata_description,
-                            ]
-                        else:
-                            dictionary[k] = [
-                                v,
-                                obj.attributes.get(k, "No description available")
-                            ]
+        if k != "jax_np" or k != "jax_scipy":
+            # serialise if it is ndarray
+            if isinstance(v, jnp.ndarray) or isinstance(v, np.ndarray):
+                v = v.tolist()
+            if isinstance(v, pathlib.Path):
+                v = str(v)
+            if k == "systems":
+                dictionary[k] = dict(sett={})
+                for k2, v2 in obj.systems.mapper.items():
+                    dictionary[k]["sett"][k2] = serialize(v2)
+                continue
+            # ensure the field is public
+            if k[0] != "_":
+                if isinstance(v, DataContainer):
+                    dictionary[k] = serialize(v)
                 else:
-                    dictionary[k] = [v, " "]
+                    # ensure v is not an uninitialised field, which should not be saved
+                    if isinstance(obj, DataContainer):
+                        if (
+                            obj.__dataclass_fields__[k].init
+                            and obj.__dataclass_fields__[k].metadata["yaml_save"]
+                        ):
+                            metadata_description = obj.__dataclass_fields__[k].metadata["description"]
+                            if len(metadata_description) > 0:
+                                dictionary[k] = [
+                                    v,
+                                    metadata_description,
+                                ]
+                            else:
+                                dictionary[k] = [
+                                    v,
+                                    obj.attributes.get(k, "No description available")
+                                ]
+                    else:
+                        dictionary[k] = [v, " "]
     return dictionary
 
 
@@ -155,6 +156,8 @@ def dump_to_yaml(file_out: str | pathlib.Path, config: Config, with_comments=Tru
     file_out = pathlib.Path(file_out)
     file_out.parent.mkdir(parents=True, exist_ok=True)
     data_dict = serialize(config)
+    del data_dict["jax_np"]
+    del data_dict["jax_scipy"]
     data = utils.dump_inputs(data_dict, with_comments=with_comments)
     with open(file_out, "w") as f:
         yaml.dump(data, f)

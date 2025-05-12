@@ -94,6 +94,7 @@ class Dconst(DataContainer):
     EMATT: jnp.ndarray = dfield("3x3 Identity matrix", init=False)
 
     def __post_init__(self):
+        object.__setattr__(self, "EMAT", jnp.array(self.EMAT))
         object.__setattr__(self, "EMATT", self.EMAT.T)
         self._initialize_attributes()
 
