@@ -13,8 +13,10 @@ v_z = 0.
 omega_x = 0.
 omega_y = 1.
 omega_z = 0.
-gravity_forces = False
+gravity_forces = True
+gravity_label = "g" if gravity_forces else ""
 label = 'm1'
+label_name = label + gravity_label
 # FENIAX:2 ends here
 
 # [[file:modelgen.org::*only-RB modes][only-RB modes:1]]
@@ -24,14 +26,14 @@ inp.engine = "intrinsicmodal"
 inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
 inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
 inp.fem.Ma_name = f"./FEM/Ma_{label}.npy"
-inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
-                     f"./FEM/eigenvecs_{label}.npy"]
+inp.fem.eig_names = [f"./FEM/eigenvalsX_{label}.npy",
+                     f"./FEM/eigenvecsX_{label}.npy"]
 inp.fem.grid = f"./FEM/structuralGrid_{label}"
 inp.fem.num_modes = 6  
 inp.fem.eig_type = "inputs"
 inp.driver.typeof = "intrinsic"
 inp.driver.sol_path= pathlib.Path(
-    f"./results_{label}")
+    f"./results_{label_name}")
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
 inp.system.solution = "dynamic"
@@ -60,10 +62,10 @@ sol = feniax.feniax_main.main(input_obj=config)
 # [[file:modelgen.org::*Multiple cases][Multiple cases:1]]
 RUN_MULTIPLE = True
 if RUN_MULTIPLE:
-    inp.fem.num_modes = 13
+    inp.fem.num_modes = 13 - 2
     vz = [0., 0.2, 0.3, 0.4, 0.5, 0.6]
     for i, vzi in enumerate(vz):
-        label_i = label + f"vz{i}"
+        label_i = label_name + f"vz{i}"
         inp.driver.sol_path= pathlib.Path(
             f"./results_sym{label_i}")
         inp.system.init_states = dict(q1=["nodal_prescribed",
@@ -80,8 +82,8 @@ if RUN_MULTIPLE:
             f"./results_antisym{label_i}")
         inp.system.init_states = dict(q1=["nodal_prescribed",
                                           ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z - omega_y * 1 + vzi, omega_x, omega_y, omega_z],
-                                            [v_x, v_y, v_z + omega_y * 1 - vzi, omega_x, omega_y, omega_z]]
+                                            [v_x, v_y, v_z - omega_y * 1 - vzi, omega_x, omega_y, omega_z],
+                                            [v_x, v_y, v_z + omega_y * 1 + vzi, omega_x, omega_y, omega_z]]
                                            ,)
                                           ]
                                       )

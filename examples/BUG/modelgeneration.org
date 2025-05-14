@@ -2236,6 +2236,40 @@ make gif
   cd -
 #+end_src
 
+** AD
+*** Run
+#+begin_src python :tangle settings_gust1AD.py
+  <<ImportsFeniax>>
+  <<GustMain>>
+  inp.driver.sol_path = pathlib.Path(
+      f"./results/gustAD_{sol}")
+  inp.system.ad = dict(inputs=dict(length = 110.,
+                                   intensity = 20.,
+                                   u_inf=u_inf,
+                                   rho_inf=rho_inf),
+                             input_type="gust1",
+                             grad_type="jacrev",
+                             objective_fun="max",
+                             objective_var="X2",
+                             objective_args=dict(nodes=(13,), components=(0,1,2,3,4,5))
+                             )
+
+  config =  configuration.Config(inp)
+  sol1 = feniax.feniax_main.main(input_obj=config)
+
+#+end_src
+
+
+*** Postprocess
+
+#+NAME: ad
+#+begin_src python :tangle settings_gust1AD.py :results value raw
+  import pandas as pd
+  sol1.dynamicsystem_s1.f_ad
+  df =pd.DataFrame(dict(f=sol1.dynamicsystem_s1.f_ad.reshape(6))|{k:v.reshape(6) for k,v in sol1.dynamicsystem_s1.jac.items()}, index=range(6))
+  df
+#+end_src
+
 ** Sharding
 
 *** Discrete loads
