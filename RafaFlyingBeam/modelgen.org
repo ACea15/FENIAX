@@ -466,8 +466,21 @@ Set model to be run (mi), initial conditions and whether to include gravity forc
   omega_y = 1.
   omega_z = 0.
   gravity_forces = False
-  label = 'm1'  
+  gravity_label = "g" if gravity_forces else ""
+  label = 'm1'
+  label_name = label + gravity_label
 #+end_src
+
+#+begin_src python :tangle no
+  eigens = jnp.load(f"./FEM/eigenvecs_{label}.npy")
+  eigs = jnp.load(f"./FEM/eigenvals_{label}.npy")
+  eigens2 = jnp.delete(eigens, jnp.array([9,10]), 1)
+  eigs2 = jnp.delete(eigs, jnp.array([9,10]))
+  #eigens3 = jnp.delete(eigens2, 9, 1)
+  jnp.save(f"./FEM/eigenvecsX_{label}.npy", eigens2)
+  jnp.save(f"./FEM/eigenvalsX_{label}.npy", eigs2)
+#+end_src
+
 
 ** only-RB modes 
 #+begin_src python
@@ -477,14 +490,14 @@ Set model to be run (mi), initial conditions and whether to include gravity forc
   inp.fem.connectivity = {'rbeam': None, 'lbeam': None}
   inp.fem.Ka_name = f"./FEM/Ka_{label}.npy"
   inp.fem.Ma_name = f"./FEM/Ma_{label}.npy"
-  inp.fem.eig_names = [f"./FEM/eigenvals_{label}.npy",
-                       f"./FEM/eigenvecs_{label}.npy"]
+  inp.fem.eig_names = [f"./FEM/eigenvalsX_{label}.npy",
+                       f"./FEM/eigenvecsX_{label}.npy"]
   inp.fem.grid = f"./FEM/structuralGrid_{label}"
   inp.fem.num_modes = 6  
   inp.fem.eig_type = "inputs"
   inp.driver.typeof = "intrinsic"
   inp.driver.sol_path= pathlib.Path(
-      f"./results_{label}")
+      f"./results_{label_name}")
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
   inp.system.solution = "dynamic"
@@ -533,10 +546,10 @@ For MATLAB postprocessing one can save any of the tensors as:
 #+begin_src python
   RUN_MULTIPLE = True
   if RUN_MULTIPLE:
-      inp.fem.num_modes = 13
+      inp.fem.num_modes = 13 - 2
       vz = [0., 0.2, 0.3, 0.4, 0.5, 0.6]
       for i, vzi in enumerate(vz):
-          label_i = label + f"vz{i}"
+          label_i = label_name + f"vz{i}"
           inp.driver.sol_path= pathlib.Path(
               f"./results_sym{label_i}")
           inp.system.init_states = dict(q1=["nodal_prescribed",
@@ -553,8 +566,8 @@ For MATLAB postprocessing one can save any of the tensors as:
               f"./results_antisym{label_i}")
           inp.system.init_states = dict(q1=["nodal_prescribed",
                                             ([[v_x, v_y, v_z, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z - omega_y * 1 + vzi, omega_x, omega_y, omega_z],
-                                              [v_x, v_y, v_z + omega_y * 1 - vzi, omega_x, omega_y, omega_z]]
+                                              [v_x, v_y, v_z - omega_y * 1 - vzi, omega_x, omega_y, omega_z],
+                                              [v_x, v_y, v_z + omega_y * 1 + vzi, omega_x, omega_y, omega_z]]
                                              ,)
                                             ]
                                         )
