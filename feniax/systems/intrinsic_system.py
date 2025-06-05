@@ -186,7 +186,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
             self.q0 = jnp.zeros(self.settings.num_states)
             if self.settings.init_states is not None:
                 for k, v in self.settings.init_states.items():
-                    if type(v[0]) == "str" and v[0].lower == "prescribed":
+                    if type(v[0]) == str and v[0].lower() == "prescribed":
                         qi0 = jnp.array(v[1])
                         assert len(qi0) == len(
                             self.settings.states[k]
