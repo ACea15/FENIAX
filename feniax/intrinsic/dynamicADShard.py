@@ -24,7 +24,7 @@ def main_20g21_3_3(
         **kwargs,
 ):
     Ka = inputs_ad["Ka"]
-    Ma = inputs_ad["Ka"]
+    Ma = inputs_ad["Ma"]
     eigenvals = inputs_ad[
         "eigenvals"
     ]  # jnp.load(config.fem.folder / config.fem.eig_names[0])
@@ -37,9 +37,14 @@ def main_20g21_3_3(
                                                    Ma=Ma,
                                                    eigenvals=eigenvals,
                                                    eigenvecs=eigenvecs)
-    config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
-    states = config.system.states
+    #config.system.build_states(config.fem.num_modes, config.fem.num_nodes)
     num_modes = config.fem.num_modes
+    states = dict(q1=jnp.arange(num_modes),
+                  q2=jnp.arange(num_modes, 2 * num_modes),
+                  ql=jnp.arange(2 * num_modes,
+                                2 * num_modes +
+                                num_modes*config.system.aero.num_poles)
+                 )#config.system.states
     eta_0 = jnp.zeros(num_modes)
     (A,
      D,
@@ -79,7 +84,8 @@ def main_20g21_3_3(
     #                                )
     #                        )
 
-    @partial(shard_map, mesh=mesh, in_specs=P('x'), out_specs=P())
+    @partial(shard_map, mesh=mesh, in_specs=P('x'), out_specs=P(),
+             check_rep=False)
     def _fshard(inputs):
 
         sol_dict = dynamicShard.main_20g21_3(inputs,
@@ -88,8 +94,10 @@ def main_20g21_3_3(
                                              args=args1)
 
         X2filter = sol_dict['X2'][jnp.ix_(jnp.array([0]), jnp.array(obj_args.t), jnp.array(obj_args.components), jnp.array(obj_args.nodes))]
+        #X2filter = sol_dict['X2']
         X2_max = jnp.max(X2filter, axis=1)
-        return jax.lax.pmean(X2_max, axis_name="x")
+        
+        return jax.lax.pmean(X2_max, axis_name="x"), sol_dict
 
         # output = adcommon._objective_output(
         #     **sol_dict,

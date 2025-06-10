@@ -1,11 +1,12 @@
 import jax.numpy as jnp
-from feniax.drivers.intrinsic_driver import IntrinsicDriver
 from feniax.preprocessor.configuration import Config
 import feniax.intrinsic.objectives as objectives
 import feniax.preprocessor.containers.intrinsicmodal as intrinsicmodal
 import feniax.preprocessor.solution as solution
 from feniax.foragers.forager import Forager
 from feniax.systems.intrinsic_system import IntrinsicSystem
+from abc import abstractmethod
+
 
 class IntrinsicForager(Forager, cls_name="intrinsic_forager"):
     
@@ -15,11 +16,24 @@ class IntrinsicForager(Forager, cls_name="intrinsic_forager"):
                  systems: dict[str, str] = None):
         
         self.config = config
-        self.cforager = config.forager
         self.sol = sol
+        self.systems = systems
+        self.cforager = config.forager.settings        
         self.configs = []
         self.drivers = []
 
+    @abstractmethod
+    def _collect(self):
+        ...
+
+    @abstractmethod
+    def _filter(self):
+        ...
+
+    @abstractmethod
+    def _build(self):
+        ...
+        
     def build_configs(self):
         """ """
 
@@ -29,7 +43,8 @@ class IntrinsicForager(Forager, cls_name="intrinsic_forager"):
 
     def spawn(self):
         """ """
-
+        from feniax.drivers.intrinsic_driver import IntrinsicDriver
+        
         for config_i in self.configs:
             driver_i = IntrinsicDriver(config_i)
             driver_i.pre_simulation()
@@ -38,7 +53,7 @@ class IntrinsicForager(Forager, cls_name="intrinsic_forager"):
             self.drivers.append(driver_i)
 
 class IntrinsicForager_shard2adgust(IntrinsicForager,
-                                    cls_name="intrinsic_shard2adgust"):
+                                    cls_name="forager_shard2adgust"):
     def __init__(
         self,
         config: Config = None,
@@ -46,9 +61,9 @@ class IntrinsicForager_shard2adgust(IntrinsicForager,
         systems: dict[str, IntrinsicSystem] = None,
     ):
         super().__init__(config, sol, systems)
-        self.filtered_indexes = set()
-        self.gathersystem:IntrinsicSystem = None
-        self.field = None
+        self.filtered_indexes = set() # Indexes of interest from previous parallel simulation 
+        self.gathersystem: IntrinsicSystem = None # The system
+        self.field = None  # The field from previous simulation that is going to be analysed (X2 for instance)
         
     def _collect(self):
         """Collects the system1 results to
@@ -56,7 +71,7 @@ class IntrinsicForager_shard2adgust(IntrinsicForager,
         """
         
         gathersystem_name = self.cforager.gathersystem_name
-        objectivefield_name = self.cforager.ad.objective_var
+        objectivefield_name = self.cforager.ad['objective_var']
         self.gathersystem = self.systems[gathersystem_name]
         system1_sol = getattr(self.sol.data,
                               f"dynamicsystem_{gathersystem_name}")
@@ -64,22 +79,23 @@ class IntrinsicForager_shard2adgust(IntrinsicForager,
 
     def _filter(self):
         """
-        Filter the
+        Filter the simulation index t
         """
         # TODO: Generalise
-        nodes = self.cforager.ad.objectiveArgs.nodes
-        components = self.cforager.ad.objectiveArgs.components
+        nodes = self.cforager.ad['objective_args']['nodes']
+        components = self.cforager.ad['objective_args']['components']
         for ni in nodes:
             for ci in components:
                 field_i = self.field[:, :, ni, ci]
                 index = jnp.unravel_index(jnp.argmax(field_i),
                                           field_i.shape)
-                self.filtered_indexes.add(index[0])
+                self.filtered_indexes.add(int(index[0]))
 
     def _build(self):
         """
         Builds configuration objects to launch new simulations
         """
+
         scattersystems_name = self.cforager.scattersystems_name
         for i, fi in enumerate(self.filtered_indexes):
             config = self.config.clone()
@@ -98,7 +114,9 @@ class IntrinsicForager_shard2adgust(IntrinsicForager,
                                               gust_intensity)
             config.system.aero.gust.set_value("length",
                                               gust_length)
-            config.system.ad = self.cforager.ad
+            config.system.ad = intrinsicmodal.DtoAD(**self.cforager.ad,
+                                                    _numtime=len(self.t),
+                                                    _numnodes=self._fem.num_nodes)
             self.configs.append(config)
 
 class IntrinsicMPIForager_shard2adgust(IntrinsicForager,
@@ -120,7 +138,7 @@ class IntrinsicMPIForager_shard2adgust(IntrinsicForager,
         """
         
         gathersystem_name = self.cforager.gathersystem_name
-        objectivefield_name = self.cforager.ad.objective_var
+        objectivefield_name = self.cforager.ad['objective_var']
         self.gathersystem = self.systems[gathersystem_name]
         #TODO: loop through sols and setup fields as iterative
         system1_sol = getattr(self.sol.data,
@@ -132,8 +150,8 @@ class IntrinsicMPIForager_shard2adgust(IntrinsicForager,
         Filter the
         """
         # TODO: Generalise
-        nodes = self.cforager.ad.objectiveArgs.nodes
-        components = self.cforager.ad.objectiveArgs.components
+        nodes = self.cforager.ad['objective_args']['nodes']
+        components = self.cforager.ad['objective_args']['components']
         for ni in nodes:
             for ci in components:
                 #TODO: loop in fields and build tuple 
@@ -165,6 +183,9 @@ class IntrinsicMPIForager_shard2adgust(IntrinsicForager,
                                               gust_intensity)
             config.system.aero.gust.set_value("length",
                                               gust_length)
-            config.system.ad = self.cforager.ad
+            config.system.set_value("ad", intrinsicmodal.DtoAD(_numtime=len(self.gathersystem.t),
+                                                               _numnodes=self.gathersystem._fem.num_nodes,
+                                                    **self.cforager.ad
+                                                    ))
             self.configs.append(config)
             

@@ -33,6 +33,8 @@ class IntrinsicADShardSystem(intrinsic_system.IntrinsicSystem, cls_name="ADShard
     #     super().solve(static_argnames=["config", "f_obj", "obj_args", "mesh"], mesh=self.mesh) # call IntrinsicADSystem.solve
 
     def solve(self, static_argnames=["config", "f_obj", "obj_args", "mesh"], *args, **kwargs):
+        
+        logger.info(f"Running System solution")
         # TODO: option to jit at the end, jit dFq, or not jit at all.
         if True: # not working with diffrax static solver
             fprime = partial(jax.jit, static_argnames=static_argnames)(self.eqsolver(self.dFq, has_aux=True))  # call to jax.grad..etc
@@ -66,7 +68,10 @@ class IntrinsicADShardSystem(intrinsic_system.IntrinsicSystem, cls_name="ADShard
                 *args,
                 **kwargs                
             )
-        self.build_solution(jac, *fout)
+        #import pdb; pdb.set_trace()
+        print(jac)
+        print(self.f_obj)
+        # self.build_solution(jac, self.f_obj, **fout)
         
 class StaticADShardIntrinsic(IntrinsicADShardSystem,
                              intrinsicAD.StaticADIntrinsic,

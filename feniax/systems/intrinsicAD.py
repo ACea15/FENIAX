@@ -74,6 +74,9 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
                 raise ValueError(f"Incorrect solver {self.settings.ad.grad_type}")
 
     def solve(self, static_argnames=["config", "f_obj", "obj_args"], *args, **kwargs):
+        
+        logger.info(f"Running System solution")
+        
         # TODO: option to jit at the end, jit dFq, or not jit at all.
         if True: # not working with diffrax static solver
             fprime = partial(jax.jit, static_argnames=static_argnames)(self.eqsolver(self.dFq, has_aux=True))  # call to jax.grad..etc
@@ -169,7 +172,7 @@ class DynamicADIntrinsic(IntrinsicADSystem, cls_name="dynamicAD_intrinsic"):
             t=self.settings.t,
             Cab=Cab,
             ra=ra,
-            f_ad=objective,
+            f_ad=objective
         )
         if self.settings.save:
             self.sol.save_container("DynamicSystem", label="_" + self.name)

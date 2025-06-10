@@ -1620,7 +1620,7 @@ class Dmultibody(DataContainer):
         self._initialize_attributes()
 
     def build_states(self, fem0: Dfem, system0: Dsystem):
-
+        # TODO: ALL
         states_global = dict()
         states_system = dict()
         num_modes = fem0.num_modes
@@ -1655,7 +1655,8 @@ class Dforager(Dlibrary):
             self,
             "settings",
             initialise_Dclass(
-                **self.settings
+                self.settings,
+                libsettings_class
             ),
         )
         
@@ -1669,15 +1670,15 @@ class Dforager_shard2adgust(DataContainer):
     ad: dict = dfield("", default=None)
     
     def __post_init__(self):
-        libsettings_class = globals()["DtoAD"]
-        object.__setattr__(
-            self,
-            "ad",
-            initialise_Dclass(
-                self.ad,
-                libsettings_class,
-                    ),
-                )
+        # libsettings_class = globals()["DtoAD"]
+        # object.__setattr__(
+        #     self,
+        #     "ad",
+        #     initialise_Dclass(
+        #         self.ad,
+        #         libsettings_class,
+        #             ),
+        #         )
         
         self._initialize_attributes()
         

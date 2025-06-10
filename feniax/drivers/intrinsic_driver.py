@@ -5,6 +5,7 @@ import feniax.systems
 from feniax.drivers.driver import Driver
 from feniax.preprocessor import configuration, solution
 from feniax.ulogger.setup import get_logger
+import feniax.foragers
 
 logger = get_logger(__name__)
 
@@ -62,7 +63,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         
         if hasattr(self._config, "forager"):
             cls_forager = feniax.foragers.factory(
-                f"intrinsic_{self._config.forager.typeof}")
+                f"forager_{self._config.forager.typeof}")
             forager = cls_forager(self._config,
                                   self.sol,
                                   self.systems)

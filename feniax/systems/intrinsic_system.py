@@ -173,6 +173,7 @@ class IntrinsicSystem(System, cls_name="intrinsic"):
         self.args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
         
     def set_eta0(self, eta0=None):
+        logger.info(f"Setting input modal forces (eta) for the system")        
         num_modes = self.fem.num_modes
         if eta0 is None:
             self.eta0 = jnp.zeros(num_modes)

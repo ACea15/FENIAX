@@ -20,6 +20,7 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
 
     def set_args(self):
         label = self.settings.label.split("_")[-1]
+        logger.info(f"Setting arguments for System main function with label {label}")
         solver_args = getattr(argshard, f"arg_{label}")
         self.args1 = solver_args(self.sol, self.settings, self.fem, eta_0=self.eta0)
 
@@ -62,6 +63,7 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
             
     def set_xloading(self):
 
+        logger.info(f"Setting external loads data for the System")                
         shard_type = self.settings.shard.input_type.lower()
         f_shard = getattr(self, f"_set_{shard_type}")
         f_shard()
@@ -70,7 +72,8 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
                          axis_names=('x'))
         
     def solve(self):
-        
+
+        logger.info(f"Running System solution")        
         xshard = jax.device_put(self.xpoints, NamedSharding(self.mesh, P('x')))
 
         results = self.main(xshard,
@@ -83,6 +86,7 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
         self.build_solution(**results)
 
     def build_solution(self):
+        logger.info(f"Building postprocessing fields (strains, velocities, positions, etc.)")       
         self.sol.add_container(
             "Shards",
             label="_" + self.name,
