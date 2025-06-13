@@ -85,7 +85,8 @@ def main_20g21_3_3(
     #                        )
 
     @partial(shard_map, mesh=mesh, in_specs=P('x'), out_specs=P(),
-             check_rep=False)
+             #check_rep=False
+             )
     def _fshard(inputs):
 
         sol_dict = dynamicShard.main_20g21_3(inputs,
@@ -93,11 +94,11 @@ def main_20g21_3_3(
                                              config=config,
                                              args=args1)
 
-        X2filter = sol_dict['X2'][jnp.ix_(jnp.array([0]), jnp.array(obj_args.t), jnp.array(obj_args.components), jnp.array(obj_args.nodes))]
-        #X2filter = sol_dict['X2']
-        X2_max = jnp.max(X2filter, axis=1)
+        #X2filter = sol_dict['X2'][jnp.ix_(jnp.array([0]), jnp.array(obj_args.t), jnp.array(obj_args.components), jnp.array(obj_args.nodes))]
+        X2filter = sol_dict['X2'][:, :, 2, 6]
+        X2_max = jnp.mean(X2filter, axis=1)
         
-        return jax.lax.pmean(X2_max, axis_name="x"), sol_dict
+        return jax.lax.pmean(X2_max, axis_name="x"), 0 #, sol_dict
 
         # output = adcommon._objective_output(
         #     **sol_dict,

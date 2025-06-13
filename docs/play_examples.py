@@ -818,6 +818,50 @@ def dfy(inputs):
 
 d, fd = jax.jacrev(dfy)(y)
 
+#########################################################################
+
+import os
+os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=4"
+
+import jax
+import jax.numpy as jnp
+from jax.experimental.shard_map import shard_map
+from jax.sharding import PartitionSpec as P
+from functools import partial
+
+print(jax.__version__, jax.devices())
+
+mesh = jax.make_mesh((2,), ('i',))
+x = jnp.arange(4., dtype=jnp.float32)
+y = jnp.arange(8.*3, dtype=jnp.float32).reshape((8,3))
+z = jnp.arange(8.*3*2, dtype=jnp.float32).reshape((8,3,2))
+ 
+
+def dfy(inputs_ad, inputs_shard):
+
+    args1 = 2 * inputs_ad
+    def f(y, args):
+        
+        x2 = args ** 2 + y
+        return jnp.max(x2)
+    
+    fvmap = jax.vmap(f)
+    
+    @partial(shard_map, mesh=mesh, in_specs=P('i'), out_specs=(P(), P()),
+             #check_rep=False
+             )
+    def fshard(inputs):
+
+        outputs = fvmap(args1, inputs)
+        return jax.lax.pmean(outputs, axis_name="i"), outputs
+
+    obj, out = fshard(inputs_shard)
+    return obj, out
+
+
+d = jax.jacrev(dfy, has_aux=True)
+d(x,y)
+
 
 ##########################################################################
 ## Inheritance
@@ -896,3 +940,40 @@ d.method()
 D.__mro__
 
 
+##################################################
+
+
+import os
+os.environ["XLA_FLAGS"] = '--xla_force_host_platform_device_count=1'
+from functools import partial
+import jax.numpy as jnp
+from jax.sharding import Mesh, PartitionSpec as P
+from jax.experimental import mesh_utils
+from jax.experimental.shard_map import shard_map
+
+devices = mesh_utils.create_device_mesh((1, ))
+mesh = Mesh(devices, axis_names=('i',))
+
+a = jnp.array(1).reshape(1, 1)
+b = jnp.array(1).reshape(1)
+
+@partial(shard_map, mesh=mesh, in_specs=P('i'), out_specs=P('i'))
+def f(a, b):
+  c = jnp.linalg.solve(a, b)
+  return c
+
+c = f(a, b)
+print(c)
+
+##########################################################
+
+import jax
+import jax.numpy as jnp
+
+@jax.jit
+def f(x):
+    y = jnp.linalg.inv(jnp.eye(len(x)) - x)
+    return y
+
+x = jnp.array([[1,2], [3, 4]])
+y = f(x)

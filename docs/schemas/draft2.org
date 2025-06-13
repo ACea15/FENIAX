@@ -173,7 +173,6 @@ ShardF -> Shard
 
 - Shard AD: shard the inputs, take a function for the output,
   
-
 ** Forager
 
 - run()
@@ -454,7 +453,7 @@ Multibody systems (defined at driver level: [[file:~/projects/FENIAX/feniax/prep
 | 1 static    | Level  | False: "g" | Clamped    | None      | None         | None         | None        | via q2    | 1-quaternion+strains | All -> ""              | None -> ""   |
 | 2 Dynamic   | TRIM1  | True: "G"  | Free       | Rogers    | qalpha       | gust         | follower    | via q1    | All-quaternions      | Linear sys -> "l"      | True -> "r"  |
 | 3 Stability | TRIM2  |            | Prescribed | Loewner   | qx (control) | controls     | dead        |           |                      | Linear sys+disp -> "L" |              |
-| 4 Control   |        |            |            |           |              |              |             |           |                      |                        |              |
+| 4 Control   |        |            |            |           |              |              |             |           |                      | only gamma1  -> "g1"   |              |
 
 | Sol name |                                                 | label                 | Imp |
 |----------+-------------------------------------------------+-----------------------+-----|
