@@ -102,8 +102,8 @@ class Config:
         return cls(yaml_dict)
 
     def clone(self):
-
-        return copy.deepcopy(self)
+        self_dict = serialize_nocomments(self)
+        return Config(self_dict)
 
 class ValidateConfig:
     @staticmethod
@@ -154,7 +154,34 @@ def serialize(obj: Config | DataContainer=None):
                 else:
                     dictionary[k] = [v, " "]
     return dictionary        
-        
+
+def serialize_nocomments(obj: Config | DataContainer=None):
+    dictionary = dict()
+    for k, v in obj.__dict__.items():
+        if isinstance(v, pathlib.Path):
+            v = str(v)
+        if k == "systems":
+            dictionary[k] = dict(sett={})
+            for k2, v2 in obj.systems.mapper.items():
+                dictionary[k]["sett"][k2] = serialize_nocomments(v2)
+            continue
+        # ensure the field is public
+        if k[0] != "_":
+            if isinstance(v, DataContainer):
+                dictionary[k] = serialize_nocomments(v)
+            else:
+                # ensure v is not an uninitialised field, which should not be saved
+                if isinstance(obj, DataContainer):
+                    if (
+                        obj.__dataclass_fields__[k].init
+                        #and obj.__dataclass_fields__[k].metadata["yaml_save"]
+                    ):
+                        dictionary[k] = v 
+                else:
+                    dictionary[k] = v
+
+    return dictionary        
+
 def dump_to_yaml(file_out: str | pathlib.Path, config: Config, with_comments=True):
     yaml = YAML()
     file_out = pathlib.Path(file_out)

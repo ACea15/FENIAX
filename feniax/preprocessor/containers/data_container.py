@@ -11,7 +11,11 @@ class DataContainer:
     #     return super().__new__(cls)
 
     def set_value(self, name, value):
-        self.__setattr__(self, name, value)
+        object.__setattr__(self, name, value)
+
+    def delete_value(self, name):
+        if hasattr(self, name):
+            object.__delattr__(self, name)
         
     @classmethod
     def _initialize_attributes(cls):

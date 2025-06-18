@@ -99,7 +99,8 @@ class IntrinsicForager_shard2adgust(IntrinsicForager,
         scattersystems_name = self.cforager.scattersystems_name
         for i, fi in enumerate(self.filtered_indexes):
             config = self.config.clone()
-            delattr(config, "shard")
+            #delattr(config.system, "shard")
+            config.system.delete_value("shard")
             delattr(config, "forager")
             (rho_inf, u_inf,
              gust_length,
@@ -114,9 +115,10 @@ class IntrinsicForager_shard2adgust(IntrinsicForager,
                                               gust_intensity)
             config.system.aero.gust.set_value("length",
                                               gust_length)
-            config.system.ad = intrinsicmodal.DtoAD(**self.cforager.ad,
-                                                    _numtime=len(self.t),
-                                                    _numnodes=self._fem.num_nodes)
+            config.system.set_value('ad', intrinsicmodal.DtoAD(**self.cforager.ad,
+                                                               _numtime=len(config.system.t),
+                                                               _numnodes=config.system._fem.num_nodes)
+                                    )
             self.configs.append(config)
 
 class IntrinsicMPIForager_shard2adgust(IntrinsicForager,
