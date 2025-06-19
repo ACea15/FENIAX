@@ -1332,11 +1332,11 @@ class Dsystem(DataContainer):
         default=1,
         options=[1, 2],
     )
-    nonlinear: bool = dfield(
+    nonlinear: int = dfield(
         """whether to include the nonlinear terms in the eqs. (Gammas)
         and in the integration""",
         default=1,
-        options=[1, 0, -1, -2],
+        options=[2, 1, 0, -1, -2],
     )
     residualise: bool = dfield(
         "average the higher frequency eqs and make them algebraic", default=False
@@ -1514,6 +1514,8 @@ class Dsystem(DataContainer):
             lmap["nonlinear"] = "l"
         elif self.nonlinear == -2:
             lmap["nonlinear"] = "L"
+        elif self.nonlinear == 2:
+            lmap["nonlinear"] = "gamma1"            
         if self.residualise:
             lmap["residualise"] = "r"
         else:

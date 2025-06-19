@@ -46,6 +46,13 @@ def f_12(omega, gamma1, gamma2, q1, q2):
 
     return F1, F2
 
+@jax.jit
+def f_12gamma1(omega, gamma1, q1, q2):
+    F1 = omega * q2 - contraction_gamma1(gamma1, q1)
+    F2 = -omega * q1
+
+    return F1, F2
+
 
 @jax.jit
 def f_12l(omega, q1, q2):
