@@ -1360,11 +1360,13 @@ class Dsystem(DataContainer):
     def __post_init__(self):
         if self.t is not None:
             object.__setattr__(self, "t", jnp.array(self.t))
-            object.__setattr__(self, "t1", self.t[-1])
+            object.__setattr__(self, "t1", float(self.t[-1]))
+            object.__setattr__(self, "t0", float(self.t[0]))
+            
             if (len_t := len(self.t)) < 2:
                 object.__setattr__(self, "dt", 0.0)
             else:
-                object.__setattr__(self, "dt", self.t[1] - self.t[0])
+                object.__setattr__(self, "dt", float(self.t[1]) - self.t0)
             object.__setattr__(self, "tn", len_t)
         else:
             if self.dt is not None and self.tn is not None:

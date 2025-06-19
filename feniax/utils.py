@@ -75,3 +75,64 @@ def standard_atmosphere(h, k=0.0065, R=287.05, g=9.806, gamma=1.4, T_0=288.16, r
         P = P_11k * psi
         a = np.sqrt(gamma * R * T_11k)
     return T, rho, P, a
+
+def dict_difference(d1, d2):
+    """
+    Remove items in d2 from d1 recursively.
+    """
+    if not isinstance(d1, dict) or not isinstance(d2, dict):
+        return d1
+
+    result = {}
+    for key in d1:
+        if key not in d2:
+            result[key] = d1[key]
+        else:
+            if isinstance(d1[key], dict) and isinstance(d2[key], dict):
+                nested_diff = dict_difference(d1[key], d2[key])
+                if nested_diff:  # Only add non-empty dicts
+                    result[key] = nested_diff
+            elif d1[key] != d2[key]:
+                # If they are different, keep the one from d1
+                result[key] = d1[key]
+
+    return result
+
+def dict_merge(d1, d2):
+    """
+    Recursively merge two dictionaries.
+    - Values from d2 overwrite or merge into d1.
+    """
+    result = dict(d1)  # Make a copy to avoid modifying d1
+    for key, val in d2.items():
+        if (
+            key in result
+            and isinstance(result[key], dict)
+            and isinstance(val, dict)
+        ):
+            result[key] = dict_merge(result[key], val)
+        else:
+            result[key] = val
+    return result
+
+def dict_deletebypath(data, path, sep="."):
+    """
+    Delete a key from a nested dictionary using a dot-separated path.
+    
+    Args:
+        data (dict): The dictionary to delete from.
+        path (str): The dot-separated path to the target key.
+        sep (str): The separator used for the path (default: '.').
+    """
+    keys = path.split(sep)
+    current = data
+    for i, key in enumerate(keys):
+        if i == len(keys) - 1:
+            if key in current:
+                del current[key]
+            else:
+                raise KeyError(f"Key '{key}' not found at path: {path}")
+        else:
+            current = current.get(key)
+            if not isinstance(current, dict):
+                raise KeyError(f"Path invalid at: {sep.join(keys[:i+1])}")

@@ -1,6 +1,7 @@
 import feniax.preprocessor.containers as containers
 from feniax.preprocessor.containers.data_container import DataContainer
 import feniax.preprocessor.utils as utils
+import feniax.utils
 import importlib
 import feniax.preprocessor.inputs as inputs
 import pathlib
@@ -101,8 +102,16 @@ class Config:
         yaml_dict = yaml.load(pathlib.Path(file_dir))
         return cls(yaml_dict)
 
-    def clone(self):
+    def clone(self, add_attr:dict=None, del_attr:str|list=None):
         self_dict = serialize_nocomments(self)
+        if add_attr is not None:
+            self_dict = feniax.utils.dict_merge(self_dict, add_attr)
+        if del_attr is not None:
+            if isinstance(del_attr, str):
+                feniax.utils.dict_deletebypath(self_dict, del_attr)
+            elif isinstance(del_attr, list):
+                for li in del_attr:
+                    feniax.utils.dict_deletebypath(self_dict, li)
         return Config(self_dict)
 
 class ValidateConfig:

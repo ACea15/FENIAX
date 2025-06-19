@@ -6,6 +6,7 @@ import feniax.preprocessor.solution as solution
 from feniax.foragers.forager import Forager
 from feniax.systems.intrinsic_system import IntrinsicSystem
 from abc import abstractmethod
+from feniax.preprocessor.inputs import Inputs
 
 
 class IntrinsicForager(Forager, cls_name="intrinsic_forager"):
@@ -98,27 +99,26 @@ class IntrinsicForager_shard2adgust(IntrinsicForager,
 
         scattersystems_name = self.cforager.scattersystems_name
         for i, fi in enumerate(self.filtered_indexes):
-            config = self.config.clone()
-            #delattr(config.system, "shard")
-            config.system.delete_value("shard")
-            delattr(config, "forager")
             (rho_inf, u_inf,
              gust_length,
              gust_intensity) = self.gathersystem.xpoints[fi]
-            config.system.set_value("name",
-            f"{config.system.name}_{scattersystems_name}{i}")
-            config.system.aero.set_value("rho_inf",
-                                         rho_inf)
-            config.system.aero.set_value("u_inf",
-                                         u_inf)
-            config.system.aero.gust.set_value("intensity",
-                                              gust_intensity)
-            config.system.aero.gust.set_value("length",
-                                              gust_length)
-            config.system.set_value('ad', intrinsicmodal.DtoAD(**self.cforager.ad,
-                                                               _numtime=len(config.system.t),
-                                                               _numnodes=config.system._fem.num_nodes)
-                                    )
+            
+            add2config = Inputs()
+            add2config.system.name = f"{self.config.system.name}_{scattersystems_name}{i}"
+            add2config.system.ad = intrinsicmodal.DtoAD(**self.cforager.ad,
+                                                        _numtime=len(self.config.system.t),
+                                                        _numnodes=self.config.system._fem.num_nodes
+                                                        )
+            add2config.system.aero.rho_inf = rho_inf
+            add2config.system.aero.u_inf = u_inf
+            add2config.system.aero.gust.intensity = gust_intensity
+            add2config.system.aero.gust.length = gust_length
+            config = self.config.clone(add_attr=add2config,
+                                       del_attr=['forager', 'system.shard', 'system.operationalmode'])
+            #delattr(config.system, "shard")
+            #config.system.delete_value("shard")
+            #delattr(config, "forager")
+            
             self.configs.append(config)
 
 class IntrinsicMPIForager_shard2adgust(IntrinsicForager,
