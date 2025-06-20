@@ -12,6 +12,8 @@ import feniax.intrinsic.objectives as objectives
 import feniax.systems.intrinsicAD as intrinsicAD
 import feniax.systems.intrinsicShard as intrinsicShard
 import feniax.systems.intrinsic_system as intrinsic_system
+from jax.sharding import NamedSharding
+from jax.sharding import Mesh, PartitionSpec as P
 
 from functools import partial
 import jax
@@ -37,7 +39,7 @@ class IntrinsicADShardSystem(intrinsic_system.IntrinsicSystem, cls_name="ADShard
         logger.info(f"Running System solution")
         # TODO: option to jit at the end, jit dFq, or not jit at all.
         if True: # not working with diffrax static solver
-            fprime = partial(jax.jit, static_argnames=static_argnames)(self.eqsolver(self.dFq, has_aux=True))  # call to jax.grad..etc
+            fprime = partial(jax.jit, static_argnames=static_argnames)(self.eqsolver(self.dFq, has_aux=False))  # call to jax.grad..etc
         elif False:
             fprime = (self.eqsolver(partial(jax.jit,
                                             static_argnames=static_argnames)(self.dFq),
@@ -57,9 +59,11 @@ class IntrinsicADShardSystem(intrinsic_system.IntrinsicSystem, cls_name="ADShard
                 **kwargs
             )
         else:
+            xshard = jax.device_put(self.xpoints, NamedSharding(self.mesh, P('x')))
             jac, fout = fprime(
                 self.settings.ad.inputs,
-                self.xpoints,
+                xshard,
+                #self.xpoints,
                 mesh=self.mesh,
                 q0=self.q0,
                 config=self.config,
@@ -69,9 +73,9 @@ class IntrinsicADShardSystem(intrinsic_system.IntrinsicSystem, cls_name="ADShard
                 **kwargs                
             )
         #import pdb; pdb.set_trace()
-        print(jac)
-        print(self.f_obj)
-        # self.build_solution(jac, self.f_obj, **fout)
+        #print(jac)
+        #print(self.f_obj)
+        self.build_solution(jac, self.f_obj, **fout)
         
 class StaticADShardIntrinsic(IntrinsicADShardSystem,
                              intrinsicAD.StaticADIntrinsic,
