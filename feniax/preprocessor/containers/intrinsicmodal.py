@@ -1144,6 +1144,9 @@ class DtoAD(DataContainer):
                 _numcomponents=self._numcomponents,
             ),
         )
+        for k, v in self.inputs.items():
+            if isinstance(v, str):
+                self.inputs[k] = jnp.load(v)
         self._initialize_attributes()
 
 class ShardinputType(Enum):

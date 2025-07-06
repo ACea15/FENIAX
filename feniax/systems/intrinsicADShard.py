@@ -39,7 +39,7 @@ class IntrinsicADShardSystem(intrinsic_system.IntrinsicSystem, cls_name="ADShard
         logger.info(f"Running System solution")
         # TODO: option to jit at the end, jit dFq, or not jit at all.
         if True: # not working with diffrax static solver
-            fprime = partial(jax.jit, static_argnames=static_argnames)(self.eqsolver(self.dFq, has_aux=False))  # call to jax.grad..etc
+            fprime = partial(jax.jit, static_argnames=static_argnames)(self.eqsolver(self.dFq, has_aux=True))  # call to jax.grad..etc
         elif False:
             fprime = (self.eqsolver(partial(jax.jit,
                                             static_argnames=static_argnames)(self.dFq),
@@ -60,6 +60,7 @@ class IntrinsicADShardSystem(intrinsic_system.IntrinsicSystem, cls_name="ADShard
             )
         else:
             xshard = jax.device_put(self.xpoints, NamedSharding(self.mesh, P('x')))
+            # import pdb; pdb.set_trace()
             jac, fout = fprime(
                 self.settings.ad.inputs,
                 xshard,
@@ -75,7 +76,7 @@ class IntrinsicADShardSystem(intrinsic_system.IntrinsicSystem, cls_name="ADShard
         #import pdb; pdb.set_trace()
         #print(jac)
         #print(self.f_obj)
-        self.build_solution(jac, self.f_obj, **fout)
+        self.build_solution(jac, **fout)
         
 class StaticADShardIntrinsic(IntrinsicADShardSystem,
                              intrinsicAD.StaticADIntrinsic,
@@ -88,7 +89,7 @@ class StaticADShardIntrinsic(IntrinsicADShardSystem,
         label_ad = self.settings.ad.label
         label_shard = self.settings.shard.label        
         label = f"main_{label_sys}_{label_ad}_{label_shard}"
-        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
+        logger.info(f"Setting {self.__class__.__name__} with label {label}")
         self.dFq = getattr(staticADShard, label)
 
 class DynamicADShardIntrinsic(IntrinsicADShardSystem,
@@ -101,5 +102,5 @@ class DynamicADShardIntrinsic(IntrinsicADShardSystem,
         label_ad = self.settings.ad.label
         label_shard = self.settings.shard.label        
         label = f"main_{label_sys}_{label_ad}_{label_shard}"
-        logger.debug(f"Setting {self.__class__.__name__} with label {label}")
+        logger.info(f"Setting {self.__class__.__name__} with label {label}")
         self.dFq = getattr(dynamicADShard, label)

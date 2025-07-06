@@ -133,7 +133,7 @@ class StaticADIntrinsic(IntrinsicADSystem, cls_name="staticAD_intrinsic"):
         logger.debug(f"Setting {self.__class__.__name__} with label {label}")
         self.dFq = getattr(static_ad, label)
 
-    def build_solution(self, jac, objective, q, X1, X2, X3, ra, Cab, *args, **kwargs):
+    def build_solution(self, jac, objective, q, X2, X3, ra, Cab, *args, **kwargs):
         self.sol.add_container(
             "StaticSystem",
             label="_" + self.name,

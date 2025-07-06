@@ -159,7 +159,13 @@ class StaticShardMapIntrinsic(IntrinsicShardSystem, cls_name="staticShardmap_int
         self.mesh = Mesh(devices=mesh_utils.create_device_mesh((jax.device_count(),)),
                          axis_names=('x'))
         f = getattr(staticShard, self.label)
-        self.main = shard_map(f, mesh=self.mesh, in_specs=P('x'), out_specs=P('x'))
+        #self.main = shard_map(f, mesh=self.mesh, in_specs=P('x'), out_specs=P('x'))
+        self.main = partial(shard_map, mesh=self.mesh, in_specs=P('x'), out_specs=P('x'))(partial(f,
+                                                                                                  q0=self.q0,
+                                                                                                  config=self.config,
+                                                                                                  args=self.args1
+                                                                                                  )
+                                                                                          )
 
     def solve(self):
         

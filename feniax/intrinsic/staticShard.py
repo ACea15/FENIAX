@@ -29,7 +29,7 @@ def main_10g11_1(
     q2_index = config.system.states["q2"]
     X = config.fem.X
     phi2l, psi2l, X_xdelta, C0ab, _dqargs = args
-    
+    #jax.debug.breakpoint()
     # @jax.jit
     def _main_10g11_1(inp):
         
@@ -46,6 +46,7 @@ def main_10g11_1(
 
     main_vmap = jax.vmap(_main_10g11_1)
     results = main_vmap(inputs)
+    # results = _main_10g11_1(inputs)
     return results
 
 #@partial(jax.jit, static_argnames=["config"])
