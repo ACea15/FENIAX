@@ -374,6 +374,17 @@ def arg_20g2(
     return (eta_0, gamma1, gamma2, omega, phi1l, states)
 
 @catter2library
+def arg_20g2l(
+    sol: solution.IntrinsicSolution, system: intrinsicmodal.Dsystem, *args, **kwargs
+):
+    
+    eta_0 = kwargs["eta_0"]
+    omega = sol.data.modes.omega
+    phi1l = sol.data.modes.phi1l    
+    states = system.states
+    return (eta_0, omega, phi1l, states)
+
+@catter2library
 def arg_20g2gamma1(
     sol: solution.IntrinsicSolution, system: intrinsicmodal.Dsystem, *args, **kwargs
 ):

@@ -98,6 +98,20 @@ def dq_20g2(t, q, *args):
     F = jnp.hstack([F1, F2, Fr])
     return F
 
+def dq_20g2l(t, q, *args):
+    """Free structural dynamic no external forces. Linear"""
+
+    (eta_0, omega, phi1l, states) = args[0]
+
+    q1 = q[states["q1"]]
+    q2 = q[states["q2"]]
+    qr = q[states["qr"]]    
+    F1, F2 = common.f_12l(omega, q1, q2)
+    F1 += eta_0
+    Fr = common.f_quaternion(phi1l, q1, qr)
+    F = jnp.hstack([F1, F2, Fr])
+    return F
+
 def dq_20g2gamma1(t, q, *args):
     """Free structural dynamic no external forces."""
 

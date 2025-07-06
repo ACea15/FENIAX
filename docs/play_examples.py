@@ -977,3 +977,41 @@ def f(x):
 
 x = jnp.array([[1,2], [3, 4]])
 y = f(x)
+###########################################################
+
+import jax
+import jax.numpy as jnp
+import os
+os.environ["XLA_FLAGS"] = "--xla_force_host_platform_device_count=4"
+
+# Number of devices (e.g., 4 if you have 4 GPUs)
+num_devices = jax.device_count()
+
+# Total input size (e.g., 32 samples)
+N = 32*3
+N2 = int(N/6)
+data = jnp.arange(N).reshape((N2,2,3))
+
+# Let's assume we want to batch the input so each device gets 8 samples
+assert N2 % num_devices == 0
+batch_per_device = N2 // num_devices
+
+# Reshape into [num_devices, batch_per_device]
+x_sharded = data.reshape((num_devices, batch_per_device)+ data.shape[1:])
+
+# Dummy function to apply to each element
+def process_fn(x):
+    return x ** 2
+
+# Vectorize over batch_per_device
+def per_device_fn(batch):
+    return jax.vmap(process_fn)(batch)
+
+# Apply per_device_fn across all available devices in parallel
+parallel_fn = jax.pmap(per_device_fn)
+
+# Run
+out = parallel_fn(x_sharded)
+print(out.reshape((N2,2,3)))  # Reshape to get back [N] shape
+
+
