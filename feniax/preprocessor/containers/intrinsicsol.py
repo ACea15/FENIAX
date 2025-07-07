@@ -108,6 +108,12 @@ class Shards:
     device_count: int = None
     local_device_count: int = None
 
+@dataclass(slots=True)
+class Forager:
+    filtered_indexes: set = None
+    filtered_values: list = None
+    filtered_map: dict = None        
+    field: jnp.ndarray = None    
     
 # import dataclasses
 # field_types = {field.name: field.type for field in dataclasses.fields(Modes)}

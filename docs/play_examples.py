@@ -847,7 +847,7 @@ def dfy(inputs_ad, inputs_shard):
     
     fvmap = jax.vmap(f)
     
-    @partial(shard_map, mesh=mesh, in_specs=P('i'), out_specs=(P(), P()),
+    @partial(shard_map, mesh=mesh, in_specs=P('i'), out_specs=(P(), P('i')),
              #check_rep=False
              )
     def fshard(inputs):
@@ -858,6 +858,7 @@ def dfy(inputs_ad, inputs_shard):
     obj, out = fshard(inputs_shard)
     return obj, out
 
+obj, out = dfy(x, y)
 
 d = jax.jacrev(dfy, has_aux=True)
 d(x,y)

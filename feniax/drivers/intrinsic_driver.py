@@ -29,7 +29,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
     """
 
-    def __init__(self, config: configuration.Config):
+    def __init__(self, config: configuration.Config, sol=None):
         """
 
         Parameters
@@ -40,7 +40,7 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
         """
         self._config = config
         self.simulation = None
-        self.sol = None
+        self.sol = sol
         self.systems = None
         self.num_systems = 0
         self._set_sol()
@@ -108,7 +108,8 @@ class IntrinsicDriver(Driver, cls_name="intrinsic"):
 
     def _set_sol(self):
         # Configure the solution object
-        self.sol = solution.IntrinsicSolution(self._config.driver.sol_path)
+        if self.sol is None:
+            self.sol = solution.IntrinsicSolution(self._config.driver.sol_path)
 
 class IntrinsicMPIDriver(Driver, cls_name="intrinsicMPI"):
     """Driver for the modal intrinsic theory

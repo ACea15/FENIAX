@@ -6,7 +6,7 @@ from feniax.intrinsic.functions import H0, H1, H0_t, H1_t, H0l, H1l, H0l_t, H1l_
 
 def compute_velocities(phi1l: jnp.ndarray, q1: jnp.ndarray) -> jnp.ndarray:
     X1 = jnp.tensordot(phi1l, q1, axes=(0, 1))  # 6xNnxNt
-    return X1.transpose((2, 0, 1))
+    return X1.transpose((2, 0, 1)) # Ntx6xNn
 
 
 def compute_internalforces(phi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:

@@ -86,17 +86,17 @@ class IntrinsicShardSystem(IntrinsicSystem, cls_name="Shard_intrinsic"):
         self.build_solution(**results)
 
     def build_solution(self):
-        logger.info(f"Building postprocessing fields (strains, velocities, positions, etc.)")       
-        self.sol.add_container(
-            "Shards",
-            label="_" + self.name,
-            points=self.xpoints,
-            device_count=jax.device_count(),
-            local_device_count=jax.local_device_count()
-        )
-        if self.settings.save:
-            self.sol.save_container("Shards", label="_" + self.name)
         
+        logger.info(f"Building postprocessing fields (strains, velocities, positions, etc.)")
+        if self.settings.save:
+            self.sol.add_container(
+                "Shards",
+                label="_" + self.name,
+                points=self.xpoints,
+                device_count=jax.device_count(),
+                local_device_count=jax.local_device_count()
+            )            
+
 class StaticShardIntrinsic(IntrinsicShardSystem, cls_name="staticShard_intrinsic"):
     
     def set_system(self):
