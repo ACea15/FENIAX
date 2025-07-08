@@ -75,21 +75,21 @@ def main_10g11_3_1(
 
         #X2filter = sol_dict['X2'][jnp.ix_(jnp.array([0]), jnp.array(obj_args.t), jnp.array(obj_args.components), jnp.array(obj_args.nodes))]
         #X2_max = jnp.max(X2filter, axis=1)
-        ra = sol_dict['ra'][:,-1, 2, 35]
+        #ra = sol_dict['ra'][:,-1, 2, 35]
         #ra = sol_dict['ra'][-1, 2, 35]
-        sol_out = sol_dict | dict(objective=ra)
-        return jax.lax.pmean(ra, axis_name="x"), sol_out #, sol_dict #jnp.mean(ra, axis=0), sol_out #jax.lax.pmean(ra, axis_name="x"), sol_out
+        #sol_out = sol_dict | dict(objective=ra)
+        #return jax.lax.pmean(ra, axis_name="x"), sol_out #, sol_dict #jnp.mean(ra, axis=0), sol_out #jax.lax.pmean(ra, axis_name="x"), sol_out
 
-        # output = adcommon._objective_output(
-        #     **sol_dict,
-        #     f_obj=f_obj,
-        #     nodes=jnp.array(obj_args.nodes),
-        #     components=jnp.array(obj_args.components),
-        #     t=jnp.array(obj_args.t),
-        #     axis=obj_args.axis,
-        # )
+        output = adcommon._objective_output(
+            sol_dict,
+            f_obj=f_obj,
+            nodes=jnp.array(obj_args.nodes),
+            components=jnp.array(obj_args.components),
+            t=jnp.array(obj_args.t),
+            axis=obj_args.axis,
+        )
 
-        # return output
+        return output
         
     # Number of devices (e.g., 4 if you have 4 GPUs)
     num_devices = jax.device_count()
@@ -101,6 +101,7 @@ def main_10g11_3_1(
     
     #obj, f_out = _fshard(inputs_shard)
     obj0, f_out0  = jax.pmap(_fshard, axis_name='x')(inputs_shard_reshaped)
+    #TODO: generalise
     obj = jnp.mean(obj0[0])
     f_out = jax.tree.map(lambda xin: xin.reshape((inputs_shape[0],) + xin.shape[2:]), f_out0)
     #return (obj[0], 0)

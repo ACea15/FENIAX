@@ -1,5 +1,5 @@
-import jax.numpy as jnp
 import jax
+import jax.numpy as jnp
 from functools import partial
 import feniax.systems.sollibs as sollibs
 import feniax.intrinsic.ad_common as adcommon
@@ -93,12 +93,13 @@ def main_20g21_3_3(
                                              q0=q0,
                                              config=config,
                                              args=args1)
-
         #X2filter = sol_dict['X2'][jnp.ix_(jnp.array([0]), jnp.array(obj_args.t), jnp.array(obj_args.components), jnp.array(obj_args.nodes))]
-        X2filter = sol_dict['X2'][:, :, 2, 6]
-        X2_max = jnp.mean(X2filter, axis=1)
-        
-        return jax.lax.pmean(X2_max, axis_name="x"), 0 #, sol_dict
+        X2filter = sol_dict['q']
+        X2_max = jnp.mean(X2filter[:,:, 0], axis=1)
+        #import jax.debug; jax.debug.breakpoint()
+        #import jax
+        pmean = jax.lax.pmean(X2_max, axis_name="x")
+        return  pmean #, sol_dict
 
         # output = adcommon._objective_output(
         #     **sol_dict,
@@ -111,12 +112,14 @@ def main_20g21_3_3(
 
         # return output        
 
-    obj, f_out = _fshard(inputs_shard)
+    #obj, f_out = _fshard(inputs_shard)
+    obj = _fshard(inputs_shard)
     #obj = jnp.max(obj0, axis=0)
+    #import jax.numpy as jnp    
     # x2max = jnp.max(jnp.abs(f_out[3][:,:,:,11]), axis=1)
     # x2max2 = jnp.max(x2max, axis=0)
-    # jax.debug.breakpoint()
-    return (obj, f_out)
+    #jax.debug.breakpoint()
+    return obj #(obj, f_out)
 
     # sol_dict= main_shard(
     #     inputs_shard,

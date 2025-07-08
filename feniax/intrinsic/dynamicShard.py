@@ -142,11 +142,11 @@ def main_20g21_3(
         tn = len(q)
         # X2, X3, ra, Cab = isys.recover_staticfields(q2, tn, X,
         #                                        phi2l, psi2l, X_xdelta, C0ab, config.fem)
-        X1, X2, X3, ra, Cab = isys.recover_fields(
-            q1, q2, tn, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config
-            )
+        # X1, X2, X3, ra, Cab = isys.recover_fields(
+        #     q1, q2, tn, X, phi1l, phi2l, psi2l, X_xdelta, C0ab, config
+        #     )
 
-        return dict(q=q, X1=X1,X2=X2, X3=X3, ra=ra, Cab=Cab)
+        return dict(q=q, X2=q) #dict(q=q, X1=X1,X2=X2, X3=X3, ra=ra, Cab=Cab)
 
     main_vmap = jax.vmap(_main_20g21_3)
     results = main_vmap(inputs)

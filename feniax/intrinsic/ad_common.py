@@ -283,8 +283,8 @@ def _get_gust(input_dict, q_inf, c_ref, config):
 
 
 #@partial(jax.jit, static_argnames=["f_obj"])
-def _objective_output(q, X1, X2, X3, ra, Cab, f_obj, *args, **kwargs):
-    obj = f_obj(X1=X1, X2=X2, X3=X3, ra=ra, Cab=Cab, **kwargs)
+def _objective_output(sol_dict, f_obj, *args, **kwargs):
+    obj = f_obj(**sol_dict, **kwargs)
     #objective = jnp.hstack(jnp.hstack(obj))
     # objective = f_obj(X1=X1, X2=X2, X3=X3, ra=ra, Cab=Cab, axis=axis, **kwargs)
     # lax cond or select not working here as both branches are evaluated.
@@ -294,5 +294,5 @@ def _objective_output(q, X1, X2, X3, ra, Cab, f_obj, *args, **kwargs):
     #                          lambda x : jnp.hstack(x),
     #                          lambda x : x, obj)
     #f_out = (objective, q, X1, X2, X3, ra, Cab)
-    f_out = (obj, q, X1, X2, X3, ra, Cab)
+    f_out = sol_dict | dict(objective=obj)
     return (obj, f_out)

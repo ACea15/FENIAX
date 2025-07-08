@@ -33,12 +33,7 @@ def main_20g11_1(
     Cab = sol_dict.get("Cab")
     
     return adcommon._objective_output(
-        q=q,
-        X1=X1,
-        X2=X2,
-        X3=X3,
-        ra=ra,
-        Cab=Cab,
+        sol_dict,
         f_obj=f_obj,
         nodes=jnp.array(obj_args.nodes),
         components=jnp.array(obj_args.components),
@@ -83,12 +78,7 @@ def main_20g11_3(
     Cab = sol_dict.get("Cab")
     
     return adcommon._objective_output(
-        q=q,
-        X1=X1,
-        X2=X2,
-        X3=X3,
-        ra=ra,
-        Cab=Cab,
+        sol_dict,
         f_obj=f_obj,
         nodes=jnp.array(obj_args.nodes),
         components=jnp.array(obj_args.components),
@@ -126,12 +116,7 @@ def main_20g21_2(
     Cab = sol_dict.get("Cab")
 
     return adcommon._objective_output(
-        q=q,
-        X1=X1,
-        X2=X2,
-        X3=X3,
-        ra=ra,
-        Cab=Cab,
+        sol_dict,        
         f_obj=f_obj,
         nodes=jnp.array(obj_args.nodes),
         components=jnp.array(obj_args.components),
@@ -174,12 +159,7 @@ def main_20g21_3(
     Cab = sol_dict.get("Cab")
 
     return adcommon._objective_output(
-        q=q,
-        X1=X1,
-        X2=X2,
-        X3=X3,
-        ra=ra,
-        Cab=Cab,
+        sol_dict,        
         f_obj=f_obj,
         nodes=jnp.array(obj_args.nodes),
         components=jnp.array(obj_args.components),
@@ -217,12 +197,7 @@ def main_20g546_2(
     Cab = sol_dict.get("Cab")
 
     return adcommon._objective_output(
-        q=q,
-        X1=X1,
-        X2=X2,
-        X3=X3,
-        ra=ra,
-        Cab=Cab,
+        sol_dict,        
         f_obj=f_obj,
         nodes=jnp.array(obj_args.nodes),
         components=jnp.array(obj_args.components),
@@ -265,12 +240,7 @@ def main_20g546_3(
     Cab = sol_dict.get("Cab")
 
     return adcommon._objective_output(
-        q=q,
-        X1=X1,
-        X2=X2,
-        X3=X3,
-        ra=ra,
-        Cab=Cab,
+        sol_dict,        
         f_obj=f_obj,
         nodes=jnp.array(obj_args.nodes),
         components=jnp.array(obj_args.components),

@@ -106,7 +106,7 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
                 *args,
                 **kwargs                
             )
-        self.build_solution(jac, *fout)
+        self.build_solution(jac, **fout)
 
     def save(self):
         pass

@@ -66,7 +66,6 @@ def X2_PMAX(X2, nodes, components, t, axis=None, *args, **kwargs):
     X2_max = jnp.max(X2filter, axis=axis)
     return jax.lax.pmean(X2_max, axis_name="x")
 
-
 @name
 # @partial(jax.jit, static_argnames=["axis"])
 def X2_PMIN(X2, nodes, components, t, axis=None, *args, **kwargs):
@@ -75,7 +74,6 @@ def X2_PMIN(X2, nodes, components, t, axis=None, *args, **kwargs):
     axis += 1
     X2_min = jnp.min(X2[jnp.ix_(t, components, nodes)], axis=axis)
     return jax.lax.pmin(X2_min, axis_name="x")
-
 
 @name
 def ra_VAR(ra, nodes, components, t, *args, **kwargs):
@@ -87,12 +85,20 @@ def ra_VAR(ra, nodes, components, t, *args, **kwargs):
 def ra_MAX(ra, nodes, components, t, axis=None, *args, **kwargs):
     return jnp.max(ra[jnp.ix_(t, components, nodes)], axis=axis)
 
-
 @name
 # @partial(jax.jit, static_argnames=["axis"])
 def ra_MIN(ra, nodes, components, t, axis=None, *args, **kwargs):
     return jnp.min(ra[jnp.ix_(t, components, nodes)], axis=axis)
 
+@name
+# @partial(jax.jit, static_argnames=["axis"])
+def ra_MEAN(ra, nodes, components, t, axis=None, *args, **kwargs):
+    return jnp.mean(ra[jnp.ix_(t, components, nodes)], axis=axis)
+
+@name
+# @partial(jax.jit, static_argnames=["axis"])
+def ra_PMEAN(ra, nodes, components, t, axis=None, *args, **kwargs):
+    return jax.lax.pmean(ra[jnp.ix_(t, components, nodes)], axis_name="x")
 
 @name
 # @partial(jax.jit, static_argnames=["axis"])
@@ -102,7 +108,6 @@ def ra_PMAX(ra, nodes, components, t, axis=None, *args, **kwargs):
     axis += 1
     ra_max = jnp.max(ra[jnp.ix_(t, components, nodes)], axis=axis)
     return jax.lax.pmax(ra_max, axis_name="x")
-
 
 @name
 # @partial(jax.jit, static_argnames=["axis"])
