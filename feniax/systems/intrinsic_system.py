@@ -336,16 +336,18 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             self.sol.data.modes.C0ab,
             self.config,
         )
+
+        self.sol.add_container(
+            "StaticSystem",
+            label="_" + self.name,
+            q=self.qs,
+            X2=X2,
+            X3=X3,
+            Cab=Cab,
+            ra=ra,
+        )
         if self.settings.save:
-            self.sol.add_container(
-                "StaticSystem",
-                label="_" + self.name,
-                q=self.qs,
-                X2=X2,
-                X3=X3,
-                Cab=Cab,
-                ra=ra,
-            )
+            self.sol.save_container("StaticSystem", label="_" + self.name)
 
     def build_solution_loop(self):
         """
@@ -370,17 +372,19 @@ class StaticIntrinsic(IntrinsicSystem, cls_name="static_intrinsic"):
             X3.append(X3t)
             Cab.append(Cabt)
             ra.append(rat)
-        if self.settings.save:
 
-            self.sol.add_container(
-                "StaticSystem",
-                label="_" + self.name,
-                q=self.qs,
-                X2=jnp.array(X2),
-                X3=jnp.array(X3),
-                Cab=jnp.array(Cab),
-                ra=jnp.array(ra),
-            )
+        self.sol.add_container(
+            "StaticSystem",
+            label="_" + self.name,
+            q=self.qs,
+            X2=jnp.array(X2),
+            X3=jnp.array(X3),
+            Cab=jnp.array(Cab),
+            ra=jnp.array(ra),
+        )
+        if self.settings.save:
+            self.sol.save_container("StaticSystem", label="_" + self.name)
+
 
 class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
     
@@ -438,17 +442,18 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
             X3.append(X3t)
             Cab.append(Cabt)
             ra.append(rat)
-            
+
+        self.sol.add_container(
+            "DynamicSystem",
+            label="_" + self.name,
+            q=self.qs,
+            X2=jnp.array(X2),
+            X3=jnp.array(X3),
+            Cab=jnp.array(Cab),
+            ra=jnp.array(ra),
+        )
         if self.settings.save:
-            self.sol.add_container(
-                "DynamicSystem",
-                label="_" + self.name,
-                q=self.qs,
-                X2=jnp.array(X2),
-                X3=jnp.array(X3),
-                Cab=jnp.array(Cab),
-                ra=jnp.array(ra),
-            )
+            self.sol.save_container("DynamicSystem", label="_" + self.name)
 
     def build_solution(self):
         # q1_index = self.settings.states['q1']
@@ -499,15 +504,16 @@ class DynamicIntrinsic(IntrinsicSystem, cls_name="dynamic_intrinsic"):
             self.sol.data.modes.C0ab,
             self.config,
         )
-        if self.settings.save:        
-            self.sol.add_container(
-                "DynamicSystem",
-                label="_" + self.name,
-                q=self.qs,
-                X1=X1,
-                X2=X2,
-                X3=X3,
-                Cab=Cab,
-                ra=ra,
-                t=self.settings.t,
-            )
+        self.sol.add_container(
+            "DynamicSystem",
+            label="_" + self.name,
+            q=self.qs,
+            X1=X1,
+            X2=X2,
+            X3=X3,
+            Cab=Cab,
+            ra=ra,
+            t=self.settings.t,
+        )
+        if self.settings.save:
+            self.sol.save_container("DynamicSystem", label="_" + self.name)
