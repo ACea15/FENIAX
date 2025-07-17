@@ -137,8 +137,9 @@ def df_modes(sol, config):
     with st.expander("See Modes data-frame"):
         st.table(df)
     st.divider()
+    component = col2.selectbox("Select Mode component", options=[0,3])
     fig = modes_3Dconfiguration(
-        mode=mvalue[mnumber] * scale, config=config, mode_label=mname, settings=None
+        mode=mvalue[mnumber] * scale, config=config, mode_label=mname, settings=None, coord=component
     )
     # breakpoint()
     st.plotly_chart(fig, use_container_width=False)
@@ -859,13 +860,13 @@ def systems_shard(sol_shard, config_shard, sol=None, config=None):
                 #     sys_3Dconfiguration_pv(selected_solsys, config_shard)
                 
 
-def modes_3Dconfiguration(mode, config, mode_label, settings=None):
+def modes_3Dconfiguration(mode, config, mode_label, settings=None,coord=0):
     icomp = putils.IntrinsicStructComponent(config.fem)
     label = f"{mode_label}"
     if "2" in label:
-        mode2plot = jnp.column_stack([jnp.zeros(3), mode[:3, 1:]]) + +config.fem.X.T
+        mode2plot = jnp.column_stack([jnp.zeros(3), mode[coord:3+coord, 1:]]) + +config.fem.X.T
     else:
-        mode2plot = mode[:3] + config.fem.X.T
+        mode2plot = mode[coord:3+coord] + config.fem.X.T
     icomp.add_solution(mode2plot, label_final=label)
     if settings is None:
         settings = {}

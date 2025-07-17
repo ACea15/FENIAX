@@ -1,10 +1,10 @@
-from pyNastran.bdf.bdf import BDF
-from pyNastran.op2.op2 import OP2
-import pyNastran.op4.op4 as op4
-from pyNastran.f06 import parse_flutter as flut
+# from pyNastran.bdf.bdf import BDF
+# from pyNastran.op2.op2 import OP2
+# import pyNastran.op4.op4 as op4
+# from pyNastran.f06 import parse_flutter as flut
 import pathlib
 import subprocess
-from pyNastran.f06 import parse_flutter as flutter
+# from pyNastran.f06 import parse_flutter as flutter
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
