@@ -98,7 +98,13 @@ def ra_MEAN(ra, nodes, components, t, axis=None, *args, **kwargs):
 @name
 # @partial(jax.jit, static_argnames=["axis"])
 def ra_PMEAN(ra, nodes, components, t, axis=None, *args, **kwargs):
-    return jax.lax.pmean(ra[jnp.ix_(t, components, nodes)], axis_name="x")
+
+    pmean_ra = jax.lax.pmean(ra, axis_name="x")
+    return pmean_ra
+    
+    # reduced_ra = pmean_ra[0]
+    # out_ra = reduced_ra[jnp.ix_(t, components, nodes)]
+    # return out_ra 
 
 @name
 # @partial(jax.jit, static_argnames=["axis"])
