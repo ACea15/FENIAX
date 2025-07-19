@@ -13,9 +13,9 @@ v_z = 0.
 omega_x = 0.
 omega_y = 1.
 omega_z = 0.
-gravity_forces = True
+gravity_forces = False
 gravity_label = "g" if gravity_forces else ""
-label = 'm1'
+label = 'm8'
 label_name = label + gravity_label
 # FENIAX:2 ends here
 

@@ -33,23 +33,24 @@ if len(selected_shardfolders) > 0:
     st.session_state['Csolshard'] = Csolshard
     st.session_state['Cconfigshard'] = Cconfigshard
     
-    selected_folders = sti.multifolder_selector('../')
-    if len(selected_folders) > 0:
-        for si in selected_folders:
-            #st.write('Solution Folder `%s`' % solfolder)
-            sol = solution.IntrinsicReader(si)
-            config = configuration.Config.from_file(f"{si}/config.yaml")
-            Csol[si.name] = sol
-            Cconfig[si.name] = config
-        st.session_state['Csol'] = Csol
-        st.session_state['Cconfig'] = Cconfig
+    #selected_folders = sti.multifolder_selector('../')
+    # if len(selected_folders) > 0:
+    #     for si in selected_folders:
+    #         #st.write('Solution Folder `%s`' % solfolder)
+    #         sol = solution.IntrinsicReader(si)
+    #         config = configuration.Config.from_file(f"{si}/config.yaml")
+    #         Csol[si.name] = sol
+    #         Cconfig[si.name] = config
+    #     st.session_state['Csol'] = Csol
+    #     st.session_state['Cconfig'] = Cconfig
         
-        sti.systems_shard(st.session_state['Csolshard'],
-                          st.session_state['Cconfigshard'],
-                          st.session_state['Csol'],
-                          st.session_state['Cconfig'])
-    else:
-        sti.systems_shard(st.session_state['Csolshard'],
-                          st.session_state['Cconfigshard'])        
+    sti.systems_shard(st.session_state['Csolshard'],
+                      st.session_state['Cconfigshard'],
+                      #st.session_state['Csol'],
+                      #st.session_state['Cconfig']
+                      )
+    # else:
+    #     sti.systems_shard(st.session_state['Csolshard'],
+    #                       st.session_state['Cconfigshard'])        
         
 #sti.systems(st.session_state.sol, st.session_state.config)
