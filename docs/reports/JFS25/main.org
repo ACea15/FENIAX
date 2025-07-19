@@ -1,5 +1,5 @@
 # Differentiable and Nonlinear Aircraft Loads at Large Scale Using an Accelerator-Based Concurrent Solution
-#+TITLE: Fully Differentiable Nonlinear Aircraft Loads at Large Scale Using a GPU-Based Concurrent Solution 
+#+TITLE: End-to-End Differentiable Aircraft Loads at Large Scale via Concurrent Simulations
 # A Concurrent Accelerator-Based Framework for Differentiable and Nonlinear Aircraft Loads at Scale
 # Differentiable-Parallel Aircraft Nonlinear Loads at Large Scale Using an Accelerator-Based Solution
 #+AUTHOR: Alvaro Cea\footnote{Research Associate, CAGB 308, South Kensington Campus. (alvaro.cea-esteban15@imperial.ac.uk)}, Rafael Palacios\footnote{Professor in Computational Aeroelasticity, CAGB 310, South Kensington Campus. AIAA Associate Fellow (r.palacios@imperial.ac.uk)}
@@ -154,6 +154,11 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
 
 - Models run on this exercise:
 
+  
+
+
+
+
 * Plotting :noexport: 
 :PROPERTIES:
 :header-args:  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
@@ -185,6 +190,7 @@ The key features of the formulation are:
 - Maximum performance: as a combination of a highly optimised and vectorised codebase, numerical library JAX with its JIT compiler and accelerator capabilities  driving the calculations, and the newly added added parallelisation of load cases.
 - Differentiation and sensitivity analysis: using JAX algorithmic differentiation toolbox, the entire process, from inputs to aeroelastic outputs can be differentiated [[cite:&CEA2024a]].
 
+  
 ** Nonlinear aeroelastic system
 Given a general GFEM, a reduced model is obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$. A projection of the state variables, velocities $\pmb{x}_1 = \pmb{\Phi}_1\pmb{q}_1$ and stresses $\pmb{x}_2 = \pmb{\Phi}_2\pmb{q}_2$, and a Galerkin projection of the equations of motion leads to the system of ODEs that is solved in time domain. 
 Aerodynamic forces are obtained via Generalised Aerodynamic Forces (GAFs) using a panel-based DLM solver and Roger's rational function approximation[[cite:&Roger1977]] to bring the forces to the time domain, resulting in a modal force component given as:
@@ -314,7 +320,8 @@ In this section we show the main strengths of our solvers to: a) run a represent
 The University of Bristol Ultra-Green (BUG) aircraft model [[cite:&STODIECK2018]] is the chosen platform to demonstrate these capabilities as it showcases high-aspect ratio wings that are built using a representative GFEM of current industrial models and it is not based on proprietary data. The main components of the aeroelastic model have been presented in 
 
 Structural and aeroelastic static simulations follow, all solved via a Newton-Raphson solver with tolerance of $10^{-6}$, as well as an assessment of the aircraft dynamics in response to a gust. 
-Calculations are carried out on a CPU Intel Xeon Silver 4108 with 1.80GHz speed, 6 cores and a total 12 threads, as well as on an Nvidia GPU A100 80GB SXM. 
+Calculations are carried out on a CPU Intel Xeon Silver 4108 with 1.80GHz speed, 6 cores and a total 12 threads, as well as on an Nvidia GPU A100 80GB SXM.
+
 ** Uncertainty quantification of nonlinear response
 uncertainty quantification is performed to the nonlinear response to a loading field that is non-deterministic. Hundreds to thousands of simulations are employed in Monte Carlo type of analysis to resolve for the statistics, for which parallelisation of the independent simulations become critical.
 The example resembles the workflow of flight loads and wing stress analysis in an industrial setup.
