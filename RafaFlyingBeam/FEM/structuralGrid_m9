@@ -1,0 +1,22 @@
+# VARIABLES = x y z fe_order components
+0.0 0.0 0.0 0 rbeam
+0.1 0.0 0.0 3 rbeam
+0.2 0.0 0.0 4 rbeam
+0.3 0.0 0.0 5 rbeam
+0.4 0.0 0.0 6 rbeam
+0.5 0.0 0.0 7 rbeam
+0.6 0.0 0.0 8 rbeam
+0.7 0.0 0.0 9 rbeam
+0.8 0.0 0.0 10 rbeam
+0.9 0.0 0.0 11 rbeam
+1.0 0.0 0.0 1 rbeam
+-0.1 0.0 0.0 12 lbeam
+-0.2 0.0 0.0 13 lbeam
+-0.3 0.0 0.0 14 lbeam
+-0.4 0.0 0.0 15 lbeam
+-0.5 0.0 0.0 16 lbeam
+-0.6 0.0 0.0 17 lbeam
+-0.7 0.0 0.0 18 lbeam
+-0.8 0.0 0.0 19 lbeam
+-0.9 0.0 0.0 20 lbeam
+-1.0 0.0 0.0 2 lbeam

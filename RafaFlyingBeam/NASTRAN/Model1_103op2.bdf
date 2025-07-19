@@ -9,3 +9,15 @@ EIGRL,900,,,18
 PARAM,POST,-1
 INCLUDE 'model1.bdf'
 ENDDATA
+
+SOL 103
+CEND
+TITLE=Rafa's flying beam model #                                 
+ECHO=NONE                      	  
+DISPLACEMENT=ALL
+METHOD = 900
+BEGIN BULK
+EIGRL,900,,,18
+PARAM,POST,-1
+INCLUDE 'model1.bdf'
+ENDDATA
