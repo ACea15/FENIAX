@@ -1,12 +1,6 @@
-# Differentiable and Nonlinear Aircraft Loads at Large Scale Using an Accelerator-Based Concurrent Solution
 #+TITLE: End-to-End Differentiable Aircraft Loads at Large Scale via Concurrent Simulations
-# A Concurrent Accelerator-Based Framework for Differentiable and Nonlinear Aircraft Loads at Scale
-# Differentiable-Parallel Aircraft Nonlinear Loads at Large Scale Using an Accelerator-Based Solution
 #+AUTHOR: Alvaro Cea\footnote{Research Associate, CAGB 308, South Kensington Campus. (alvaro.cea-esteban15@imperial.ac.uk)}, Rafael Palacios\footnote{Professor in Computational Aeroelasticity, CAGB 310, South Kensington Campus. AIAA Associate Fellow (r.palacios@imperial.ac.uk)}
 
-# \author{Alvaro Cea\footnote{Research Associate, Department of Aeronautics, CAGB 308, South Kensington Campus. (alvaro.cea-esteban15@imperial.ac.uk)}}
-# \author{Rafael Palacios\footnote{Professor in Computational Aeroelasticity, Department of Aeronautics and Brahmal Vasudevan Institute for Sustainable Aviation, CAGB 310, South Kensington Campus. AIAA Associate Fellow (r.palacios@imperial.ac.uk)}}
-# \affil{Imperial College London, SW7 2AZ, United Kingdom}
 
 #+DATE:
 :LATEX_PROPERTIES:
@@ -63,7 +57,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
   ;; Veval_blocks_run -> eval blocks to obtain results
   (setq Veval_blocks "yes") ;; yes, no, no-export 
   (setq Veval_blocks_run "no")
-  (setq pythonShell "py1org")
+  (setq pythonShell "pyJFS25")
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
 #+end_src
@@ -118,12 +112,99 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
   import feniax.unastran.op2reader as op2reader
   import feniax.plotools.nastranvtk.bdfdef as bdfdef
   from tabulate import tabulate
+#+end_src
 
+** Helper functions
+
+#+begin_comment
+https://plotly.com/python/subplots/
+#+end_comment
+
+*** Common functions
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+
+  scale_quality = 6
+  print(f"Format for figures: {figfmt}")
+  print(f"Image quality: {scale_quality}")  
+  def fig_out(name, figformat=figfmt, update_layout=None):
+      def inner_decorator(func):
+          def inner(*args, **kwargs):
+              fig = func(*args, **kwargs)
+              if update_layout is not None:
+                  fig.update_layout(**update_layout)
+              fig.show()
+              figname = f"figs/{name}.{figformat}"
+              fig.write_image(f"../{figname}", scale=scale_quality)
+              return fig, figname
+          return inner
+      return inner_decorator
+
+  def fig_background(func):
+
+      def inner(*args, **kwargs):
+          fig = func(*args, **kwargs)
+          # if fig.data[0].showlegend is None:
+          #     showlegend = True
+          # else:
+          #     showlegend = fig.data[0].showlegend
+
+          fig.update_xaxes(
+                         titlefont=dict(size=20),
+                         tickfont = dict(size=20),
+                         mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+              #zeroline=True,
+          #zerolinewidth=2,
+              #zerolinecolor='LightPink',
+                         gridcolor='lightgrey')
+          fig.update_yaxes(tickfont = dict(size=20),
+                         titlefont=dict(size=20),
+                         zeroline=True,
+                         mirror=True,
+                         ticks='outside',
+                         showline=True,
+                         linecolor='black',
+                         gridcolor='lightgrey')
+          fig.update_layout(plot_bgcolor='white',
+                            yaxis=dict(zerolinecolor='lightgrey'),
+                            showlegend=True, #showlegend,
+                            margin=dict(
+                                autoexpand=True,
+                                l=0,
+                                r=0,
+                                t=2,
+                                b=0
+                            ))
+          return fig
+      return inner
+
+  @fig_background
+  def plot_manoeuvre(aoa, ua, ua_lin):
+      fig=None
+      colors = ["steelblue", "black"]
+      dashes = ["solid", "dash"]
+      fig = uplotly.lines2d(aoa, ua, fig,
+      dict(name=f"Nonlinear",
+      line=dict(color=colors[0],
+      dash=dashes[0])
+      ))
+      fig = uplotly.lines2d(aoa, ua, fig,
+      dict(name=f"Linear",
+      line=dict(color=colors[1],
+      dash=dashes[1])
+      ))
+
+      fig.update_yaxes(title=r'$\large u_{%s}$')
+      fig.update_xaxes(#range=aoa,
+      title=r'Angle of Attack $[^o]$')
+      return fig
 #+end_src
 
 * Run models :noexport:  
 :PROPERTIES:
-:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks_run) :exports (print export_blocks) :comments both
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/run.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
 
 #+begin_src python :results none
@@ -152,11 +233,86 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
 
 #+end_src
 
-- Models run on this exercise:
+* Models
 
+For a complete walk-through of model and creation and simulation see the file
+[[file:../../../examples/BUG/modelgeneration.org][modelgeneration.org]]
+
+** Montecarlo UQ
+- Discrete loading field along wings with uncertainty component (Gaussian)
+- Python file: settings_DiscreteMC1high.py, settings_DiscreteMC1MCsmall.py,
+  settings_DiscreteMC1vsmall.py
+** Derivative of expectations
+- Compute derivatives of the expectations previously computed concurrently via Montecarlo simulations.
   
+** Manoeuvre
 
+- Manoeuvre case with clamped AC varying u_inf and rho_inf
+- Testing and benchmarking parallelisation   
+- Python file: settings_manoeuvre1shard.py for computations 
+- 
+- Corresponding test: [[../../../tests/intrinsic/aeroelastic_dynamic/test_BUGgustShard.py]]
 
+** Dynamic-load envelopes
+
+- Construct gusts of different lengths, intensity and airflow density
+- Python file: python settings_gust1shard.py
+
+** Gust AD forager
+
+- Run gusts in parallel and find the worst cases
+- Checking AD of free-flying AC for worst case determined by forager
+- Python file: settings_gustforager.py
+- Corresponding test: [[../../../tests/intrinsic/aeroelastic_dynamic/test_BUGgustShard.py]]
+
+** Run
+#+begin_src shell :session sh1 :tangle run_models.sh
+  #!/usr/bin/env bash
+
+  Manoeuvre="true"
+  Montecarlo="tru"
+  MontecarloADt="tru"
+  MontecarloADfem="tru"
+  Gust="tru"
+  Forager="tru"
+
+  pyenv activate feniax
+  pathBUG="../../../../FENIAXexamples/BUG/"
+  current_dir=$(pwd)
+  cd $pathBUG
+
+  if [ "$Manoeuvre" = "true" ]; then
+      echo "RUNNING MANOEUVRE"
+      python settings_manoeuvre1shard.py $current_dir
+  fi
+  if [ "$Montecarlo" = "true" ]; then
+      echo "RUNNING MONTECARLO"
+      python settings_DiscreteMC1high.py $current_dir
+      python settings_DiscreteMC1small.py $current_dir
+      python settings_DiscreteMC1vsmall.py $current_dir
+  fi
+
+  if [ "$MontecarloADt" = "true" ]; then
+      echo "RUNNING MONTECARLOADT"
+      python settings_ADDiscreteLoadsMC_validation.py $current_dir
+  fi
+
+  if [ "$MontecarloADfem" = "true" ]; then
+      echo "RUNNING MONTECARLOADFEM"
+      python settings_ADDiscreteLoadsMC.py $current_dir
+  fi
+
+  if [ "$Gust" = "true" ]; then
+      echo "RUNNING GUST"
+      python settings_gust1shard.py $current_dir
+  fi
+
+  if [ "$Forager" = "true" ]; then
+      echo "RUNNING FORAGER"
+      python settings_gustforager.py $current_dir
+  fi
+  
+#+end_src
 
 
 * Plotting :noexport: 
@@ -184,11 +340,14 @@ The paper is organised as follows: Sec. [[Theoretical and computational backgrou
 * Theoretical and computational background
 The main aspects of the aeroelastic framework we have developed are presented in this section. 
 The approach is built on a non-intrusive reduction order process combined with a nonlinear description of the dominant dimension for slender structures. It achieves a nonlinear representation of aeroelastic models of arbitrary complexity in a very efficient manner and without losing the characteristics of the linear model. We target the calculation of flight loads herein, but it can also be applied to the computation of aeroelastic stability phenomena such as flutter or divergence [[cite:&CEA2023]] and to broader multidisciplinary design optimisation problems, which are currently being explored.
-The key features of the formulation are:
+The key features of the formulation as have been presented in previous work are as follows:
 
 - Geometrically nonlinear aeroelastic analysis using complex GFEMs: achieved via a three step process in which a condensed model is first produced, the dynamics of this reduced model are described by a system on nonlinear equations [[cite:&HODGES2003]] written in material velocities and stresses, and a modal expansion of those variables is the final key step in seamlessly mapping the global FEM into the nonlinear description [[cite:&PALACIOS2011]]. The overall process can be found in [[cite:&CEA2021a]].
 - Maximum performance: as a combination of a highly optimised and vectorised codebase, numerical library JAX with its JIT compiler and accelerator capabilities  driving the calculations, and the newly added added parallelisation of load cases.
 - Differentiation and sensitivity analysis: using JAX algorithmic differentiation toolbox, the entire process, from inputs to aeroelastic outputs can be differentiated [[cite:&CEA2024a]].
+
+  
+leverage on modern hardware architectures and a parallelisation across devices to unlock problems such as quantifying the uncertainties in the nonlinear response given a non-deterministic loading field; c) build load envelopes of static and dynamic aeroelastic simulations; d) differentiate across the concurrent simulations to obtain sensitivities of dynamic loads and expectations of statistics.  
 
   
 ** Nonlinear aeroelastic system
@@ -306,7 +465,9 @@ sol $\longleftarrow$ y\_aeroelastic(inputs)
 \caption{Parallelisation multiple load cases}
 \end{algorithm}
 
-*** Differentiable-parallel load cases
+** Fully differentiable 
+*** 
+*** The Forager pattern: differentiable-parallel dynamic load cases
 Once a parallel system was in place to compute hundreds of load cases, the next step was to obtain the derivatives of the critical loads coming from the parallel analysis. Since those are calculated using AD, all the operations need to be available in memory.
 We encountered two major issues: the memory required for the gust cases was already in the limit of a single device (over 60 GB of RAM), to which the AD normally duplicates the requirement. As the software can now be run on multiple devices, each with its own memory, this is not a completely restrictive factor. The second issue was simply a lack of implementation of the needed collective operations in JAX, as with the maximum function (most of the data generated by such a maximum are zeros not needed anyway). The solution found has been named the Forager Pattern and is depicted in Fig. [[fig:forager]]. The code launches many simulations concurrently with the predefined load-cases. The solutions of all these simulations are collected (hundreds of cases, hundreds of nodes, thousands of time steps make for a single field of interest like the stress to have a size of the order of $10^7$). A filtering step consists of a selection of monitoring points of interest (nodes in the FEM), and then a double reduction operation in both time and load cases, for example the maximum of the selected field in time and across cases, and the output is a selection of the most problematic load cases according to the predefined metric in the input file. For these critical points the program builds the inputs for the cases previously run in parallel but now with AD and on a much smaller basis, and finally more FENIAX process are spawn for the AD computations. In this way we have created a meta-program that can automatically create programs based on the results, although at this stage is still  very limited on the implemented possibilities.
 
@@ -316,7 +477,11 @@ We encountered two major issues: the memory required for the gust cases was alre
 [[file:figs_ext/forager.pdf]]
 
 * Results
-In this section we show the main strengths of our solvers to: a) run a representative aircraft model undergoing very large nonlinear displacements; b) leverage on modern hardware architectures and a parallelisation across devices to unlock problems such as quantifying the uncertainties in the nonlinear response given a loading field that is not fully determinate; c) build load envelopes of static and dynamic aeroelastic simulations.
+:PROPERTIES:
+:header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
+:END:
+
+In this section we show the main strengths of our solvers to: a) run a representative aircraft model undergoing very large nonlinear displacements; b) leverage on modern hardware architectures and a parallelisation across devices to unlock problems such as quantifying the uncertainties in the nonlinear response given a non-deterministic loading field; c) build load envelopes of static and dynamic aeroelastic simulations; d) differentiate across the concurrent simulations to obtain sensitivities of dynamic loads and expectations of statistics.  
 The University of Bristol Ultra-Green (BUG) aircraft model [[cite:&STODIECK2018]] is the chosen platform to demonstrate these capabilities as it showcases high-aspect ratio wings that are built using a representative GFEM of current industrial models and it is not based on proprietary data. The main components of the aeroelastic model have been presented in 
 
 Structural and aeroelastic static simulations follow, all solved via a Newton-Raphson solver with tolerance of $10^{-6}$, as well as an assessment of the aircraft dynamics in response to a gust. 
@@ -373,7 +538,17 @@ We can see the statistics of the linear response are fully captured by one examp
 
 *** Differentiation of statistical response
 
+** Computing derivatives of expectations
+Now we set out to calculate the derivatives of the expectations previously computed concurrently via Montecarlo simulations.
+  
 ** Steady manoeuvre loads
+
+#+begin_src python :results None
+  sol_manoeuvre = solution.IntrinsicReader("./manoeuvre1Shard")
+#+end_src
+
+#+RESULTS:
+
 We extend the analysis to a static aeroelastic case for varying angles of attack that represent a manoeuvre scenario. The number of modes used was 100, more than necessary for this type of response, which indicates even faster calculations are possible on this type of analysis. We test the parallelisation by varying the flow density ($\pm 20 \%$ of the reference density 0.41 Kg/ m$^3$) as well and the flow velocity ($\pm 20 \%$ of the reference velocity 209.6 m/s). 16 different points for both density and velocity make a total number of 256 simulations. The Mach number is fixed at 0.7 corresponding to the reference flow condition values.
 
 Fig. [[fig:BUG_manoeuvre3D]] illustrates the 3D equilibrium of the airframe at the reference flight conditions. 
@@ -383,24 +558,23 @@ Fig. [[fig:BUG_manoeuvre3D]] illustrates the 3D equilibrium of the airframe at t
 #+ATTR_LATEX: :width 0.95\textwidth 
 [[file:figs_ext/monoeuvre3D.pdf]]
 
+
 In Fig. [[fig:BUG_manoeuvretip]] the tip of the wing in Fig. [[fig:BUG_manoeuvre3D]] is plotted for various angles-of-attach (AoA); the tip position falls down the linear projection between the 0 and 1 degrees AoA as expected. This highlights the potential need for geometrically nonlinear aeroelastic tools in future aircraft configurations under high loading scenarios. 
+
+#+begin_src python :results None
+  node = 35
+  component = 2
+  load = -1
+  ra = sol_manoeuvre.data.staticsystem_s1.ra[load, 1:, component, node]
+  ra_lin = sol_manoeuvre.data.staticsystem_s1.ra[load, 0, component, node]
+#+end_src
+
 
 #+NAME: fig:BUG_manoeuvretip
 #+CAPTION: wing tip position for increasing angle of attack
 #+ATTR_LATEX: :width 0.65\textwidth 
 [[file:figs/manoeuvre_wingtip.png]]
 
-Figures [[fig:manoeuvre_bendingtorsion]] and [[fig:manoeuvre_bendingshear]] show the bending-shear-torsion diagrams at the wing-root for all the multiple points computed. Each point is coloured as $point = \rho_{\infty} / \rho_{max} + u_{\infty} / u_{max}$. The resulting graph is rather predictable with loads increasing with dynamic pressure. A more realistic case could be setup with a trim routine and varying flight condition but the aim of this section was to present the capability to compute multiple manoeuvre loads and compare it with the more interesting case of gust loads as shown in the next section.
-
-#+NAME: fig:manoeuvre_bendingtorsion
-#+CAPTION: Manoeuvre case, bending-out-of-plane versus torsion
-#+ATTR_LATEX: :width 0.5\textwidth 
-[[file:figs/manoeuvre_bendingtorsion.png]]
-
-#+NAME: fig:manoeuvre_bendingshear
-#+CAPTION: Manoeuvre case, bending-in-plane versus shear
-#+ATTR_LATEX: :width 0.5\textwidth 
-[[file:figs/manoeuvre_bendingshear.png]]
 
 Table [[table:times_manoeuvre]] shows the computational times to run these simulations, which shows near no overhead in adding a few hundred of static calculations when moving from the single load case in the CPU to the GPU (nearly 8 seconds to 14 seconds, which amounts for 6 seconds cost when adding an extra 255 cases).
 
@@ -459,6 +633,8 @@ Table [[table:times_gust]] contains the simulation times of the calculation, whi
 
 *** Differentiation of dynamic load envelopes
 
+** Differentiation of load envelopes
+
 * Conclusions
 A modal-based, geometrically nonlinear formulation of the aircraft dynamics has been implemented for multiple load-cases parallelisation in modern hardware architectures. We have applied state-of-the-art techniques and tools employed for large problems in Deep Machine Learning to the computation and prediction of the sizing aeroelastic loads in commercial aircraft, which can expand thousands of simulations. 
 Remarkable computational times of under a minute are achieved for 256 manoeuvres varying flow conditions and for 512 dynamic gust responses, including geometrically nonlinear effects in the simulations.
@@ -466,6 +642,10 @@ Such a performance potentially unlocks two different applications: uncertainty q
 The former has been demonstrated on a problem where a field of forces with an stochastic component induces very large deformation; it has been shown that while the statistics in the linear response can be easily forecast from one complete experiment, in the nonlinear case a Montecarlo simulation needs to be carried out for each new set of loading scenario.
 For the latter, differentiation of the load envelopes via the AD capabilities within JAX will be the next step. Since we are already in the memory boundaries of a single GPU or CPU, this will require the use of multiple devices, for which we have already built the implementation. 
 Scaling up the process to include various mass cases, as it is done in industrial scenarios, is also a feasible target. Thus combining prediction of sizing aeroelastic loads that include thousands of cases in commercial aircraft with the computation of their gradients with respect to design variables in a framework for multidisciplinary design optimization.
+
+\appendix
+* Embarrassingly-parallel algorithms for PDE optimisation via Feynman–Kac theorem
+Having shown the possibility to obtain derivatives of expectations computed via Montecarlo simulations running concurrently, a potential application is found in the field of optimisation of parabolic equation. Montecarlo simulations are very easy to parallelised as they do not require synchronisation. 
 
 * Biblio :ignore:
 \newpage
@@ -476,4 +656,3 @@ bibliography:~/Documents/Engineering.bib
 
 * Footnotes
 [fn:2] Both implementation and examples can be found at \url{https://github.com/ACea15/FENIAX}.
-[fn:1] Such is the case that Yann LeCun, one of the fathers of AI, has called for Differentiable programming to supersede Deep Learning in the jargon.
