@@ -74,7 +74,7 @@ class Config:
             container_k_initialised = container_k(**v)
             setattr(self, k, container_k_initialised)
             for k, v in self.__sett.items():
-                if k != "fem":
+                if k != "fem" and v is not None: # avoid empty containers
                     container_k = getattr(self.__container, "".join(["D", k]))
                     if k == "systems" or k == "system":  # pass Dfem
                         container_k_initialised = container_k(

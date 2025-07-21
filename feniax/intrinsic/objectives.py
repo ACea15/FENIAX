@@ -49,6 +49,12 @@ def X2_MAX(X2, nodes, components, t, axis=0, *args, **kwargs):
 
     return jnp.max(jnp.abs(X2[jnp.ix_(t, components, nodes)]), axis=axis)
 
+@name
+# @partial(jax.jit, static_argnames=["axis"])
+def X2_PMEAN(X2, nodes, components, t, axis=None, *args, **kwargs):
+
+    pmean_ra = jax.lax.pmean(X2, axis_name="x")
+    return pmean_ra
 
 @name
 def X2_MIN(X2, nodes, components, t, axis=None, *args, **kwargs):

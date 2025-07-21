@@ -17,6 +17,13 @@ class Inputs(dict):
     def __setattr__(self, name, val):
         self[name] = val
 
+    def __delattr__(self, name):
+
+        try:
+            del self[name]
+        except KeyError:
+            raise AttributeError(f"'AttrDict' object has no attribute '{name}'")
+
     def clone(self):
 
         return copy.deepcopy(self)
