@@ -269,10 +269,10 @@ For a complete walk-through of model and creation and simulation see the file
 #+begin_src shell :session sh1 :tangle run_models.sh
   #!/usr/bin/env bash
 
-  Manoeuvre="true"
+  Manoeuvre="tru"
   Montecarlo="tru"
   MontecarloADt="tru"
-  MontecarloADfem="tru"
+  MontecarloADfem="true"
   Gust="tru"
   Forager="tru"
 
@@ -294,12 +294,14 @@ For a complete walk-through of model and creation and simulation see the file
 
   if [ "$MontecarloADt" = "true" ]; then
       echo "RUNNING MONTECARLOADT"
-      python settings_ADDiscreteLoadsMC_validation.py $current_dir
+      # python settings_ADDiscreteLoadsMC_validation.py $current_dir
+      python settings_ADDiscreteMC1_t.py $current_dir
   fi
 
   if [ "$MontecarloADfem" = "true" ]; then
       echo "RUNNING MONTECARLOADFEM"
-      python settings_ADDiscreteLoadsMC.py $current_dir
+      python settings_ADDiscreteMC1_fem.py $current_dir
+      #python settings_ADDiscreteLoadsMC.py $current_dir
   fi
 
   if [ "$Gust" = "true" ]; then
@@ -311,7 +313,7 @@ For a complete walk-through of model and creation and simulation see the file
       echo "RUNNING FORAGER"
       python settings_gustforager.py $current_dir
   fi
-  
+
 #+end_src
 
 
@@ -550,6 +552,15 @@ We can see the statistics of the linear response are fully captured by one examp
 *** Differentiation of statistical response
 
 ** Computing derivatives of expectations
+#+begin_src python :results None
+  sol_addiscretemc1_t = solution.IntrinsicReader("./ADDiscreteMC1_t")
+  sol_addiscretemc1_fem = solution.IntrinsicReader("./ADDiscreteMC1_fem")
+
+#+end_src
+
+#+RESULTS:
+: None
+
 Now we set out to calculate the derivatives of the expectations previously computed concurrently via Montecarlo simulations. This is a very interesting problem as we aim to propagate uncertainty via Montecarlo methods, in a way that is efficient 
   
 ** Steady manoeuvre loads

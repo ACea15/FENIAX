@@ -37,7 +37,7 @@ class DynamicSystem:
     ra: jnp.ndarray
     t: jnp.ndarray = None
     jac: dict = None
-    f_ad: dict = None
+    f_ad: jnp.ndarray = None
 
 
 @dataclass(slots=True)
@@ -49,7 +49,7 @@ class StaticSystem:
     ra: jnp.ndarray = None
     t: dict = None
     jac: dict[str,jnp.ndarray] = None
-    f_ad: dict = None
+    f_ad: jnp.ndarray = None
 
 @dataclass(slots=True)
 class PointForces:
