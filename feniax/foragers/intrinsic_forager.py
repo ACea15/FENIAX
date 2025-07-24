@@ -94,7 +94,7 @@ class IntrinsicForager_shard2adgust(IntrinsicForager,
         components = self.forager_settings.ad['objective_args']['components']
         for ni in nodes:
             for ci in components:
-                field_i = self.field[:, :, ci, ni] # np_nt_nc_nn
+                field_i = jnp.abs(self.field[:, :, ci, ni]) # np_nt_nc_nn
                 # just pick index corresponding to parallel loading
                 field_ivalue = jnp.max(field_i)
                 argmax = jnp.argmax(field_i)

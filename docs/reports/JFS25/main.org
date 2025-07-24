@@ -272,6 +272,8 @@ For a complete walk-through of model and creation and simulation see the file
   Manoeuvre="tru"
   Montecarlo="tru"
   MontecarloADt="tru"
+  MontecarloADtjac="tru"
+  MontecarloADtfd="tru"    
   MontecarloADfem="true"
   Gust="tru"
   Forager="tru"
@@ -285,6 +287,7 @@ For a complete walk-through of model and creation and simulation see the file
       echo "RUNNING MANOEUVRE"
       python settings_manoeuvre1shard.py $current_dir
   fi
+
   if [ "$Montecarlo" = "true" ]; then
       echo "RUNNING MONTECARLO"
       python settings_DiscreteMC1high.py $current_dir
@@ -296,6 +299,18 @@ For a complete walk-through of model and creation and simulation see the file
       echo "RUNNING MONTECARLOADT"
       # python settings_ADDiscreteLoadsMC_validation.py $current_dir
       python settings_ADDiscreteMC1_t.py $current_dir
+  fi
+
+  if [ "$MontecarloADtjac" = "true" ]; then
+      echo "RUNNING MONTECARLOADTJAC"
+      # python settings_ADDiscreteLoadsMC_validation.py $current_dir
+      python settings_ADDiscreteMC1_t_fdjac.py $current_dir
+  fi
+  
+  if [ "$MontecarloADtfd" = "true" ]; then
+      echo "RUNNING MONTECARLOADTFD"
+      # python settings_ADDiscreteLoadsMC_validation.py $current_dir
+      python settings_ADDiscreteMC1_t_fd.py $current_dir
   fi
 
   if [ "$MontecarloADfem" = "true" ]; then
@@ -315,7 +330,6 @@ For a complete walk-through of model and creation and simulation see the file
   fi
 
 #+end_src
-
 
 * Plotting :noexport: 
 :PROPERTIES:
