@@ -269,14 +269,14 @@ For a complete walk-through of model and creation and simulation see the file
 #+begin_src shell :session sh1 :tangle run_models.sh
   #!/usr/bin/env bash
 
-  Manoeuvre="tru"
-  Montecarlo="tru"
-  MontecarloADt="tru"
-  MontecarloADtjac="tru"
-  MontecarloADtfd="tru"    
+  Manoeuvre="true"
+  Montecarlo="true"
+  MontecarloADt="true"
+  MontecarloADtjac="true"
+  MontecarloADtfd="true"    
   MontecarloADfem="true"
-  Gust="tru"
-  Forager="tru"
+  Gust="true"
+  Forager="true"
 
   pyenv activate feniax
   pathBUG="../../../../FENIAXexamples/BUG/"
@@ -509,9 +509,9 @@ We encountered two major issues: the memory required for the gust cases was alre
 :END:
 
 In this section we show the main strengths of our solvers to: a) run a representative aircraft model undergoing very large nonlinear displacements; b) leverage on modern hardware architectures and a parallelisation across devices to unlock problems such as quantifying the uncertainties in the nonlinear response given a non-deterministic loading field; c) build load envelopes of static and dynamic aeroelastic simulations; d) differentiate across the concurrent simulations to obtain sensitivities of dynamic loads and expectations of statistics.  
-The University of Bristol Ultra-Green (BUG) aircraft model [[cite:&STODIECK2018]] is the chosen platform to demonstrate these capabilities as it showcases high-aspect ratio wings that are built using a representative GFEM of current industrial models and it is not based on proprietary data. The main components of the aeroelastic model have been presented in 
-
-Structural and aeroelastic static simulations follow, all solved via a Newton-Raphson solver with tolerance of $10^{-6}$, as well as an assessment of the aircraft dynamics in response to a gust. 
+The University of Bristol Ultra-Green (BUG) aircraft model [[cite:&STODIECK2018]] is the chosen platform to demonstrate these capabilities as it showcases high-aspect ratio wings that are built using a representative GFEM of current industrial models and it is not based on proprietary data. The main components of the aeroelastic model have been presented in [[cite:&CEA2025a]].
+Structural and aeroelastic static simulations follow, solved via a Newton-Raphson solver with tolerance of $10^{-6}$, as well as an assessment of the aircraft dynamics in response to various gust profiles.
+A high modal resolution of 100 modes is employed in all the results.
 Calculations are carried out on a CPU Intel Xeon Silver 4108 with 1.80GHz speed, 6 cores and a total 12 threads, as well as on an Nvidia GPU A100 80GB SXM.
 
 ** Uncertainty quantification of nonlinear response
@@ -566,17 +566,20 @@ We can see the statistics of the linear response are fully captured by one examp
 *** Differentiation of statistical response
 
 ** Computing derivatives of expectations
-#+begin_src python :results None
+#+begin_src python :results none
   sol_addiscretemc1_t = solution.IntrinsicReader("./ADDiscreteMC1_t")
-  sol_addiscretemc1_fem = solution.IntrinsicReader("./ADDiscreteMC1_fem")
-
+  sol_addiscretemc1_fem = solution.IntrinsicReader("./ADDiscreteMC1_fem")  
 #+end_src
 
-#+RESULTS:
-: None
 
 Now we set out to calculate the derivatives of the expectations previously computed concurrently via Montecarlo simulations. This is a very interesting problem as we aim to propagate uncertainty via Montecarlo methods, in a way that is efficient 
-  
+
+A linear variation parameter is introduced such that the follower forces and torsional moments 
+
+Thus we look at the variation of the maximum z-component of the vertical internal forces as a function of \(\alpha\) in the loading profile of Fig. [[fig:ramping_load]]. Effectively, the slope of the loading increases with \(\alpha\). Table [[table:AD_WSP]] shows the derivatives computed using FD with an epsilon of $10^{-4}$ and AD in reverse-mode on the example with 50 modes resolution.
+
+Fig. shows a validation between 
+
 ** Steady manoeuvre loads
 
 #+begin_src python :results None
