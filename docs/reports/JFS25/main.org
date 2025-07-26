@@ -50,7 +50,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
   (setq org-latex-pdf-process
     '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
   ;; (setq org-latex-pdf-process (list "latexmk -f -pdf -interaction=nonstopmode output-directory=%o %f"))
-    
+
   (pyvenv-workon "feniax")
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
@@ -58,6 +58,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
   (setq Veval_blocks "yes") ;; yes, no, no-export 
   (setq Veval_blocks_run "no")
   (setq pythonShell "pyJFS25")
+  (setq Vpics "png") ;; yes, no, no-export     
   ;; export_blocks: code, results, both, none
   (setq export_blocks  "results")  
 #+end_src
@@ -67,6 +68,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes  :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
 
+** Imports
 #+begin_src python  :results none 
   import plotly.express as px
   import pyNastran.op4.op4 as op4
@@ -100,17 +102,11 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
   import plotly.express as px
   import pickle
   import jax.numpy as jnp
-  import jax
   import pandas as pd
   import numpy as np
-  import feniax.preprocessor.configuration as configuration  # import Config, dump_to_yaml
-  from feniax.preprocessor.inputs import Inputs
-  import feniax.feniax_main
   import feniax.plotools.uplotly as uplotly
-  import feniax.plotools.utils as putils
   import feniax.preprocessor.solution as solution
-  import feniax.unastran.op2reader as op2reader
-  import feniax.plotools.nastranvtk.bdfdef as bdfdef
+  import feniax.preprocessor.configuration as configuration
   from tabulate import tabulate
 #+end_src
 
@@ -149,7 +145,7 @@ https://plotly.com/python/subplots/
           #     showlegend = fig.data[0].showlegend
 
           fig.update_xaxes(
-                         titlefont=dict(size=20),
+                         #titlefont=dict(size=20),
                          tickfont = dict(size=20),
                          mirror=True,
                          ticks='outside',
@@ -160,7 +156,7 @@ https://plotly.com/python/subplots/
               #zerolinecolor='LightPink',
                          gridcolor='lightgrey')
           fig.update_yaxes(tickfont = dict(size=20),
-                         titlefont=dict(size=20),
+                         #titlefont=dict(size=20),
                          zeroline=True,
                          mirror=True,
                          ticks='outside',
@@ -169,7 +165,7 @@ https://plotly.com/python/subplots/
                          gridcolor='lightgrey')
           fig.update_layout(plot_bgcolor='white',
                             yaxis=dict(zerolinecolor='lightgrey'),
-                            showlegend=True, #showlegend,
+                            #showlegend=True, #showlegend,
                             margin=dict(
                                 autoexpand=True,
                                 l=0,
@@ -180,8 +176,89 @@ https://plotly.com/python/subplots/
           return fig
       return inner
 
+#+end_src
+
+*** Plot functions
+#+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+
   @fig_background
-  def plot_manoeuvre(aoa, ua, ua_lin):
+  def plot_jacpdiff(x, yobj, yjac):
+
+      fig = None
+      fig = uplotly.lines2d(x, yobj, fig,
+                            dict(name="Objective",
+                                 line=dict(color="black"),
+                                 marker=dict(symbol="circle")
+                                 ),
+                            dict())
+      fig = uplotly.lines2d(x, yjac, fig,
+                            dict(name="Jacobian",
+                                 line=dict(color="blue"),
+                                 marker=dict(symbol="square")
+                                 ),
+                            dict())
+
+      fig.update_xaxes(type="log",
+                       #tickformat= '.0e'
+                       exponentformat = 'power'
+                       )
+      fig.update_yaxes(type="log",
+                       #tickformat= '.0e'
+                       exponentformat = 'power'
+                       )
+      fig.update_layout(xaxis_title="Number of paths",
+                        yaxis_title=r'$\Large \epsilon$',
+                        showlegend=True)
+
+      return fig
+
+  @fig_background
+  def plot_jacediff(x, yjac):
+
+      fig = None
+      fig = uplotly.lines2d(x, yjac, fig,
+                            dict(#name="Jacobian",
+                                 line=dict(color="blue"),
+                                 marker=dict(symbol="square")
+                                 ),
+                            dict())
+
+      fig.update_xaxes(type="log",
+                       #tickformat= '.0e'
+                       exponentformat = 'power'
+                       )
+      fig.update_yaxes(type="log",
+                       #tickformat= '.0e'
+                       exponentformat = 'power'
+                       )
+      fig.update_layout(xaxis_title=r'$\Large \epsilon$ ',
+                        yaxis_title=r'$\Large \epsilon$')
+      #fig.update_layout(xaxis_type="log", yaxis_type="log")
+      return fig
+
+  @fig_background
+  def plot_jacfem(jac, xlabel="", ylabel=""):
+      import plotly.graph_objects as go
+
+      fig = go.Figure(data=go.Heatmap(
+          z=jac, colorscale = 'hot'))
+
+      # fig = px.imshow(jac)
+      # fig.update_xaxes(type="log",
+      #                  #tickformat= '.0e'
+      #                  exponentformat = 'power'
+      #                  )
+      # fig.update_yaxes(type="log",
+      #                  #tickformat= '.0e'
+      #                  exponentformat = 'power'
+      #                  )
+      fig.update_layout(xaxis_title=xlabel,
+                        yaxis_title=ylabel)
+      #fig.update_layout(xaxis_type="log", yaxis_type="log")
+      return fig
+
+  @fig_background
+  def plot_manoeuvretip(aoa, ua, ua_lin):
       fig=None
       colors = ["steelblue", "black"]
       dashes = ["solid", "dash"]
@@ -190,15 +267,15 @@ https://plotly.com/python/subplots/
       line=dict(color=colors[0],
       dash=dashes[0])
       ))
-      fig = uplotly.lines2d(aoa, ua, fig,
+      fig = uplotly.lines2d(aoa, ua_lin, fig,
       dict(name=f"Linear",
       line=dict(color=colors[1],
       dash=dashes[1])
       ))
 
-      fig.update_yaxes(title=r'$\large u_{%s}$')
+      fig.update_yaxes(title=r'$\large \hat{u}_z [\%]$')
       fig.update_xaxes(#range=aoa,
-      title=r'Angle of Attack $[^o]$')
+      title=r'$AoA [^o]$')
       return fig
 #+end_src
 
@@ -235,13 +312,15 @@ https://plotly.com/python/subplots/
 
 * Models
 
-For a complete walk-through of model and creation and simulation see the file
+For a complete walk-through of model and creation see the file
 [[file:../../../examples/BUG/modelgeneration.org][modelgeneration.org]]
 
 ** Montecarlo UQ
 - Discrete loading field along wings with uncertainty component (Gaussian)
 - Python file: settings_DiscreteMC1high.py, settings_DiscreteMC1MCsmall.py,
   settings_DiscreteMC1vsmall.py
+- Results presented in Sec. [[Uncertainty quantification of nonlinear response]].
+    
 ** Derivative of expectations
 - Compute derivatives of the expectations previously computed concurrently via Montecarlo simulations.
   
@@ -269,14 +348,14 @@ For a complete walk-through of model and creation and simulation see the file
 #+begin_src shell :session sh1 :tangle run_models.sh
   #!/usr/bin/env bash
 
-  Manoeuvre="true"
-  Montecarlo="true"
-  MontecarloADt="true"
+  Manoeuvre="tru"
+  Montecarlo="tru"
+  MontecarloADt="tru"
   MontecarloADtjac="true"
-  MontecarloADtfd="true"    
-  MontecarloADfem="true"
-  Gust="true"
-  Forager="true"
+  MontecarloADtfd="tru"    
+  MontecarloADfem="tru"
+  Gust="tru"
+  Forager="tru"
 
   pyenv activate feniax
   pathBUG="../../../../FENIAXexamples/BUG/"
@@ -511,26 +590,26 @@ We encountered two major issues: the memory required for the gust cases was alre
 In this section we show the main strengths of our solvers to: a) run a representative aircraft model undergoing very large nonlinear displacements; b) leverage on modern hardware architectures and a parallelisation across devices to unlock problems such as quantifying the uncertainties in the nonlinear response given a non-deterministic loading field; c) build load envelopes of static and dynamic aeroelastic simulations; d) differentiate across the concurrent simulations to obtain sensitivities of dynamic loads and expectations of statistics.  
 The University of Bristol Ultra-Green (BUG) aircraft model [[cite:&STODIECK2018]] is the chosen platform to demonstrate these capabilities as it showcases high-aspect ratio wings that are built using a representative GFEM of current industrial models and it is not based on proprietary data. The main components of the aeroelastic model have been presented in [[cite:&CEA2025a]].
 Structural and aeroelastic static simulations follow, solved via a Newton-Raphson solver with tolerance of $10^{-6}$, as well as an assessment of the aircraft dynamics in response to various gust profiles.
-A high modal resolution of 100 modes is employed in all the results.
+A high modal resolution of 100 modes is employed in all the results, more than what is necessary for most of the examples.
 Calculations are carried out on a CPU Intel Xeon Silver 4108 with 1.80GHz speed, 6 cores and a total 12 threads, as well as on an Nvidia GPU A100 80GB SXM.
 
 ** Uncertainty quantification of nonlinear response
-uncertainty quantification is performed to the nonlinear response to a loading field that is non-deterministic. Hundreds to thousands of simulations are employed in Monte Carlo type of analysis to resolve for the statistics, for which parallelisation of the independent simulations become critical.
+In this section uncertainty quantification is performed for both linear and nonlinear responses to a loading field that is non-deterministic. Hundreds to thousands of simulations are employed in Monte Carlo type of analysis to resolve for the statistics, for which parallelisation of the independent simulations become critical.
 The example resembles the workflow of flight loads and wing stress analysis in an industrial setup.
 # : the flight physics department would compute the in-flight loads for various conditions and pass the maximum of these loads to the stress engineers who would check the integrity of the airframe in their more detailed models.
-There will always be an element of uncertainty around the computed loads, and what we show here is how for nonlinear assumptions the statistics need to be computed for every distinct loading. And for this, having a parallisation strategy as the one presented could potentially allow the computation of complex correlations and averages that are more easily calculated under linear assumptions. 
+There will always be an element of uncertainty around computed loads, and what we show here is how for large displacements, the statistics need to be computed for every distinct loading. And for this, having a parallisation strategy as the one presented could potentially allow the computation of complex correlations and averages that are more easily calculated under linear assumptions.
 
-A constant loading force is prescribed along the wings consisting of follower forces in the \(z\)-direction as well as torsional moments, with the characteristic that the force follows a normal distribution $N(\mu=1.5 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the vertical forces and $N(\mu=3 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the moments. Three scenarios are studied: one in which very large nonlinear deformations are induced with $\mu_0 = 1$, and two small loading with  $\mu_0 = 10^{-2}$ and $\mu_0 = 10^{-3}$.
-The distribution of displacements is characterised by means of Montecarlo simulations that run in parallel for a total of 1600 simulations. The modal resolutions consists of 100 modes.
-Fig. [[fig:BUG_mc]] shows the equilibrium for the high loading calculations for two cases out of the 1600. 
+A static loading field is prescribed along the wings consisting of follower forces in the \(z\)-direction as well as torsional moments, with the characteristic that the force follows a normal distribution $N(\mu=1.5 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the vertical forces and $N(\mu=3 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the moments. Three scenarios are studied: one in which very large nonlinear deformations are induced with $\mu_0 = 1$, and two small loading with  $\mu_0 = 10^{-2}$ and $\mu_0 = 10^{-3}$.
+The distribution of displacements is characterised by means of Montecarlo simulations that run in parallel for a total of 1600 simulations.
+Fig. [[fig:BUG_mc]] shows the equilibrium at high loading ($\mu_0 = 1$) for two of the random cases (first and last of the 1600 computed). 
 
 #+NAME: fig:BUG_mc
 #+CAPTION: Static equilibrium for two cases of the random excitation ($\mu_0=1$)
 #+ATTR_LATEX: :width 0.8\textwidth 
 [[file:figs_ext/MC1.png]]
 
-Table [[table:BUG_mc]] shows the statistics gathered from the response
-#+CAPTION: Tip displacement statistics
+Table [[table:BUG_mc]] shows the statistics gathered from the response, in this case the tip of the wing displacements in the \(z\)-direction.
+#+CAPTION: Tip vertical displacement statistics
 #+ATTR_LATEX: :center t
 #+NAME: table:BUG_mc
 | Case                          | Tip displacement mean (m) | Tip displacement std |
@@ -552,9 +631,10 @@ Table [[table:BUG_mc]] shows the statistics gathered from the response
 # ratio displacement node 35: 6.342425320554263
 # ***************
 
-We can see the statistics of the linear response are fully captured by one example, whereas for a nonlinear response such as $\mu_0 = 2$, the 1600 simulations would need to be computed again. Table [[table:times_MC]] shows the times taken for the nonlinear case. The computation of 1600 independent simulations of Fig. [[fig:BUG_mc]], which presents deformations of over 40% the wing semi-span, in just over a minute, highlights the potential of this methodology in more complex uncertainty quantification problems.  
+We can see the statistics of the linear response are fully captured by one single Montecarlo analysis, that is, output magnitudes such as equilibrium displacements correlate with the average input load. Whereas in cases with nonlinear deformations, the whole Montecarlo analysis would need to be carried out. This is akin to deterministic linear versus nonlinear analysis. 
+Table [[table:times_MC]] shows the times taken for the nonlinear case in both CPU and GPU. The computation of 1600 independent simulations in just over a minute, involving deformations of over 40% the wing semi-span as shown in Fig. [[fig:BUG_mc]], highlights the potential of this methodology in more complex uncertainty quantification problems. Note that at this level of nonlinearity, our solvers are already two orders of magnitude faster than commercial solvers such as MSC Nastran even for a single simulation as demonstrated in [[cite:&CEA2025]]. The extension to thousands of cases with parallelisation on modern architectures is a key feature of this work with far-reaching applications in aircraft loads analysis.   
 
-#+CAPTION: Computational times uncertainty quantification 
+#+CAPTION: Static loading UQ computational times 
 #+ATTR_LATEX: :center t
 #+NAME: table:times_MC
 | Device         |              Time (sec.) |
@@ -563,16 +643,45 @@ We can see the statistics of the linear response are fully captured by one examp
 | CPU (parallel) |                    317.4 |
 | GPU            |                     67.6 |
 
-*** Differentiation of statistical response
-
+# *** Differentiation of statistical response
 ** Computing derivatives of expectations
 #+begin_src python :results none
-  sol_addiscretemc1_t = solution.IntrinsicReader("./ADDiscreteMC1_t")
-  sol_addiscretemc1_fem = solution.IntrinsicReader("./ADDiscreteMC1_fem")  
+  sol_admc1_t = solution.IntrinsicReader("./ADDiscreteMC1_t")
+  sol_admc1_fem = solution.IntrinsicReader("./ADDiscreteMC1_fem")
+  jac_t = sol_admc1_t.data.staticsystem_s1.jac['t']
+  obj_t = sol_admc1_t.data.staticsystem_s1.objective
+  jac_fem = sol_admc1_fem.data.staticsystem_s1.jac
+
+  mc1_jacpaths = [8, 80, 4e2, 8e2, 4e3]
+  mc1_eps = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
+  sol_admc1_e = dict()
+  sol_admc1_j = dict()
+  mc1_jac = list()
+  mc1_jobj = list()
+  mc1_eobj = list()  
+  mc1_ejac = list()
+  jac_pdiff = list()
+  obj_pdiff = list()  
+  jac_ediff = list() 
+  for i, _ in enumerate(mc1_jacpaths):
+      sol_admc1_j[i] = solution.IntrinsicReader(f"./ADDiscreteMC1_tjac{i}")
+      mc1_jobj.append(sol_admc1_j[i].data.staticsystem_s1.objective)
+      mc1_jac.append(sol_admc1_j[i].data.staticsystem_s1.jac['t'])
+  for i, _ in enumerate(mc1_jacpaths): # needing to read all to take last one
+      obj_pdiff.append(jnp.linalg.norm(mc1_jobj[i] - mc1_jobj[-1]) /
+                       jnp.linalg.norm(mc1_jobj[-1]))
+      jac_pdiff.append(jnp.linalg.norm(mc1_jac[i]-mc1_jac[-1]) /
+                       jnp.linalg.norm(mc1_jac[-1]))
+
+  for i, ei in enumerate(mc1_eps):
+      sol_admc1_e[i] = solution.IntrinsicReader(f"./ADDiscreteMC1_te{i}")
+      mc1_eobj.append(sol_admc1_e[i].data.staticsystem_s1.objective)
+      mc1_ejac.append((mc1_eobj[i] - obj_t) / ei)
+      jac_ediff.append(jnp.linalg.norm(mc1_ejac[i]-jac_t) / jnp.linalg.norm(jac_t))
+
 #+end_src
 
-
-Now we set out to calculate the derivatives of the expectations previously computed concurrently via Montecarlo simulations. This is a very interesting problem as we aim to propagate uncertainty via Montecarlo methods, in a way that is efficient 
+Now we set out to calculate the derivatives of the expectations previously computed concurrently via Montecarlo simulations in Sec. [[Uncertainty quantification of nonlinear response]]. While the Montecarlo paths are independent of each other and could therefore be run on different machines, having to differentiate the statistics gathered via AD, forces the entire chain of operations to be within a single program. This makes for an interesting and challenging problem to propagate gradients through concurrent operations that are at the end brought together via some collective operation. 
 
 A linear variation parameter is introduced such that the follower forces and torsional moments 
 
@@ -580,15 +689,83 @@ Thus we look at the variation of the maximum z-component of the vertical interna
 
 Fig. shows a validation between 
 
+#+NAME: jac_ediff
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_jacediff)(mc1_eps, jac_ediff)
+  figname
+#+end_src
+
+#+NAME: fig:jac_ediff
+#+CAPTION: 
+#+ATTR_LATEX: :width 0.8\textwidth 
+#+RESULTS: jac_ediff
+[[file:figs/jac_ediff.png]]
+
+#+NAME: jac_pdiff
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_jacpdiff)(mc1_jacpaths, obj_pdiff[:-1], jac_pdiff[:-1])
+  figname
+#+end_src
+
+#+NAME: fig:jac_pdiff
+#+CAPTION: 
+#+ATTR_LATEX: :width 0.8\textwidth 
+#+RESULTS: jac_pdiff
+[[file:figs/jac_pdiff.png]]
+
+
+#+NAME: jac_eigenvecs
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_jacfem)(jac_fem['eigenvecs'][0,1,0, 65+50:218, :],
+                                            xlabel="Wing Eigenvectors",
+                                            ylabel="Mode"
+                                            )
+  figname
+#+end_src
+
+#+NAME: fig:jac_eigenvecs
+#+CAPTION: 
+#+ATTR_LATEX: :width 0.8\textwidth 
+#+RESULTS: jac_eigenvecs
+[[file:figs/jac_eigenvecs.png]]
+
+#+NAME: jac_Ma
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_jacfem)(jac_fem['Ma'][0,1,0, 65+50:218, 65+50:218],
+                                            #xlabel="Wing Eigenvectors",
+                                            #ylabel="Mode"
+                                            )
+  figname
+#+end_src
+
+#+NAME: fig:jac_Ma
+#+CAPTION: 
+#+ATTR_LATEX: :width 0.8\textwidth 
+#+RESULTS: jac_Ma
+[[file:figs/jac_Ma.png]]
+
+
 ** Steady manoeuvre loads
 
 #+begin_src python :results None
   sol_manoeuvre = solution.IntrinsicReader("./manoeuvre1Shard")
+  config_manoeuvre = configuration.Config.from_file("./manoeuvre1Shard/config.yaml")
+  t = [1/6*1e-2, 1/6, 1/3, 1/2, 2/3, 5/6, 1]
+  aoa = [6*ti for ti in t]
+  ra = sol_manoeuvre.data.staticsystem_s1.ra[-1]
+  component = 2
+  node = 35
+  ra_tip0 = config_manoeuvre.fem.X[node]
+  ra_tip = ra[:, :, node]
+  ua = ra_tip - ra_tip0
+  semispan = ra_tip0[1] 
+  uatip = ua[:, component] / semispan * 100
+  uatip_lin = [uatip[0]/t[0]*ti for ti in t]
 #+end_src
 
 #+RESULTS:
 
-We extend the analysis to a static aeroelastic case for varying angles of attack that represent a manoeuvre scenario. The number of modes used was 100, more than necessary for this type of response, which indicates even faster calculations are possible on this type of analysis. We test the parallelisation by varying the flow density ($\pm 20 \%$ of the reference density 0.41 Kg/ m$^3$) as well and the flow velocity ($\pm 20 \%$ of the reference velocity 209.6 m/s). 16 different points for both density and velocity make a total number of 256 simulations. The Mach number is fixed at 0.7 corresponding to the reference flow condition values.
+We extend the previous analysis to a static aeroelastic case for varying angles of attack that represent a manoeuvre scenario.  We test the parallelisation by varying the flow density ($\pm 20 \%$ of the reference density 0.41 Kg/ m$^3$) as well and the flow velocity ($\pm 20 \%$ of the reference velocity 209.6 m/s). 16 different points for both density and velocity make a total number of 256 simulations. The Mach number is fixed at 0.7 corresponding to the reference flow condition values.
 
 Fig. [[fig:BUG_manoeuvre3D]] illustrates the 3D equilibrium of the airframe at the reference flight conditions. 
 
@@ -600,19 +777,18 @@ Fig. [[fig:BUG_manoeuvre3D]] illustrates the 3D equilibrium of the airframe at t
 
 In Fig. [[fig:BUG_manoeuvretip]] the tip of the wing in Fig. [[fig:BUG_manoeuvre3D]] is plotted for various angles-of-attach (AoA); the tip position falls down the linear projection between the 0 and 1 degrees AoA as expected. This highlights the potential need for geometrically nonlinear aeroelastic tools in future aircraft configurations under high loading scenarios. 
 
-#+begin_src python :results None
-  node = 35
-  component = 2
-  load = -1
-  ra = sol_manoeuvre.data.staticsystem_s1.ra[load, 1:, component, node]
-  ra_lin = sol_manoeuvre.data.staticsystem_s1.ra[load, 0, component, node]
+#+NAME: Manoeuvretip
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_manoeuvretip)(aoa, uatip, uatip_lin)
+  figname
 #+end_src
 
-
-#+NAME: fig:BUG_manoeuvretip
+#+NAME: fig:Manoeuvretip
 #+CAPTION: wing tip position for increasing angle of attack
-#+ATTR_LATEX: :width 0.65\textwidth 
-[[file:figs/manoeuvre_wingtip.png]]
+#+ATTR_LATEX: :width 0.8\textwidth 
+#+RESULTS: Manoeuvretip
+[[file:figs/Manoeuvretip.png]]
+
 
 
 Table [[table:times_manoeuvre]] shows the computational times to run these simulations, which shows near no overhead in adding a few hundred of static calculations when moving from the single load case in the CPU to the GPU (nearly 8 seconds to 14 seconds, which amounts for 6 seconds cost when adding an extra 255 cases).

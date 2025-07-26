@@ -106,7 +106,10 @@ class IntrinsicADSystem(System, cls_name="AD_intrinsic"):
                 *args,
                 **kwargs                
             )
-        self.build_solution(jac, **fout)
+            if self.settings.ad.grad_type == "value": # no jac
+                self.build_solution(jac=None, **fout)
+            else:
+                self.build_solution(jac, **fout)
 
     def save(self):
         pass
@@ -143,7 +146,7 @@ class StaticADIntrinsic(IntrinsicADSystem, cls_name="staticAD_intrinsic"):
             X3=X3,
             Cab=Cab,
             ra=ra,
-            f_ad=objective,
+            objective=objective,
         )
         if self.settings.save:
             self.sol.save_container("StaticSystem", label="_" + self.name)
@@ -172,7 +175,7 @@ class DynamicADIntrinsic(IntrinsicADSystem, cls_name="dynamicAD_intrinsic"):
             t=self.settings.t,
             Cab=Cab,
             ra=ra,
-            f_ad=objective
+            objective=objective
         )
         if self.settings.save:
             self.sol.save_container("DynamicSystem", label="_" + self.name)
