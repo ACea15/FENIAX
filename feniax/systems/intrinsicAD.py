@@ -162,7 +162,7 @@ class DynamicADIntrinsic(IntrinsicADSystem, cls_name="dynamicAD_intrinsic"):
         self.dFq = getattr(dynamic_ad, label)
 
     def build_solution(
-        self, jac, objective, q, X1, X2, X3, ra, Cab, *args, f_ad=None, **kwargs
+        self, jac, objective, q, X1, X2, X3, ra, Cab, *args, **kwargs
     ):
         self.sol.add_container(
             "DynamicSystem",

@@ -95,7 +95,7 @@ class TestWingSPad:
     def test_jacfd(self, sol, sol_epsilon):
         
         epsilon = 1e-4
-        jac_fd = (sol_epsilon.dynamicsystem_sys1.f_ad - sol.dynamicsystem_sys1.f_ad) / epsilon 
+        jac_fd = (sol_epsilon.dynamicsystem_sys1.objective - sol.dynamicsystem_sys1.objective) / epsilon 
         assert jnp.abs(jac_fd - sol.dynamicsystem_sys1.jac['alpha']) / jnp.linalg.norm(jac_fd) < 1e-4
 
     

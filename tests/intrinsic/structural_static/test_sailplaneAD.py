@@ -151,7 +151,7 @@ class TestSailPlaneAD:
     def test_jacfd(self, sol, sol_epsilon):
         
         epsilon = 1e-4
-        jac_fd = (sol_epsilon.staticsystem_sys1.f_ad - sol.staticsystem_sys1.f_ad) / epsilon 
+        jac_fd = (sol_epsilon.staticsystem_sys1.objective - sol.staticsystem_sys1.objective) / epsilon 
         assert jnp.abs(jac_fd - sol.staticsystem_sys1.jac['t']) / jnp.linalg.norm(jac_fd) < 1e-5
 
     
