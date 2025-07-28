@@ -31,8 +31,8 @@
 :END:
 
 #+begin_abstract
-A novel framework for geometrically nonlinear aeroelastic analysis is augmented for large scale computations of aircraft-sizing loads. The software can be deployed on modern hardware architectures and the parallelisation has been tested both on CPUs and GPUs. While keeping computational times in the order of seconds, the presented approach unlocks new capabilities such as the following: uncertainty quantification analysis of the nonlinear response via massively-parallel Montecarlo simulations; construction of load envelopes of static and dynamic cases in full-aircraft models. Furthermore, differentiation of both Montecarlo simulations and load is achieved via JAX library automatic differentiation engine and collective primitives. 
-We explore a high-aspect-ratio-wing aircraft configuration, showing the ability of the solvers to capture nonlinear effects for external forces inducing large deformations and also the importance of these effects when studying modern aircraft concepts. Discrete, manoeuvre and gust loads are assessed for multiple flow and parametric conditions running concurrently. Sensitivities of maximum wing stresses in the load-envelopes are computed and verified against finite differences.  
+A novel framework for geometrically nonlinear aeroelastic analysis is augmented for large scale computations of aircraft-sizing loads. The software can be deployed on modern hardware architectures and the parallelisation has been tested both on CPUs and GPUs. While keeping computational times in the order of seconds, the presented approach unlocks new capabilities such as the following: uncertainty quantification analysis of the nonlinear response via massively-parallel Montecarlo simulations; construction of load envelopes of static and dynamic cases in full-aircraft models. Furthermore, differentiation of both Montecarlo concurrent simulations and aeroelastic loads is achieved via JAX library automatic differentiation engine and collective primitives. 
+We explore a high-aspect-ratio-wing aircraft configuration, showing the ability of the solvers to capture nonlinear effects for external forces inducing large deformations and also the importance of these effects when studying modern aircraft concepts. Discrete, manoeuvre and gust loads are assessed for multiple flow and parametric conditions running concurrently. Sensitivities of maximum wing-root stresses and tip displacements are computed and verified against finite differences.  
 #+end_abstract
 
 
@@ -588,10 +588,10 @@ After marching the system in time or solving the nonlinear equations for a stati
 \begin{equation}\label{random_system}
 \bm{Y} = \bm{F}(\bm{q}(t_f), \bm{X}, \bm{\alpha}_1, \bm{\alpha}_2)
 \end{equation}
-We want to calculate derivatives on the moments of \(\bm{Y}\), \(
+We want to calculate derivatives on the moments of \(\bm{Y}\), 
 \[
 \frac{\partial \mathbb{E}[Y^n]}{\partial \bm{\alpha}}
-\
+\]
 This calculated via Montecarlo by launching the concurrent simulations for each \(\bm{X}_i\) and performing a collective mean on the output of interest \(\bm{Y}_i\) after solving the aeroelastic system. Since all the operations in the process are being tracked in JAX, derivatives with respect to \(\bm{\alpha}\) can be recover. 
 This slow convergence is one of the key limitations of plain Monte Carlo methods as the error goes with number of samples \( N \): \(\text{Error} \sim \mathcal{O}\left( \frac{1}{\sqrt{N}} \right) \).
 Low discrepancy sequences such as Sobol numbers can be used for better convergence.
@@ -612,7 +612,7 @@ We encountered two major issues: the memory required for the gust cases was alre
 :header-args: :mkdirp yes  :session (print pythonShell) :noweb yes :tangle ./results/examples.py :eval (print Veval_blocks) :exports (print export_blocks) :comments both
 :END:
 
-In this section we show the main strengths of our solvers to: a) run a representative aircraft model undergoing very large nonlinear displacements; b) leverage on modern hardware architectures and a parallelisation across devices to unlock problems such as quantifying the uncertainties in the nonlinear response given a non-deterministic loading field; c) build load envelopes of static and dynamic aeroelastic simulations; d) differentiate across the concurrent simulations to obtain sensitivities of dynamic loads and expectations of statistics.  
+In this section we show the main strengths of our solvers to: a) run a representative aircraft model undergoing very large nonlinear displacements; b) leverage on modern hardware architectures and a parallelisation across devices to unlock problems such as quantifying the uncertainties in the nonlinear response given a non-deterministic loading field; c) build load envelopes of static and dynamic aeroelastic simulations; d) differentiate across the concurrent simulations to obtain sensitivities of dynamic loads as well as moment statistics.  
 The University of Bristol Ultra-Green (BUG) aircraft model [[cite:&STODIECK2018]] is the chosen platform to demonstrate these capabilities as it showcases high-aspect ratio wings that are built using a representative GFEM of current industrial models and it is not based on proprietary data. The main components of the aeroelastic model have been presented in [[cite:&CEA2025a]].
 Structural and aeroelastic static simulations follow, solved via a Newton-Raphson solver with tolerance of $10^{-6}$, as well as an assessment of the aircraft dynamics in response to various gust profiles.
 A high modal resolution of 100 modes is employed in all the results, more than what is necessary for most of the examples.
@@ -622,9 +622,14 @@ Calculations are carried out on a CPU Intel Xeon Silver 4108 with 1.80GHz speed,
 In this section uncertainty quantification is performed for both linear and nonlinear responses to a loading field that is non-deterministic. Hundreds to thousands of simulations are employed in Monte Carlo type of analysis to resolve for the statistics, for which parallelisation of the independent simulations become critical.
 The example resembles the workflow of flight loads and wing stress analysis in an industrial setup.
 # : the flight physics department would compute the in-flight loads for various conditions and pass the maximum of these loads to the stress engineers who would check the integrity of the airframe in their more detailed models.
-There will always be an element of uncertainty around computed loads, and what we show here is how for large displacements, the statistics need to be computed for every distinct loading. And for this, having a parallisation strategy as the one presented could potentially allow the computation of complex correlations and averages that are more easily calculated under linear assumptions.
-
-A static loading field is prescribed along the wings consisting of follower forces in the \(z\)-direction as well as torsional moments, with the characteristic that the force follows a normal distribution $N(\mu=1.5 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the vertical forces and $N(\mu=3 \times 10^4 \mu_0, \sigma=0.15 \mu)$ for the moments. Three scenarios are studied: one in which very large nonlinear deformations are induced with $\mu_0 = 1$, and two small loading with  $\mu_0 = 10^{-2}$ and $\mu_0 = 10^{-3}$.
+There will always be an element of uncertainty around computed loads, and what we show here is how for large displacements, the statistics need to be computed for every distinct loading. And for this, having a parallisation strategy as the one presented could potentially allow the computation of complex correlations and averages that are more easily calculated under linear assumptions but that for nonlinear analysis require of full Montecarlo simulations.
+\\
+Considering this, a static loading field is prescribed along the wings consisting of follower forces in the \(z\)-direction as well as torsional moments, with the characteristic that the force follows a normal distribution:
+\begin{align}\label{eq:normal_loading}
+N&(\mu=1.5 \times 10^4 \mu_0, \sigma=0.15 \mu) \; \text{(forces)}  \\
+N&(\mu=3 \times 10^4 \mu_0, \sigma=0.15 \mu)   \; \text{(moments)}
+\end{align}
+Three scenarios are studied: one in which very large nonlinear deformations are induced with $\mu_0 = 1$, and two small loading with  $\mu_0 = 10^{-2}$ and $\mu_0 = 10^{-3}$.
 The distribution of displacements is characterised by means of Montecarlo simulations that run in parallel for a total of 1600 simulations.
 Fig. [[fig:BUG_mc]] shows the equilibrium at high loading ($\mu_0 = 1$) for two of the random cases (first and last of the 1600 computed). 
 
@@ -634,7 +639,7 @@ Fig. [[fig:BUG_mc]] shows the equilibrium at high loading ($\mu_0 = 1$) for two 
 [[file:figs_ext/MC1.png]]
 
 Table [[table:BUG_mc]] shows the statistics gathered from the response, in this case the tip of the wing displacements in the \(z\)-direction.
-#+CAPTION: Tip vertical displacement statistics
+#+CAPTION: Vertical wing-tip displacement statistics
 #+ATTR_LATEX: :center t
 #+NAME: table:BUG_mc
 | Case                          | Tip displacement mean (m) | Tip displacement std |
@@ -706,13 +711,7 @@ Table [[table:times_MC]] shows the times taken for the nonlinear case in both CP
 
 #+end_src
 
-Now we set out to calculate the derivatives of the expectations previously computed concurrently via Montecarlo simulations in Sec. [[Uncertainty quantification of nonlinear response]]. While the Montecarlo paths are independent of each other and could therefore be run on different machines, having to differentiate the statistics gathered via AD, forces the entire chain of operations to be within a single program. This makes for an interesting and challenging problem to propagate gradients through concurrent operations that are at the end brought together via some collective operation. 
-
-A linear variation parameter is introduced such that the follower forces and torsional moments 
-
-Thus we look at the variation of the maximum z-component of the vertical internal forces as a function of \(\alpha\) in the loading profile of Fig. [[fig:ramping_load]]. Effectively, the slope of the loading increases with \(\alpha\). Table [[table:AD_WSP]] shows the derivatives computed using FD with an epsilon of $10^{-4}$ and AD in reverse-mode on the example with 50 modes resolution.
-
-Fig. shows a validation between 
+Now we set out to calculate the derivatives of the expectations previously computed concurrently via Montecarlo simulations in Sec. [[Uncertainty quantification of nonlinear response]]. While the Montecarlo paths are independent of each other and could therefore be run on different machines, having to do AD on the output statistics gathered via collective operations, forces the entire chain of operations to be within a single program. This makes for an interesting and challenging problem to propagate gradients through concurrent operations. A linear parameter \(\alpha\) is introduced such that the follower forces and torsional moments in Eq. \eqref{eq:normal_loading} are such \(\mu = 10^4 (\frac{\alpha - 1.5}{4-1.5} + 1.5\times\frac{\alpha - 1}{5-1}) \). The selected output is the expectation of a 3-component vector, \(\bm{r}(\alpha)\) of the wing-tip positions at \(\alpha = 4.5\). Fig. [[fig:jac_ediff]] shows a comparison between the derivative \(\partial_{\mathbb{E}_\alpha} \bm{r} = \partial \mathbb{E}[\bm{r}] / \partial \alpha \) using AD and finite differences \( \partial_{\alpha} \bm{r}^{fd}= (\bm{r}(\alpha + \epsilon) - \bm{r}(\alpha))/\epsilon  \). The relative error is calculated as  \(||\partial_{\alpha} \bm{r}^{ad} - \partial_{\alpha} \bm{r}^{fd} || / ||\partial_{\alpha} \bm{r}^{ad} ||  \)
 
 #+NAME: jac_ediff
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -721,8 +720,8 @@ Fig. shows a validation between
 #+end_src
 
 #+NAME: fig:jac_ediff
-#+CAPTION: 
-#+ATTR_LATEX: :width 0.8\textwidth 
+#+CAPTION: Verification against finite-differences of 
+#+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: jac_ediff
 [[file:figs/jac_ediff.png]]
 
@@ -769,9 +768,7 @@ Fig. shows a validation between
 #+RESULTS: jac_Ma
 [[file:figs/jac_Ma.png]]
 
-
 ** Steady manoeuvre loads
-
 #+begin_src python :results none
   sol_manoeuvre = solution.IntrinsicReader("./manoeuvre1Shard")
   config_manoeuvre = configuration.Config.from_file("./manoeuvre1Shard/config.yaml")
@@ -796,8 +793,7 @@ Fig. [[fig:BUG_manoeuvre3D]] illustrates the 3D equilibrium of the airframe at t
 #+ATTR_LATEX: :width 0.95\textwidth 
 [[file:figs_ext/monoeuvre3D.pdf]]
 
-
-In Fig. [[fig:BUG_manoeuvretip]] the tip of the wing in Fig. [[fig:BUG_manoeuvre3D]] is plotted for various angles-of-attach (AoA); the tip position falls down the linear projection between the 0 and 1 degrees AoA as expected. This highlights the potential need for geometrically nonlinear aeroelastic tools in future aircraft configurations under high loading scenarios. 
+In Fig. [[fig:BUG_manoeuvretip]] the tip of the wing in Fig. [[fig:BUG_manoeuvre3D]] is plotted for various angles-of-attach (AoA), normalized with the wing semi-span (\(b= \)). Comparison against linear analysis is carried out and the tip position in the nonlinear analysis falls down the linear counter part as expected. This highlights the potential need for geometrically nonlinear aeroelastic tools in future aircraft configurations under high loading scenarios. 
 
 #+NAME: Manoeuvretip
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -807,15 +803,13 @@ In Fig. [[fig:BUG_manoeuvretip]] the tip of the wing in Fig. [[fig:BUG_manoeuvre
 
 #+NAME: fig:Manoeuvretip
 #+CAPTION: wing tip position for increasing angle of attack
-#+ATTR_LATEX: :width 0.8\textwidth 
+#+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: Manoeuvretip
 [[file:figs/Manoeuvretip.png]]
 
-
-
 Table [[table:times_manoeuvre]] shows the computational times to run these simulations, which shows near no overhead in adding a few hundred of static calculations when moving from the single load case in the CPU to the GPU (nearly 8 seconds to 14 seconds, which amounts for 6 seconds cost when adding an extra 255 cases).
 
-#+CAPTION: Computational times for the multiple manoeuvre problem 
+#+CAPTION: Computational times for the multiple manoeuvre problem
 #+ATTR_LATEX: :center t
 #+NAME: table:times_manoeuvre
 | Device         |              Time (sec.) |
