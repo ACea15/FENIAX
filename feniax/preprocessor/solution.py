@@ -131,7 +131,7 @@ def save_container(path: pathlib.Path, container):
             jnp.save(attr_path, jnp.array(attr))
         elif isinstance(attr, np.ndarray):
             jnp.save(attr_path, attr)
-        elif isinstance(attr, (list, dict, tuple)):
+        elif isinstance(attr, (list, dict, tuple, set)):
             with open(attr_path, "wb") as fp:  # Pickling
                 pickle.dump(attr, fp)
         elif attr is None:
@@ -162,6 +162,7 @@ def load_container(path: pathlib.Path, Container):
                 (Container.__annotations__[attr_name].__name__ == "dict")
                 or (Container.__annotations__[attr_name].__name__ == "list")
                 or (Container.__annotations__[attr_name].__name__ == "tuple")
+                or (Container.__annotations__[attr_name].__name__ == "set")
             ):
                 with open(attr_path, "rb") as fp:  # Unpickling
                     kwargs[attr_name] = pickle.load(fp)

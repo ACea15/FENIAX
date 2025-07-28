@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
-Manoeuvre="true"
-Montecarlo="true"
-MontecarloADt="true"
-MontecarloADtjac="true"
-MontecarloADtfd="true"    
-MontecarloADfem="true"
-Gust="true"
+Manoeuvre="tru"
+Montecarlo="tru"
+MontecarloADt="tru"
+MontecarloADtjac="tru"
+MontecarloADtfd="tru"    
+MontecarloADfem="tru"
+Gust="tru"
+GustBench="tru"
 Forager="true"
 
 pyenv activate feniax
@@ -54,6 +55,11 @@ if [ "$Gust" = "true" ]; then
     echo "RUNNING GUST"
     python settings_gust1shard.py $current_dir
 fi
+
+if [ "$GustBench" = "true" ]; then
+    echo "RUNNING GUST BENCHMARK"
+    python settings_gust1shardbench.py $current_dir
+fi  
 
 if [ "$Forager" = "true" ]; then
     echo "RUNNING FORAGER"

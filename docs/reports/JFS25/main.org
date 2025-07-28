@@ -31,7 +31,7 @@
 :END:
 
 #+begin_abstract
-A novel framework for geometrically nonlinear aeroelastic analysis is augmented for large scale computations of aircraft-sizing loads. The software can be deployed on modern hardware architectures and the parallelisation has been tested both on CPUs and GPUs. While keeping computational times in the order of seconds, the presented approach unlocks new capabilities such as the following: uncertainty quantification analysis of the nonlinear response via massively-parallel Montecarlo simulations; construction of load envelopes of static and dynamic cases in full-aircraft models. Furthermore, differentiation of both Montecarlo concurrent simulations and aeroelastic loads is achieved via JAX library automatic differentiation engine and collective primitives. 
+A novel framework for geometrically nonlinear aeroelastic analysis is augmented for large scale computations of aircraft-sizing loads concurrently. The software can be deployed on modern hardware architectures and the parallelization has been tested both on CPUs and GPUs. While keeping computational times in the order of seconds, the presented approach unlocks new capabilities such as the following: uncertainty quantification analysis of the nonlinear response via massively-parallel Montecarlo simulations; construction of load envelopes of static and dynamic cases in full-aircraft models. Furthermore, differentiation of both Montecarlo concurrent simulations and aeroelastic loads is achieved via JAX library automatic differentiation engine and collective primitives. 
 We explore a high-aspect-ratio-wing aircraft configuration, showing the ability of the solvers to capture nonlinear effects for external forces inducing large deformations and also the importance of these effects when studying modern aircraft concepts. Discrete, manoeuvre and gust loads are assessed for multiple flow and parametric conditions running concurrently. Sensitivities of maximum wing-root stresses and tip displacements are computed and verified against finite differences.  
 #+end_abstract
 
@@ -70,9 +70,6 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
 
 ** Imports
 #+begin_src python  :results none 
-  import plotly.express as px
-  import pyNastran.op4.op4 as op4
-  import matplotlib.pyplot as plt
   import pdb
   import datetime
   import os
@@ -100,6 +97,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
 #+begin_src python  :results none  :tangle ./results/run.py
   import pathlib
   import plotly.express as px
+  import plotly.graph_objects as go
   import pickle
   import jax.numpy as jnp
   import pandas as pd
@@ -165,6 +163,11 @@ https://plotly.com/python/subplots/
                          gridcolor='lightgrey')
           fig.update_layout(plot_bgcolor='white',
                             yaxis=dict(zerolinecolor='lightgrey'),
+                            font=dict(
+                                family="Arial",
+                                size=18,
+                                color="black"
+                            ),
                             #showlegend=True, #showlegend,
                             margin=dict(
                                 autoexpand=True,
@@ -175,6 +178,35 @@ https://plotly.com/python/subplots/
                             ))
           return fig
       return inner
+
+  # fig.update_layout(
+  #     xaxis=dict(
+  #         title='X AxisTitle',
+  #         title_font=dict(family='Arial Black', size=22, color='black'),
+  #         tickfont=dict(family='Arial', size=18, color='black')
+  #     ),
+  #     yaxis=dict(
+  #         title='Y Axis Title',
+  #         title_font=dict(family='Arial Black', size=22, color='black'),
+  #         tickfont=dict(family='Arial', size=18, color='black')
+  #     ),
+  #     font=dict(
+  #         family="Arial",
+  #         size=18,
+  #         color="black"
+  #     ),
+  #     legend=dict(
+  #         font=dict(size=16),
+  #         x=0.02,
+  #         y=0.98,
+  #         bgcolor='rgba(255,255,255,0)',  # transparent background
+  #         bordercolor='black',
+  #         borderwidth=1
+  #     ),
+  #     margin=dict(l=80, r=40, t=40, b=80),
+  #     width=700,
+  #     height=500
+  # )
 
 #+end_src
 
@@ -238,7 +270,6 @@ https://plotly.com/python/subplots/
 
   @fig_background
   def plot_jacfem(jac, xlabel="", ylabel=""):
-      import plotly.graph_objects as go
 
       fig = go.Figure(data=go.Heatmap(
           z=jac, colorscale = 'hot'))
@@ -277,6 +308,25 @@ https://plotly.com/python/subplots/
       fig.update_xaxes(#range=aoa,
       title=r'$AoA [^o]$')
       return fig
+
+  @fig_background
+  def plot_gustshard(x, y, z, component):
+
+      fig = go.Figure(data =
+                      go.Contour(
+                          z= z[:,:, component],
+                          x=x, # horizontal axis
+                          y=y, # vertical axis
+                          colorscale='Blues',
+                          colorbar=dict(
+                              tickfont=dict(size=20)
+                          )  # Set tick font size
+                      )
+                      )
+      fig.update_yaxes(title="Gust length [m]")
+      fig.update_xaxes(title="Gust intensity [m/s]")
+      return fig
+
 #+end_src
 
 * Run models :noexport:  
@@ -335,7 +385,8 @@ For a complete walk-through of model and creation see the file
 ** Dynamic-load envelopes
 
 - Construct gusts of different lengths, intensity and airflow density
-- Python file: python settings_gust1shard.py
+- Python file: python settings_gust1shard.py for plotting (11x11=121 gust)
+  settings_gust1shardbench.py for benchmark (8x8x8=256 gust)
 
 ** Gust AD forager
 
@@ -351,11 +402,12 @@ For a complete walk-through of model and creation see the file
   Manoeuvre="tru"
   Montecarlo="tru"
   MontecarloADt="tru"
-  MontecarloADtjac="true"
+  MontecarloADtjac="tru"
   MontecarloADtfd="tru"    
   MontecarloADfem="tru"
   Gust="tru"
-  Forager="tru"
+  GustBench="tru"
+  Forager="true"
 
   pyenv activate feniax
   pathBUG="../../../../FENIAXexamples/BUG/"
@@ -385,7 +437,7 @@ For a complete walk-through of model and creation see the file
       # python settings_ADDiscreteLoadsMC_validation.py $current_dir
       python settings_ADDiscreteMC1_t_fdjac.py $current_dir
   fi
-  
+
   if [ "$MontecarloADtfd" = "true" ]; then
       echo "RUNNING MONTECARLOADTFD"
       # python settings_ADDiscreteLoadsMC_validation.py $current_dir
@@ -402,6 +454,11 @@ For a complete walk-through of model and creation see the file
       echo "RUNNING GUST"
       python settings_gust1shard.py $current_dir
   fi
+
+  if [ "$GustBench" = "true" ]; then
+      echo "RUNNING GUST BENCHMARK"
+      python settings_gust1shardbench.py $current_dir
+  fi  
 
   if [ "$Forager" = "true" ]; then
       echo "RUNNING FORAGER"
@@ -741,14 +798,14 @@ Now we set out to calculate the derivatives of the expectations previously compu
 #+NAME: jac_eigenvecs
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   fig, figname = fig_out(name)(plot_jacfem)(jac_fem['eigenvecs'][0,1,0, 65+50:218, :],
-                                            xlabel="Wing Eigenvectors",
+                                            xlabel="Right-Wing Eigenvector components",
                                             ylabel="Mode"
                                             )
   figname
 #+end_src
 
 #+NAME: fig:jac_eigenvecs
-#+CAPTION: 
+#+CAPTION: Jacobian of wing tip position with respect to Mass matrix right-wing components
 #+ATTR_LATEX: :width 0.8\textwidth 
 #+RESULTS: jac_eigenvecs
 [[file:figs/jac_eigenvecs.png]]
@@ -763,7 +820,7 @@ Now we set out to calculate the derivatives of the expectations previously compu
 #+end_src
 
 #+NAME: fig:jac_Ma
-#+CAPTION: 
+#+CAPTION: Jacobian of wing tip position with respect to Mass matrix right-wing components 
 #+ATTR_LATEX: :width 0.8\textwidth 
 #+RESULTS: jac_Ma
 [[file:figs/jac_Ma.png]]
@@ -819,23 +876,63 @@ Table [[table:times_manoeuvre]] shows the computational times to run these simul
 | GPU            |                     14.4 |
 
 ** Dynamic loads at large scale
+#+begin_src python :results none
+  sol_gust1shard = solution.IntrinsicReader("./gust1_eaoShard")
+  node = 13
+  points = sol_gust1shard.data.shards_s1.points
+  gust_wn = 11 # 11 intensity points
+  gust_w = points[:gust_wn,3]
+  gust_l = points[::gust_wn,2]
+  gust_ln = 11  # 11 gust lenght points
+  x2max = jnp.max(jnp.abs(sol_gust1shard.data.dynamicsystem_s1.X2[:,:, :, node]), axis=1) # points,6
+  #x2min = jnp.min(sol_gust1shard.data.dynamicsystem_s1.X2[:,:, :, node], axis=1)
+  x2max_mesh = x2max.reshape((gust_ln, gust_wn,6)) # contour: wn is x, ln is y
+  #x2min_mesh = x2min.reshape((gust_ln, gust_wn,6))
+#+end_src
+
 In this final example we perform a dynamic aeroelastic analysis to study the response of the aircraft to multiple 1-cos gusts for varying length, intensity and the density of the airflow. The mach number is kept constant at 0.7. In the examples above the aircraft was clamped while the aircraft is free here. A Runge-Kutta solver is employed to march in time the equations with a time step of $10^{-3}$ and the total number of modes used was 100. Note the large size of the aeroelastic ODE system: 2 \times 100 nonlinear equations plus 5 \times 100 linear equations for the aerodynamic states with 5 poles, plus 4 equations for the quaternion tracking the rigid-body motion, for a combined ODE system of 704 equations.  
-In addition, a total of 512 gusts cases are run concurrently for all possible combinations of 8 gust lengths between 25 and 265 meters, 8 gust intensities between 1 and 30 m/s, and 8 airflow densities between 0.34 and 0.48 Kg/m$^3$. This means that $512 \times 704 = 360448$ equations are being marched in time, in this case for 2 seconds which is enough to capture peak loads. Figs. [[fig:gust_bendingout_torsion]], [[fig:gust_bendingout_shear]] and [[fig:gust_bendingin_shear]] show the load diagrams for the wing root at the maximum gust intensity of 20, varying 16 gust lengths, $L$, in the range previously stated and 8 airflow densities,  with the points plotted as $point = L / L_{max} + \rho_{\infty} / \rho_{max}$. Different load pattern emerge which need further analysis but reflect the importance of running multiple of these simulations to assess the critical loads. 
+In addition, a total of 512 gusts cases are run concurrently for all possible combinations of 8 gust lengths between 50 and 200 meters, 8 gust intensities between 5 and 25 m/s, and 8 airflow densities between 0.34 and 0.48 Kg/m$^3$. This means that $512 \times 704 = 360448$ equations are being marched in time, in this case for 2 seconds which is enough to capture peak loads. Figs. [[fig:gust_bendingout_torsion]], [[fig:gust_bendingout_shear]] and [[fig:gust_bendingin_shear]] show the load diagrams for the wing root at the maximum gust intensity of 20, varying 16 gust lengths, $L$, in the range previously stated and 8 airflow densities,  with the points plotted as $point = L / L_{max} + \rho_{\infty} / \rho_{max}$. Different load pattern emerge which need further analysis but reflect the importance of running multiple of these simulations to assess the critical loads. 
 
-#+NAME: fig:gust_bendingout_torsion
-#+CAPTION: Gust case, bending-out-of-plane versus torsion
-#+ATTR_LATEX: :width 0.5\textwidth 
-[[file:figs/gust_bendingout_torsion.png]]
 
-#+NAME: fig:gust_bendingout_shear
-#+CAPTION: Gust case, bending-out-of-plane versus shear
-#+ATTR_LATEX: :width 0.5\textwidth 
-[[file:figs/gust_bendingout_shear.png]]
+#+NAME: GustShard_shear
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh,
+                                               component=2)
+  figname
+#+end_src
 
-#+NAME: fig:gust_bendingin_shear
-#+CAPTION: Gust case, bending-inplane versus shear
-#+ATTR_LATEX: :width 0.5\textwidth 
-[[file:figs/gust_bendingin_shear.png]]
+#+NAME: fig:GustShard_shear
+#+CAPTION: Wing-root internal loading, shear force
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustShard_shear
+[[file:figs/GustShard_shear.png]]
+
+#+NAME: GustShard_torsion
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh,
+                                               component=3)
+  figname
+#+end_src
+
+#+NAME: fig:GustShard_torsion
+#+CAPTION: Wing-root internal loading, shear force
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustShard_torsion
+[[file:figs/GustShard_torsion.png]]
+
+#+NAME: GustShard_bending
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh,
+                                               component=4)
+  figname
+#+end_src
+
+#+NAME: fig:GustShard_bending
+#+CAPTION: Wing-root internal loading, shear force
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: GustShard_bending
+[[file:figs/GustShard_bending.png]]
+
 
 As a validation of the parallelisation, Fig. [[fig:bug_gusttip]] shows the wing tip time evolution for a gust of 150 m length, intensity of 20 m/s and flow density of 0.41 Kg/m$^3$. Both the results of a single simulation run and that of the 512 parallelised one are shown, which match perfectly.
 
@@ -844,7 +941,7 @@ As a validation of the parallelisation, Fig. [[fig:bug_gusttip]] shows the wing 
 #+ATTR_LATEX: :width 1\textwidth 
 [[file:figs/bug_gusttip.pdf]]
 
-In Fig. [[fig:BUG_Gust3D]] the 3D reconstructed flight shape of the airframe is depicted for the simulation in Fig. [[fig:bug_gusttip]]. 
+In Fig. [[fig:BUG_Gust3D]] the 3D reconstructed flight shape of the airframe is depicted for a simulation under a gust of 150 m length, intensity of 20 m/s and flow density of 0.41 Kg/m$^3$
 
 #+NAME: fig:BUG_Gust3D
 #+CAPTION: Full aircraft Dynamic response to 1-cos gust excitation
@@ -862,9 +959,88 @@ Table [[table:times_gust]] contains the simulation times of the calculation, whi
 | CPU (parallel) |                     922.6 |
 | GPU            |                      38.2 |
 
-*** Differentiation of dynamic load envelopes
+*** Load envelope differentiation
+#+begin_src python :results none
+  import feniax.intrinsic.objectives as objectives
+  sol_gust1forager = solution.IntrinsicReader("./gustforager")
+  sol_gust1forager_val = solution.IntrinsicReader("./gustforager_validation")
+  sol_gust1forager_erho = solution.IntrinsicReader("./gustforager_epsilonrho")
+  sol_gust1forager_elength = solution.IntrinsicReader("./gustforager_epsilonlength")
+  sol_gust1forager_eintensity = solution.IntrinsicReader("./gustforager_epsilonintensity")
 
-** Differentiation of load envelopes
+  node = 13
+  components = [2,3,4]
+  t_range = jnp.arange(len(sol_gust1forager.data.dynamicsystem_s1.t))
+  points = sol_gust1forager.data.shards_s1.points
+  filtered_map = sol_gust1forager.data.forager_shard2adgust.filtered_map
+  index = list(sol_gust1forager.data.forager_shard2adgust.filtered_indexes)[0]
+  epsilon = 1e-5
+  jac_rho = (objectives.X2_MAX(sol_gust1forager_erho.data.dynamicsystem_s1.X2,
+                               jnp.array([node]),
+                               jnp.array(components),
+                               t_range) -
+               objectives.X2_MAX(#sol_gust1forager.data.dynamicsystem_s1.X2[index],
+                                 sol_gust1forager_val.data.dynamicsystem_s1.X2,
+                                 jnp.array([node]),
+                                 jnp.array(components),
+                                 t_range)
+               ) / epsilon
+  epsilon = 1e-3
+  jac_length = (objectives.X2_MAX(sol_gust1forager_elength.data.dynamicsystem_s1.X2,
+                               jnp.array([node]),
+                               jnp.array(components),
+                               t_range) -
+               objectives.X2_MAX(#sol_gust1forager.data.dynamicsystem_s1.X2[index],
+                   sol_gust1forager_val.data.dynamicsystem_s1.X2,
+                                 jnp.array([node]),
+                                 jnp.array(components),
+                                 t_range)
+               ) / epsilon
+  epsilon = 1e-4
+  jac_intensity = (objectives.X2_MAX(sol_gust1forager_eintensity.data.dynamicsystem_s1.X2,
+                                     jnp.array([node]),
+                                     jnp.array(components),
+                                     t_range) -
+                   objectives.X2_MAX(#sol_gust1forager.data.dynamicsystem_s1.X2[index],
+                       sol_gust1forager_val.data.dynamicsystem_s1.X2,
+                                     jnp.array([node]),
+                                     jnp.array(components),
+                                     t_range)
+               ) / epsilon
+
+  jacdiff_rho = jnp.hstack((sol_gust1forager.data.dynamicsystem_scatter0.jac['rho_inf'] -
+                 jac_rho) / jac_rho)
+  jacdiff_length = jnp.hstack((sol_gust1forager.data.dynamicsystem_scatter0.jac['length'] -
+                 jac_length) / jac_length)
+  jacdiff_intensity = jnp.hstack((sol_gust1forager.data.dynamicsystem_scatter0.jac['intensity'] -
+                 jac_intensity) / jac_intensity)
+
+  jac_dict = dict(rho=jnp.hstack(sol_gust1forager.data.dynamicsystem_scatter0.jac['rho_inf']),
+                  rho_fd=jnp.hstack(jac_rho),
+                  rho_diff=jacdiff_rho,
+                  Length=jnp.hstack(sol_gust1forager.data.dynamicsystem_scatter0.jac['length']),
+                  Length_fd=jnp.hstack(jac_length),
+                  Length_diff=jacdiff_length, Intensity=jnp.hstack(sol_gust1forager.data.dynamicsystem_scatter0.jac['intensity']),
+                  Intensity_fd=jnp.hstack(jac_intensity),
+                  Intensity_diff=jacdiff_intensity
+                  )
+  df_jac = pd.DataFrame(jac_dict, index=['a', 'b', 'c'])
+  #df_jac = df_jac.rename()
+#+end_src
+
+#+begin_src python :results raw
+  tabulate(df_jac, headers=df_jac.columns, tablefmt='orgtbl',
+           #columns=["\(\rho_{\inf} \)", "\(\rho_{\inf}\) FD", "\(\Delta \)"]
+           )
+#+end_src
+
+#+RESULTS:
+|   |         rho |    rho_fd | rho_diff |   Length | Length_fd | Length_diff | Intensity | Intensity_fd | Intensity_diff |
+|---+-------------+-----------+----------+----------+-----------+-------------+-----------+--------------+----------------|
+| a |      455840 |    456250 |  -0.0009 | -714.798 |      -625 |      0.1437 |    9480.5 |      9531.25 |        -0.0053 |
+| b |     -128404 |   -129688 |  -0.0099 |  -5071.4 |  -5156.25 |     -0.0165 |   13058.8 |      12968.8 |         0.0069 |
+| c | 2.32815e+06 | 2.325e+06 |   0.0014 |  219.403 |         0 |         inf |     84773 |        85000 |        -0.0027 |
+
 
 * Conclusions
 A modal-based, geometrically nonlinear formulation of the aircraft dynamics has been implemented for multiple load-cases parallelisation in modern hardware architectures. We have applied state-of-the-art techniques and tools employed for large problems in Deep Machine Learning to the computation and prediction of the sizing aeroelastic loads in commercial aircraft, which can expand thousands of simulations. 

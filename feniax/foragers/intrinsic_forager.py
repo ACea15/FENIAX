@@ -152,6 +152,8 @@ class IntrinsicForager_shard2adgust(IntrinsicForager,
             filtered_map = self.filtered_map,
             field=self.field
             )
+        self.sol.save_container("Forager", label="_" + self.config.forager.typeof)
+        
             
 class IntrinsicMPIForager_shard2adgust(IntrinsicForager,
                                     cls_name="intrinsicMPI_shard2adgust"):
