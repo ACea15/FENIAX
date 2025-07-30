@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-Manoeuvre="tru"
-Montecarlo="tru"
-MontecarloADt="tru"
-MontecarloADtjac="tru"
-MontecarloADtfd="tru"    
-MontecarloADfem="tru"
-Gust="tru"
-GustBench="tru"
+Manoeuvre="true"
+Montecarlo="true"
+MontecarloADt="true"
+MontecarloADtjac="true"
+MontecarloADtfd="true"    
+MontecarloADfem="true"
+Gust="true"
+GustBench="true"
 Forager="true"
 
 pyenv activate feniax

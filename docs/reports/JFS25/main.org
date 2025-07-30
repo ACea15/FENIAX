@@ -360,7 +360,7 @@ https://plotly.com/python/subplots/
 
 #+end_src
 
-* Models
+* Models :noexport: 
 
 For a complete walk-through of model and creation see the file
 [[file:../../../examples/BUG/modelgeneration.org][modelgeneration.org]]
@@ -399,14 +399,14 @@ For a complete walk-through of model and creation see the file
 #+begin_src shell :session sh1 :tangle run_models.sh
   #!/usr/bin/env bash
 
-  Manoeuvre="tru"
-  Montecarlo="tru"
-  MontecarloADt="tru"
-  MontecarloADtjac="tru"
-  MontecarloADtfd="tru"    
-  MontecarloADfem="tru"
-  Gust="tru"
-  GustBench="tru"
+  Manoeuvre="true"
+  Montecarlo="true"
+  MontecarloADt="true"
+  MontecarloADtjac="true"
+  MontecarloADtfd="true"    
+  MontecarloADfem="true"
+  Gust="true"
+  GustBench="true"
   Forager="true"
 
   pyenv activate feniax
@@ -927,13 +927,6 @@ In addition, a total of 512 gusts cases are run concurrently for all possible co
   figname
 #+end_src
 
-#+NAME: fig:GustShard_bending
-#+CAPTION: Wing-root internal loading, shear force
-#+ATTR_LATEX: :width 0.6\textwidth 
-#+RESULTS: GustShard_bending
-[[file:figs/GustShard_bending.png]]
-
-
 As a validation of the parallelisation, Fig. [[fig:bug_gusttip]] shows the wing tip time evolution for a gust of 150 m length, intensity of 20 m/s and flow density of 0.41 Kg/m$^3$. Both the results of a single simulation run and that of the 512 parallelised one are shown, which match perfectly.
 
 #+NAME: fig:bug_gusttip
@@ -948,7 +941,7 @@ In Fig. [[fig:BUG_Gust3D]] the 3D reconstructed flight shape of the airframe is 
 #+ATTR_LATEX: :width 1\textwidth 
 [[file:figs_ext/Gust3D_3.png]]
 
-Table [[table:times_gust]] contains the simulation times of the calculation, which show one order of magnitude increase in performance when running in parallel in the CPU versus a complete single simulation running sequentially, and another order of magnitude when moving from the CPU to a modern GPU.
+Table [[table:times_gust]] contains the simulation times of the calculation, which shows one order of magnitude increase in performance when running in parallel in the CPU versus a complete single simulation running sequentially, and another order of magnitude when moving from the CPU to a modern GPU. This exemplifies the power of modern hardware for scientific computation. It also 
 
 #+CAPTION: Computational times multiple gust problem 
 #+ATTR_LATEX: :center t
@@ -963,50 +956,57 @@ Table [[table:times_gust]] contains the simulation times of the calculation, whi
 #+begin_src python :results none
   import feniax.intrinsic.objectives as objectives
   sol_gust1forager = solution.IntrinsicReader("./gustforager")
-  sol_gust1forager_val = solution.IntrinsicReader("./gustforager_validation")
-  sol_gust1forager_erho = solution.IntrinsicReader("./gustforager_epsilonrho")
-  sol_gust1forager_elength = solution.IntrinsicReader("./gustforager_epsilonlength")
-  sol_gust1forager_eintensity = solution.IntrinsicReader("./gustforager_epsilonintensity")
+  load_jacs = True
 
-  node = 13
-  components = [2,3,4]
-  t_range = jnp.arange(len(sol_gust1forager.data.dynamicsystem_s1.t))
-  points = sol_gust1forager.data.shards_s1.points
-  filtered_map = sol_gust1forager.data.forager_shard2adgust.filtered_map
-  index = list(sol_gust1forager.data.forager_shard2adgust.filtered_indexes)[0]
-  epsilon = 1e-5
-  jac_rho = (objectives.X2_MAX(sol_gust1forager_erho.data.dynamicsystem_s1.X2,
-                               jnp.array([node]),
-                               jnp.array(components),
-                               t_range) -
-               objectives.X2_MAX(#sol_gust1forager.data.dynamicsystem_s1.X2[index],
-                                 sol_gust1forager_val.data.dynamicsystem_s1.X2,
-                                 jnp.array([node]),
-                                 jnp.array(components),
-                                 t_range)
-               ) / epsilon
-  epsilon = 1e-3
-  jac_length = (objectives.X2_MAX(sol_gust1forager_elength.data.dynamicsystem_s1.X2,
-                               jnp.array([node]),
-                               jnp.array(components),
-                               t_range) -
-               objectives.X2_MAX(#sol_gust1forager.data.dynamicsystem_s1.X2[index],
-                   sol_gust1forager_val.data.dynamicsystem_s1.X2,
-                                 jnp.array([node]),
-                                 jnp.array(components),
-                                 t_range)
-               ) / epsilon
-  epsilon = 1e-4
-  jac_intensity = (objectives.X2_MAX(sol_gust1forager_eintensity.data.dynamicsystem_s1.X2,
+  if load_jacs:
+      jac_rho = jnp.load("./gustforager_epsilonrho/jac_rho.npy")
+      jac_length = jnp.load("./gustforager_epsilonlength/jac_length.npy")
+      jac_intensity = jnp.load("./gustforager_epsilonintensity/jac_intensity.npy")
+  else:
+      # this is not working proprerly with FD, loose of accuracy in saving the data??
+      sol_gust1forager_val = solution.IntrinsicReader("./gustforager_validation")
+      sol_gust1forager_erho = solution.IntrinsicReader("./gustforager_epsilonrho")
+      sol_gust1forager_elength = solution.IntrinsicReader("./gustforager_epsilonlength")
+      sol_gust1forager_eintensity = solution.IntrinsicReader("./gustforager_epsilonintensity")  
+      node = 13
+      components = [2,3,4]
+      t_range = jnp.arange(len(sol_gust1forager.data.dynamicsystem_s1.t))
+      points = sol_gust1forager.data.shards_s1.points
+      filtered_map = sol_gust1forager.data.forager_shard2adgust.filtered_map
+      index = list(sol_gust1forager.data.forager_shard2adgust.filtered_indexes)[0]
+      epsilon = 1e-4
+      jac_rho = (objectives.X2_MAX(sol_gust1forager_erho.data.dynamicsystem_s1.X2,
+                                   jnp.array([node]),
+                                   jnp.array(components),
+                                   t_range) -
+                   objectives.X2_MAX(#sol_gust1forager.data.dynamicsystem_s1.X2[index],
+                                     sol_gust1forager_val.data.dynamicsystem_s1.X2,
                                      jnp.array([node]),
                                      jnp.array(components),
-                                     t_range) -
+                                     t_range)
+                   ) / epsilon
+      epsilon = 1e-4
+      jac_length = (objectives.X2_MAX(sol_gust1forager_elength.data.dynamicsystem_s1.X2,
+                                   jnp.array([node]),
+                                   jnp.array(components),
+                                   t_range) -
                    objectives.X2_MAX(#sol_gust1forager.data.dynamicsystem_s1.X2[index],
                        sol_gust1forager_val.data.dynamicsystem_s1.X2,
                                      jnp.array([node]),
                                      jnp.array(components),
                                      t_range)
-               ) / epsilon
+                   ) / epsilon
+      epsilon = 1e-4
+      jac_intensity = (objectives.X2_MAX(sol_gust1forager_eintensity.data.dynamicsystem_s1.X2,
+                                         jnp.array([node]),
+                                         jnp.array(components),
+                                         t_range) -
+                       objectives.X2_MAX(#sol_gust1forager.data.dynamicsystem_s1.X2[index],
+                           sol_gust1forager_val.data.dynamicsystem_s1.X2,
+                                         jnp.array([node]),
+                                         jnp.array(components),
+                                         t_range)
+                   ) / epsilon
 
   jacdiff_rho = jnp.hstack((sol_gust1forager.data.dynamicsystem_scatter0.jac['rho_inf'] -
                  jac_rho) / jac_rho)
@@ -1024,9 +1024,21 @@ Table [[table:times_gust]] contains the simulation times of the calculation, whi
                   Intensity_fd=jnp.hstack(jac_intensity),
                   Intensity_diff=jacdiff_intensity
                   )
-  df_jac = pd.DataFrame(jac_dict, index=['a', 'b', 'c'])
+  df_jac = pd.DataFrame(jac_dict, index=['Shear', 'Torsion', 'Bending'])
   #df_jac = df_jac.rename()
 #+end_src
+
+Now that dynamic load envelopes have been shown, the interest is to be able to obtain derivatives at the critical points as described in Sec. [[Differentiable-parallel dynamic loads]]. In opposition to the derivatives of expectations where all the operations are needed in the construction of the computational graph, here only a few of the most problematic cases are required.
+The metrics being tracked are wing-root shear, torsion and out-of plane torsion.
+The parallelisation is set for two gust intensities, two flow densities and 16 gust lengths to cover 1-cos gusts from 50 to 200 m/s with 10 m/s separation between points. Rather than a realistic example, this is set to test the machinery of the forager pattern and verify it can indeed discover critical load cases and automatically compute gradients. The gradient of these critical cases is also calculated with respect to the flow density, gust length and intensity (thus they are not only the parameters for the parallelisation but are also chosen to be the input variables of the gradients, though any other input such as FE matrices could have been chosen). By looking at Figs. [[fig:GustShard_shear]]-[[GustShard_bending]], we can identify maximum loads at around 65, 75, 115 m/s gust lengths for shear, torsion and bending.  
+Of the 64 cases analyzed by the forager program, it picked those with higher intensity and flow density as expected, but only 2 gust lengths of 70 m/s for the shear and torsion, and 110 m/s for the out-of-plane bending. A finer discretization in the parallelization can be setup to be closer to the actual maximum, in which case each output gets a unique critical gust.  
+Once those peaks are found, the algorithms triggers the sensitivity analysis, for which we have shown a verification for the 70 m/s gust with maximum density and intensity in Table. This 
+
+#+CAPTION: 
+#+ATTR_LATEX: :center t
+#+NAME: table:times_gust
+
+
 
 #+begin_src python :results raw
   tabulate(df_jac, headers=df_jac.columns, tablefmt='orgtbl',
@@ -1035,27 +1047,26 @@ Table [[table:times_gust]] contains the simulation times of the calculation, whi
 #+end_src
 
 #+RESULTS:
-|   |         rho |    rho_fd | rho_diff |   Length | Length_fd | Length_diff | Intensity | Intensity_fd | Intensity_diff |
-|---+-------------+-----------+----------+----------+-----------+-------------+-----------+--------------+----------------|
-| a |      455840 |    456250 |  -0.0009 | -714.798 |      -625 |      0.1437 |    9480.5 |      9531.25 |        -0.0053 |
-| b |     -128404 |   -129688 |  -0.0099 |  -5071.4 |  -5156.25 |     -0.0165 |   13058.8 |      12968.8 |         0.0069 |
-| c | 2.32815e+06 | 2.325e+06 |   0.0014 |  219.403 |         0 |         inf |     84773 |        85000 |        -0.0027 |
+|         |         rho |      rho_fd |     rho_diff |   Length | Length_fd |  Length_diff | Intensity | Intensity_fd | Intensity_diff |
+|---------+-------------+-------------+--------------+----------+-----------+--------------+-----------+--------------+----------------|
+| Shear   |      455840 |      455833 |  1.59735e-05 | -714.798 |  -714.798 |  -4.2694e-07 |    9480.5 |       9480.5 |              0 |
+| Torsion |     -128404 |     -128457 | -0.000416907 |  -5071.4 |   -5071.4 | -9.62814e-08 |   13058.8 |      13058.8 |   -1.49564e-07 |
+| Bending | 2.32815e+06 | 2.32808e+06 |   2.9316e-05 |  219.403 |   219.399 |  1.84302e-05 |     84773 |        84773 |              0 |
 
 
 * Conclusions
-A modal-based, geometrically nonlinear formulation of the aircraft dynamics has been implemented for multiple load-cases parallelisation in modern hardware architectures. We have applied state-of-the-art techniques and tools employed for large problems in Deep Machine Learning to the computation and prediction of the sizing aeroelastic loads in commercial aircraft, which can expand thousands of simulations. 
-Remarkable computational times of under a minute are achieved for 256 manoeuvres varying flow conditions and for 512 dynamic gust responses, including geometrically nonlinear effects in the simulations.
-Such a performance potentially unlocks two different applications: uncertainty quantification of the nonlinear aircraft response to a non-deterministic loading and integration of the software in larger multidisciplinary optimisation stuidies.
-The former has been demonstrated on a problem where a field of forces with an stochastic component induces very large deformation; it has been shown that while the statistics in the linear response can be easily forecast from one complete experiment, in the nonlinear case a Montecarlo simulation needs to be carried out for each new set of loading scenario.
-For the latter, differentiation of the load envelopes via the AD capabilities within JAX will be the next step. Since we are already in the memory boundaries of a single GPU or CPU, this will require the use of multiple devices, for which we have already built the implementation. 
-Scaling up the process to include various mass cases, as it is done in industrial scenarios, is also a feasible target. Thus combining prediction of sizing aeroelastic loads that include thousands of cases in commercial aircraft with the computation of their gradients with respect to design variables in a framework for multidisciplinary design optimization.
+A modal-based, geometrically nonlinear formulation has been implemented with concurrent capabilities for multiple load-cases in modern hardware architectures. We have applied state-of-the-art techniques and tools to the computation of the sizing aeroelastic loads encountered during the design of commercial aircraft. These can span thousands of simulations in multiple scenarios and the efficiency of our approach has been highlighted while accounting for nonlinear effects and rigid body dynamics. Moreover, sensitivity of the response to model inputs using automatic differentiation has been demonstrated across parallel simulations.    
+Computational times of under a minute are achieved for 256 manoeuvres varying flow conditions and for 512 dynamic gust responses undergoing large displacements.
+Such a performance two different applications: uncertainty quantification of the nonlinear aircraft response to a non-deterministic loading and integration of the software in larger multidisciplinary optimisation studies.
+The former has been presented on a problem where a field of forces with an stochastic component induces very large deformations. Montecarlo analysis then allows to build statistics of the response and we have shown how we can not only run multiple paths concurrently to build a distribution of the outputs, but also differentiate expectations of those with respect to any input in the aeroelastic analysis.   
+For the sensitivity analysis of load envelopes, a strategy named The Forager Pattern has been introduced whereby the multiple cases are launched in parallel, the critical our filtered, and new simulations for AD are spawn to obtain gradients of critical loads. Since we are already in the memory boundaries of a single GPU or CPU, this will require the use of multiple devices, for which we have already built the implementation. 
+Scaling up the process to various mass cases, as it is done in industrial scenarios, is also a feasible target. The resulting framework thus combines prediction of sizing aeroelastic loads in a nonlinear fashion with the computation of their gradients with respect to design variables, and therefore it is intended to be part of multidisciplinary design optimization studies that include the large set of loading requirements in the certification process.
 
 \appendix
 * Embarrassingly-parallel algorithms for PDE optimisation via Feynman–Kac theorem
 Having shown the possibility to obtain derivatives of expectations computed via Montecarlo simulations running concurrently, a potential application is found in the field of optimisation of parabolic equation. Montecarlo simulations are very easy to parallelised as they do not require synchronisation. 
 
 * Biblio :ignore:
-\newpage
 
 bibliographystyle:unsrt
 # bibliography:/home/acea/Documents/Engineering.bib
