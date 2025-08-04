@@ -228,12 +228,26 @@ https://plotly.com/python/subplots/
                                  ),
                             dict())
 
+      powersx = [1, 2, 3]
+      powersy = [-3, -2, -1]
+      tickvalsx = [10 ** p for p in powersx]
+      tickvalsy = [10 ** p for p in powersy]
+
       fig.update_xaxes(type="log",
-                       #tickformat= '.0e'
+                       #tickformat= '.0e',
+                       #showexponent = 'first',
+                       #tickvals=tickvalsx,
+                       #ticktext=[f"10^{p}" for p in powersx],
                        exponentformat = 'power'
                        )
       fig.update_yaxes(type="log",
                        #tickformat= '.0e'
+                       #tickvals=tickvalsy,
+                       #showgrid=True,         # Keep all grid lines
+                       #minor=dict(
+                       #    showgrid=True      # THIS enables minor grid lines
+                       #),
+                       #ticktext=[f"10^{p}" for p in powersy],                      
                        exponentformat = 'power'
                        )
       fig.update_layout(
@@ -269,13 +283,32 @@ https://plotly.com/python/subplots/
       return fig
 
   @fig_background
-  def plot_jacfem(jac, xlabel="", ylabel=""):
+  def plot_jacfemold(jac, xlabel="", ylabel=""):
 
       fig = go.Figure(data=go.Heatmap(
           z=jac, colorscale = 'hot'))
 
       fig.update_layout(xaxis_title=xlabel,
                         yaxis_title=ylabel)
+      #fig.update_layout(xaxis_type="log", yaxis_type="log")
+      return fig
+
+  @fig_background
+  def plot_jacfem(jac, jac2, xlabel="", ylabel=""):
+
+      # fig = go.Figure(data=go.Heatmap(
+      #     z=jac, colorscale = 'hot'))
+
+      fig = go.Figure(data=[
+          go.Surface(z=jac, colorscale='Blues'),
+          #go.Surface(z=jac2, showscale=False, opacity=0.9, colorscale='reds'),
+          #go.Surface(z=jac-1, showscale=False, opacity=0.9)
+
+      ])      
+      fig.update_layout(xaxis_title=xlabel,
+                        yaxis_title=ylabel,
+                        #zaxis_title="dd"
+                        )
       #fig.update_layout(xaxis_type="log", yaxis_type="log")
       return fig
 
@@ -793,6 +826,7 @@ The derivatives in Fig. [[fig:jac_pdiff]] were calculated in forward mode, but t
 #+NAME: jac_Ma2
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   fig, figname = fig_out(name)(plot_jacfem)(jac_fem['Ma'][0,0,0, 80:215, 80:215],
+                                            jac_fem['Ma'][0,1,0, 80:215, 80:215],
                                             xlabel="Matrix x-component",
                                             ylabel="Matrix y-component"
                                             )
