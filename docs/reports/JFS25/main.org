@@ -96,6 +96,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
   import pathlib
   import plotly.express as px
   import plotly.graph_objects as go
+  from plotly.subplots import make_subplots
   import pickle
   import jax.numpy as jnp
   import pandas as pd
@@ -210,6 +211,142 @@ https://plotly.com/python/subplots/
 
 *** Plot functions
 #+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
+
+  @fig_background
+  def plot_wingmeanstd(x, y, ystd):
+
+      fig = make_subplots(
+          rows=2, cols=2,
+          specs=[[{}, {"rowspan": 2}],  # Row 1: col1 has plot, col2 is Plot C spanning 2 rows
+                 [{} , None]],          # Row 2: col1 has plot, col2 empty due to rowspan
+          subplot_titles=("Plot A", "Plot C", "Plot B")  # Adjust titles as needed
+      )
+
+      fig1 = (
+          go.Scatter(
+              name=r'$\mu_u$',
+              x=x,
+              y=y[0],
+              mode='lines',
+              line=dict(color='rgb(31, 119, 180)'),
+          ),
+          go.Scatter(
+              #name=r'$\pm 1 \sigma$',
+              x=x,
+              y=y[0]+ystd[0],
+              mode='lines',
+              marker=dict(color="#444"),
+              line=dict(width=0),
+              showlegend=False
+          ),
+          go.Scatter(
+              name=r'$\pm 1 \sigma_u$',
+              x=x,
+              y=y[0]-ystd[0],
+              marker=dict(color="#444"),
+              line=dict(width=0),
+              mode='lines',
+              fillcolor='rgba(68, 68, 68, 0.3)',
+              fill='tonexty',
+              #showlegend=False
+          )
+      )
+      fig2 = (
+          go.Scatter(
+              #name=r'$\mu_u$',
+              x=x,
+              y=y[1],
+              mode='lines',
+              line=dict(color='rgb(31, 119, 180)'),
+              showlegend=False
+          ),
+          go.Scatter(
+              #name=r'$\pm 1 \sigma$',
+              x=x,
+              y=y[1]+ystd[1],
+              mode='lines',
+              marker=dict(color="#444"),
+              line=dict(width=0),
+              showlegend=False
+          ),
+          go.Scatter(
+              #name=r'$\pm 1 \sigma_u$',
+              x=x,
+              y=y[1]-ystd[1],
+              marker=dict(color="#444"),
+              line=dict(width=0),
+              mode='lines',
+              fillcolor='rgba(68, 68, 68, 0.3)',
+              fill='tonexty',
+              showlegend=False
+          )
+      )
+
+      fig3 = (
+          go.Scatter(
+              #name=r'$\mu_u$',
+              x=x,
+              y=y[2],
+              mode='lines',
+              line=dict(color='rgb(31, 119, 180)'),
+              showlegend=False
+          ),
+          go.Scatter(
+              #name=r'$\pm 1 \sigma$',
+              x=x,
+              y=y[2]+ystd[2],
+              mode='lines',
+              marker=dict(color="#444"),
+              line=dict(width=0),
+              showlegend=False
+          ),
+          go.Scatter(
+              #name=r'$\pm 1 \sigma_u$',
+              x=x,
+              y=y[2]-ystd[2],
+              marker=dict(color="#444"),
+              line=dict(width=0),
+              mode='lines',
+              fillcolor='rgba(68, 68, 68, 0.3)',
+              fill='tonexty',
+              showlegend=False
+          )
+      )
+
+      # Plot A (bottom-left)
+      for fi in fig1:
+          fig.add_trace(
+              fi,
+              row=1, col=1
+          )
+
+      # Plot B (bottom-left)
+      for fi in fig2:
+          fig.add_trace(
+              fi,
+              row=2, col=1
+          )
+
+      # Plot C (bottom-left)
+      for fi in fig3:
+          fig.add_trace(
+              fi,
+              row=1, col=2
+          )
+      #fig.update_xaxes(title_text="Wing span", row=1, col=1)
+      fig.update_yaxes(title_text=r"$ \large u_x \; [m]$", row=1, col=1)
+      fig.update_xaxes(title_text="Wing span", row=2, col=1)
+      fig.update_yaxes(title_text="$ \large u_y \; [m]$", row=2, col=1)
+      fig.update_xaxes(title_text="Wing span", row=1, col=2)
+      fig.update_yaxes(title_text="$ \large u_z \; [m]$", row=1, col=2)
+
+      fig.update_layout(
+          legend=dict(x=0.8, y=0.95),
+          # xaxis_title="Wing span [m]",
+          # yaxis_title='Wing vertical displacement [m]',
+          showlegend=True)
+
+      return fig
 
   @fig_background
   def plot_jacpdiff(x, yobj, yjac):
@@ -352,7 +489,6 @@ https://plotly.com/python/subplots/
       return fig
 
 #+end_src
-
 
 * Models :noexport: 
 
@@ -655,12 +791,60 @@ A high modal resolution of 100 modes is employed in all the results, more than w
 Calculations are carried out on a CPU Intel Xeon Silver 4108 with 1.80GHz speed, 6 cores and a total 12 threads, as well as on an Nvidia GPU A100 80GB SXM.
 
 ** Uncertainty quantification in nonlinear simulations
+#+begin_src python :results none
+  # using jac_ediff2 that was computed in memory instead of loading the result which seems to loose accuracy
+  READ_CONFIG = False
+  if 'config_mc1' not in globals():
+      config_mc1 = configuration.Config.from_file("./DiscreteMC1high/config.yaml")
+  sol_mc1high = solution.IntrinsicReader("./DiscreteMC1high")
+  sol_mc1small = solution.IntrinsicReader("./DiscreteMC1small")
+  sol_mc1vsmall = solution.IntrinsicReader("./DiscreteMC1vsmall")
+  wing_nodes = list(range(10, 36))
+  wing_span = config_mc1.fem.X[wing_nodes[0]:wing_nodes[-1], 1]
+  components = [0, 1, 2]
+  Utipmean = []
+  Utipsmallmean = []
+  Utipvsmallmean = []
+  Utipstd = []
+  Utipsmallstd = []
+  Utipvsmallstd = []
+  Umean_wing = []
+  Ustd_wing = []
+
+  for component in components:
+      u_tipmean = np.mean(sol_mc1high.data.staticsystem_s1.ra[:,-1,component,35] - config_mc1.fem.X[35,component])
+      u_tipstd = np.std(sol_mc1high.data.staticsystem_s1.ra[:,-1,component,35])
+      u_tipsmallmean = np.mean(sol_mc1small.data.staticsystem_s1.ra[:,-1,component,35] - config_mc1.fem.X[35,component])
+      u_tipsmallstd = np.std(sol_mc1small.data.staticsystem_s1.ra[:,-1,component,35])
+      u_tipvsmallmean = np.mean(sol_mc1vsmall.data.staticsystem_s1.ra[:,-1,component,35] - config_mc1.fem.X[35,component])
+      u_tipvsmallstd = np.std(sol_mc1vsmall.data.staticsystem_s1.ra[:,-1,component,35])
+      Utipmean.append(u_tipmean)
+      Utipsmallmean.append(u_tipsmallmean)
+      Utipvsmallmean.append(u_tipvsmallmean)    
+      Utipstd.append(u_tipstd)
+      Utipsmallstd.append(u_tipsmallstd)
+      Utipvsmallstd.append(u_tipvsmallstd)
+
+      umean_wing = []
+      ustd_wing = []
+      for ni in wing_nodes:
+          umean_wing.append(np.mean(sol_mc1high.data.staticsystem_s1.ra[:,-1, component, ni] -
+                            config_mc1.fem.X[ni,component]))
+          ustd_wing.append(np.std(sol_mc1high.data.staticsystem_s1.ra[:,-1, component, ni] -
+                            config_mc1.fem.X[ni,component]))
+      umean_wing = np.array(umean_wing)
+      ustd_wing = np.array(ustd_wing)
+      Umean_wing.append(umean_wing)
+      Ustd_wing.append(ustd_wing)
+
+#+end_src
+
 In this section uncertainty quantification is performed for both linear and nonlinear responses to a loading field that is non-deterministic. Thousands of simulations are employed in Monte Carlo type of analysis to resolve for the statistics, for which parallelisation of the independent simulations become critical.
 The example resembles the workflow of flight loads and wing stress analysis in an industrial setup.
 # : the flight physics department would compute the in-flight loads for various conditions and pass the maximum of these loads to the stress engineers who would check the integrity of the airframe in their more detailed models.
 There will always be an element of uncertainty around computed loads, and what we show here is how for large displacements, the statistics need to be computed for every distinct loading. And for this, having a parallisation strategy as the one presented could potentially allow the computation of complex correlations and averages via  Montecarlo analysis.
 \\
-Considering this, a static loading field is prescribed along the wings consisting of follower forces in the \(z\)-direction as well as torsional moments, with the characteristic that the force follows a normal distribution:
+Considering this, a static loading field is prescribed along the wings consisting of follower forces in the normal (out-of-plane) direction, as well as torsional moments, with the characteristic that the force follows a normal distribution:
 \begin{align}\label{eq:normal_loading}
 N&(\mu=1.5 \times 10^4 \mu_0, \sigma=0.15 \mu) \; \text{[forces]}  \\
 N&(\mu=3 \times 10^4 \mu_0, \sigma=0.15 \mu)   \; \text{[moments]}
@@ -674,15 +858,15 @@ Fig. [[fig:BUG_mc]] shows the equilibrium at high loading ($\mu_0 = 1$) for two 
 #+ATTR_LATEX: :width 0.8\textwidth 
 [[file:figs_ext/MC1.png]]
 
-Table [[table:BUG_mc]] shows the statistics gathered from the response, in this case the tip of the wing displacements in the \(z\)-direction.
+Table [[table:BUG_mc]] shows the statistics gathered from the response, in this case the tip of the wing displacements in the normal (out-of-plane) direction.
 #+CAPTION: Vertical wing-tip displacement statistics
 #+ATTR_LATEX: :center t
 #+NAME: table:BUG_mc
-| Case                          | Tip displacement mean (m) | Tip displacement std |
-|-------------------------------+---------------------------+----------------------|
-| Nonlinear ($\mu_0 = 1$)       |                     11.57 |                 1.35 |
-| Linear ($\mu_0 = 0.01$)       |                     0.148 |                0.024 |
-| Very Linear ($\mu_0 = 0.001$) |                    0.0149 |               0.0023 |
+| Case                          | [\(\mu_u / \mu_0 \) [m]   | \( \sigma_u / \mu_0 \) [m]   |
+|-------------------------------+---------------------------+------------------------------|
+| Nonlinear ($\mu_0 = 1$)       |                     11.57 |                         1.35 |
+| Linear ($\mu_0 = 0.01$)       |                      14.8 |                          2.4 |
+| Very Linear ($\mu_0 = 0.001$) |                      14.9 |                          2.3 |
 
 # Mean displacement node 35: 11.566769265603666
 # std displacement node 35: 1.3448662385231276
@@ -697,7 +881,22 @@ Table [[table:BUG_mc]] shows the statistics gathered from the response, in this 
 # ratio displacement node 35: 6.342425320554263
 # ***************
 
-We can see the statistics of the linear response are fully captured by one single Montecarlo analysis, that is, output magnitudes such as equilibrium displacements correlate with the average input load. Whereas in cases with nonlinear deformations, the whole Montecarlo analysis would need to be carried out. This is akin to deterministic linear versus nonlinear analysis. 
+We can see the statistics of the linear response ($\mu_0 = 0.001$) are fully captured by one single Montecarlo analysis, that is, output magnitudes such as equilibrium displacements correlate with the average input load. Whereas in cases with nonlinear deformations ($\mu_0 = 1$), the whole Montecarlo analysis would need to be carried out. This is akin to deterministic linear versus nonlinear analysis. 
+Expanding this data at the tip to the entire right wing, Fig. [[fig:wing_meanstd]] shows the mean normal displacement along the wing, \(\mu_u\), and its standard deviation,  \(\sigma_u\).
+Note how despite the standard deviation of the input forces is the same along the wing, the uncertainty in the displacement output grows towards the tip as expected --the aircraft being clamped at the root will only showcase 0 displacements there regardless of the input forces.
+
+#+NAME: wing_meanstd
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = fig_out(name)(plot_wingmeanstd)(wing_span, Umean_wing, Ustd_wing)
+  figname
+#+end_src
+#+NAME: fig:wing_meanstd
+#+CAPTION: 
+#+ATTR_LATEX: :width 0.6\textwidth 
+#+RESULTS: wing_meanstd
+[[file:figs/wing_meanstd.png]]
+
+
 Table [[table:times_MC]] shows the times taken for the nonlinear case in both CPU and GPU. The computation of 1600 independent simulations in just over a minute, involving deformations of over 40% the wing semi-span as shown in Fig. [[fig:BUG_mc]], highlights the potential of this methodology in more complex uncertainty quantification problems. Note that at this level of nonlinearity, our solvers are already two orders of magnitude faster than commercial solvers such as MSC Nastran even for a single simulation as demonstrated in [[cite:&CEA2025]]. The extension to thousands of cases with parallelisation on modern architectures is a key feature of this work with far-reaching applications in aircraft loads analysis.   
 
 #+CAPTION: Static loading UQ computational times 
