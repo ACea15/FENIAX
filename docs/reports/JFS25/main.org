@@ -53,8 +53,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "yes") ;; yes, no, no-export 
-  (setq Veval_blocks_run "no")
+  (setq Veval_blocks "no-export") ;; yes, no, no-export 
   (setq pythonShell "pyJFS25")
   (setq Vpics "png") ;; yes, no, no-export     
   ;; export_blocks: code, results, both, none
@@ -219,7 +218,7 @@ https://plotly.com/python/subplots/
           rows=2, cols=2,
           specs=[[{}, {"rowspan": 2}],  # Row 1: col1 has plot, col2 is Plot C spanning 2 rows
                  [{} , None]],          # Row 2: col1 has plot, col2 empty due to rowspan
-          subplot_titles=("Plot A", "Plot C", "Plot B")  # Adjust titles as needed
+          #subplot_titles=("Plot A", "Plot C", "Plot B")  # Adjust titles as needed
       )
 
       fig1 = (
@@ -431,13 +430,13 @@ https://plotly.com/python/subplots/
       return fig
 
   @fig_background
-  def plot_jacfem(jac, jac2, xlabel="", ylabel=""):
+  def plot_jacfem(jac, jac2=None, xlabel="i", ylabel="j", zlabel=""):
 
       # fig = go.Figure(data=go.Heatmap(
       #     z=jac, colorscale = 'hot'))
 
       fig = go.Figure(data=[
-          go.Surface(z=jac, colorscale='Blues'),
+          go.Surface(z=jac, colorscale='reds'),
           #go.Surface(z=jac2, showscale=False, opacity=0.9, colorscale='reds'),
           #go.Surface(z=jac-1, showscale=False, opacity=0.9)
 
@@ -445,6 +444,26 @@ https://plotly.com/python/subplots/
       fig.update_layout(xaxis_title=xlabel,
                         yaxis_title=ylabel,
                         #zaxis_title="dd"
+                        scene = dict(
+                            xaxis_title=xlabel,
+                            yaxis_title=ylabel,
+                            zaxis_title=zlabel,
+                            xaxis = dict(
+                                backgroundcolor="rgba(0, 0, 0,0)",
+                                gridcolor="black",
+                                showbackground=True,
+                                zerolinecolor="black",),
+                            yaxis = dict(
+                                backgroundcolor="rgba(0, 0, 0,0)",
+                                gridcolor="black",
+                                showbackground=True,
+                                zerolinecolor="black"),
+                            zaxis = dict(
+                                backgroundcolor="rgba(0, 0, 0,0)",
+                                gridcolor="black",
+                                showbackground=True,
+                                zerolinecolor="black",),
+                        ),
                         )
       #fig.update_layout(xaxis_type="log", yaxis_type="log")
       return fig
@@ -488,6 +507,24 @@ https://plotly.com/python/subplots/
       fig.update_xaxes(title="Gust intensity [m/s]")
       return fig
 
+  @fig_background
+  def plot_jacfem2(z, xlabel=None, ylabel=None):
+
+      fig = go.Figure(data =
+                      go.Contour(
+                          z= z,
+                          #x=x, # horizontal axis
+                          #y=y, # vertical axis
+                          colorscale='blues',
+                          colorbar=dict(
+                              tickfont=dict(size=20)
+                          )  # Set tick font size
+                      )
+                      )
+      fig.update_yaxes(title=ylabel)
+      fig.update_xaxes(title=xlabel)
+      return fig
+  
 #+end_src
 
 * Models :noexport: 
@@ -767,7 +804,7 @@ After marching the system in time or solving the nonlinear equations for a stati
 \end{equation}
 The objective is to calculate derivatives of arbitrary moments \(n\) of \(\bm{Y}\), \( \frac{\partial \mathbb{E}[Y^n]}{\partial \bm{\alpha}}\). They can be calculated via Montecarlo by launching the concurrent simulations for each \(\bm{X}_i\) and performing a collective mean on the output of interest \(\bm{Y}_i\) after solving the aeroelastic system. Since all the operations in the process are being tracked in JAX, derivatives with respect to \(\bm{\alpha}\) can be recovered. The slow convergence is one of the key limitations of plain Monte Carlo methods as the error goes with number of samples \( N \): \(\text{Error} \sim \mathcal{O}\left( \frac{1}{\sqrt{N}} \right) \).
 Quasi Montecarlo methods using low discrepancy sequences such as Sobol numbers can be used for better convergence and multilevel methods to reduce computational cost cite:&GILES2008.
-While the method itself is not new, the combination of modern-hardware architectures and concurrent subroutines that are AD-capable can unlock optimisation problems in Engineering cast in terms of expectations instead of deterministic quantities.
+While the method itself is not new, the combination of modern-hardware architectures and concurrent subroutines that are AD-capable can unlock optimisation problems in Engineering written in terms of expectations instead of deterministic quantities.
 *** Differentiable-parallel dynamic loads
 Once a parallel system is in place to compute hundreds of load cases, the next step is to obtain the derivatives of the critical loads coming from the parallel analysis. Since those are calculated using AD, all the operations need to be available in memory. While the Montecarlo analysis of the previous section made use of all the cases to compute the output expectation, in this case we are only interested on those that induce the largest loads.
 We encountered two major issues: the memory required for the gust cases was already in the limit of a single device (over 60 GB of RAM), to which the AD normally duplicates the requirement. As the software can now be run on multiple devices, each with its own memory, this is not a completely restrictive factor. The second issue was simply a lack of implementation of the needed collective operations in JAX. This is the case for instance with the maximum function, that can usually be differentiated but not if collective operations are involved (it is also not practical as most of the data generated by such a maximum are zeros not needed anyway). The solution found has been named the Forager Pattern and is depicted in Fig. [[fig:forager]]. The code launches many simulations concurrently with the predefined load-cases. The solutions of all these simulations are collected (hundreds of cases, hundreds of nodes, thousands of time steps make for a single field of interest like the stress to have a size of the order of $10^7-10^8$). A filtering step consists of a selection of monitoring points of interest (nodes in the FEM), and then a double reduction operation in both time and load cases, for example the maximum of the selected field in time and across cases; the output is a selection of the most problematic load cases according to the predefined metric in the input file. For these critical points the program builds the inputs for the cases previously run in parallel but now with AD and on a much smaller basis, and finally more FENIAX process are spawn for the AD computations. In this way we have created a meta-program that can automatically create programs based on the results --with limitations on the implemented possibilities.
@@ -862,11 +899,11 @@ Table [[table:BUG_mc]] shows the statistics gathered from the response, in this 
 #+CAPTION: Vertical wing-tip displacement statistics
 #+ATTR_LATEX: :center t
 #+NAME: table:BUG_mc
-| Case                          | [\(\mu_u / \mu_0 \) [m]   | \( \sigma_u / \mu_0 \) [m]   |
-|-------------------------------+---------------------------+------------------------------|
-| Nonlinear ($\mu_0 = 1$)       |                     11.57 |                         1.35 |
-| Linear ($\mu_0 = 0.01$)       |                      14.8 |                          2.4 |
-| Very Linear ($\mu_0 = 0.001$) |                      14.9 |                          2.3 |
+| Case              | [\(\mu_u / \mu_0 \) [m] | \( \sigma_u / \mu_0 \) [m] |
+|-------------------+-------------------------+----------------------------|
+| ($\mu_0 = 1$)     |                   11.57 |                       1.35 |
+| ($\mu_0 = 0.01$)  |                    14.8 |                        2.4 |
+| ($\mu_0 = 0.001$) |                    14.9 |                        2.3 |
 
 # Mean displacement node 35: 11.566769265603666
 # std displacement node 35: 1.3448662385231276
@@ -891,8 +928,8 @@ Note how despite the standard deviation of the input forces is the same along th
   figname
 #+end_src
 #+NAME: fig:wing_meanstd
-#+CAPTION: 
-#+ATTR_LATEX: :width 0.6\textwidth 
+#+CAPTION: Wing vertical displacements expectations and 1 standard-deviation
+#+ATTR_LATEX: :width 0.9\textwidth 
 #+RESULTS: wing_meanstd
 [[file:figs/wing_meanstd.png]]
 
@@ -917,7 +954,9 @@ Table [[table:times_MC]] shows the times taken for the nonlinear case in both CP
   jac_t = sol_admc1_t.data.staticsystem_s1.jac['t']
   obj_t = sol_admc1_t.data.staticsystem_s1.objective
   jac_fem = sol_admc1_fem.data.staticsystem_s1.jac
-
+  semispan = 25.9 # for normalisation
+  mass = 55615.12  # Kg, see BUG modelgeneration.org
+  normalisation = mass / 2 * 9.81   
   mc1_jacpaths = [8, 80, 4e2, 8e2, 4e3] #[8, 80, 4e2, 8e2, 4e3, 8e3, 2e4]
   mc1_eps = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
   sol_admc1_e = dict()
@@ -952,7 +991,6 @@ Table [[table:times_MC]] shows the times taken for the nonlinear case in both CP
 
 Now we set out to calculate the derivatives of the expectations previously computed concurrently in Sec. [[Montecarlo analysis for UQ]]. While the Montecarlo paths are independent of each other and could therefore be run on different machines, having to do AD on the output statistics -gathered via collective operations-, forces the entire chain of operations to be within a single program. This makes for an interesting and challenging problem to propagate gradients through concurrent operations. A linear parameter \(\alpha\) is introduced such that the follower forces and torsional moments in Eq. \eqref{eq:normal_loading} are \(\mu = 10^4 (\frac{\alpha - 1.5}{4-1.5} + 1.5\times\frac{\alpha - 1}{5-1}) \). The selected output is the expectation of a 3-component vector, \(\bm{r}(\alpha)\) of the wing-tip positions at \(\alpha = 4.5\). Fig. [[fig:jac_ediff]] shows a comparison between the derivative \(\partial_{\mathbb{E}_\alpha} \bm{r} = \partial \mathbb{E}[\bm{r}] / \partial \alpha \) using AD, \(\partial_{\alpha} \bm{r}^{a} \), and finite differences \( \partial_{\alpha} \bm{r}^{f}= (\bm{r}(\alpha + \epsilon) - \bm{r}(\alpha))/\epsilon  \). The relative error is calculated as  \(||\partial_{\alpha} \bm{r}^{a} - \partial_{\alpha} \bm{r}^{f} || / ||\partial_{\alpha} \bm{r}^{a} ||  \), using the \(l_2 \) norm.  
 
-
 #+NAME: jac_ediff
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   fig, figname = fig_out(name)(plot_jacediff)(mc1_eps, jac_ediff2)
@@ -980,89 +1018,47 @@ Another convergence  metric to investigate is the number of paths in the Monteca
 While changing the input loading is good for verification studies, more realistic examples are solved in Fig. [[fig:jac_Ma2]]  where the sensitivity of the expectations of wing root loads are calculated with respect to the FE matrices and eigenvectors (only indexes corresponding to the right wing nodes are shown in the heat map as the other are 0 because the model is clamped).
 The derivatives in Fig. [[fig:jac_pdiff]] were calculated in forward mode, but the condensed FE matrices of the BUG model contain \((99 \times 6)^2 = 352836 \) entries, to what all the components in eigenvectors are also added, therefore only backward mode AD is possible in this case. The sensitivity of the loads with respect to the mass matrix increase towards the nodes at tip of the wing, which makes sense if we think a unit mass at the tip will produce much larger loads than the same unit mass close to the root where the aircraft is clamped. A pattern also emerges as every 6 elements in the matrix represent 3 displacements and 3 rotations and the shear forcing for example will have weaker couplings to a in-plane than to a out-of-plane displacement. 
 
-# #+NAME: jac_eigenvecs2
+# #+NAME: jac_Ma2
 # #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-#   fig, figname = fig_out(name)(plot_jacfem)(jac_fem['eigenvecs'][0,0,0, 78:215, 6:],
-#                                             xlabel="Mode",
-#                                             ylabel="Right-Wing Eigenvector components"
+#   fig, figname = fig_out(name)(plot_jacfem2)(jnp.abs(jac_fem['Ma'][0,0,0, 80:215, 80:215]/1000), # 
+#                                             xlabel="i-component",
+#                                             ylabel="j-component"
 #                                             )
 #   figname
 # #+end_src
-# #+NAME: fig:jac_eigenvecs2
-# #+CAPTION: Jacobian of wing tip position with respect to Mass matrix right-wing components
-# #+ATTR_LATEX: :width 0.33\textwidth 
-# #+RESULTS: jac_eigenvecs2
-# [[file:figs/jac_eigenvecs.png]]
+# #+NAME: fig:jac_Ma2
+# #+CAPTION: Jacobian of wing root shear load with respect to Mass matrix right-wing components [N/m]
+# #+ATTR_LATEX: :width 0.75\textwidth 
+# #+RESULTS: jac_Ma2
+# [[file:figs/jac_Ma2.png]]
 
-# #+NAME: jac_eigenvecs3
+
+# #+NAME: jac_Ma3
 # #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-#   fig, figname = fig_out(name)(plot_jacfem)(jac_fem['eigenvecs'][0,1,0, 78:215, 6:],
-#                                             xlabel="Mode",
-#                                             ylabel="Right-Wing Eigenvector components"
+#   fig, figname = fig_out(name)(plot_jacfem2)(jnp.abs(jac_fem['Ma'][0,1,0, 80:215, 80:215]/1000),
+#                                             xlabel="i-component",
+#                                             ylabel="j-component"
 #                                             )
 #   figname
 # #+end_src
-# #+NAME: fig:jac_eigenvecs3
-# #+CAPTION: Jacobian of wing tip position with respect to Mass matrix right-wing components
-# #+ATTR_LATEX: :width 0.33\textwidth 
-# #+RESULTS: jac_eigenvecs3
-# [[file:figs/jac_eigenvecs3.png]]
-
-# #+NAME: jac_eigenvecs4
-# #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-#   fig, figname = fig_out(name)(plot_jacfem)(jac_fem['eigenvecs'][0,2,0, 78:215, :],
-#                                             xlabel="Mode",
-#                                             ylabel="Right-Wing Eigenvector components"
-#                                             )
-#   figname
-# #+end_src
-# #+NAME: fig:jac_eigenvecs4
-# #+CAPTION: Jacobian of wing tip position with respect to Mass matrix right-wing components
-# #+ATTR_LATEX: :width 0.33\textwidth 
-# #+RESULTS: jac_eigenvecs4
-# [[file:figs/jac_eigenvecs4.png]]
-
-#+NAME: jac_Ma2
-#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_jacfem)(jac_fem['Ma'][0,0,0, 80:215, 80:215],
-                                            jac_fem['Ma'][0,1,0, 80:215, 80:215],
-                                            xlabel="Matrix x-component",
-                                            ylabel="Matrix y-component"
-                                            )
-  figname
-#+end_src
-#+NAME: fig:jac_Ma2
-#+CAPTION: Jacobian of wing root shear load with respect to Mass matrix right-wing components [N/m]
-#+ATTR_LATEX: :width 0.75\textwidth 
-#+RESULTS: jac_Ma2
-[[file:figs/jac_Ma2.png]]
-
-
-#+NAME: jac_Ma3
-#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_jacfem)(jac_fem['Ma'][0,1,0, 80:215, 80:215],
-                                            xlabel="Matrix x-component",
-                                            ylabel="Matrix y-component"
-                                            )
-  figname
-#+end_src
-#+NAME: fig:jac_Ma3
-#+CAPTION: Jacobian of wing root torsional load with respect to Mass matrix right-wing components [N/m]
-#+ATTR_LATEX: :width 0.75\textwidth 
-#+RESULTS: jac_Ma3
-[[file:figs/jac_Ma3.png]]
+# #+NAME: fig:jac_Ma3
+# #+CAPTION: Jacobian of wing root torsional load with respect to Mass matrix right-wing components [N/m]
+# #+ATTR_LATEX: :width 0.75\textwidth 
+# #+RESULTS: jac_Ma3
+# [[file:figs/jac_Ma3.png]]
 
 #+NAME: jac_Ma4
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_jacfem)(jac_fem['Ma'][0,2,0, 80:215, 80:215],
-                                            xlabel="Matrix x-component",
-                                            ylabel="Matrix y-component"                                       
+  fig, figname = fig_out(name)(plot_jacfemold)(jnp.abs(jac_fem['Ma'][0,2,0, 80:215, 80:215])/normalisation,
+                                            xlabel="i-component",
+                                            ylabel="j-component"
                                             )
   figname
+
 #+end_src
 
 #+NAME: fig:jac_Ma4
-#+CAPTION: Jacobian of wing root bending load with respect to Mass matrix right-wing components [N/m]
+#+CAPTION: Weight-normalized Jacobian of wing-root bending moment with respect to Mass matrix (right-wing components)
 #+ATTR_LATEX: :width 0.75\textwidth 
 #+RESULTS: jac_Ma4
 [[file:figs/jac_Ma4.png]]
@@ -1126,6 +1122,10 @@ Table [[table:times_manoeuvre]] shows the computational times to run these simul
   gust_w = points[:gust_wn,3]
   gust_l = points[::gust_wn,2]
   gust_ln = 11  # 11 gust lenght points
+  mass = 55615.12  # Kg, see BUG modelgeneration.org
+  semispan = 25.9
+  normalisation_force = mass / 2 * 9.81
+  normalisation_moment = normalisation_force * semispan
   x2max = jnp.max(jnp.abs(sol_gust1shard.data.dynamicsystem_s1.X2[:,:, :, node]), axis=1) # points,6
   #x2min = jnp.min(sol_gust1shard.data.dynamicsystem_s1.X2[:,:, :, node], axis=1)
   x2max_mesh = x2max.reshape((gust_ln, gust_wn,6)) # contour: wn is x, ln is y
@@ -1157,7 +1157,7 @@ In Fig. [[fig:BUG_Gust3D]] the 3D reconstructed flight shape of the airframe is 
 Figs. [[fig:GustShard_shear]], [[fig:GustShard_torsion]] and [[fig:GustShard_bending]] show the load diagrams for the maximum shear, torsion and out-of-pane bending at the wing root during the gust encounter. They reflect the importance of running multiple of these simulations to assess the critical loads: maximum loads occur at different gust lengths of 65, 75, 115 m/s. This analysis would be extended to include various mass cases, flying altitudes etc. in an industrial environment, and it would be straight forward to extend our tools for this.   
 #+NAME: GustShard_shear
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh,
+  fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh / normalisation_force,
                                                component=2)
   figname
 #+end_src
@@ -1169,7 +1169,7 @@ Figs. [[fig:GustShard_shear]], [[fig:GustShard_torsion]] and [[fig:GustShard_ben
 
 #+NAME: GustShard_torsion
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh,
+  fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh / normalisation_moment,
                                                component=3)
   figname
 #+end_src
@@ -1182,7 +1182,7 @@ Figs. [[fig:GustShard_shear]], [[fig:GustShard_torsion]] and [[fig:GustShard_ben
 
 #+NAME: GustShard_bending
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh,
+  fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh / normalisation_moment,
                                                component=4)
   figname
 #+end_src
@@ -1309,8 +1309,13 @@ For the sensitivity analysis of load envelopes, a strategy named The Forager Pat
 Introduction of various mass cases, as it is done in industrial scenarios, is also a feasible target. The resulting framework thus combines prediction of sizing aeroelastic loads in a nonlinear fashion with the computation of their gradients with respect to design variables, and therefore it is intended to be part of multidisciplinary design optimization studies that include the large set of loading requirements in the certification process.
 Despite dynamic loads and aeroelastic instabilities being still obtained using medium fidelity tools, a future enhancement with high fidelity CFD aerodynamics is the one major addition left to achieve a versatile, production-ready framework. 
 
+\section*{Acknowledgements}
+This work has received funds from Innovate UK, under project 10002372, managed by the UK
+Aerospace Technology Institute. 
+The benchmark examples for the GPU computations were carried out at the Imperial College cluster. Code and examples are open-source.
+
 \appendix
-* Embarrassingly-parallel algorithms for PDE optimisation via Feynman–Kac theorem
+* COMMENT Embarrassingly-parallel algorithms for PDE optimisation via Feynman–Kac theorem
 Having shown the possibility to obtain derivatives of expectations computed via Montecarlo simulations running concurrently, a potential application is found in the field of optimisation of parabolic equation. Montecarlo simulations are very easy to parallelised as they do not require synchronisation. 
 
 * Biblio :ignore:
