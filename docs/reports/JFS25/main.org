@@ -93,6 +93,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
 #+NAME: PYTHONMODULES
 #+begin_src python  :results none 
   import pathlib
+  import matplotlib.pyplot as plt
   import plotly.express as px
   import plotly.graph_objects as go
   from plotly.subplots import make_subplots
@@ -418,6 +419,72 @@ https://plotly.com/python/subplots/
       #fig.update_layout(xaxis_type="log", yaxis_type="log")
       return fig
 
+
+  def plot_jacpdiff2(name, x, yobj, yjac, figformat=figfmt):
+
+      # Create figure and axes
+      fig, ax = plt.subplots(figsize=(4.5, 4.5))  # width=8 inches, height=6 inches
+      
+      # Plot the data
+      ax.plot(x, yobj,
+              label='Objective',
+              marker='o',          # Circle markers
+              color='black')
+      ax.plot(x, yjac,
+              label='Jacobian',
+                  marker='s', 
+              color='blue')
+      
+      # Set logarithmic scale
+      ax.set_xscale('log')  # Set x-axis to log scale
+      ax.set_yscale('log')  # Optional, y-axis remains linear
+      ax.tick_params(axis='both', which='major', labelsize=12)      
+      # Add labels and title
+      ax.set_xlabel('Number of paths', fontsize=12)
+      ax.set_ylabel("Relative error", fontsize=12)
+
+      # Add grid and legend
+      ax.grid(True, which='both', linestyle='-', linewidth=0.5)
+      ax.legend(fontsize=12)
+      # Automatically adjust layout to prevent clipping
+      plt.tight_layout()
+      
+      figname = f"figs/{name}.{figformat}"
+      plt.savefig(f"../{figname}", dpi=300)  
+
+      return ax, figname
+
+  def plot_jacediff2(name, x, yjac, figformat=figfmt):
+      
+      # Create figure and axes
+      fig, ax = plt.subplots(figsize=(4.5, 4.5))  # width=8 inches, height=6 inches
+      
+      # Plot the data
+      ax.plot(x, yjac,
+              #label='y = log10(x)',
+              color='blue')
+      
+      # Set logarithmic scale
+      ax.set_xscale('log')  # Set x-axis to log scale
+      ax.set_yscale('log')  # Optional, y-axis remains linear
+      ax.tick_params(axis='both', which='major', labelsize=12)
+      # Add labels and title
+      ax.set_xlabel(r'$\text{Finite-Differences } \epsilon$', fontsize=12)
+      ax.set_ylabel("Relative Error", fontsize=12)
+      
+      # Add grid and legend
+      ax.grid(True, which='both', linestyle='-', linewidth=0.5)
+      #ax.legend()
+      # Automatically adjust layout to prevent clipping
+      plt.tight_layout()
+      
+      figname = f"figs/{name}.{figformat}"
+      
+      # Save plot to file
+      plt.savefig(f"../{figname}", dpi=300)  
+
+      return ax, figname
+
   @fig_background
   def plot_jacfemold(jac, xlabel="", ylabel=""):
 
@@ -524,7 +591,7 @@ https://plotly.com/python/subplots/
       fig.update_yaxes(title=ylabel)
       fig.update_xaxes(title=xlabel)
       return fig
-  
+
 #+end_src
 
 * Models :noexport: 
@@ -570,11 +637,11 @@ For a complete walk-through of model and creation see the file
   Montecarlo="tru"
   MontecarloADt="tru"
   MontecarloADtjac="tru"
-  MontecarloADtfd="tru"    
+  MontecarloADtfd="true"    
   MontecarloADfem="tru"
   Gust="tru"
   GustBench="tru"
-  Forager="true"
+  Forager="tru"
 
   pyenv activate feniax
   pathBUG="../../../../FENIAXexamples/BUG/"
@@ -996,6 +1063,11 @@ Now we set out to calculate the derivatives of the expectations previously compu
   fig, figname = fig_out(name)(plot_jacediff)(mc1_eps, jac_ediff2)
   figname
 #+end_src
+#+NAME: jac_ediff
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = plot_jacediff2(name, mc1_eps, jac_ediff)
+  figname
+#+end_src
 #+NAME: fig:jac_ediff
 #+CAPTION: Verification against finite-differences of derivative of expectations
 #+ATTR_LATEX: :width 0.6\textwidth 
@@ -1006,7 +1078,12 @@ Another convergence  metric to investigate is the number of paths in the Monteca
 
 #+NAME: jac_pdiff
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_jacpdiff)(mc1_jacpaths, obj_pdiff[:-1], jac_pdiff[:-1])
+  fig, figname = fig_out(name)(plot_jacpdiff)(mc1_jacpaths[:-1], obj_pdiff[:-1], jac_pdiff[:-1])
+  figname
+#+end_src
+#+NAME: jac_pdiff
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  fig, figname = plot_jacpdiff2(name, mc1_jacpaths[:-1], obj_pdiff[:-1], jac_pdiff[:-1])
   figname
 #+end_src
 #+NAME: fig:jac_pdiff
