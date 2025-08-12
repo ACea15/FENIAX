@@ -30,7 +30,7 @@
 :END:
 
 #+begin_abstract
-A novel framework for geometrically nonlinear aeroelastic analysis is augmented for large scale computations of aircraft-sizing loads concurrently. The software can be deployed on modern hardware architectures and the parallelization has been tested both on CPUs and GPUs. While keeping computational times in the order of seconds, the presented approach unlocks new capabilities such as the following: uncertainty quantification analysis of the nonlinear response via massively-parallel Montecarlo simulations; construction of load envelopes of static and dynamic cases in full-aircraft models. Furthermore, differentiation of both Montecarlo concurrent simulations and aeroelastic loads is achieved via JAX library automatic differentiation engine and collective primitives. 
+This paper demonstrates a new solution for large scale computations of aircraft-sizing loads. A geometrically nonlinear aeroelastic description has been extended with concurrent capabilities to tackle efficiently the very demanding loading scenarios in the design process. The software can be deployed on modern hardware architectures and has been benchmarked on CPUs and GPUs. While keeping computational times in the order of seconds, the presented approach enables the construction of load envelopes corresponding to static and dynamic cases, seamless integration with full-aircraft models from industry, and uncertainty quantification analysis via massively-parallel Montecarlo simulations, among others. Furthermore, differentiation of both concurrent computations and aeroelastic loads is achieved via JAX library automatic differentiation engine and collective primitives. 
 We explore a high-aspect-ratio-wing aircraft configuration, showing the ability of the solvers to capture nonlinear effects for external forces inducing large deformations and also the importance of these effects when studying modern aircraft concepts. Discrete, manoeuvre and gust loads are assessed for multiple flow and parametric conditions running concurrently. Sensitivities of maximum wing-root stresses and tip displacements are computed and verified against finite differences.  
 #+end_abstract
 
@@ -603,17 +603,21 @@ For a complete walk-through of model and creation see the file
 - Discrete loading field along wings with uncertainty component (Gaussian)
 - Python file: settings_DiscreteMC1high.py, settings_DiscreteMC1MCsmall.py,
   settings_DiscreteMC1vsmall.py
-- Results presented in Sec. [[Uncertainty quantification of nonlinear response]].
-    
+- Results presented in Sec. [[Uncertainty quantification in nonlinear simulations]]
+- Corresponding test:
+      
 ** Derivative of expectations
 - Compute derivatives of the expectations previously computed concurrently via Montecarlo simulations.
+- Python file: settings_ADDiscreteMC1_t.py, settings_ADDiscreteMC1_t_fdjac.py, settings_ADDiscreteMC1_fem.py
+- Results presented in Sec. [[Computing derivatives of expectations]]
+- Corresponding test:
   
 ** Manoeuvre
 
 - Manoeuvre case with clamped AC varying u_inf and rho_inf
 - Testing and benchmarking parallelisation   
 - Python file: settings_manoeuvre1shard.py for computations 
-- 
+- Results presented in Sec. [[Steady manoeuvre loads]]
 - Corresponding test: [[../../../tests/intrinsic/aeroelastic_dynamic/test_BUGgustShard.py]]
 
 ** Dynamic-load envelopes
@@ -621,27 +625,30 @@ For a complete walk-through of model and creation see the file
 - Construct gusts of different lengths, intensity and airflow density
 - Python file: python settings_gust1shard.py for plotting (11x11=121 gust)
   settings_gust1shardbench.py for benchmark (8x8x8=256 gust)
-
+- Results presented in Sec. [[Dynamic loads at large scale]]
+- Corresponding test:
+  
 ** Gust AD forager
 
 - Run gusts in parallel and find the worst cases
 - Checking AD of free-flying AC for worst case determined by forager
 - Python file: settings_gustforager.py
+- Results presented in Sec. [[Load envelope differentiation]]  
 - Corresponding test: [[../../../tests/intrinsic/aeroelastic_dynamic/test_BUGgustShard.py]]
 
 ** Run
 #+begin_src shell :session sh1 :tangle run_models.sh
   #!/usr/bin/env bash
 
-  Manoeuvre="tru"
-  Montecarlo="tru"
-  MontecarloADt="tru"
-  MontecarloADtjac="tru"
+  Manoeuvre="true"
+  Montecarlo="true"
+  MontecarloADt="true"
+  MontecarloADtjac="true"
   MontecarloADtfd="true"    
-  MontecarloADfem="tru"
-  Gust="tru"
-  GustBench="tru"
-  Forager="tru"
+  MontecarloADfem="true"
+  Gust="true"
+  GustBench="true"
+  Forager="true"
 
   pyenv activate feniax
   pathBUG="../../../../FENIAXexamples/BUG/"
@@ -703,28 +710,28 @@ For a complete walk-through of model and creation see the file
 
 
 * Introduction
-Aeroelastic analysis is expected to become critical in the very early phases of the wing design process: while the field was more important in post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines. 
-As highlighted in cite:&LIVNE2018, formulations that include nonlinear effects should be developed that not only enhance current modelling techniques  but that also allow rapid data turnaround for the industry. Real-time, hardware-in-the-loop flight simulators would also benefit of actively controlled, deformable airplane models. This leads to a more nonlinear landscape, where the overall aerodynamic performance needs to be calculated around a flight shape with large deformations [[cite:&JONSSON2023]]. This is specially important for high-aspect-ratio wings [[cite:&PATIL2004;&MODARESS-AVAL2019]] that improve aerodynamic efficiency but leads to an increase in flexibility.
+Aeroelastic analysis is expected to become increasingly important from the very early phases of the wing design process: while the focus was historically on the post-design stages to ensure in-flight integrity, it now becomes paramount to capture the cross-couplings between disciplines for optimal performance.
+This is specially important for high-aspect-ratio wings (HARWs) [[cite:&PATIL2004;&MODARESS-AVAL2019]] that improve aerodynamic efficiency but leads to an increase in flexibility, which brings new challenges both in terms of design and modelling capabilities. As highlighted in cite:&LIVNE2018, formulations that include nonlinear effects should be developed that not only enhance current modelling techniques  but that also allow rapid data turnaround for the industry. Real-time, hardware-in-the-loop flight simulators would also benefit of actively controlled, deformable airplane models. This leads to a more nonlinear landscape, where the overall aerodynamic performance needs to be calculated around a flight shape with large deformations [[cite:&JONSSON2023]].
 A more holistic approach to the design also increases the complexity of the processes exponentially, and the trade-offs and cost-benefit analysis may not be possible until robust computational tools are in-place to simulate the different assumptions.
 Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations [[cite:&KIER2017]], as it considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitively expensive computational times. 
 Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above [[cite:&KLIMMEK2020]]. 
 \\
 Leveraging on the numerical library JAX [[cite:&BRADBURY2018]], these considerations set the goals for the baseline work in [[cite:&CEA2025]]: 1) to be able to perform geometrically nonlinear aeroelastic analysis, 2) to work with existing generic FEMs in a non-intrusive manner, and 3) to achieve a computational efficiency that is equivalent to present linear methods (if not faster), 4) compute derivatives of the aeroelastic response via Algorithm Differentiation (AD). Those were extended in to include rigid-body dynamics, trimmed flight, and architectural benchmarks of GPU versus CPU [[cite:&CEA2025b]].
-In this work we explore the latest advances on accelerator's parallelisation, and how to integrate them into our solution process to enable large scale aeroelastic simulations under geometrically nonlinear assumptions.
+In this work we explore the latest advances on accelerator's parallelisation, and how to integrate them into our solution process to enable intensive aeroelastic simulations under geometrically nonlinear assumptions.
 Specifically, we set out to characterise the dynamics of highly flexible aircraft in response to the large envelope of simulations required to capture in-flight loads encountered in the certification process --while introducing new physics that account for the large displacements and rotations ultra-high-aspect-ratio wings are expected to undergo.
 For this, a Single Program Multiple Data (SPMD) paradigm is employed with the main computation spanning as many devices as available in the cluster and performing collective operations to communicate between devices.
-By addressing in one program a substantial part of scenarios during flight (manoeuvres and gust responses at different velocities and altitudes, and for a range of mass cases and configurations), we are able to produce the critical loading characteristics of the aircraft in very short simulation times. Moreover, we can differentiate the boundaries of the critical cases using the already demonstrated capabilities of AD within JAX, but now extending them to produce derivatives across those design envelopes. This implies computing gradients across concurrent simulations and collective operations, which we show it is well managed by a library that is actively developed to solved similar problems in the realm of machine learning.   
+By addressing in one program a substantial part of scenarios during flight (manoeuvres and gust responses at different velocities and altitudes, and for a range of mass cases and configurations), we are able to produce the critical loading characteristics of the aircraft in very short simulation times. Moreover, we can differentiate the boundaries of the critical cases using the already demonstrated capabilities of AD within JAX [[cite:&CEA2025]], but now extending them to produce derivatives across those design envelopes. This implies computing gradients across concurrent simulations and collective operations, which we show it is well managed by the chosen library, that is actively developed to solved similar problems in the realm of machine learning.   
 This is expected to be highly applicable in providing designers with additional insights about sensitivities and in extending gradient-based optimization analysis [[cite:&BROOKS2019]] with load-sizing constraints. In fact, having shown our formulation works well with high fidelity structural models of industrial complexity [[cite:&CEA2023]], a further step is to increase the accuracy of the currently used Doublet-Lattice-Method (DLM) solution.
-By coupling with differentiable Computational-Fluid-Dynamics (CFD) solvers such as those of  [[cite:&MUELLER2018]],  [[cite:&HE2020]],  [[cite:&ECONOMON2016a]], a fully-differentiated high-fidelity aeroelastic solver could be achieved. This is a very feasible option within our workflow where the Generalised-Aerodynamic-Force matrices (GAFs) from a DLM solution are replaced by CFD GAFs, which are a standard part of the process in flutter analysis [[cite:&SILVA2004;&SIMIRIOTIS2023]]. 
+By coupling with differentiable Computational-Fluid-Dynamics (CFD) solvers such as those of  [[cite:&MUELLER2018]],  [[cite:&HE2020]],  [[cite:&ECONOMON2016a]], a fully-differentiated high-fidelity aeroelastic solver could be achieved. This is a very feasible option within our workflow where the matrices of Generalised Aerodynamic Forces (GAFs) from a DLM solution are replaced by CFD GAFs, which are a standard part of the process in flutter analysis [[cite:&SILVA2004;&SIMIRIOTIS2023]]. 
 \\
-Another area we begin to explore herein is the development of tools for optimisation under uncertainty. While various methods have been envisioned to introduce Uncertainty Quantification (UQ) in simulations, Montecarlo methods remain the default option for generic problems. They can suffer from slow convergence, however they cater well for embarrassingly-parallel algorithms as each path in the simulation is independent of the others. The accelerated simulations may open new ways for UQ of aeroelastic problems without resorting to surrogates [[cite:&FELDSTEIN2020]].
+Another area we begin to explore herein is the development of tools for optimisation under uncertainty. While various methods have been envisioned to introduce Uncertainty Quantification (UQ) in simulations [[cite:&SCHAEFER2020]], Montecarlo methods remain a compelling option for generic problems. They can suffer from slow convergence, however they cater well for embarrassingly parallel algorithms as each path in the simulation is independent of the others. The accelerated simulations may open new ways for UQ of aeroelastic problems without resorting to surrogates [[cite:&FELDSTEIN2020]].
 Therefore the three major contributions of this work are summarized are as follows:
 - Large-scale parallelisation of static and dynamic aeroelastic cases to produce the load envelopes used in aircraft-sizing design loops.
 - Computation of gradients via AD across the critical cases previously calculated concurrently.
 - Differentiation of any moment of a distribution (expectations of the powers of a random variable) produced as the output of an aeroelastic quantity of interest to an stochastic input.
 It is also worth remarking the whole suite of capabilities outlined are entirely physics-based, thereby not relying on metamodels of any kind, but achieving similar computational performance during evaluation thanks to a physical condensation of the model and a very efficient implementation. 
 \\
-The paper is organised as follows: Sec. [[Theoretical and computational background]] gives and overview of the theoretical and computational developments that underpin this work with a focus on the new parallelisation capabilities, computation of derivatives across concurrent simulations, and a new pattern to build sensitivities of large load envelopes. In sec. [[Results]], a representative configuration of an ultra-high-aspect-ratio aircraft is studied under various loading scenarios that have been parallelised; namely structural static loads, manoeuvre cases for varying flow conditions and dynamic loads with multiple gusts running concurrently. This application of modern hardware architectures to aircraft nonlinear load analysis is novel and could potentially be introduced inside current industrial processes. We conclude in Sec. [[Conclusions]] with a summary of the main advances and potential future work to consolidate the methods into a versatile, production-ready tool.
+The paper is organised as follows: Sec. [[Theoretical and computational background]] gives and overview of the theoretical and computational developments that underpin this work with a focus on the new parallelisation capabilities, computation of derivatives across concurrent simulations, and a new pattern to build sensitivities of large load envelopes. In sec. [[Results]], a representative configuration of an ultra-high-aspect-ratio aircraft is studied under various loading scenarios that have been parallelised; namely structural static loads, manoeuvre cases for varying flow conditions and dynamic loads with multiple gusts running concurrently. To our knowledge, this application of modern hardware architectures to aircraft nonlinear load analysis has not been explored so far and has a huge potential to be introduced inside current industrial processes. We conclude in Sec. [[Conclusions]] with a summary of the main advances and potential future work to consolidate the methods into a versatile, production-ready tool.
 * Theoretical and computational background
 The main aspects of the aeroelastic framework we have developed are presented in this section. 
 The approach is built on a non-intrusive reduction order process combined with a nonlinear description of the dominant dimension for slender structures. It achieves a nonlinear representation of aeroelastic models of arbitrary complexity in a very efficient manner and without losing the characteristics of the linear model. We target the calculation of flight loads in this work, but it can also be applied to the computation of aeroelastic stability phenomena such as flutter or divergence [[cite:&CEA2023]].The key features of the formulation have been presented in previous work:
@@ -736,7 +743,7 @@ The approach is built on a non-intrusive reduction order process combined with a
 In addition to this, we show below how to leverage on modern hardware architectures and a parallelisation across devices to a) build load envelopes of static and dynamic aeroelastic simulations in seconds; b) differentiate across the concurrent simulations to obtain sensitivities of dynamic loads; c) quantify the uncertainties in the nonlinear response given a non-deterministic loading field and obtain derivatives of the expectations.
   
 ** Nonlinear aeroelastic system
-Given a general GFEM, a reduced model is obtained from a static or dynamic condensation that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$. A projection of the state variables, velocities $\pmb{x}_1 = \pmb{\Phi}_1\pmb{q}_1$ and stresses $\pmb{x}_2 = \pmb{\Phi}_2\pmb{q}_2$, and a Galerkin projection of the equations of motion leads to the system of ODEs that is solved in time domain. 
+Given a general GFEM, a reduced model is obtained from a static or dynamic condensation into nodes along load paths that captures well the stiffness and inertia properties in the condensed matrices, $\pmb{K}_a$ and $\pmb{M}_a$. The eigenvalue solution of the FEM yields the modal shapes, $\pmb \Phi_0$, and frequencies $\pmb \omega$. A projection of the state variables, velocities $\pmb{x}_1 = \pmb{\Phi}_1\pmb{q}_1$ and stresses $\pmb{x}_2 = \pmb{\Phi}_2\pmb{q}_2$, and a Galerkin projection of the equations of motion leads to the system of ODEs that is solved in time domain. 
 Aerodynamic forces are obtained via Generalised Aerodynamic Forces (GAFs) using a panel-based DLM solver and Roger's rational function approximation [[cite:&ROGER1977]] to bring the forces to the time domain, resulting in a modal force component given as:
 
 \begin{equation}\label{eq3:eta_full}
@@ -745,7 +752,7 @@ Aerodynamic forces are obtained via Generalised Aerodynamic Forces (GAFs) using 
 \end{split}
 \end{equation}
 where the $\pmb{\mathcal{A}}_is$ are real matrices, $b=\frac{c}{2U_\infty}$ with $c$ the reference chord, $Q_\infty = \tfrac12\rho_\infty U_\infty^2$ the dynamic pressure, $\pmb{\lambda}_p$ the aerodynamic states and $N_p$ the number of lags. Note these forces naturally follow the structure since the formulation is written in the material frame of reference. 
-The coupling of the structure and aerodynamic equations combined with the aerodynamic lags, gravity forces, $\bm{\eta}_g$, and gust disturbances, $\bm{v}_g$, gives the final ODE system: 
+The coupling of the structure and aerodynamic equations combined with the aerodynamic lags, gravity forces, $\bm{\eta}_g$, and gust disturbances, $\bm{v}_g$, gives the final ODE system in compact form: 
 \begin{equation}
 \label{eq2:sol_qs}
 \begin{split}
@@ -760,15 +767,17 @@ where $\odot$ is the  Hadamard product (element-wise multiplication), $\otimes$ 
 In this system the aerodynamic added-mass effect has been moved to the left hand side such that $\bm{\mathrm{A}}_2 = (\pmb{I} - \frac{\rho c^2}{8}\pmb{\mathcal{A}}_2)^{-1}$, and it couples all DoF in $\pmb q_1$. Thus the natural frequency terms become $\hat{\pmb{\Omega}} = \bm{\mathrm{A}}_2 \textup{diag}(\pmb{\omega})$ and the nonlinear terms $\hat{\pmb{\Gamma}} = \bm{\mathrm{A}}_2 \bm{\Gamma}$. The effect of all external forces, aero, $\bm{\eta}_a$, gravity, $\bm{\eta}_g$, and others, $\bm{\eta}_f$, are combined in such that $\hat{\bm{\eta}} = \bm{\mathrm{A}}_2 \left( \left( \bm{\eta}_a - \frac{\rho c^2}{8} \pmb{\mathcal{A}}_2\dot{\bm{q}}_1 \right) +  \bm{\eta}_g + \bm{\eta}_f \right)$.
 The aerodynamic matrices $\hat{\bm{\mathcal{A}}}_{p+2}$ have also been scaled accordingly.
  The nonlinearities in the system are encapsulated in the modal couplings of the third-order tensors $\pmb{\Gamma}_1$ and $\pmb{\Gamma}_2$  (the former introduces the gyroscopic terms in the dynamics and the latter introduces the strain-force nonlinear relation).
-Once the nonlinear solution of the condensed model is computed, the corresponding full 3D state can be calculated as a postprocessing step if necessary [[cite:&CEA2025]]. 
+Once the nonlinear solution of the condensed model is computed, the corresponding full 3D state can be calculated as a postprocessing step if necessary [[cite:&CEA2025]].
+Note unsteady aero is linear. Here it is obtained about undeformed geometry since we use the DLM, but it could be updated to the trim shape if needed (particularly to CFD aerodynamics). 
 # firstly the displacements of the cross-sectional nodes linked to the reduced model via the interpolation elements are computed using the positions and rotations of the latter; secondly, Radial Basis Functions (RBFs) kernels are placed on those cross-sections, thus building an intermediate model that is utilised to extrapolate the positions of the remaining nodes in the full model.
 # This paves the way for a broader multidisciplinary analysis where CFD-based aerodynamic loading could be used for the calculation of the nonlinear static equilibrium, and also with the transfer of the full deformed state back to the original FE solver to study other phenomena such as local buckling. 
 
 ** High performance implementation
+# Note! The LLVM Project is a collection of modular and reusable compiler and toolchain technologies. Despite its name, LLVM has little to do with traditional virtual machines. The name "LLVM" itself is not an acronym; it is the full name of the project. https://llvm.org/
 The formulation described above has been made into the codebase FENIAX (Finite Element models for Nonlinear Intrinsic Aeroelastics in JAX) [fn:2]. It has been thoroughly tested with currently 12 different models that amount to over 200 tests that run in minutes and are part of Continuous-Integration/Development (CI/CD) workflow. Moreover, a flexible software architecture allows for automatic analysis of generic models from standard input files, which can integrated with other computational tools.
 The Python library JAX has been used as the numerical engine for calculations and it also manages the parallelisation, therefore some details on the library are worth describing.
 JAX is designed for high-performance numerical computing with focus on machine learning activities [[cite:&BRADBURY2018]]. It relies on XLA (Accelerated Linear Algebra), a domain-specific compiler for linear algebra that optimizes computations for both CPUs and GPUs. In fact XLA is platform-agnostic and achieves optimised performance on the target architecture orchestrating a complex process that encompassing a series of optimizations and transformations: the source code is first converted into HLO (High-Level Optimizer) code, an specialized language derived from a graph representation of the computations; XLA performs optimisations on the HLO code (geared towards high-level mathematical operations, particularly those in linear algebra and machine learning models), and are independent of the hardware architecture, such as operation fusion. It then carries optimisations for the particular architecture in use. From there the LLVM toolkit is leveraged to produce and Intermediate Representation (IR) that the LLVM compiler can understand, perform further optimisations and finally output the machine code. 
-When it comes to leveraging the computational power of (NVIDIA) GPUs, the link between XLA and CUDA kernels is critical. On the one hand JAX utilises CUDA libraries such as cuBLAS for dense linear algebra; on the other hand, it is capable of generating custom CUDA kernels for operations that are not efficiently covered by standard libraries. 
+When it comes to leveraging the computational power of (NVIDIA) GPUs, the link between XLA and CUDA kernels is critical. On the one hand, JAX utilises CUDA libraries such as cuBLAS for dense linear algebra; on the other hand, it is capable of generating custom CUDA kernels for operations that are not efficiently covered by standard libraries. 
 In order to transform the high level Python to low level optimised code, the source code has to comply with various constraints and feature functional programming characteristics.
 With regards to the parallelisation, JAX follows a Single-Program Multi-Data (SPMD) parallelism, whereby a single program operates on multiple data sets in parallel. This means the same computation graph is compiled and executed across different devices. Inter-device communication and synchronization are managed internally by the library.
 Implementation wise, the \texttt{pmap} function maps a function across multiple input sets, distributing the workload across available GPUs. Thus being the parallel equivalent to the \texttt{vmap} function.
@@ -802,17 +811,17 @@ $\bm{r}_a$, $\bm{R}_{a}$   $\longleftarrow$ integration($\bm{X}_{3}$, $\bm{X}_a$
 \end{algorithm}
         
 *** Two-level parallelisation
-Various parallelism models have been developed in the context of deep learning, for which JAX has been particularly designed, and we try to adapt here those methods to the problem at hand of solving a large system of nonlinear equations in parallel for multiple external forces, i.e. right hand side of the equations. Data Parallel (DP) strategies consist of splitting a large batching into chunks, each fed to a single device, and allows scaling to large data batches. In Large Language Models (LLMs), the number of parameters can exceed that of input data, and therefore don't fit in a single device. In this case a tensor parallelism (TP) strategy is employed by which the tensor of weights that are to be optimised is sharded with synchronisation at the end of each step. Hybrid strategies that mix the two are employed in production. In engineering applications, the number of designs variables would usually be between the tens to the few thousands, so tensor parallelism becomes less relevant. However, the number of simulations for different inputs, and the size of each one of them, can be very large. 
+Various parallelism models have been developed in the context of deep learning, for which JAX has been particularly designed, and we try to adapt here those methods to  a large system of nonlinear equations solved in parallel for multiple external forces, i.e. right hand side of the equations. Data Parallel (DP) strategies consist of splitting a large batching into chunks, each fed to a single device, hence scaling to very large data batches. In Large Language Models (LLMs), the number of parameters can exceed that of input data, and often do not fit in a single device. In this case a tensor parallelism (TP) strategy is employed by which the tensor of weights that are to be optimised is sharded with synchronisation at the end of each step. Hybrid strategies that mix the two are employed in production. In the engineering applications of interest here, the number of designs variables would usually be between the tens to the few thousands, so tensor parallelism becomes less relevant. However, the number of simulations for different inputs, and the size of each one of them, can be very large. 
 Therefore we opt for a DP strategy in which our batch of data becomes the multiple inputs that are used to build the external forces for which we want to compute the response.
-The strategy implemented first splits the input data along the leading axis according to the total number of devices available using a data sharding approach. Each device receives the subset of inputs, a closure function that is jitted is called with the respective inputs, and inside the closure the high level function that computes the response (solution of the static response or time marching of the dynamic equations) is vmapped with respect to the subset of inputs. This last \texttt{vmap} makes the inputs that go into each device, or CPU cores, to run in parallel. Note the parallelisation happens at the final solution of the system of equations, meaning previous steps such as computation of intrinsic modes or nonlinear couplings is only carried out once before the concurrent simulations.
-Algorithm [[alg:parallelisation]] illustrates this process with psudo code.
+The strategy implemented first splits the input data along the leading axis according to the total number of devices available using a data sharding approach. Each device receives the subset of inputs, a closure function that is "jitted" is called with the respective inputs, and inside the closure the high level function that computes the response (solution of the static response or time marching of the dynamic equations) is "vmapped" with respect to the subset of inputs. This last \texttt{vmap} makes the inputs that go into each device, or CPU cores, to run in parallel. Note the parallelisation happens at the final solution of the system of equations, meaning previous steps such as computation of intrinsic modes or nonlinear couplings is only carried out once before the concurrent simulations.
+Algorithm [[alg:parallelisation]] illustrates this process with pseudo code.
 The process by which inputs are split and sent to each device is presented in Fig. [[fig:parallelGPU]], which shows the two-level parallelisation.
 #+NAME: fig:parallelGPU
 #+CAPTION: Input distribution example for multi-GPU runs 
 #+ATTR_LATEX: :width 0.65\textwidth :placement [!h]
 [[file:figs_ext/parallelGPU.pdf]]
 
-The inputs to the parallel simulation are tensors of arbitrary shape with the only condition that the first axis being the one over which to run the parallelisation. For the monoeuvre and gust cases below, for instance, the tensor of inputs is a matrix with the second axis being a vector with the combination of flow conditions and gust parameters.   
+The inputs to the parallel simulation are tensors of arbitrary shape with the only condition that the first axis being the one over which to run the parallelisation. For the manoeuvre and gust cases below, for instance, the tensor of inputs is a matrix with the second axis being a vector with the combination of flow conditions and gust parameters.   
 In the figure we can see each GPU has a global memory and L2 cache, and in addition cores in the GPU are packed into the so-called streaming processors, each with its own registers and L1 caches. The strength of these chips is in the large number of cores, in the thousands, that can run in parallel, thus after the inputs are initially divided, many computations can run in parallel even within each GPU.
 
 #+NAME: alg:parallelisation
@@ -850,17 +859,17 @@ sol $\longleftarrow$ y\_aeroelastic(inputs)
 \caption{Parallelisation multiple load cases}
 \end{algorithm}
 
-Algorithm [[alg:parallelisation]] has been also implemented using a \texttt{pmap} function with similar results but slightly different design. As shown 
+Algorithm [[alg:parallelisation]] has been also implemented using a \texttt{pmap} function with similar results but slightly different design.
 ** Gradients of concurrent load-cases
 # Algorithmic Differentiation (AD) is a technique to compute derivatives of functions efficiently and accurately by breaking them down into elementary operations.
-Differentiable Programming encompasses AD, adjoint solutions and various concepts to produce full-fledged programs where derivatives can be taken through complex control flow, loops, and even other libraries embedded in the program such as MPI. It is the backbone of gradient-based optimisation and also Machine Learning frameworks, hence a very activate part of development. New libraries for AD are either based on source-code transformation [[cite:&MOSES2021]] or tape-based methods [[cite:&SAGEBAUM2019]].
-JAX tape-based approach suitcases unique features to do AD in heterogeneous devices and across concurrent operations that are explored herein with two important applications: obtaining derivatives of statistical moments of a distribution generated as the output of a Montecarlo simulation, and a strategy to differentiate the boundaries of load envelopes representing critical aircraft loads in the certification process.
-Built on top of JAX, the numerical library Diffrax cite:&KIDGER2021 is used as it ships with robust Newton-Raphson and ODE solvers with various adjoints options. It has been found that when computing derivatives of parallel simulations, the solvers in this library are not compatible with the new sharding features in JAX, however, it is able if a \texttt{pmap} strategy is utilized. It is expected that in the future both parallel strategies will be supported for differentiation.
+Differentiable Programming encompasses AD, adjoint solutions and various concepts to produce full-fledged programs where derivatives can be taken through complex control flow, loops, and even other libraries embedded in the program such as MPI. It is the backbone of both gradient-based optimisation and Machine Learning frameworks, hence a very active field of research. New libraries for AD are either based on source-code transformation [[cite:&MOSES2021]] or tape-based methods [[cite:&SAGEBAUM2019]].
+JAX tape-based approach showcases unique features to do AD in heterogeneous devices and across concurrent operations that are explored herein with two important applications: obtaining derivatives of statistical moments of a distribution generated as the output of a Montecarlo simulation, and a strategy to differentiate the boundaries of load envelopes representing critical aircraft loads in the certification process.
+The JAX-based numerical library Diffrax cite:&KIDGER2021 is used as it ships with robust Newton-Raphson and ODE solvers with various adjoints options. It has been found that when computing derivatives of parallel simulations, the solvers in this library are not compatible with the new sharding features in JAX, however, it is able to differentiate across concurrent simulations if those we produced via a \texttt{pmap} strategy. This means that \texttt{pmap} was used for the parallelisation in the differentiation of Expectations in Sec [[Computing derivatives of expectations]].
+Most likely both strategies will be supported for differentiation in the future, therefore giving more flexibility and aligning the AD to the various parallelisation approaches.
 
 *** Montecarlo analysis for UQ
 Montecarlo analysis utilises random sampling to evaluate the effect of input uncertainties on model outputs.
-# by generating a large number of samples (often thousands or millions) from the input distributions and computing the corresponding output.
-It allows to propagate uncertainties in complex systems such as the nonlinear aeroleastic formulation outlined in Sec. [[Nonlinear aeroelastic system]]. Since the samples are independent, a very simple parallelisation is possible on this algorithm: for each sample load case (right-hand side of the equations), launch a simulation, then collect outputs and perform a collective operation such as the mean across devices to calculate expectations. We can represent the system of equations in Eq. \eqref{eq3:eta_full} as follows,
+It allows here to propagate uncertainties in the nonlinear aerolelastic formulation outlined in Sec. [[Nonlinear aeroelastic system]]. Since the samples are independent, a very simple parallelisation is possible on this algorithm: for each sample load case (right-hand side of the equations), launch a simulation, then collect outputs and perform a collective operation such as the mean across devices to calculate expectations. We can represent the system of equations in Eq. \eqref{eq3:eta_full} as follows,
 \begin{equation}\label{random_system}
 \dot{\bm{q}} = \bm{Q}(\bm{q}, \bm{\alpha}_1) + \bm{L}(\bm{X}, \bm{\alpha}_2)
 \end{equation}
@@ -869,7 +878,7 @@ After marching the system in time or solving the nonlinear equations for a stati
 \begin{equation}\label{random_system}
 \bm{Y} = \bm{F}(\bm{q}(t_f), \bm{X}, \bm{\alpha}_1, \bm{\alpha}_2)
 \end{equation}
-The objective is to calculate derivatives of arbitrary moments \(n\) of \(\bm{Y}\), \( \frac{\partial \mathbb{E}[Y^n]}{\partial \bm{\alpha}}\). They can be calculated via Montecarlo by launching the concurrent simulations for each \(\bm{X}_i\) and performing a collective mean on the output of interest \(\bm{Y}_i\) after solving the aeroelastic system. Since all the operations in the process are being tracked in JAX, derivatives with respect to \(\bm{\alpha}\) can be recovered. The slow convergence is one of the key limitations of plain Monte Carlo methods as the error goes with number of samples \( N \): \(\text{Error} \sim \mathcal{O}\left( \frac{1}{\sqrt{N}} \right) \).
+The objective is to calculate derivatives of arbitrary moments \(n\) of \(\bm{Y}\), \( \frac{\partial \mathbb{E}[Y^n]}{\partial \bm{\alpha}}\). They can be calculated via Montecarlo by launching the concurrent simulations for each \(\bm{X}_i\) and performing a collective mean on the output of interest \(\bm{Y}_i\) after solving the aeroelastic system. Since all the operations in the process are being tracked in JAX, derivatives with respect to \(\bm{\alpha}\) can be recovered. The slow convergence is one of the key limitations of plain Monte Carlo methods as the error goes with number of samples \( N \): \(\text{Error} \sim O \left( \frac{1}{\sqrt{N}} \right) \).
 Quasi Montecarlo methods using low discrepancy sequences such as Sobol numbers can be used for better convergence and multilevel methods to reduce computational cost cite:&GILES2008.
 While the method itself is not new, the combination of modern-hardware architectures and concurrent subroutines that are AD-capable can unlock optimisation problems in Engineering written in terms of expectations instead of deterministic quantities.
 *** Differentiable-parallel dynamic loads
@@ -944,15 +953,15 @@ Calculations are carried out on a CPU Intel Xeon Silver 4108 with 1.80GHz speed,
 #+end_src
 
 In this section uncertainty quantification is performed for both linear and nonlinear responses to a loading field that is non-deterministic. Thousands of simulations are employed in Monte Carlo type of analysis to resolve for the statistics, for which parallelisation of the independent simulations become critical.
-The example resembles the workflow of flight loads and wing stress analysis in an industrial setup.
-# : the flight physics department would compute the in-flight loads for various conditions and pass the maximum of these loads to the stress engineers who would check the integrity of the airframe in their more detailed models.
-There will always be an element of uncertainty around computed loads, and what we show here is how for large displacements, the statistics need to be computed for every distinct loading. And for this, having a parallisation strategy as the one presented could potentially allow the computation of complex correlations and averages via  Montecarlo analysis.
+The example resembles the workflow of flight loads and wing stress analysis in an industrial setup. There will always be an element of uncertainty around computed loads, and what we show here is how for large displacements, the statistics need to be computed for every distinct loading. And for this, having a parallisation strategy as the one presented could potentially allow the computation of complex correlations and averages via  Montecarlo analysis.
 \\
-Considering this, a static loading field is prescribed along the wings consisting of follower forces in the normal (out-of-plane) direction, as well as torsional moments, with the characteristic that the force follows a normal distribution:
+Considering this, a static loading field is prescribed along the wings consisting of follower forces in the normal (out-of-plane) direction, as well as torsional moments (to mimic the added aerodynamic forces on an airfoil), with the characteristic that the force follows a normal distribution:
+\begin{subequations}
 \begin{align}\label{eq:normal_loading}
 N&(\mu=1.5 \times 10^4 \mu_0, \sigma=0.15 \mu) \; \text{[forces]}  \\
 N&(\mu=3 \times 10^4 \mu_0, \sigma=0.15 \mu)   \; \text{[moments]}
 \end{align}
+\end{subequations}
 Three scenarios are studied: one in which very large nonlinear deformations are induced with $\mu_0 = 1$, and two small loading with  $\mu_0 = 10^{-2}$ and $\mu_0 = 10^{-3}$.
 The distribution of displacements is characterised by means of Montecarlo simulations that run in parallel for a total of 1600 simulations.
 Fig. [[fig:BUG_mc]] shows the equilibrium at high loading ($\mu_0 = 1$) for two of the random cases (first and last of the 1600 computed). 
@@ -962,15 +971,15 @@ Fig. [[fig:BUG_mc]] shows the equilibrium at high loading ($\mu_0 = 1$) for two 
 #+ATTR_LATEX: :width 0.8\textwidth 
 [[file:figs_ext/MC1.png]]
 
-Table [[table:BUG_mc]] shows the statistics gathered from the response, in this case the tip of the wing displacements in the normal (out-of-plane) direction.
+Table [[table:BUG_mc]] shows the normalized statistics gathered from the response, in this case the expectation of tip of the wing displacements in the normal (out-of-plane) direction, \(\mu_u \), and the corresponding standard deviation,  \( \sigma_u  \).
 #+CAPTION: Vertical wing-tip displacement statistics
 #+ATTR_LATEX: :center t
 #+NAME: table:BUG_mc
-| Case              | [\(\mu_u / \mu_0 \) [m] | \( \sigma_u / \mu_0 \) [m] |
-|-------------------+-------------------------+----------------------------|
-| ($\mu_0 = 1$)     |                   11.57 |                       1.35 |
-| ($\mu_0 = 0.01$)  |                    14.8 |                        2.4 |
-| ($\mu_0 = 0.001$) |                    14.9 |                        2.3 |
+| Case              | \(\mu_u / \mu_0 \) | \( \sigma_u / \mu_0 \) |
+|-------------------+--------------------+------------------------|
+| ($\mu_0 = 1$)     |              11.57 |                   1.35 |
+| ($\mu_0 = 0.01$)  |               14.8 |                    2.4 |
+| ($\mu_0 = 0.001$) |               14.9 |                    2.3 |
 
 # Mean displacement node 35: 11.566769265603666
 # std displacement node 35: 1.3448662385231276
@@ -1000,13 +1009,12 @@ Note how despite the standard deviation of the input forces is the same along th
 #+RESULTS: wing_meanstd
 [[file:figs/wing_meanstd.png]]
 
-
 Table [[table:times_MC]] shows the times taken for the nonlinear case in both CPU and GPU. The computation of 1600 independent simulations in just over a minute, involving deformations of over 40% the wing semi-span as shown in Fig. [[fig:BUG_mc]], highlights the potential of this methodology in more complex uncertainty quantification problems. Note that at this level of nonlinearity, our solvers are already two orders of magnitude faster than commercial solvers such as MSC Nastran even for a single simulation as demonstrated in [[cite:&CEA2025]]. The extension to thousands of cases with parallelisation on modern architectures is a key feature of this work with far-reaching applications in aircraft loads analysis.   
 
-#+CAPTION: Static loading UQ computational times 
+#+CAPTION: Static loading UQ computational times for 1600 paths 
 #+ATTR_LATEX: :center t
 #+NAME: table:times_MC
-| Device         |              Time (sec.) |
+| Device         |              Time [sec.] |
 |----------------+--------------------------|
 | CPU (single)   | 16.8 \times 1600 = 26880 |
 | CPU (parallel) |                    317.4 |
@@ -1056,7 +1064,7 @@ Table [[table:times_MC]] shows the times taken for the nonlinear case in both CP
       jac_ediff2.append(jnp.linalg.norm(mc1_ejac2[i]-jac_t) / jnp.linalg.norm(jac_t))
 #+end_src
 
-Now we set out to calculate the derivatives of the expectations previously computed concurrently in Sec. [[Montecarlo analysis for UQ]]. While the Montecarlo paths are independent of each other and could therefore be run on different machines, having to do AD on the output statistics -gathered via collective operations-, forces the entire chain of operations to be within a single program. This makes for an interesting and challenging problem to propagate gradients through concurrent operations. A linear parameter \(\alpha\) is introduced such that the follower forces and torsional moments in Eq. \eqref{eq:normal_loading} are \(\mu = 10^4 (\frac{\alpha - 1.5}{4-1.5} + 1.5\times\frac{\alpha - 1}{5-1}) \). The selected output is the expectation of a 3-component vector, \(\bm{r}(\alpha)\) of the wing-tip positions at \(\alpha = 4.5\). Fig. [[fig:jac_ediff]] shows a comparison between the derivative \(\partial_{\mathbb{E}_\alpha} \bm{r} = \partial \mathbb{E}[\bm{r}] / \partial \alpha \) using AD, \(\partial_{\alpha} \bm{r}^{a} \), and finite differences \( \partial_{\alpha} \bm{r}^{f}= (\bm{r}(\alpha + \epsilon) - \bm{r}(\alpha))/\epsilon  \). The relative error is calculated as  \(||\partial_{\alpha} \bm{r}^{a} - \partial_{\alpha} \bm{r}^{f} || / ||\partial_{\alpha} \bm{r}^{a} ||  \), using the \(l_2 \) norm.  
+Now we set out to calculate the derivatives of the expectations previously computed concurrently in Sec. [[Montecarlo analysis for UQ]]. While the Montecarlo paths are independent of each other and could therefore be run on different machines, having to do AD on the output statistics -gathered via collective operations-, forces the entire chain of operations to be within a single program. This makes for an interesting and challenging problem to propagate gradients through concurrent operations. A linear parameter \(\alpha\) is introduced such that the follower forces and torsional moments in Eq. \eqref{eq:normal_loading} are \(\mu = 10^4 (\frac{\alpha - 1.5}{4-1.5} + 1.5\times\frac{\alpha - 1}{5-1}) \). The selected output is the expectation of a 3-component vector, \(\bm{r}(\alpha)\) of the wing-tip positions at \(\alpha = 4.5\). Fig. [[fig:jac_ediff]] shows a comparison between the derivative \(\partial_{\alpha} \bm{r}^a = \partial \mathbb{E}[\bm{r}] / \partial \alpha \) using AD, and finite differences \( \partial_{\alpha} \bm{r}^{f}= (\bm{r}(\alpha + \epsilon) - \bm{r}(\alpha))/\epsilon  \). The relative error is calculated as  \(||\partial_{\alpha} \bm{r}^{a} - \partial_{\alpha} \bm{r}^{f} || / ||\partial_{\alpha} \bm{r}^{a} ||  \), using the \(l_2 \) norm.  
 
 #+NAME: jac_ediff
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
@@ -1069,7 +1077,7 @@ Now we set out to calculate the derivatives of the expectations previously compu
   figname
 #+end_src
 #+NAME: fig:jac_ediff
-#+CAPTION: Verification against finite-differences of derivative of expectations
+#+CAPTION: Relative error for the derivative of expectations of the wing-tip position with respect to \(\alpha \) (finite-differences VS AD).
 #+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: jac_ediff
 [[file:figs/jac_ediff.png]]
@@ -1087,14 +1095,16 @@ Another convergence  metric to investigate is the number of paths in the Monteca
   figname
 #+end_src
 #+NAME: fig:jac_pdiff
-#+CAPTION: Convergence of expected wing-tip position and its derivative with number of paths 
+#+CAPTION: Convergence with number of paths of expected wing-tip position and its Jacobian with respect to \(\alpha \). 
 #+ATTR_LATEX: :width 0.8\textwidth 
 #+RESULTS: jac_pdiff
 [[file:figs/jac_pdiff.png]]
 
-While changing the input loading is good for verification studies, more realistic examples are solved in Fig. [[fig:jac_Ma2]]  where the sensitivity of the expectations of wing root loads are calculated with respect to the FE matrices and eigenvectors (only indexes corresponding to the right wing nodes are shown in the heat map as the other are 0 because the model is clamped).
-The derivatives in Fig. [[fig:jac_pdiff]] were calculated in forward mode, but the condensed FE matrices of the BUG model contain \((99 \times 6)^2 = 352836 \) entries, to what all the components in eigenvectors are also added, therefore only backward mode AD is possible in this case. The sensitivity of the loads with respect to the mass matrix increase towards the nodes at tip of the wing, which makes sense if we think a unit mass at the tip will produce much larger loads than the same unit mass close to the root where the aircraft is clamped. A pattern also emerges as every 6 elements in the matrix represent 3 displacements and 3 rotations and the shear forcing for example will have weaker couplings to a in-plane than to a out-of-plane displacement. 
+While changing the input loading is good for verification studies, more realistic examples are solved in Fig. [[fig:jac_Ma4]]  where the sensitivity of the expectations of wing root loads are calculated with respect to the FE matrices and eigenvectors (only indexes corresponding to the right wing nodes are shown in the heat map as the other are 0 because the model is clamped).
+The derivatives in Fig. [[fig:jac_pdiff]] were calculated in forward mode, but the condensed FE matrices of the BUG model contain 99 condensed nodes, each with 6 components, so \((99 \times 6)^2 = 352836 \) entries, to what all the components in eigenvectors are also added, therefore only backward mode AD is possible in this case. The sensitivity of the loads with respect to the mass matrix increase towards the nodes at tip of the wing, which makes sense if we think a unit mass at the tip will produce much larger loads than the same unit mass close to the root where the aircraft is clamped. A pattern also emerges as every 6 elements in the matrix represent 3 displacements and 3 rotations and the shear forcing for example will have weaker couplings to a in-plane than to a out-of-plane displacement.
+The wall-time to calculate the gradient of wing-root loads expectations with respect to the mass matrix using 800 paths in the Montecarlo analysis was 48.0 and 297.9 in the GPU and CPU respectively.
 
+#+CAPTION: Computational times 
 # #+NAME: jac_Ma2
 # #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
 #   fig, figname = fig_out(name)(plot_jacfem2)(jnp.abs(jac_fem['Ma'][0,0,0, 80:215, 80:215]/1000), # 
@@ -1126,7 +1136,16 @@ The derivatives in Fig. [[fig:jac_pdiff]] were calculated in forward mode, but t
 
 #+NAME: jac_Ma4
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_jacfemold)(jnp.abs(jac_fem['Ma'][0,2,0, 80:215, 80:215])/normalisation,
+  m_start = 6*12
+  m_end = m_start + 6*23#6*35 #m_start + 136 # 6*35
+  f_index = 2
+  n_index = 4
+  jump = 6
+  shift = 7
+  Ma_plot = jac_fem['Ma'][0,f_index,0,
+                jnp.arange(m_start+n_index-shift, m_end+n_index-shift, jump)[:, None],
+                jnp.arange(m_start+n_index, m_end+n_index, jump)]
+  fig, figname = fig_out(name)(plot_jacfemold)( Ma_plot /normalisation,
                                             xlabel="i-component",
                                             ylabel="j-component"
                                             )
@@ -1139,6 +1158,23 @@ The derivatives in Fig. [[fig:jac_pdiff]] were calculated in forward mode, but t
 #+ATTR_LATEX: :width 0.75\textwidth 
 #+RESULTS: jac_Ma4
 [[file:figs/jac_Ma4.png]]
+
+
+#+NAME: jac_Ma4
+#+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
+  m_start = 6*12
+  m_end = 6*35
+  f_index = 2
+  n_index = 4
+  jump = 1
+  fig, figname = fig_out(name)(plot_jacfemold)(jnp.abs(jac_fem['Ma'][0,f_index,0, m_start+n_index-4:m_end+n_index-4:jump, m_start+n_index:m_end+n_index:jump])/normalisation,
+                                            xlabel="i-component",
+                                            ylabel="j-component"
+                                            )
+  figname
+
+#+end_src
+
 
 ** Steady manoeuvre loads
 #+begin_src python :results none
@@ -1174,7 +1210,7 @@ In Fig. [[fig:Manoeuvretip]] the tip of the wing in Fig. [[fig:BUG_manoeuvre3D]]
 #+end_src
 
 #+NAME: fig:Manoeuvretip
-#+CAPTION: wing tip position for increasing angle of attack
+#+CAPTION: Wing tip position for increasing angle of attack
 #+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: Manoeuvretip
 [[file:figs/Manoeuvretip.png]]
@@ -1184,7 +1220,7 @@ Table [[table:times_manoeuvre]] shows the computational times to run these simul
 #+CAPTION: Computational times for the multiple manoeuvre problem
 #+ATTR_LATEX: :center t
 #+NAME: table:times_manoeuvre
-| Device         |              Time (sec.) |
+| Device         |              Time [sec.] |
 |----------------+--------------------------|
 | CPU (single)   | 7.71 \times 256 = 1973.8 |
 | CPU (parallel) |                     52.8 |
@@ -1209,7 +1245,7 @@ Table [[table:times_manoeuvre]] shows the computational times to run these simul
   #x2min_mesh = x2min.reshape((gust_ln, gust_wn,6))
 #+end_src
 
-In this final example we perform a dynamic aeroelastic analysis to study the response of the aircraft to multiple 1-cos gusts for varying length, intensity and the density of the airflow. The mach number is kept constant at 0.7. In the examples above the aircraft was clamped while the aircraft is free here. A Runge-Kutta solver is employed to march in time the equations with a time step of $10^{-3}$ and the total number of modes used was 100. Note the large size of the aeroelastic ODE system: 2 \times 100 nonlinear equations plus 5 \times 100 linear equations for the aerodynamic states with 5 poles, plus 4 equations for the quaternion tracking the rigid-body motion, for a combined ODE system of 704 equations.  
+In this final example we perform a dynamic aeroelastic analysis to study the response of the aircraft to multiple 1-cos gusts for varying length, intensity and the density of the airflow. The mach number is kept constant at 0.7. In the examples above the aircraft was clamped while the aircraft is free here. A Runge-Kutta solver is employed to march in time the equations with a time step of $10^{-3}$ s and the total number of modes used was 100. Note the large size of the aeroelastic ODE system: 2 \times 100 nonlinear equations plus 5 \times 100 linear equations for the aerodynamic states with 5 poles, plus 4 equations for the quaternion tracking the rigid-body motion, for a combined ODE system of 704 equations.  
 In addition, a total of 512 gusts cases are run concurrently for all possible combinations of 8 gust lengths between 50 and 200 meters, 8 gust intensities between 5 and 25 m/s, and 8 airflow densities between 0.34 and 0.48 Kg/m$^3$. This means that $512 \times 704 = 360448$ equations are being marched in time, in this case for 2 seconds which is enough to capture peak loads.
 We have verified the concurrent implementation by satisfactory comparing single-point simulations to the same points within the parallel results.   
 Table [[table:times_gust]] contains the simulation times of the calculation, which shows one order of magnitude increase in performance when running in parallel in the CPU versus a complete single simulation running sequentially, and another order of magnitude when moving from the CPU to a modern GPU. This exemplifies the power of modern hardware for scientific computation.
@@ -1217,7 +1253,7 @@ Table [[table:times_gust]] contains the simulation times of the calculation, whi
 #+CAPTION: Computational times multiple gust problem 
 #+ATTR_LATEX: :center t
 #+NAME: table:times_gust
-| Device         |               Time (sec.) |
+| Device         |               Time [sec.] |
 |----------------+---------------------------|
 | CPU (single)   | 27.8 \times 512 = 14233.6 |
 | CPU (parallel) |                     922.6 |
@@ -1231,7 +1267,7 @@ In Fig. [[fig:BUG_Gust3D]] the 3D reconstructed flight shape of the airframe is 
 #+ATTR_LATEX: :width 1\textwidth 
 [[file:figs_ext/Gust3D_3.png]]
 
-Figs. [[fig:GustShard_shear]], [[fig:GustShard_torsion]] and [[fig:GustShard_bending]] show the load diagrams for the maximum shear, torsion and out-of-pane bending at the wing root during the gust encounter. They reflect the importance of running multiple of these simulations to assess the critical loads: maximum loads occur at different gust lengths of 65, 75, 115 m/s. This analysis would be extended to include various mass cases, flying altitudes etc. in an industrial environment, and it would be straight forward to extend our tools for this.   
+Figs. [[fig:GustShard_shear]], [[fig:GustShard_torsion]] and [[fig:GustShard_bending]] show the load diagrams for the maximum shear, torsion and out-of-pane bending at the wing root during the gust encounter, normalized with the aircraft weight and wing semi-span. They reflect the importance of running multiple of these simulations to assess the critical loads: maximum loads occur at different gust lengths of 65, 75, 115 m/s. This analysis would be extended to include various mass cases, flying altitudes etc. in an industrial environment, and it would be straight forward to extend our tools for this.   
 #+NAME: GustShard_shear
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   fig, figname = fig_out(name)(plot_gustshard)(gust_w, gust_l, x2max_mesh / normalisation_force,
@@ -1239,7 +1275,7 @@ Figs. [[fig:GustShard_shear]], [[fig:GustShard_torsion]] and [[fig:GustShard_ben
   figname
 #+end_src
 #+NAME: fig:GustShard_shear
-#+CAPTION: Max. wing-root internal loading, shear force [N/m]
+#+CAPTION: Normalized max. wing-root internal loading, shear force
 #+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: GustShard_shear
 [[file:figs/GustShard_shear.png]]
@@ -1252,7 +1288,7 @@ Figs. [[fig:GustShard_shear]], [[fig:GustShard_torsion]] and [[fig:GustShard_ben
 #+end_src
 
 #+NAME: fig:GustShard_torsion
-#+CAPTION: Max. wing-root internal loading, torsional moment [N/m]
+#+CAPTION: Normalized max. wing-root internal loading, torsional moment
 #+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: GustShard_torsion
 [[file:figs/GustShard_torsion.png]]
@@ -1264,7 +1300,7 @@ Figs. [[fig:GustShard_shear]], [[fig:GustShard_torsion]] and [[fig:GustShard_ben
   figname
 #+end_src
 #+NAME: fig:GustShard_bending
-#+CAPTION: Max. wing-root internal loading, bending moment [N/m]
+#+CAPTION: Normalized max. wing-root internal loading, bending moment
 #+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: GustShard_bending
 [[file:figs/GustShard_bending.png]]
@@ -1339,35 +1375,35 @@ Figs. [[fig:GustShard_shear]], [[fig:GustShard_torsion]] and [[fig:GustShard_ben
   jacdiff_intensity = jnp.hstack((sol_gust1forager.data.dynamicsystem_scatter0.jac['intensity'] -
                  jac_intensity) / jac_intensity)
 
-  jac_dict = dict(objective=sol_gust1forager.data.dynamicsystem_scatter0.objective[:,0],
-                  rho=jnp.hstack(sol_gust1forager.data.dynamicsystem_scatter0.jac['rho_inf']),
-                  rho_fd=jnp.hstack(jac_rho),
+  normalise = 1 / jnp.array([normalisation_force, normalisation_moment, normalisation_moment])
+  jac_dict = dict(objective=sol_gust1forager.data.dynamicsystem_scatter0.objective[:,0] * normalise,
+                  rho=jnp.hstack(sol_gust1forager.data.dynamicsystem_scatter0.jac['rho_inf']) * normalise,
+                  rho_fd=jnp.hstack(jac_rho) * normalise,
                   rho_diff=jacdiff_rho,
-                  Length=jnp.hstack(sol_gust1forager.data.dynamicsystem_scatter0.jac['length']),
-                  Length_fd=jnp.hstack(jac_length),
+                  Length=jnp.hstack(sol_gust1forager.data.dynamicsystem_scatter0.jac['length']) * normalise,
+                  Length_fd=jnp.hstack(jac_length) * normalise,
                   Length_diff=jacdiff_length, Intensity=jnp.hstack(sol_gust1forager.data.dynamicsystem_scatter0.jac['intensity']),
-                  Intensity_fd=jnp.hstack(jac_intensity),
+                  Intensity_fd=jnp.hstack(jac_intensity) * normalise,
                   Intensity_diff=jacdiff_intensity
                   )
   df_jac = pd.DataFrame(jac_dict, index=['Shear', 'Torsion', 'Bending'])
   #df_jac = df_jac.rename()
 #+end_src
 
-Since dynamic load envelopes have been constructed, the interest is to be able to obtain derivatives at the critical points as described in Sec. [[Differentiable-parallel dynamic loads]]. In opposition to the derivatives of expectations where all the operations are needed in the construction of the computational graph, here only a few of the most problematic cases are required.
-The metrics being tracked are wing-root shear, torsion and out-of plane torsion as well.
-The parallelisation is set for two gust intensities, two flow densities and 16 gust lengths to cover 1-cos gusts from 50 to 200 m/s with 10 m/s separation between points. Rather than a realistic example, this is set to test the machinery of the forager pattern and verify it can indeed discover critical load cases and automatically compute gradients. The gradient of these critical cases is also calculated with respect to the flow density, gust length and intensity (thus they are not only the parameters for the parallelisation but are also chosen to be the input variables of the sensitivity analysis, though any other input such as FE matrices could have been chosen). By looking at Figs. [[fig:GustShard_shear]] -  [[fig:GustShard_bending]], we can identify maximum loads at around 65, 75, 115 m/s gust lengths for shear, torsion and bending.  
-Of the 64 cases analyzed by the forager program, it picked those with higher intensity and flow density as expected, but only 2 gust lengths of 70 m/s for the shear and torsion, and 110 m/s for the out-of-plane bending. A finer discretization in the parallelization can be setup to be closer to the actual maximum, in which case each output gets a unique critical gust.  
-Once those peaks are found, the algorithms triggers the sensitivity analysis, for which we have shown a verification for the 70 m/s gust with maximum density and intensity in Table [[table:forager]]. Finite differences are computed with an \(\epsilon = 10^{-4} \) and the absolute relative difference with AD is shown as \( \Delta \) for each of the input parameters.   
+Since dynamic load envelopes have been constructed, the interest is to be able to obtain derivatives at the critical points as described in Sec. [[Differentiable-parallel dynamic loads]]. In opposition to the derivatives of expectations where all the operations are needed in the construction of the computational graph, here only a few of the most problematic cases are automatically identifies and its derivatives computed.
+The metrics being tracked are wing-root shear, torsion and out-of plane bending moments.
+The parallelisation is set for two gust intensities, two flow densities and 16 gust lengths to cover 1-cos gusts from 50 to 200 m/s with 10 m/s separation between points. Rather than a realistic example, this is set to test the machinery of the forager pattern and verify it can indeed discover critical load cases and automatically compute gradients. The gradient of these critical cases is also calculated with respect to the flow density, gust length and intensity (thus they are not only the parameters for the parallelisation but are also chosen to be the input variables of the sensitivity analysis, though any other input such as FE matrices could have been chosen). By looking at Figs. [[fig:GustShard_shear]] -  [[fig:GustShard_bending]], we can identify maximum loads at around 65, 75, 115 m/s gust lengths for shear, torsion and bending. Of the 64 cases analyzed, the forager step picked those with higher intensity and flow density as expected, but only 2 gust lengths of 70 m/s for the shear and torsion, and 110 m/s for the out-of-plane bending. The finer the discretization in the input of the parallelization, the closer to the actual maximum, but also the more computations that need to be run. It is therefore a balance whose best compromise is to be found on an actual optimization study.
+Once those peaks are found, the algorithms triggers the sensitivity analysis, for which we have shown a verification for the 70 m/s gust with maximum density and intensity in Table [[table:forager]]. Finite differences are computed with an \(\epsilon = 10^{-4} \) and the absolute relative difference with AD is shown as \( \Delta \) for each of the input parameters (\( \partial  \rho_{\inf} \) for the flow density derivative, \( \partial L \) for the gust length, and \( \partial w \) for the gust intensity). The computational wall-time for entire forager loop (concurrent loads, filtering of critical cases and sensitivities on them) was 60.1 and 359.5 seconds on the GPU and CPU respectively.  
 
 #+CAPTION: Comparison of peak gust loads at the critical points, AD versus FD
 #+ATTR_LATEX: :center t
 #+NAME: table:forager
-|         | objective [N/m] | \( \partial  \rho_{\inf} \) | \( \Delta \)             | \( \partial \) Length | \( \Delta \)             | \( \partial \) Intensity | \( \Delta \)             |
-|---------+-----------------+-----------------------------+--------------------------+-----------------------+--------------------------+--------------------------+--------------------------|
-| Shear   |          244637 |                      455840 | \( 1.6 \times 10^{-5} \) |                -714.8 | \( 4 \times 10^{-6} \)   |                   9480.5 | \( 1. \times 10^{-7} \)  |
-| Torsion |          179802 |                     -128404 | \( 4.2 \times 10^{-4} \) |               -5071.4 | \( 3.9 \times 10^{-7} \) |                  13058.8 | \( 1.2 \times 10^{-6} \) |
-| Bending |         2119890 |                    2.328150 | \( 2.9 \times 10^{-5} \) |               219.403 | \( 1.7 \times 10^{-4} \) |                    84773 | \( 9.2 \times 10^{-8} \) |
-|         |                 |                             |                          |                       |                          |                          |                          |
+|         | objective | \( \partial  \rho_{\inf} \) | \( \Delta \)             | \( \partial L \) | \( \Delta \)             | \( \partial w \) | \( \Delta \)             |
+|---------+-----------+-----------------------------+--------------------------+------------------+--------------------------+------------------+--------------------------|
+| Shear   |     0.897 |                       1.670 | \( 1.6 \times 10^{-5} \) |          -0.0026 | \( 4 \times 10^{-6} \)   |            0.035 | \( 1. \times 10^{-7} \)  |
+| Torsion |     0.025 |                      -0.018 | \( 4.2 \times 10^{-4} \) |          -0.0007 | \( 3.9 \times 10^{-7} \) |           0.0018 | \( 1.2 \times 10^{-6} \) |
+| Bending |     0.300 |                       0.329 | \( 2.9 \times 10^{-5} \) |          0.00003 | \( 1.7 \times 10^{-4} \) |            0.012 | \( 9.2 \times 10^{-8} \) |
+|         |           |                             |                          |                  |                          |                  |                          |
 
 
 #+begin_src python :results none
@@ -1376,11 +1412,10 @@ Once those peaks are found, the algorithms triggers the sensitivity analysis, fo
            )
 #+end_src
 
-
 * Conclusions
 A modal-based, geometrically nonlinear formulation has been implemented with concurrent capabilities for multiple load-cases in modern hardware architectures. We have applied state-of-the-art techniques and tools to the computation of the sizing aeroelastic loads encountered during the design of commercial aircraft. These can span thousands of simulations in multiple scenarios and the efficiency of our approach has been highlighted while accounting for nonlinear effects and rigid body dynamics. Moreover, sensitivity of the response to model inputs using automatic differentiation has been demonstrated across parallel simulations.    
 Computational times of under a minute are achieved for 256 manoeuvres varying flow conditions and for 512 dynamic gust responses undergoing large displacements.
-Such a performance two different applications: uncertainty quantification of the nonlinear aircraft response to a non-deterministic loading and integration of the software in larger multidisciplinary optimisation studies.
+This performance makes the solution suitable for two different applications: uncertainty quantification of the nonlinear aircraft response to a non-deterministic loading and integration of the software in larger multidisciplinary optimisation studies.
 The former has been presented on a problem where a field of forces with an stochastic component induces very large deformations. Montecarlo analysis then allows to build statistics of the response and we have shown how we can not only run multiple paths concurrently to build a distribution of the outputs, but also differentiate expectations of those with respect to any input in the aeroelastic analysis.   
 For the sensitivity analysis of load envelopes, a strategy named The Forager Pattern has been introduced whereby the multiple cases are launched in parallel, critical cases are filtered out, and new simulations for AD are spawn to obtain gradients on the most demanding loads. Since the examples shown are already in the memory boundaries of a single GPU or CPU, further scale-up requires the use of multiple devices, which we have already implemented. 
 Introduction of various mass cases, as it is done in industrial scenarios, is also a feasible target. The resulting framework thus combines prediction of sizing aeroelastic loads in a nonlinear fashion with the computation of their gradients with respect to design variables, and therefore it is intended to be part of multidisciplinary design optimization studies that include the large set of loading requirements in the certification process.
@@ -1388,8 +1423,10 @@ Despite dynamic loads and aeroelastic instabilities being still obtained using m
 
 \section*{Acknowledgements}
 This work has received funds from Innovate UK, under project 10002372, managed by the UK
-Aerospace Technology Institute. 
+Aerospace Technology Institute.
+We acknowledge computational resources and support provided by the Imperial College Research Computing Service (http://doi.org/10.14469/hpc/2232).
 The benchmark examples for the GPU computations were carried out at the Imperial College cluster. Code and examples are open-source.
+
 
 \appendix
 * COMMENT Embarrassingly-parallel algorithms for PDE optimisation via Feynman–Kac theorem
