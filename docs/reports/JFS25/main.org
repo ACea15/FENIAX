@@ -30,8 +30,8 @@
 :END:
 
 #+begin_abstract
-This paper demonstrates a new solution for large scale computations of aircraft-sizing loads. A geometrically nonlinear aeroelastic description has been extended with concurrent capabilities to tackle efficiently the very demanding loading scenarios in the design process. The software can be deployed on modern hardware architectures and has been benchmarked on CPUs and GPUs. While keeping computational times in the order of seconds, the presented approach enables the construction of load envelopes corresponding to static and dynamic cases, seamless integration with full-aircraft models from industry, and uncertainty quantification analysis via massively-parallel Montecarlo simulations, among others. Furthermore, differentiation of both concurrent computations and aeroelastic loads is achieved via JAX library automatic differentiation engine and collective primitives. 
-We explore a high-aspect-ratio-wing aircraft configuration, showing the ability of the solvers to capture nonlinear effects for external forces inducing large deformations and also the importance of these effects when studying modern aircraft concepts. Discrete, manoeuvre and gust loads are assessed for multiple flow and parametric conditions running concurrently. Sensitivities of maximum wing-root stresses and tip displacements are computed and verified against finite differences.  
+This paper demonstrates a new solution for large scale simulations of aircraft-sizing loads. A geometrically nonlinear aeroelastic description has been extended with concurrent capabilities to tackle efficiently the very demanding loading scenarios in the design process. The software can be deployed on modern hardware architectures and has been benchmarked on CPUs and GPUs. While keeping computational times in the order of seconds, the presented approach enables the construction of load envelopes corresponding to static and dynamic cases, seamless integration with full-aircraft models, and uncertainty quantification analysis via massively-parallel Montecarlo simulations, among others. Furthermore, differentiation of both concurrent computations and aeroelastic loads is achieved via JAX library automatic differentiation engine and collective primitives. 
+We explore a high-aspect-ratio-wing aircraft configuration, showing the ability of the solvers to capture nonlinear effects in a wide range of scenarios: discrete, manoeuvre and gust loads are assessed for multiple flow and parametric conditions running concurrently. Sensitivities of maximum wing-root stresses and tip displacements are computed and verified against finite differences.  
 #+end_abstract
 
 * House keeping  :noexport: 
@@ -53,7 +53,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
   (require 'org-tempo)
   ;; Veval_blocks -> eval blocks of latex
   ;; Veval_blocks_run -> eval blocks to obtain results
-  (setq Veval_blocks "no-export") ;; yes, no, no-export 
+  (setq Veval_blocks "yes") ;; yes, no, no-export 
   (setq pythonShell "pyJFS25")
   (setq Vpics "png") ;; yes, no, no-export     
   ;; export_blocks: code, results, both, none
@@ -110,7 +110,7 @@ We explore a high-aspect-ratio-wing aircraft configuration, showing the ability 
 ** Helper functions
 
 #+begin_comment
-https://plotly.com/python/subplots/
+  https://plotly.com/python/subplots/
 #+end_comment
 
 *** Common functions
@@ -211,7 +211,7 @@ https://plotly.com/python/subplots/
 
 *** Plot functions
 #+begin_src python :results none  :var name=(org-element-property :name (org-element-context)) figfmt=(print Vpics)
-
+  
   @fig_background
   def plot_wingmeanstd(x, y, ystd):
 
@@ -424,7 +424,7 @@ https://plotly.com/python/subplots/
 
       # Create figure and axes
       fig, ax = plt.subplots(figsize=(4.5, 4.5))  # width=8 inches, height=6 inches
-      
+
       # Plot the data
       ax.plot(x, yobj,
               label='Objective',
@@ -434,7 +434,7 @@ https://plotly.com/python/subplots/
               label='Jacobian',
                   marker='s', 
               color='blue')
-      
+
       # Set logarithmic scale
       ax.set_xscale('log')  # Set x-axis to log scale
       ax.set_yscale('log')  # Optional, y-axis remains linear
@@ -448,22 +448,23 @@ https://plotly.com/python/subplots/
       ax.legend(fontsize=12)
       # Automatically adjust layout to prevent clipping
       plt.tight_layout()
-      
+
       figname = f"figs/{name}.{figformat}"
       plt.savefig(f"../{figname}", dpi=300)  
 
       return ax, figname
 
   def plot_jacediff2(name, x, yjac, figformat=figfmt):
-      
+
       # Create figure and axes
       fig, ax = plt.subplots(figsize=(4.5, 4.5))  # width=8 inches, height=6 inches
-      
+
       # Plot the data
       ax.plot(x, yjac,
+              marker='o',          # Circle markers              
               #label='y = log10(x)',
               color='blue')
-      
+
       # Set logarithmic scale
       ax.set_xscale('log')  # Set x-axis to log scale
       ax.set_yscale('log')  # Optional, y-axis remains linear
@@ -471,27 +472,39 @@ https://plotly.com/python/subplots/
       # Add labels and title
       ax.set_xlabel(r'$\text{Finite-Differences } \epsilon$', fontsize=12)
       ax.set_ylabel("Relative Error", fontsize=12)
-      
+
       # Add grid and legend
       ax.grid(True, which='both', linestyle='-', linewidth=0.5)
       #ax.legend()
       # Automatically adjust layout to prevent clipping
       plt.tight_layout()
-      
+
       figname = f"figs/{name}.{figformat}"
-      
+
       # Save plot to file
       plt.savefig(f"../{figname}", dpi=300)  
 
       return ax, figname
 
   @fig_background
-  def plot_jacfemold(jac, xlabel="", ylabel=""):
+  def plot_jacfemold(jac, xindex, yindex, xlabel="", ylabel=""):
 
       fig = go.Figure(data=go.Heatmap(
-          z=jac, colorscale = 'hot'))
+          z=jac[xindex[:,None], yindex], colorscale = 'hot'))
+      xaxis = dict(
+        tickmode = 'array',
+        tickvals = jnp.arange(len(xindex)),
+        ticktext = xindex
+      )
+      yaxis = dict(
+        tickmode = 'array',
+        tickvals = jnp.arange(len(yindex)),
+        ticktext = yindex
+      )
 
-      fig.update_layout(xaxis_title=xlabel,
+      fig.update_layout(xaxis=xaxis,
+                        yaxis=yaxis,
+                        xaxis_title=xlabel,
                         yaxis_title=ylabel)
       #fig.update_layout(xaxis_type="log", yaxis_type="log")
       return fig
@@ -640,8 +653,8 @@ For a complete walk-through of model and creation see the file
 #+begin_src shell :session sh1 :tangle run_models.sh
   #!/usr/bin/env bash
 
-  Manoeuvre="true"
-  Montecarlo="true"
+  Manoeuvre="tru"
+  Montecarlo="tru"
   MontecarloADt="true"
   MontecarloADtjac="true"
   MontecarloADtfd="true"    
@@ -714,7 +727,7 @@ Aeroelastic analysis is expected to become increasingly important from the very 
 This is specially important for high-aspect-ratio wings (HARWs) [[cite:&PATIL2004;&MODARESS-AVAL2019]] that improve aerodynamic efficiency but leads to an increase in flexibility, which brings new challenges both in terms of design and modelling capabilities. As highlighted in cite:&LIVNE2018, formulations that include nonlinear effects should be developed that not only enhance current modelling techniques  but that also allow rapid data turnaround for the industry. Real-time, hardware-in-the-loop flight simulators would also benefit of actively controlled, deformable airplane models. This leads to a more nonlinear landscape, where the overall aerodynamic performance needs to be calculated around a flight shape with large deformations [[cite:&JONSSON2023]].
 A more holistic approach to the design also increases the complexity of the processes exponentially, and the trade-offs and cost-benefit analysis may not be possible until robust computational tools are in-place to simulate the different assumptions.
 Certification of new air vehicles is another important aspect that requires 100,000s of load cases simulations [[cite:&KIER2017]], as it considers manoeuvres and gust loads at different velocities and altitudes, and for a range of mass cases and configurations. This poses another challenge for new methods that aim to include new physics since they normally incur in prohibitively expensive computational times. 
-Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above [[cite:&KLIMMEK2020]]. 
+Lastly, the mathematical representation of the airframe, embodied in the complex Finite-Element Models (FEMs) built by organizations, encompasses a level of knowledge that is to be preserved when including the new physics mentioned above [[cite:&KENNEDY2014a]]. 
 \\
 Leveraging on the numerical library JAX [[cite:&BRADBURY2018]], these considerations set the goals for the baseline work in [[cite:&CEA2025]]: 1) to be able to perform geometrically nonlinear aeroelastic analysis, 2) to work with existing generic FEMs in a non-intrusive manner, and 3) to achieve a computational efficiency that is equivalent to present linear methods (if not faster), 4) compute derivatives of the aeroelastic response via Algorithm Differentiation (AD). Those were extended in to include rigid-body dynamics, trimmed flight, and architectural benchmarks of GPU versus CPU [[cite:&CEA2025b]].
 In this work we explore the latest advances on accelerator's parallelisation, and how to integrate them into our solution process to enable intensive aeroelastic simulations under geometrically nonlinear assumptions.
@@ -1068,12 +1081,12 @@ Now we set out to calculate the derivatives of the expectations previously compu
 
 #+NAME: jac_ediff
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = fig_out(name)(plot_jacediff)(mc1_eps, jac_ediff2)
+  fig, figname = fig_out(name)(plot_jacediff)(mc1_eps, jac_ediff)
   figname
 #+end_src
 #+NAME: jac_ediff
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
-  fig, figname = plot_jacediff2(name, mc1_eps, jac_ediff)
+  fig, figname = plot_jacediff2(name, mc1_eps, mc1_ejac2)
   figname
 #+end_src
 #+NAME: fig:jac_ediff
@@ -1096,15 +1109,16 @@ Another convergence  metric to investigate is the number of paths in the Monteca
 #+end_src
 #+NAME: fig:jac_pdiff
 #+CAPTION: Convergence with number of paths of expected wing-tip position and its Jacobian with respect to \(\alpha \). 
-#+ATTR_LATEX: :width 0.8\textwidth 
+#+ATTR_LATEX: :width 0.6\textwidth 
 #+RESULTS: jac_pdiff
 [[file:figs/jac_pdiff.png]]
 
 While changing the input loading is good for verification studies, more realistic examples are solved in Fig. [[fig:jac_Ma4]]  where the sensitivity of the expectations of wing root loads are calculated with respect to the FE matrices and eigenvectors (only indexes corresponding to the right wing nodes are shown in the heat map as the other are 0 because the model is clamped).
-The derivatives in Fig. [[fig:jac_pdiff]] were calculated in forward mode, but the condensed FE matrices of the BUG model contain 99 condensed nodes, each with 6 components, so \((99 \times 6)^2 = 352836 \) entries, to what all the components in eigenvectors are also added, therefore only backward mode AD is possible in this case. The sensitivity of the loads with respect to the mass matrix increase towards the nodes at tip of the wing, which makes sense if we think a unit mass at the tip will produce much larger loads than the same unit mass close to the root where the aircraft is clamped. A pattern also emerges as every 6 elements in the matrix represent 3 displacements and 3 rotations and the shear forcing for example will have weaker couplings to a in-plane than to a out-of-plane displacement.
+The derivatives in Fig. [[fig:jac_pdiff]] were calculated in forward mode, but the condensed FE matrices of the BUG model contain 99 condensed nodes, each with 6 components, so \((99 \times 6)^2 = 352836 \) entries, to what all the components in eigenvectors are also added, therefore only backward mode AD is possible in this case. The sensitivity of the loads with respect to the mass matrix increase towards the nodes at tip of the wing, which makes sense if we think a unit mass at the tip will produce much larger loads than the same unit mass close to the root where the aircraft is clamped.
+\\
 The wall-time to calculate the gradient of wing-root loads expectations with respect to the mass matrix using 800 paths in the Montecarlo analysis was 48.0 and 297.9 in the GPU and CPU respectively.
 
-#+CAPTION: Computational times 
+# #+CAPTION: Computational times 
 # #+NAME: jac_Ma2
 # #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
 #   fig, figname = fig_out(name)(plot_jacfem2)(jnp.abs(jac_fem['Ma'][0,0,0, 80:215, 80:215]/1000), # 
@@ -1141,40 +1155,52 @@ The wall-time to calculate the gradient of wing-root loads expectations with res
   f_index = 2
   n_index = 4
   jump = 6
-  shift = 7
-  Ma_plot = jac_fem['Ma'][0,f_index,0,
-                jnp.arange(m_start+n_index-shift, m_end+n_index-shift, jump)[:, None],
-                jnp.arange(m_start+n_index, m_end+n_index, jump)]
+  shift = 4
+  Ma_plot = jac_fem['Ma'][0,f_index,0]
+  xindex = jnp.arange(m_start+n_index-shift, m_end+n_index-shift, jump)
+  yindex = jnp.arange(m_start+n_index, m_end+n_index, jump)
   fig, figname = fig_out(name)(plot_jacfemold)( Ma_plot /normalisation,
-                                            xlabel="i-component",
-                                            ylabel="j-component"
-                                            )
+                                                xindex,
+                                                yindex,
+                                                xlabel="i-components",
+                                                ylabel="j-components"
+                                               )
   figname
 
 #+end_src
 
 #+NAME: fig:jac_Ma4
-#+CAPTION: Weight-normalized Jacobian of wing-root bending moment with respect to Mass matrix (right-wing components)
-#+ATTR_LATEX: :width 0.75\textwidth 
+#+CAPTION: Weight-normalized Jacobian of wing-root bending moment with respect to Mass matrix right-wing subcomponents
+#+ATTR_LATEX: :width 0.5\textwidth 
 #+RESULTS: jac_Ma4
 [[file:figs/jac_Ma4.png]]
 
-
-#+NAME: jac_Ma4
+#+NAME: jac_Ma42
 #+begin_src python :results value file  :var name=(org-element-property :name (org-element-context))
   m_start = 6*12
-  m_end = 6*35
+  m_end = m_start + 6*23#6*35 #m_start + 136 # 6*35
   f_index = 2
-  n_index = 4
-  jump = 1
-  fig, figname = fig_out(name)(plot_jacfemold)(jnp.abs(jac_fem['Ma'][0,f_index,0, m_start+n_index-4:m_end+n_index-4:jump, m_start+n_index:m_end+n_index:jump])/normalisation,
-                                            xlabel="i-component",
-                                            ylabel="j-component"
-                                            )
+  n_index = 2
+  jump = 6
+  shift = 6
+  Ma_plot = jac_fem['Ma'][0,f_index,0]
+  xindex = jnp.arange(m_start+n_index-shift, m_end+n_index-shift, jump)
+  yindex = jnp.arange(m_start+n_index, m_end+n_index, jump)
+  fig, figname = fig_out(name)(plot_jacfemold)( Ma_plot /normalisation,
+                                                xindex,
+                                                yindex,
+                                                xlabel="i-components",
+                                                ylabel="j-components"
+                                               )
   figname
 
 #+end_src
 
+#+NAME: fig:jac_Ma42
+#+CAPTION: Weight-normalized Jacobian of wing-root shear force with respect to Mass matrix right-wing subcomponents
+#+ATTR_LATEX: :width 0.5\textwidth 
+#+RESULTS: jac_Ma42
+[[file:figs/jac_Ma42.png]]
 
 ** Steady manoeuvre loads
 #+begin_src python :results none
