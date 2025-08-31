@@ -141,6 +141,7 @@ nav:
       - Free flying shell structure: examples/SimoFS/main.md
       - Full aircraft (clamped) gust verification: examples/industrialAC/main.md
       - Full aircraft trim + dynamic loads: examples/industrialACtrim/main.md
+      - Concurrent loads: examples/ConcurrentLoads/main.md  
   #- Postprocessing
   - Theoretical background:
       - Intrinsic modal description: theory_intrinsic.md
