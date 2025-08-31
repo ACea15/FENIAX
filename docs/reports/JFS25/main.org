@@ -617,13 +617,12 @@ For a complete walk-through of model and creation see the file
 - Python file: settings_DiscreteMC1high.py, settings_DiscreteMC1MCsmall.py,
   settings_DiscreteMC1vsmall.py
 - Results presented in Sec. [[Uncertainty quantification in nonlinear simulations]]
-- Corresponding test:
       
 ** Derivative of expectations
 - Compute derivatives of the expectations previously computed concurrently via Montecarlo simulations.
 - Python file: settings_ADDiscreteMC1_t.py, settings_ADDiscreteMC1_t_fdjac.py, settings_ADDiscreteMC1_fem.py
 - Results presented in Sec. [[Computing derivatives of expectations]]
-- Corresponding test:
+- Corresponding test:  [[../../../tests/intrinsic/montecarlo/test_BUGUQ.py]]
   
 ** Manoeuvre
 
@@ -631,7 +630,7 @@ For a complete walk-through of model and creation see the file
 - Testing and benchmarking parallelisation   
 - Python file: settings_manoeuvre1shard.py for computations 
 - Results presented in Sec. [[Steady manoeuvre loads]]
-- Corresponding test: [[../../../tests/intrinsic/aeroelastic_dynamic/test_BUGgustShard.py]]
+- Corresponding test: [[../../../tests/intrinsic/aeroelastic_static/test_BUGmanoeuvre.py]]
 
 ** Dynamic-load envelopes
 
@@ -639,7 +638,7 @@ For a complete walk-through of model and creation see the file
 - Python file: python settings_gust1shard.py for plotting (11x11=121 gust)
   settings_gust1shardbench.py for benchmark (8x8x8=256 gust)
 - Results presented in Sec. [[Dynamic loads at large scale]]
-- Corresponding test:
+- Corresponding test:  [[../../../tests/intrinsic/aeroelastic_dynamic/test_BUGgustShard.py]]
   
 ** Gust AD forager
 
@@ -647,14 +646,14 @@ For a complete walk-through of model and creation see the file
 - Checking AD of free-flying AC for worst case determined by forager
 - Python file: settings_gustforager.py
 - Results presented in Sec. [[Load envelope differentiation]]  
-- Corresponding test: [[../../../tests/intrinsic/aeroelastic_dynamic/test_BUGgustShard.py]]
+- Corresponding test: [[../../../tests/intrinsic/aeroelastic_dynamic/test_BUGforager.py]]
 
 ** Run
 #+begin_src shell :session sh1 :tangle run_models.sh
   #!/usr/bin/env bash
 
-  Manoeuvre="tru"
-  Montecarlo="tru"
+  Manoeuvre="true"
+  Montecarlo="true"
   MontecarloADt="true"
   MontecarloADtjac="true"
   MontecarloADtfd="true"    
