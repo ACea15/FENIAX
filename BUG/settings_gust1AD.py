@@ -15,8 +15,8 @@ else:
     results_path = "./results/"
 
 label_dlm = "d1c7"
-sol = "cao"
-label_gaf = "Dd1c7F3Scao-100"
+sol = "eao"
+label_gaf = "Dd1c7F3Seao-100"
 num_modes = 100
 c_ref = 3.0
 u_inf = 209.62786434059765
@@ -54,28 +54,49 @@ inp.fem.num_modes = num_modes
 
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
-inp.system.solution = "static"
-inp.system.solver_library = "diffrax"
-inp.system.solver_function = "newton"
-inp.system.solver_settings = dict(rtol=1e-6,
-                                           atol=1e-6,
-                                           max_steps=100,
-                                           norm="linalg_norm",
-                                           kappa=0.01)
+if sol[0] == "e": # free model, otherwise clamped
+    inp.system.bc1 = 'free'
+    inp.system.q0treatment = 1
+inp.system.solution = "dynamic"
+inp.system.t1 = 1.
+inp.system.tn = 2501
+inp.system.solver_library = "runge_kutta"
+inp.system.solver_function = "ode"
+inp.system.solver_settings = dict(solver_name="rk4")
 inp.system.xloads.modalaero_forces = True
-inp.system.xloads.x = [0.,1.]
-inp.system.t = [1/6*1e-2, 1/6, 1/3, 1/2, 2/3, 5/6, 1]#[0.25, 0.5, 0.75, 1]
 inp.system.aero.c_ref = c_ref
-inp.system.aero.u_inf = u_inf # a0(7000) =312
+inp.system.aero.u_inf = u_inf
 inp.system.aero.rho_inf = rho_inf
 inp.system.aero.poles = f"./AERO/{Poles_file}.npy"
 inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
-inp.system.aero.Q0_rigid = f"./AERO/Qhx{label_gaf}.npy"
-inp.system.aero.qalpha = [[0.,  0., 0, 0, 0, 0],
-                          [0.,  6 * np.pi / 180, 0, 0, 0, 0]] # interpolation: x=0 => qalpha=0
-                                                              # x=1 => qalpha = 4   
+inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
+inp.system.aero.gust_profile = "mc"
+inp.system.aero.gust.intensity = 30 #25
+inp.system.aero.gust.length = 200. #150.
+inp.system.aero.gust.step = 0.1
+inp.system.aero.gust.shift = 0.
+inp.system.aero.gust.panels_dihedral = f"./AERO/Dihedral_{label_dlm}.npy"
+inp.system.aero.gust.collocation_points = f"./AERO/Collocation_{label_dlm}.npy"
 inp.driver.sol_path = pathlib.Path(
-    f"{results_path}/manoeuvre1")  
+    f"{results_path}/gustAD_{sol}")
+inp.system.ad = dict(inputs=dict(length = 110.,
+                                 intensity = 20.,
+                                 u_inf=u_inf,
+                                 rho_inf=rho_inf),
+                           input_type="gust1",
+                           grad_type="jacrev",
+                           objective_fun="max",
+                           objective_var="X2",
+                           objective_args=dict(nodes=(13,), components=(0,1,2,3,4,5))
+                           )
+
 config =  configuration.Config(inp)
-solstatic1 = feniax.feniax_main.main(input_obj=config)
+sol1 = feniax.feniax_main.main(input_obj=config)
 # Run:1 ends here
+
+# [[file:modelgeneration.org::ad][ad]]
+import pandas as pd
+sol1.dynamicsystem_s1.objective
+df =pd.DataFrame(dict(f=sol1.dynamicsystem_s1.objective.reshape(6))|{k:v.reshape(6) for k,v in sol1.dynamicsystem_s1.jac.items()}, index=range(6))
+df
+# ad ends here

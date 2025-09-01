@@ -52,6 +52,7 @@
   from feniax.unastran.asetbuilder import BuildAsetModel
   import feniax.plotools.nastranvtk.bdfdef as bdfdef
   import numpy as np
+  from pyNastran.bdf.mesh_utils.mass_properties import mass_properties
 
   num_modes = 200
   sol = "eao" # {c,e}{a,f}{o,p}
@@ -78,6 +79,7 @@
 #+begin_src python  :results none
   bdf = BDF()#debug=False)
   bdf.read_bdf("./NASTRAN/BUG103.bdf", validate=False)
+  mass, cg, inertia = mass_properties(bdf)
 
   # bdf_conm2 = BDF()
   # conm2_ids = list(range(314, 345)) + [376, 377, 378]
@@ -1870,6 +1872,13 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   from feniax.preprocessor.inputs import Inputs
   import feniax.feniax_main
   import feniax.plotools.reconstruction as reconstruction
+  import sys
+
+  if len(sys.argv) > 1:
+      results_path = f"{sys.argv[1]}/results/"
+  else:
+      results_path = "./results/"
+
 #+end_src
 
 #+NAME: ImportsFeniaxShard
@@ -1880,6 +1889,13 @@ Running Nastran using the tailored functions in run_nastra.sh which moves output
   import numpy as np
   from feniax.preprocessor.inputs import Inputs
   import feniax.feniax_shardmain
+  import sys
+
+  if len(sys.argv) > 1:
+      results_path = f"{sys.argv[1]}/results/"
+  else:
+      results_path = "./results/"
+
 #+end_src
 
 #+NAME: MainBugParameters
@@ -1933,7 +1949,7 @@ Forces and moments at node 35 and 61
   num_modes = 300
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
-      "./results/DiscreteLoads1")
+      f"{results_path}/DiscreteLoads1")
 
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
@@ -1971,10 +1987,7 @@ Forces and moments at node 35 and 61
                                                [0., lz1, lz2, lz3, lz4, lz5], 
                                                [0., lx1, lx2, lx3, lx4, lx5], 
                                                [0., lx1, lx2, lx3, lx4, lx5]]
-  t1 = time.time()
   sol = feniax.feniax_main.main(input_dict=inp)
-  t2 = time.time()
-  print(f"Time DiscreteLoads: {t2 - t1}")
 #+end_src
 
 ** Manoeuvre
@@ -1998,7 +2011,7 @@ Forces and moments at node 35 and 61
                                              kappa=0.01)
   inp.system.xloads.modalaero_forces = True
   inp.system.xloads.x = [0.,1.]
-  inp.system.t = [1/6, 1/3, 1/2, 2/3, 5/6, 1]#[0.25, 0.5, 0.75, 1]
+  inp.system.t = [1/6*1e-2, 1/6, 1/3, 1/2, 2/3, 5/6, 1]#[0.25, 0.5, 0.75, 1]
   inp.system.aero.c_ref = c_ref
   inp.system.aero.u_inf = u_inf # a0(7000) =312
   inp.system.aero.rho_inf = rho_inf
@@ -2015,12 +2028,9 @@ Forces and moments at node 35 and 61
   <<ImportsFeniax>>
   <<ManoeuvreMain>>
   inp.driver.sol_path = pathlib.Path(
-      "./results/manoeuvre2")  
+      f"{results_path}/manoeuvre1")  
   config =  configuration.Config(inp)
-  t1 = time.time()
   solstatic1 = feniax.feniax_main.main(input_obj=config)
-  t2 = time.time()
-  print(f"Time Manoeuvre: {t2 - t1}")
   
 #+end_src
 
@@ -2081,7 +2091,7 @@ Forces and moments at node 35 and 61
   <<ImportsFeniax>>
   <<GustMain>>
   inp.driver.sol_path = pathlib.Path(
-      f"./results/gust{int(inp.system.aero.gust.length)}_{sol}")
+      f"{results_path}/gust{int(inp.system.aero.gust.length)}_{sol}")
 
   config =  configuration.Config(inp)
   sol1 = feniax.feniax_main.main(input_obj=config)
@@ -2242,7 +2252,7 @@ make gif
   <<ImportsFeniax>>
   <<GustMain>>
   inp.driver.sol_path = pathlib.Path(
-      f"./results/gustAD_{sol}")
+      f"{results_path}/gustAD_{sol}")
   inp.system.ad = dict(inputs=dict(length = 110.,
                                    intensity = 20.,
                                    u_inf=u_inf,
@@ -2259,31 +2269,33 @@ make gif
 
 #+end_src
 
-
 *** Postprocess
 
 #+NAME: ad
 #+begin_src python :tangle settings_gust1AD.py :results value raw
   import pandas as pd
-  sol1.dynamicsystem_s1.f_ad
-  df =pd.DataFrame(dict(f=sol1.dynamicsystem_s1.f_ad.reshape(6))|{k:v.reshape(6) for k,v in sol1.dynamicsystem_s1.jac.items()}, index=range(6))
+  sol1.dynamicsystem_s1.objective
+  df =pd.DataFrame(dict(f=sol1.dynamicsystem_s1.objective.reshape(6))|{k:v.reshape(6) for k,v in sol1.dynamicsystem_s1.jac.items()}, index=range(6))
   df
 #+end_src
 
 ** Sharding
-
 *** Discrete loads
+
+- Combination of follower tip loads and moments that lead to very large deformations.
+- Presented in Scitech 25
+
 Forces and moments at node 35 and 61
 
 #+NAME: DiscreteLoads
-#+begin_src python :tangle settings_ShardDiscreteLoads.py :session *pyshard3*
+#+begin_src python :tangle settings_ShardDiscreteLoads1.py :session *pyshard3*
   <<ImportsFeniaxShard>>
   sol = "cao"
   num_modes = 300
   device_count = 1
   <<MainBug>>
   inp.driver.sol_path = pathlib.Path(
-      "./results/ShardDiscreteLoads1")
+      f"{results_path}/ShardDiscreteLoads1")
 
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
@@ -2364,10 +2376,7 @@ Forces and moments at node 35 and 61
                    )  
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
-  t1 = time.time()
   sol = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-  t2 = time.time()
-  print(f"Time DiscreteLoads: {t2 - t1}")
 #+end_src
 
 **** Plot results
@@ -2452,7 +2461,7 @@ Forces and moments at node 35 and 61
           ra_movie=None)
 #+end_src
 
-#+begin_src python :tangle ./results/ShardDiscreteLoads1/paraviewM300/merge.py :session *pyshard3*
+#+begin_src python :tangle ./results/ShardDiscreteLoads1/paraviewM300/merge.py :session *pyshard3* :mkdirp yes
   from paraview.simple import *
   import pathlib
 
@@ -2527,18 +2536,19 @@ make gust video
 
 #+end_src
 
-*** Discrete loads Montecarlo
+*** Discrete loads Montecarlo UQ
+- Presented in Scitech 25 and extended in JFS25 with AD
+- 
 **** High loading
-#+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
-  <<ImportsFeniaxShard>>
-  sol = "cao"
-  paths = 8*200
-  num_modes = 100
-  device_count = 1
-  <<MainBug>>
-  inp.driver.sol_path = pathlib.Path(
-      f"./results/DiscreteMC1high{num_modes}")
 
+#+NAME: DiscreteMC1
+#+begin_src python  :session *pyshard4*  :noweb yes 
+  <<ImportsFeniaxShard>>
+  np.random.seed(2025)
+  sol = "cao"
+  num_modes = 100
+  device_count = 1  # change to multiple to test parallelisation
+  <<MainBug>>
   inp.simulation.typeof = "single"
   inp.system.name = "s1"
   inp.system.solution = "static"
@@ -2554,48 +2564,67 @@ make gust video
   inp.system.t = [1, 2, 3, 4, 5]
   # rwing: 14-35
   # lwing: 40-61
-  points = []
-  interpolation = []
-  _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4] # 1.5e4, 2e4..4e4] #[0., 0., 0., 0.]
-  _interpolation_torsion = [i*2 for i in _interpolation] #[0., 4e3, 1e4, 2e4, 4e4, 5e4] 
-  for ri,li in zip(range(14, 36),range(40,62)):
-      points.append([ri, 2])
-      points.append([ri, 4])
-      points.append([li, 2])
-      points.append([li, 4])
-  for i, _ in enumerate(range(len(points))):
+  def external_forces(_interpolation, paths):
+      points = []
+      interpolation = []
+      #_interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4] # 1.5e4, 2e4..4e4] #[0., 0., 0., 0.]
+      _interpolation_torsion = [i*2 for i in _interpolation] #[0., 4e3, 1e4, 2e4, 4e4, 5e4] 
+      for ri,li in zip(range(14, 36),range(40,62)):
+          points.append([ri, 2])
+          points.append([ri, 4])
+          points.append([li, 2])
+          points.append([li, 4])
+      for i, _ in enumerate(range(len(points))):
 
-      if i % 2 == 0:
-          interpolation.append(_interpolation)
-      else:
-          interpolation.append(_interpolation_torsion)
+          if i % 2 == 0:
+              interpolation.append(_interpolation)
+          else:
+              interpolation.append(_interpolation_torsion)
 
-  interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
-  sigma0 = 0.15  # percentage of mu for sigma
-  mu = _interpolation[-1]
-  sigma = (sigma0) * _interpolation[-1]
-  rand = np.random.normal(mu, sigma, paths)
-  mu_torsion = _interpolation_torsion[-1]
-  sigma_torsion = (sigma0) * _interpolation_torsion[-1]
-  rand_torsion = np.random.normal(mu_torsion, sigma_torsion, paths)
-  follower_interpolation = []
-  for i, ri in enumerate(rand):
-      interpolationrand = np.copy(interpolation)
-      interpolationrand[::2, -1] = ri
-      interpolationrand[1::2, -1] = rand_torsion[i]
-      follower_interpolation.append(interpolationrand)
-  #follower_interpolation = [interpolation * ri for ri in rand]
-  follower_points = [points]*paths
+      interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
+      sigma0 = 0.15  # percentage of mu for sigma
+      mu = _interpolation[-1]
+      sigma = (sigma0) * _interpolation[-1]
+      rand = np.random.normal(mu, sigma, paths)
+      mu_torsion = _interpolation_torsion[-1]
+      sigma_torsion = (sigma0) * _interpolation_torsion[-1]
+      rand_torsion = np.random.normal(mu_torsion, sigma_torsion, paths)
+      follower_interpolation = []
+      for i, ri in enumerate(rand):
+          interpolationrand = np.copy(interpolation)
+          interpolationrand[::2, -1] = ri
+          interpolationrand[1::2, -1] = rand_torsion[i]
+          follower_interpolation.append(interpolationrand)
+      #follower_interpolation = [interpolation * ri for ri in rand]
+      follower_points = [points]*paths
+      return follower_points, follower_interpolation
+
+  _interpolation = [0., 3.e3, 7e3, 9e3, 1e4, 1.5e4]
+  paths = 8 * 50 #200
+
+#+end_src
+
+#+NAME: DiscreteMC1high
+#+begin_src python  :session *pyshard4*  :noweb yes 
+  <<DiscreteMC1>>
+
+  follower_points, follower_interpolation = external_forces(_interpolation, paths)
   inputforces = dict(follower_points=follower_points,
                      follower_interpolation=follower_interpolation
                      )
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
 
-  t1 = time.time()
+#+end_src
+
+
+***** Run
+#+begin_src python :tangle settings_DiscreteMC1high.py :session *pyshard4*
+  <<DiscreteMC1high>>
+  
+  inp.driver.sol_path = pathlib.Path(
+      f"{results_path}/DiscreteMC1high")
   sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-  t2 = time.time()
-  print(f"Time DiscreteLoads MC: {t2 - t1}")
 
   # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
   # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
@@ -2688,144 +2717,45 @@ make gust video
 
 **** Small loading
 
-#+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
-  <<ImportsFeniaxShard>>
-  sol = "cao"
-  <<MainBug>>
-  inp.driver.sol_path = pathlib.Path(
-      "./results/DiscreteMC1small")
+#+begin_src python :tangle settings_DiscreteMC1small.py :session *pyshard4*
+  <<DiscreteMC1>>
 
-  inp.simulation.typeof = "single"
-  inp.system.name = "s1"
-  inp.system.solution = "static"
-  inp.system.solver_library = "diffrax"
-  inp.system.solver_function = "newton"
-  inp.system.solver_settings = dict(rtol=1e-6,
-                                    atol=1e-6,
-                                    max_steps=50,
-                                    norm="linalg_norm",
-                                    kappa=0.01)
-  inp.system.xloads.follower_forces = True
-  inp.system.xloads.x = [0, 1, 2, 3, 4, 5]
-  inp.system.t = [1, 2, 3, 4, 5]
-  # rwing: 14-35
-  # lwing: 40-61
-  points = []
-  interpolation = []
-  _interpolationsmall = [i*1e-2 for i in _interpolation] 
-  _interpolationsmall_torsion = [i*1e-2 for i in _interpolation_torsion]
-  for ri,li in zip(range(14, 36),range(40,62)):
-      points.append([ri, 2])
-      points.append([ri, 4])
-      points.append([li, 2])
-      points.append([li, 4])
-  for i, _ in enumerate(range(len(points))):
-
-      if i % 2 == 0:
-          interpolation.append(_interpolationsmall)
-      else:
-          interpolation.append(_interpolationsmall_torsion)
-
-  interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
-  sigma0 = 0.15  # percentage of mu for sigma
-  mu = _interpolationsmall[-1]
-  sigma = (sigma0) * _interpolationsmall[-1]
-  rand = np.random.normal(mu, sigma, paths)
-  mu_torsion = _interpolationsmall_torsion[-1]
-  sigma_torsion = (sigma0) * _interpolationsmall_torsion[-1]
-  rand_torsion = np.random.normal(mu_torsion, sigma_torsion, paths)
-  follower_interpolation = []
-  for i, ri in enumerate(rand):
-      interpolationrand = np.copy(interpolation)
-      interpolationrand[::2, -1] = ri
-      interpolationrand[1::2, -1] = rand_torsion[i]
-      follower_interpolation.append(interpolationrand)
-  #follower_interpolation = [interpolation * ri for ri in rand]
-  follower_points = [points]*paths
+  _interpolation = [it * 1e-2 for it in _interpolation]
+  follower_points, follower_interpolation = external_forces(_interpolation, paths)
   inputforces = dict(follower_points=follower_points,
                      follower_interpolation=follower_interpolation
                      )
   inp.system.shard = dict(input_type="pointforces",
                           inputs=inputforces)
-  t1 = time.time()
+  inp.driver.sol_path = pathlib.Path(
+      f"{results_path}/DiscreteMC1small")
   sol2 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-  t2 = time.time()
-  print(f"Time DiscreteLoads MC: {t2 - t1}")
-  # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
-  # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
+
 #+end_src
 
 **** Very Small loading
- #+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
-   <<ImportsFeniaxShard>>
-   sol = "cao"
-   <<MainBug>>
-   inp.driver.sol_path = pathlib.Path(
-        "./results/DiscreteMC1verysmall")
+#+begin_src python :tangle settings_DiscreteMC1vsmall.py :session *pyshard4*
+  <<DiscreteMC1>>
 
-   inp.simulation.typeof = "single"
-   inp.system.name = "s1"
-   inp.system.solution = "static"
-   inp.system.solver_library = "diffrax"
-   inp.system.solver_function = "newton"
-   inp.system.solver_settings = dict(rtol=1e-6,
-                                     atol=1e-6,
-                                     max_steps=50,
-                                     norm="linalg_norm",
-                                     kappa=0.01)
-   inp.system.xloads.follower_forces = True
-   inp.system.xloads.x = [0, 1, 2, 3, 4, 5]
-   inp.system.t = [1, 2, 3, 4, 5]
-   # rwing: 14-35
-   # lwing: 40-61
-   points = []
-   interpolation = []
-   _interpolationverysmall = [i*1e-3 for i in _interpolation] 
-   _interpolationverysmall_torsion = [i*1e-3 for i in _interpolation_torsion]   
+  _interpolation = [it * 1e-3 for it in _interpolation]
+  follower_points, follower_interpolation = external_forces(_interpolation, paths)
+  inputforces = dict(follower_points=follower_points,
+                     follower_interpolation=follower_interpolation
+                     )
+  inp.system.shard = dict(input_type="pointforces",
+                          inputs=inputforces)
+  inp.driver.sol_path = pathlib.Path(
+      f"{results_path}/DiscreteMC1vsmall")
+  sol2 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
 
-   for ri,li in zip(range(14, 36),range(40,62)):
-       points.append([ri, 2])
-       points.append([ri, 4])
-       points.append([li, 2])
-       points.append([li, 4])
-   for i, _ in enumerate(range(len(points))):
 
-       if i % 2 == 0:
-           interpolation.append(_interpolationverysmall)
-       else:
-           interpolation.append(_interpolationverysmall_torsion)
+  sol3 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
 
-   interpolation = np.array(interpolation)  # num_pointforces x num_interpolationverysmall  
-   sigma0 = 0.15  # percentage of mu for sigma
-   mu = _interpolationverysmall[-1]
-   sigma = (sigma0) * _interpolationverysmall[-1]
-   rand = np.random.normal(mu, sigma, paths)
-   mu_torsion = _interpolationverysmall_torsion[-1]
-   sigma_torsion = (sigma0) * _interpolationverysmall_torsion[-1]
-   rand_torsion = np.random.normal(mu_torsion, sigma_torsion, paths)
-   follower_interpolation = []
-   for i, ri in enumerate(rand):
-       interpolationrand = np.copy(interpolation)
-       interpolationrand[::2, -1] = ri
-       interpolationrand[1::2, -1] = rand_torsion[i]
-       follower_interpolation.append(interpolationrand)
-   #follower_interpolation = [interpolation * ri for ri in rand]
-   follower_points = [points]*paths
-   inputforces = dict(follower_points=follower_points,
-                      follower_interpolation=follower_interpolation
-                      )
-   inp.system.shard = dict(input_type="pointforces",
-                           inputs=inputforces)
-   t1 = time.time()
-   sol3 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-   t2 = time.time()
-   print(f"Time DiscreteLoads MC: {t2 - t1}")
-
-    # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
-    # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
+   # np.mean(sol.staticsystem_sys1.ra[:,-1,2,35])
+   # np.std(sol.staticsystem_sys1.ra[:,-1,2,35])
 #+end_src
 **** Statistics
-#+begin_src python :tangle settings_DiscreteLoadsMC.py :session *pyshard4*
+#+begin_src python :session *pyshard4*
   u_mean = np.mean(sol1.staticsystem_sys1.ra[:,-1,2,35] - config.fem.X[35,2])
   u_std = np.std(sol1.staticsystem_sys1.ra[:,-1,2,35])
 
@@ -2852,59 +2782,183 @@ make gust video
   
 #+end_src
 
+**** AD_t
+
+- Testing AD on the load-control parameter t
+- Compare against FD
+#+begin_src python :tangle settings_ADDiscreteMC1_t.py :session *pyshard4* :noweb yes 
+  <<DiscreteMC1high>>
+  inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5
+  inp.driver.sol_path = pathlib.Path(
+       f"{results_path}/ADDiscreteMC1_t")
+  inp.system.ad = dict(inputs=dict(t = 4.5),
+                       input_type="point_forces",
+                       grad_type="jacfwd", #"jacrev", #value
+                       objective_fun="pmean",
+                       objective_var="ra",
+                       objective_args=dict(nodes=(35,), components=(0,1,2),
+                                           t=(4,))
+                       )
+
+  sol4 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+
+#+end_src
+
+- Run with epsilons for finite-difference, note epsilons run only, no AD ("value")
+#+begin_src python :tangle settings_ADDiscreteMC1_t_fd.py :session *pyshard4*
+  <<DiscreteMC1high>>
+  inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5  
+  epsilons = [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]
+  inp.driver.sol_path = pathlib.Path(
+      f"{results_path}/ADDiscreteMC1_te")
+  inp.system.ad = dict(inputs=dict(t = 4.5),
+                       input_type="point_forces",
+                       grad_type="jacfwd", #"jacrev", #value
+                       objective_fun="pmean",
+                       objective_var="ra",
+                       objective_args=dict(nodes=(35,), components=(0,1,2),
+                                           t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
+                       )
+
+  sol4e0 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+  jac_t = sol4e0.staticsystem_s1.jac['t']
+  import jax.numpy as jnp
+  mc1_eobj = list()
+  mc1_ejac = list()
+  jac_ediff = list()
+  obj_t = sol4e0.staticsystem_s1.objective
+  for i, ei in enumerate(epsilons):
+      inp.driver.sol_path = pathlib.Path(
+          f"{results_path}/ADDiscreteMC1_te{i}")
+      inp.system.ad = dict(inputs=dict(t = 4.5 + ei),
+                           input_type="point_forces",
+                           grad_type="value", #"jacrev", #value
+                           objective_fun="pmean",
+                           objective_var="ra",
+                           objective_args=dict(nodes=(35,), components=(0,1,2),
+                                               t=(4,)) # note this solution adds an extra 4.5 to t, hence the 4 index instead of 3
+                           )
+
+      sol4e = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+      #sol_admc1_e[i] = solution.IntrinsicReader(f"./ADDiscreteMC1_te{i}")
+      mc1_eobj.append(sol4e.staticsystem_s1.objective)
+      mc1_ejac.append((mc1_eobj[i] - obj_t) / ei)
+      jac_ediff.append(jnp.linalg.norm((mc1_ejac[i]-jac_t) / jac_t))
+      
+  jnp.save(f"{results_path}/ADDiscreteMC1_te/jac_e.npy", jnp.array(jac_ediff))
+#+end_src
+
+- Run with varying paths for Jacobian convergence
+#+begin_src python :tangle settings_ADDiscreteMC1_t_fdjac.py :session *pyshard4*
+  <<DiscreteMC1>>
+  inp.system.t = [1, 2, 3, 4] # reduced to 4, to then compute 4.5
+  #paths = [8, 80, 4e2, 8e2, 4e3, 8e3] # blows the memory
+  paths = [8, 80, 4e2, 8e2, 4e3]
+  for i, pi in enumerate(paths):
+      follower_points, follower_interpolation = external_forces(_interpolation, int(pi))
+      inputforces = dict(follower_points=follower_points,
+                         follower_interpolation=follower_interpolation
+                         )
+      inp.system.shard = dict(input_type="pointforces",
+                              inputs=inputforces)
+
+      inp.driver.sol_path = pathlib.Path(
+          f"{results_path}/ADDiscreteMC1_tjac{i}")
+      inp.system.ad = dict(inputs=dict(t = 4.5),
+                           input_type="point_forces",
+                           grad_type="jacfwd", #"jacrev", #value
+                           objective_fun="pmean",
+                           objective_var="ra",
+                           objective_args=dict(nodes=(35,), components=(0,1,2),
+                                               t=(4,))
+                           )
+
+      sol4j = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+
+#+end_src
+  
+**** AD_fem
+- Now AD against fem matrices and again vectors instead of t
+  
+#+begin_src python :tangle settings_ADDiscreteMC1_fem.py :session *pyshard4*
+  <<DiscreteMC1high>>
+  inp.system.t = [1, 2, 3, 4, 4.5]
+  inp.driver.sol_path = pathlib.Path(
+       f"{results_path}/ADDiscreteMC1_fem")
+  inp.system.ad = dict(inputs=dict(eigenvals=inp.fem.eig_names[0],
+                                   eigenvecs=inp.fem.eig_names[1],
+                                   Ka=inp.fem.Ka_name,
+                                   Ma=inp.fem.Ma_name),
+                       input_type="fem",
+                       grad_type="jacrev", #"jacrev", #value
+                       objective_fun="pmean",
+                       objective_var="X2",
+                       objective_args=dict(nodes=(13,), components=(2,3,4),
+                                           t=(4,))
+                       )
+
+  sol5 = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
+
+#+end_src
+
 *** Manoeuvre
+- Presented in Scitech 25 and in JFS25
+
 #+begin_src python :tangle ./settings_manoeuvre1shard.py :session *pyshard1*
   <<ImportsFeniaxShard>>
   <<ManoeuvreMain>>
   device_count = 8
   #rho_rand = np.random.normal(0.6, 0.6*0.15, 500)
   inp.driver.sol_path = pathlib.Path(
-      "./results/manoeuvre1Shard")  
+      f"{results_path}/manoeuvre1Shard")  
   inputflow = dict(u_inf=np.linspace(167.7, 251.6, 16),
                    rho_inf=np.linspace(0.33, 0.5, 16))
   inp.system.shard = dict(input_type="steadyalpha",
                           inputs=inputflow)
-  t1 = time.time()  
   solstatic1shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-  t2 = time.time()
-  print(f"Time Manoeuvre: {t2 - t1}")
   
 #+end_src
 
 *** Gust
-for local testing:
-#+begin_src python  :session *pyshard2*
+- Presented in Scitech 25 and extended in JFS25 with AD
+
+for plotting and local testing:
+#+begin_src python :tangle settings_gust1shard.py :session *pyshard2*
   <<ImportsFeniaxShard>>
   <<GustMain>>
   device_count = 1
   inp.driver.sol_path = pathlib.Path(
-      f"./results/gust1_{sol}Shard")
+      f"{results_path}/gust1_{sol}Shard")
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
   inputflow = dict(length=np.linspace(50,200,11),
                    intensity= np.linspace(5, 25, 11),
                    #rho_inf = np.linspace(0.3, rho_inf, 2)
                  )
+  inp.system.operationalmode = "shardmap"   
   inp.system.shard = dict(input_type="gust1",
                         inputs=inputflow)
-  solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
-  
+  solgust21shard = feniax.feniax_shardmain.main(input_dict=inp,
+                                                device_count=device_count)
+
 #+end_src
 
-#+begin_src python :tangle settings_gust1shard.py :session *pyshard2*
+- For benchmark. Careful: very quickly you run out of the 64GB of RAM
+#+begin_src python :tangle settings_gust1shardbench.py :session *pyshard2*
   <<ImportsFeniaxShard>>
   <<GustMain>>
-
+  device_count = 1
   inp.driver.sol_path = pathlib.Path(
-      f"./results/gust3_{sol}Shard")
+      f"{results_path}/gust1_{sol}ShardBench")
   inp.system.aero.gust.fixed_discretisation = [150, u_inf]
   # Shard inputs
-  inputflow = dict(length=np.linspace(25,265,13),
-                   intensity=np.linspace(0.1, 3, 11),
+  inputflow = dict(length=np.linspace(50,200,8),
+                   intensity=np.linspace(5, 25, 8),
                    rho_inf = np.linspace(0.34,0.48,8)
                  )
+  inp.system.operationalmode = "shardmap"  
   inp.system.shard = dict(input_type="gust1",
-                        inputs=inputflow)
+                          inputs=inputflow)
 
   solgust21shard = feniax.feniax_shardmain.main(input_dict=inp, device_count=device_count)
 #+end_src
@@ -3012,7 +3066,161 @@ plotly color scales:
       fig.show()  
 #+end_src
 
+** Forager
 
+- Parallel gusts in previous section are run through forager to discover critical cases and AD is run
+- Checks that that the forager picks the most critical cases
+- Check the AD solution of the free AC. 
+
+#+begin_src python :tangle settings_gustforager.py :session *pyshard5*
+  <<ImportsFeniaxShard>>
+  <<GustMain>>
+
+  inp.driver.sol_path = pathlib.Path(
+      f"{results_path}/gustforager")
+  inp.system.aero.gust.fixed_discretisation = [150, u_inf]
+  # Shard inputs
+  inputflow = dict(length=np.linspace(25,265,13),
+                   #intensity=np.linspace(0.1, 3, 11),
+                   rho_inf = np.linspace(0.34,0.48,8)
+                 )
+  inputflow = dict(length=np.linspace(50,200,16),
+                   intensity=np.linspace(5, 25, 2),
+                   rho_inf = [0.8*rho_inf, rho_inf] #np.linspace(0.34,0.48,1)
+                   )
+
+  inp.system.shard = dict(input_type="gust1",
+                          inputs=inputflow)
+  inp.system.operationalmode = "shardmap"   
+  node = 13
+  components = (2,3,4) # shear, torsion, oop bending
+  inp.forager.typeof = "shard2adgust"
+  inp.forager.settings.gathersystem_name = "s1"
+  inp.forager.settings.scattersystems_name = "scatter"
+  inp.forager.settings.ad = dict(inputs=dict(length = None,
+                                             intensity = None,
+                                             u_inf=u_inf,
+                                             rho_inf = None),
+                                 input_type="gust1",
+                                 grad_type="jacrev",
+                                 objective_fun="max",
+                                 objective_var="X2",
+                                 objective_args=dict(nodes=(node,),
+                                                     components=components)
+                                 )
+
+  num_gpus = 8
+  solforager = feniax.feniax_shardmain.main(input_dict=inp, device_count=num_gpus)
+
+  def validation_max():
+
+      import jax.numpy as jnp
+
+      # for component 2:
+      ci = 2
+      field_i = jnp.abs(solforager.dynamicsystem_s1.X2[:,:,ci,node])
+      field_ivalue = jnp.max(field_i)
+      argmax = jnp.argmax(field_i)
+      index = jnp.unravel_index(argmax,
+                                field_i.shape) # get max index in field_i shape
+      assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
+      # for component 3:
+      ci = 3
+      field_i = jnp.abs(solforager.dynamicsystem_s1.X2[:,:,ci,node])
+      field_ivalue = jnp.max(field_i)
+      argmax = jnp.argmax(field_i)
+      index = jnp.unravel_index(argmax,
+                                field_i.shape) # get max index in field_i shape
+      assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
+
+      # for component 4:
+      ci = 4
+      field_i = jnp.abs(solforager.dynamicsystem_s1.X2[:,:,ci,node])
+      field_ivalue = jnp.max(field_i)
+      argmax = jnp.argmax(field_i)
+      index = jnp.unravel_index(argmax,
+                                field_i.shape) # get max index in field_i shape
+      assert solforager.forager_shard2adgust.filtered_map[(node,ci)] == index
+
+  def validation_ad():
+      """
+      Only run the gust of the first problematic gust case to compare FD
+      """
+      import feniax.feniax_main
+      import jax.numpy as jnp
+      import feniax.intrinsic.objectives as objectives
+
+      inp.system.operationalmode = ""
+      inp.system.shard = None
+      inp.forager = None
+      t_range = jnp.arange(inp.system.tn)
+      index_i = list(solforager.forager_shard2adgust.filtered_indexes)[0]
+      rho, uinf, length, intensity = solforager.shards_s1.points[index_i]
+      inp.system.aero.rho_inf = rho 
+      inp.system.aero.u_inf = uinf
+      inp.system.aero.gust.length = length
+      inp.system.aero.gust.intensity = intensity
+      inp.driver.sol_path = pathlib.Path(
+          f"{results_path}/gustforager_validation")
+
+      sol = feniax.feniax_main.main(input_dict=inp)
+      epsilon = 1e-5
+      inp.system.aero.rho_inf += epsilon
+      inp.driver.sol_path = pathlib.Path(
+          f"{results_path}/gustforager_epsilonrho")
+      sol_rho = feniax.feniax_main.main(input_dict=inp)
+      jac_rho = (objectives.X2_MAX(sol_rho.dynamicsystem_s1.X2,
+                                   jnp.array([node]),
+                                   jnp.array(components),
+                                   t_range) -
+                 objectives.X2_MAX(sol.dynamicsystem_s1.X2,
+                                   jnp.array([node]),
+                                   jnp.array(components),
+                                   t_range)
+                 ) / epsilon
+      jnp.save(f"{results_path}/gustforager_epsilonrho/jac_rho.npy", jac_rho)      
+      ##########
+      epsilon = 1e-5 # tweaking fd
+      inp.system.aero.rho_inf = rho
+      inp.system.aero.gust.length += epsilon
+      inp.driver.sol_path = pathlib.Path(
+          f"{results_path}/gustforager_epsilonlength")
+      sol_length = feniax.feniax_main.main(input_dict=inp)
+      
+      jac_length = (objectives.X2_MAX(sol_length.dynamicsystem_s1.X2,
+                                   jnp.array([node]),
+                                   jnp.array(components),
+                                   t_range) -
+                    objectives.X2_MAX(sol.dynamicsystem_s1.X2,
+                                      jnp.array([node]),
+                                      jnp.array(components),
+                                      t_range)
+                    ) / epsilon
+      
+      jnp.save(f"{results_path}/gustforager_epsilonlength/jac_length.npy", jac_length)
+      ############
+      epsilon = 1e-5 # tweaking fd      
+      inp.system.aero.gust.length = length
+      inp.system.aero.gust.intensity += epsilon
+      inp.driver.sol_path = pathlib.Path(
+          f"{results_path}/gustforager_epsilonintensity")
+      sol_intensity = feniax.feniax_main.main(input_dict=inp)
+      jac_intensity = (objectives.X2_MAX(sol_intensity.dynamicsystem_s1.X2,
+                                         jnp.array([node]),
+                                         jnp.array(components),
+                                         t_range) -
+                       objectives.X2_MAX(sol.dynamicsystem_s1.X2,
+                                         jnp.array([node]),
+                                         jnp.array(components),
+                                         t_range)
+                 ) / epsilon
+      jnp.save(f"{results_path}/gustforager_epsilonintensity/jac_intensity.npy", jac_intensity)
+      return jac_rho, jac_length, jac_intensity
+
+  validation_max()
+  jac_rho, jac_length, jac_intensity = validation_ad()
+
+#+end_src
 
 * Gust solution (146)
 :PROPERTIES:

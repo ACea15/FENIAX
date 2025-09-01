@@ -85,7 +85,7 @@ config2 =  configuration.Config(inp)
 sol12 = feniax.feniax_main.main(input_obj=config2)
 
 jac1 = sol11.staticsystem_sys1.jac['t']
-jac1_fd = (sol12.staticsystem_sys1.f_ad - sol11.staticsystem_sys1.f_ad) / epsilon
+jac1_fd = (sol12.staticsystem_sys1.objective - sol11.staticsystem_sys1.objective) / epsilon
 print(f"error jacs: {(jac1-jac1_fd)/jnp.linalg.norm(jac1)*100} %")
 
 # load at t = 3.5
@@ -112,7 +112,7 @@ config2 =  configuration.Config(inp)
 sol22 = feniax.feniax_main.main(input_obj=config2)
 
 jac2 = sol21.staticsystem_sys1.jac['t']
-jac2_fd = (sol22.staticsystem_sys1.f_ad - sol21.staticsystem_sys1.f_ad) / epsilon
+jac2_fd = (sol22.staticsystem_sys1.objective - sol21.staticsystem_sys1.objective) / epsilon
 print(f"error jacs2: {(jac2-jac2_fd)/jnp.linalg.norm(jac2)*100} %")
 
 # load at t = 5.5
@@ -139,7 +139,7 @@ config2 =  configuration.Config(inp)
 sol32 = feniax.feniax_main.main(input_obj=config2)
 
 jac3 = sol31.staticsystem_sys1.jac['t']
-jac3_fd = (sol32.staticsystem_sys1.f_ad - sol31.staticsystem_sys1.f_ad) / epsilon
+jac3_fd = (sol32.staticsystem_sys1.objective - sol31.staticsystem_sys1.objective) / epsilon
 print(f"error jacs3: {(jac3-jac3_fd)/jnp.linalg.norm(jac3)*100} %")
 
 ###########################

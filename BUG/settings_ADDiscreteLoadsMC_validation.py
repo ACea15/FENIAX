@@ -5,6 +5,14 @@ import time
 import numpy as np
 from feniax.preprocessor.inputs import Inputs
 import feniax.feniax_shardmain
+import sys
+
+if len(sys.argv) > 1:
+    results_path = f"{sys.argv[1]}/results/"
+else:
+    results_path = "./results/"
+
+
 sol = "cao"
 num_modes = 100
 inp = Inputs()
@@ -33,9 +41,8 @@ inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
                      f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
 inp.driver.typeof = "intrinsic"
 inp.fem.num_modes = num_modes
-inp.driver.typeof = "intrinsic"
 inp.driver.sol_path = pathlib.Path(
-    f"./results/DiscreteMC1high{num_modes}")
+    f"{results_path}/ShardingMC_AD11")
 
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
@@ -69,7 +76,7 @@ for i, _ in enumerate(range(len(points))):
         interpolation.append(_interpolation_torsion)
 
 interpolation = np.array(interpolation)  # num_pointforces x num_interpolation  
-paths = 8*4*5 #200
+paths = 8*4*1 #200
 sigma0 = 0.15  # percentage of mu for sigma
 mu = _interpolation[-1]
 sigma = (sigma0) * _interpolation[-1]
@@ -96,11 +103,11 @@ inp.system.ad = dict(inputs=dict(t = 5.5),
                      grad_type="jacrev", #"jacrev", #value
                      objective_fun="pmean",
                      objective_var="ra",
-                     objective_args=dict(nodes=(13,), components=(0,1),
+                     objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
                                          t=(inp.system.t[-1],))
                      )
 
-sol1 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+sol11 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
 
 #############
 epsilon = 1e-2
@@ -109,18 +116,24 @@ inp.system.ad = dict(inputs=dict(t = 5.5),
                      grad_type="value", #"jacrev", #value
                      objective_fun="pmean",
                      objective_var="ra",
-                     objective_args=dict(nodes=(13,), components=(0,1),
+                     objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
                                          t=(inp.system.t[-1],))
                      )
-sol21 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+inp.driver.sol_path = pathlib.Path(
+    f"{results_path}/ShardingMC_AD12")
+
+sol12 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
 inp.system.ad = dict(inputs=dict(t = 5.5+epsilon),
                      input_type="point_forces",
                      grad_type="value", #"jacrev", #value
                      objective_fun="pmean",
                      objective_var="ra",
-                     objective_args=dict(nodes=(13,), components=(0,1),
+                     objective_args=dict(nodes=(35,), components=(0,1,2,3,4,5),
                                          t=(inp.system.t[-1],))
                      )
-sol22 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+inp.driver.sol_path = pathlib.Path(
+    f"{results_path}/ShardingMC_AD13")
 
-jac = (sol22.staticsystem_s1.f_ad - sol21.staticsystem_s1.f_ad) / epsilon
+sol13 = feniax.feniax_shardmain.main(input_dict=inp, device_count=8)
+
+jac = (sol12.staticsystem_s1.objective - sol13.staticsystem_s1.objective) / epsilon

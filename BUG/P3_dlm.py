@@ -82,7 +82,7 @@ dlm_aeros['LHTP']['set1x'] = [4000]+list(range(10004001, 10004014))
 dlm = aero.GenDLMPanels.from_dict(dlm_aeros) # pass your dictionary with DLM model
 dlm.build_model()
 dlm.model.write_bdf(f"./NASTRAN/DLMs/{label_dlm}.bdf") # write the bdf file
-dlm.save_yaml(f"./NASTRAN/DLMs/model_{label_dlm}.bdf") # write the bdf file
+dlm.save_yaml(f"./NASTRAN/DLMs/model_{label_dlm}.yaml") # write the bdf file
 # DLMbuild ends here
 
 # [[file:modelgeneration.org::DLMGrid][DLMGrid]]
