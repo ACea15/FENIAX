@@ -133,14 +133,10 @@ nav:
   - Getting started: getting_started.md
   - Examples:
       - Summary: ./examples.md
-      # - Structural and aeroelastic response of clamped Aircraft: 
-      # - Free-flying ultra flexible structure
-      # - CPC_runs: examples/runs.md #../reports/CPC24/runs.md
       - Sail Plane static response: examples/SailPlane/sailplane_nb.md
       - Wing nonlinear dynamics: examples/wingSP/wingSP_nb.md
       - Free flying shell structure: examples/SimoFS/main.md
       - Full aircraft (clamped) gust verification: examples/industrialAC/main.md
-      - Full aircraft trim + dynamic loads: examples/industrialACtrim/main.md
       - Concurrent loads: examples/ConcurrentLoads/main.md  
   #- Postprocessing
   - Theoretical background:
