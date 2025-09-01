@@ -1,5 +1,6 @@
 # [[file:modelgeneration.org::parameters_gafs0][parameters_gafs0]]
 import numpy as np
+import json
 import feniax.unastran.aero as nasaero
 import feniax.unastran.op4handler as op4handler
 from feniax.utils import standard_atmosphere

@@ -63,7 +63,7 @@ inp.system.ad = dict(inputs=dict(alpha=1.+epsilon),
 config =  configuration.Config(inp)
 sol2 = feniax.feniax_main.main(input_obj=config)
 jac = sol.dynamicsystem_sys1.jac['alpha']
-jac_fd = (sol2.dynamicsystem_sys1.f_ad - sol.dynamicsystem_sys1.f_ad) / epsilon
+jac_fd = (sol2.dynamicsystem_sys1.objective - sol.dynamicsystem_sys1.objective) / epsilon
 
 print(f"error jacs: {(jac-jac_fd)/jnp.linalg.norm(jac)*100} %")
 

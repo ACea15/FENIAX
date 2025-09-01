@@ -78,7 +78,7 @@ if ad_check:
                          )
     config2 =  configuration.Config(inp)
     sol2 = feniax.feniax_main.main(input_obj=config2)
-    print((sol2.dynamicsystem_s1.f_ad - sol.dynamicsystem_s1.f_ad) / epsilon)
+    print((sol2.dynamicsystem_s1.objective - sol.dynamicsystem_s1.objective) / epsilon)
     print(sol.dynamicsystem_s1.jac['length'])
 
     #################################################################################
@@ -94,7 +94,7 @@ if ad_check:
                          )
     config2 =  configuration.Config(inp)
     sol2 = feniax.feniax_main.main(input_obj=config2)
-    print((sol2.dynamicsystem_s1.f_ad - sol.dynamicsystem_s1.f_ad) / epsilon)
+    print((sol2.dynamicsystem_s1.objective - sol.dynamicsystem_s1.objective) / epsilon)
     print(sol.dynamicsystem_s1.jac['intensity'])
 
 
@@ -111,7 +111,7 @@ if ad_check:
                          )
     config2 =  configuration.Config(inp)
     sol2 = feniax.feniax_main.main(input_obj=config2)
-    print((sol2.dynamicsystem_s1.f_ad - sol.dynamicsystem_s1.f_ad) / epsilon)
+    print((sol2.dynamicsystem_s1.objective - sol.dynamicsystem_s1.objective) / epsilon)
     print(sol.dynamicsystem_s1.jac['rho_inf'])
 
     #################################################################################

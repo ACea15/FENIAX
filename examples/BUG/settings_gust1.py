@@ -7,6 +7,13 @@ import feniax.preprocessor.configuration as configuration  # import Config, dump
 from feniax.preprocessor.inputs import Inputs
 import feniax.feniax_main
 import feniax.plotools.reconstruction as reconstruction
+import sys
+
+if len(sys.argv) > 1:
+    results_path = f"{sys.argv[1]}/results/"
+else:
+    results_path = "./results/"
+
 label_dlm = "d1c7"
 sol = "eao"
 label_gaf = "Dd1c7F3Seao-100"
@@ -44,14 +51,14 @@ inp.fem.eig_names = [f"./FEM/eigenvals_{sol}{num_modes}.npy",
                      f"./FEM/eigenvecs_{sol}{num_modes}.npy"]
 inp.driver.typeof = "intrinsic"
 inp.fem.num_modes = num_modes
-inp.driver.typeof = "intrinsic"
+
 inp.simulation.typeof = "single"
 inp.system.name = "s1"
 if sol[0] == "e": # free model, otherwise clamped
     inp.system.bc1 = 'free'
     inp.system.q0treatment = 1
 inp.system.solution = "dynamic"
-inp.system.t1 = 2
+inp.system.t1 = 1.
 inp.system.tn = 2501
 inp.system.solver_library = "runge_kutta"
 inp.system.solver_function = "ode"
@@ -64,14 +71,14 @@ inp.system.aero.poles = f"./AERO/{Poles_file}.npy"
 inp.system.aero.A = f"./AERO/{Ahh_file}.npy"
 inp.system.aero.D = f"./AERO/{Dhj_file}.npy"
 inp.system.aero.gust_profile = "mc"
-inp.system.aero.gust.intensity = 20
-inp.system.aero.gust.length = 150.
+inp.system.aero.gust.intensity = 30 #25
+inp.system.aero.gust.length = 200. #150.
 inp.system.aero.gust.step = 0.1
 inp.system.aero.gust.shift = 0.
 inp.system.aero.gust.panels_dihedral = f"./AERO/Dihedral_{label_dlm}.npy"
 inp.system.aero.gust.collocation_points = f"./AERO/Collocation_{label_dlm}.npy"
 inp.driver.sol_path = pathlib.Path(
-    f"./gust2_{sol}")
+    f"{results_path}/gust{int(inp.system.aero.gust.length)}_{sol}")
 
 config =  configuration.Config(inp)
 sol1 = feniax.feniax_main.main(input_obj=config)

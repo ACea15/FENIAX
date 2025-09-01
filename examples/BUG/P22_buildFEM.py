@@ -1,6 +1,4 @@
 # [[file:modelgeneration.org::*Build modes in OP4, map to ASETs and paraview plot][Build modes in OP4, map to ASETs and paraview plot:1]]
-import numpy as np  
-import feniax.unastran.op4handler as op4handler
 eigs, modes = op4handler.write_op4modes(f"./NASTRAN/simulations_out/BUG103_{sol}.bdf",
                                         num_modes,
                                         op4_name=f"./NASTRAN/data_out/Phi{num_modes}_{sol}",
