@@ -144,8 +144,8 @@ nav:
   - Architecture:
       - JAX: JAX.md
       - UML description: UML.md
-      - Program inputs: inputs.md 
   - Code base:
       - Inputs: api/inputs.md
       - Modes: api/modes.md
       - Nonlinear couplings: api/couplings.md
+        
