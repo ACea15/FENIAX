@@ -10,20 +10,42 @@ __SIMULATION_DICT__ = dict()
 class Simulation(ABC):
     
     def __init__(self, systems: dict[system.System], sol: solution.Solution, settings):
+        """Manages how the various systems are run
+
+        Parameters
+        ----------
+        systems : dict[system.System]
+            System objects
+        sol : solution.Solution
+            Solution object
+        settings : 
+            Simulation settings
+
+        """
+        
         self.systems = systems
         self.sol = sol
         self.settings = settings
 
     @abstractmethod
     def trigger(self):
+        """Launch the simulations
+        
+        """
         pass
 
     @abstractmethod
     def _run_systems(self):
+        """Implements logic to run the systems: serial, parallel...
+
+        """
         pass
 
     @abstractmethod
     def _post_run(self):
+        """Anything to run after the systems are solved
+
+        """
         pass
 
     def __init_subclass__(cls, **kwargs):

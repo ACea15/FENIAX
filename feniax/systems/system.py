@@ -7,33 +7,55 @@ __SYSTEM_DICT__ = dict()
 class System(ABC):
     
     def __init__(self, name: str, settings: data_container.DataContainer):
+        """Initialise object representing system of equations
+
+        Parameters
+        ----------
+        name : str
+            Name of the system
+        settings : data_container.DataContainer
+            system configuration settings
+
+        """
+        
         self.name = name
         self.settings = settings
 
     @abstractmethod
+    def set_ic(self):
+        """
+        Initial conditions for the system
+        """
+        pass
+        
+    @abstractmethod
     def set_system(self):
+        """
+        Defines the actual system to be solved based on the inputs
+        """
         pass
 
     @abstractmethod
     def set_solver(self):
+        """
+        Picks the solver in ./sollibs to solve the system of equations
+        """
         
         pass
 
     @abstractmethod
     def solve(self):
         """
-        Solves the system of equations
+        Run the solver on the system of equations
         """
         
         pass
 
     @abstractmethod
-    def save(self):
-        pass
-
-    # @abstractmethod
-    # def pull_solution(self):
-    #     pass
+    def build_solution(self):
+        """
+        Based on the solution states, build any postprecessing fields
+        """
 
     def __init_subclass__(cls, **kwargs):
         assert "cls_name" in kwargs
