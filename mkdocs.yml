@@ -96,13 +96,7 @@ markdown_extensions:
 plugins:
     - search  # default search plugin; needs manually re-enabling when using any other plugins
     - autorefs  # Cross-links to headings
-    - include_exclude_files:
-        include:
-        # exclude:
-        #     - "_overrides"
-        #     - "_static/README.md"
-    - mknotebooks  # Jupyter notebooks
-    #- mkdocs-jupyter:
+    - mkdocs-jupyter  # Jupyter notebooks
     #      ignore_h1_titles: True    
     - mkdocstrings:
         default_handler: python
@@ -121,7 +115,7 @@ plugins:
                     - inherited_members: true  # Allow looking up inherited methods
                 rendering:
                     - show_root_heading: true  # actually display anything at all...
-                    - show_root_full_path: true  # display "diffrax.asdf" not just "asdf"
+                    - show_root_full_path: true  # display "feniax.asdf" not just "asdf"
                     - show_if_no_docstring: true
                     - show_signature_annotations: true
                     - show_source: false  # don't include source code
@@ -146,6 +140,10 @@ nav:
       - UML description: UML.md
   - Code base:
       - Inputs: api/inputs.md
+      - Configuration: api/configuration.md
+      - Drivers: api/drivers.md        
       - Modes: api/modes.md
       - Nonlinear couplings: api/couplings.md
+      - Simulations: api/simulations.md  
+      - Systems: api/systems.md
         

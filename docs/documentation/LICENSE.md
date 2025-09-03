@@ -1,1 +1,1 @@
-/home/acea/projects/FENIAX/LICENSE.md
+../../LICENSE.md

@@ -9,7 +9,7 @@ include = ["feniax/*"]
 name = "FENIAX"
 version = "0.1.0"
 description = "Nonlinear Aeroelastic solver written in JAX."
-authors = [{ name = "Alvaro Cea", email = "alvar_cea@outlook.com" }]
+authors = [{ name = "Alvaro Cea", email = "alvaro_cea@outlook.com" }]
 readme = "README.md"
 requires-python = ">=3.10"
 #license = { file = "LICENSE" }
@@ -56,6 +56,12 @@ postprocessing = ["matplotlib",
               	  "stpyvista",
             	  "streamlit-pdf-viewer"
 		  ]
+docs = ["mkdocs",
+        "mkdocs-material",
+	"mkdocstrings-python",
+	"python-markdown-math",
+	"mkdocs-jupyter"
+	]		  
 all = ["pytest",
        "pytest-cov",
        "pre-commit",
@@ -65,7 +71,12 @@ all = ["pytest",
        "streamlit",
        "kaleido",
        "stpyvista",
-       "streamlit-pdf-viewer"
+       "streamlit-pdf-viewer",
+       "mkdocs",
+       "mkdocs-material",
+       "mkdocstrings-python",
+       "python-markdown-math",
+       "mkdocs-jupyter"
       ]
 
 [tool.ruff]

@@ -9,13 +9,6 @@
 #+begin_src elisp :results none :tangle no 
   (setq org-image-actual-width nil)
   (setq org-confirm-babel-evaluate nil)
-  ;; (setq org-latex-pdf-process
-  ;;   '("latexmk -pdflatex='pdflatex --syntex=1 -interaction nonstopmode' -pdf -bibtex -f %f"))
-  (setq org-latex-pdf-process
-        '("latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"
-          "latexmk -pdflatex='pdflatex --syntex=1 -shell-escape -interaction nonstopmode' -pdf -bibtex -f %f"))
-
-  (require 'org-tempo)
   (pyvenv-workon "feniax")
 
 #+end_src
@@ -30,7 +23,7 @@
 - JAX Just in Time Compilation (JIT)
 - Code vectorisation and parallelisation.
 - Run on accelerators (GPUs, TPUs, etc.)
-** Derivatives of aeroelastic  for design optimisation.
+** Derivatives of aeroelastic analysis for design optimisation.
 - Using JAX algorithmic differentiation.
 *** Efficient derivatives
 JAX AD package using pure functions from functional programming style.
@@ -203,7 +196,6 @@ connection between the shard and the ad settings
 
 ** ExternalForces
 *** prescribed follower and dead point forces
-*** prescribed_dead
 *** gravity
 *** modal_aero
 
@@ -360,6 +352,142 @@ connection between the shard and the ad settings
 
 #+RESULTS: classes_architecture
 [[file:UML_software1.png]]
+
+
+#+Name: architecture
+#+begin_src plantuml :file ../images/abstract_classes.png
+  circle feniax_main
+  class Config {
+  	+clone()
+  	+from_file(file_name: str)
+  	}
+  	
+  abstract Driver {
+            +()
+            +run_cases()
+    }
+
+  abstract class Simulation {
+          +trigger()
+          -_run_systems()
+          -_post_run()
+  }
+
+  abstract class System {
+  		+set_ic()
+  		+solve()
+  		+set_system()
+  		+set_solver()
+  		+build_solution()		
+  }
+
+  metaclass Sollibs {
+          +name()
+          +pull_name()
+  }
+  feniax_main -- Config
+  Config -- Driver	
+  Driver  *-- Simulation
+  Driver  *- System
+  System  *- Sollibs
+  System ..> Simulation
+#+end_src
+
+#+RESULTS: architecture
+[[file:../images/abstract_classes.png]]
+
+
+#+Name: inheritance_classes
+#+begin_src plantuml :file ../images/inheritance_classes.png
+  abstract Driver {
+            +pre_simulation()
+            +run_cases()
+  }
+
+  class IntrinsicDriver {
+  }
+
+  abstract class Simulation {
+  }
+
+  class SingleSimulation {
+  }
+  class SerialSimulation {
+  }
+  class ParallelSimulation {
+  }
+  class CoupledSimulation {
+  }
+
+  abstract class System {
+  }
+
+  class IntrinsicSystem {
+
+  }
+
+  class IntrinsicADSystem {
+
+  }
+
+
+  class StaticIntrinsic {
+
+  }
+
+  class DynamicIntrinsic {
+
+  }
+
+  class StaticADIntrinsic {
+
+  }
+
+  class DynamicADIntrinsic {
+
+  }
+
+  class StaticShardIntrinsic {
+
+  }
+
+  class DynamicShardIntrinsic {
+
+  }
+
+  class StaticADShardIntrinsic {
+
+  }
+
+  class DynamicADShardIntrinsic {
+
+  }
+
+  Driver <|-- IntrinsicDriver
+
+  Simulation <|-- SingleSimulation
+  SingleSimulation -- SerialSimulation 
+  SerialSimulation -- ParallelSimulation
+  ParallelSimulation -- CoupledSimulation					
+
+  System <|-- IntrinsicSystem
+  System <|-- IntrinsicADSystem
+  IntrinsicSystem <|-- StaticIntrinsic
+  IntrinsicSystem <|-- DynamicIntrinsic
+  IntrinsicADSystem <|-- StaticADIntrinsic
+  IntrinsicADSystem <|-- DynamicADIntrinsic
+  StaticIntrinsic -- StaticShardIntrinsic
+  DynamicIntrinsic -- DynamicShardIntrinsic
+  StaticADIntrinsic <|-- StaticADShardIntrinsic
+  StaticShardIntrinsic <|-- StaticADShardIntrinsic  
+  DynamicADIntrinsic <|-- DynamicADShardIntrinsic
+  DynamicShardIntrinsic <|-- DynamicADShardIntrinsic
+
+#+end_src
+
+#+RESULTS: inheritance_classes
+[[file:../images/inheritance_classes.png]]
+
 
 * MPI
 
