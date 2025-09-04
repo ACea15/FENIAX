@@ -19,6 +19,12 @@ def ode(
     # save_at=None,
     **kwargs,
 ) -> diffrax.Solution:
+    """
+    Diffrax ODE solover
+    """
+
+    # TODO: Logic should be extended and improved
+    
     solver_sett = dict()
     diffeqsolve_sett = dict()
     term = diffrax.ODETerm(F)
@@ -81,7 +87,7 @@ def ode2(
     return sol
 
 
-def newton(F, q0, args, sett, jac=None, **kwargs):
+def newton(F: callable, q0, args, sett, jac=None, **kwargs):
     solver = optx.Newton(
         rtol=sett.rtol, atol=sett.atol, kappa=sett.kappa, norm=dict_norm[sett.norm]
     )
@@ -92,11 +98,17 @@ def newton(F, q0, args, sett, jac=None, **kwargs):
 
 
 def pull_ode(sol):
+    """Extract states from diffrax ODE solution object
+    """
+    
     qs = jnp.array(sol.ys)
     return qs
 
 
 def pull_newton(sol):
+    """Extract states from diffrax Newton solution object
+    """
+    
     qs = jnp.array(sol.value)
     return qs
 

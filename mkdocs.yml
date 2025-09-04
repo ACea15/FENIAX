@@ -135,10 +135,12 @@ nav:
   #- Postprocessing
   - Theoretical background:
       - Intrinsic modal description: theory_intrinsic.md
-  - Architecture:
+      - Publications: publications.md
+  - Software & Architecture:
       - JAX: JAX.md
       - Algorithms: algorithms.md
       - UML description: UML.md
+      - Developer: developer.md
   - Codebase:
       - Inputs: api/inputs.md
       - Configuration: api/configuration.md
@@ -147,6 +149,8 @@ nav:
       - Nonlinear couplings: api/couplings.md
       - Simulations: api/simulations.md  
       - Systems: api/systems.md
+      - Solvers: api/sollibs.md
+      - Equations: api/equations.md  
       - Deformations: api/deformations.md
         
         

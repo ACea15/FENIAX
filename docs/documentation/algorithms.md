@@ -11,6 +11,10 @@ For links to the codebase, see the following:
 
 - [Modes](api/modes.md).
 - [Nonlinear couplings](api/couplings.md).
+- Solution of equations:
+  - Orchestrator to build the [Systems](api/systems.md)
+  - Numerical solvers inside [Sollibs](api/sollibs.md): Using [Diffrax](https://docs.kidger.site/diffrax/) or bespoke  
+  - 
 
 ## System of equations
 
