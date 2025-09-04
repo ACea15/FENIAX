@@ -13,23 +13,25 @@
       
       
       
+        <link rel="prev" href="../configuration/">
       
-        <link rel="next" href="getting_started/">
+      
+        <link rel="next" href="../modes/">
       
       
-      <link rel="icon" href="assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.18">
     
     
       
-        <title>FENIAX</title>
+        <title>Drivers - FENIAX</title>
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.7e37652d.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7e37652d.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -48,9 +50,9 @@
       
     
     
-      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -76,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#finite-element-models-4-nonlinear-intrinsic-aeroelastics-in-jax-feniax" class="md-skip">
+        <a href="#drivers.driver" class="md-skip">
           Skip to content
         </a>
       
@@ -92,7 +94,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="FENIAX" class="md-header__button md-logo" aria-label="FENIAX" data-md-component="logo">
+    <a href="../.." title="FENIAX" class="md-header__button md-logo" aria-label="FENIAX" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -112,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Home
+              Drivers
             
           </span>
         </div>
@@ -222,11 +224,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="." class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -245,7 +245,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="getting_started/" class="md-tabs__link">
+      <a href="../../getting_started/" class="md-tabs__link">
         
   
   
@@ -266,7 +266,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="examples/" class="md-tabs__link">
+        <a href="../../examples/" class="md-tabs__link">
           
   
   
@@ -288,7 +288,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="theory_intrinsic/" class="md-tabs__link">
+        <a href="../../theory_intrinsic/" class="md-tabs__link">
           
   
   
@@ -310,7 +310,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="JAX/" class="md-tabs__link">
+        <a href="../../JAX/" class="md-tabs__link">
           
   
   
@@ -328,11 +328,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="api/inputs/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../inputs/" class="md-tabs__link">
           
   
   
@@ -374,7 +376,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="FENIAX" class="md-nav__button md-logo" aria-label="FENIAX" data-md-component="logo">
+    <a href="../.." title="FENIAX" class="md-nav__button md-logo" aria-label="FENIAX" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -401,32 +403,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Home
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="." class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -437,152 +417,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#getting-started" class="md-nav__link">
-    <span class="md-ellipsis">
-      Getting started
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
-    <span class="md-ellipsis">
-      Examples
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Examples">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#nonlinear-structural-static-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      Nonlinear structural static results
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#wing-free-dynamics" class="md-nav__link">
-    <span class="md-ellipsis">
-      Wing free dynamics
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#free-flying-structure" class="md-nav__link">
-    <span class="md-ellipsis">
-      Free flying structure
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Free flying structure">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#2d-dynamics" class="md-nav__link">
-    <span class="md-ellipsis">
-      2D dynamics
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3d-dynamics" class="md-nav__link">
-    <span class="md-ellipsis">
-      3D dynamics
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#concurrent-aeroelastic-simulations-on-ultra-high-aspect-ratio-aircraft" class="md-nav__link">
-    <span class="md-ellipsis">
-      Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#wing-tip-static-loading" class="md-nav__link">
-    <span class="md-ellipsis">
-      Wing-tip static loading
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aeroelastic-equilibrium-for-varying-aoa" class="md-nav__link">
-    <span class="md-ellipsis">
-      Aeroelastic equilibrium for varying AoA
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dynamic-loads-at-large-scale-gust-envelopes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Dynamic loads at large scale: gust envelopes
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#license" class="md-nav__link">
-    <span class="md-ellipsis">
-      License
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -594,7 +428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="getting_started/" class="md-nav__link">
+      <a href="../../getting_started/" class="md-nav__link">
         
   
   
@@ -673,7 +507,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/" class="md-nav__link">
+      <a href="../../examples/" class="md-nav__link">
         
   
   
@@ -696,7 +530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/SailPlane/sailplane_nb/" class="md-nav__link">
+      <a href="../../examples/SailPlane/sailplane_nb/" class="md-nav__link">
         
   
   
@@ -719,7 +553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/wingSP/wingSP_nb/" class="md-nav__link">
+      <a href="../../examples/wingSP/wingSP_nb/" class="md-nav__link">
         
   
   
@@ -742,7 +576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/SimoFS/main/" class="md-nav__link">
+      <a href="../../examples/SimoFS/main/" class="md-nav__link">
         
   
   
@@ -765,7 +599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/industrialAC/main/" class="md-nav__link">
+      <a href="../../examples/industrialAC/main/" class="md-nav__link">
         
   
   
@@ -788,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="examples/ConcurrentLoads/main/" class="md-nav__link">
+      <a href="../../examples/ConcurrentLoads/main/" class="md-nav__link">
         
   
   
@@ -865,7 +699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="theory_intrinsic/" class="md-nav__link">
+      <a href="../../theory_intrinsic/" class="md-nav__link">
         
   
   
@@ -946,7 +780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="JAX/" class="md-nav__link">
+      <a href="../../JAX/" class="md-nav__link">
         
   
   
@@ -969,7 +803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="algorithms/" class="md-nav__link">
+      <a href="../../algorithms/" class="md-nav__link">
         
   
   
@@ -992,7 +826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="UML/" class="md-nav__link">
+      <a href="../../UML/" class="md-nav__link">
         
   
   
@@ -1019,8 +853,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -1044,19 +880,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
             
   
   
@@ -1069,7 +908,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Codebase
@@ -1083,7 +922,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/inputs/" class="md-nav__link">
+      <a href="../inputs/" class="md-nav__link">
         
   
   
@@ -1106,7 +945,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   
@@ -1126,10 +965,30 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="api/drivers/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Drivers
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1140,6 +999,75 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#drivers.driver" class="md-nav__link">
+    <span class="md-ellipsis">
+      driver
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#drivers.driver.Driver" class="md-nav__link">
+    <span class="md-ellipsis">
+      Driver
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Driver">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#drivers.driver.Driver.post_simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      post_simulation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#drivers.driver.Driver.pre_simulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      pre_simulation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#drivers.driver.Driver.run_cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      run_cases
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1152,7 +1080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/modes/" class="md-nav__link">
+      <a href="../modes/" class="md-nav__link">
         
   
   
@@ -1175,7 +1103,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/couplings/" class="md-nav__link">
+      <a href="../couplings/" class="md-nav__link">
         
   
   
@@ -1198,7 +1126,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/simulations/" class="md-nav__link">
+      <a href="../simulations/" class="md-nav__link">
         
   
   
@@ -1221,7 +1149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/systems/" class="md-nav__link">
+      <a href="../systems/" class="md-nav__link">
         
   
   
@@ -1244,7 +1172,7 @@
   
   
     <li class="md-nav__item">
-      <a href="api/deformations/" class="md-nav__link">
+      <a href="../deformations/" class="md-nav__link">
         
   
   
@@ -1284,8 +1212,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -1294,65 +1220,46 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#getting-started" class="md-nav__link">
+  <a href="#drivers.driver" class="md-nav__link">
     <span class="md-ellipsis">
-      Getting started
+      driver
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#examples" class="md-nav__link">
+  <a href="#drivers.driver.Driver" class="md-nav__link">
     <span class="md-ellipsis">
-      Examples
+      Driver
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Examples">
+    <nav class="md-nav" aria-label="Driver">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#nonlinear-structural-static-results" class="md-nav__link">
+  <a href="#drivers.driver.Driver.post_simulation" class="md-nav__link">
     <span class="md-ellipsis">
-      Nonlinear structural static results
+      post_simulation
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#wing-free-dynamics" class="md-nav__link">
+  <a href="#drivers.driver.Driver.pre_simulation" class="md-nav__link">
     <span class="md-ellipsis">
-      Wing free dynamics
+      pre_simulation
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#free-flying-structure" class="md-nav__link">
+  <a href="#drivers.driver.Driver.run_cases" class="md-nav__link">
     <span class="md-ellipsis">
-      Free flying structure
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Free flying structure">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#2d-dynamics" class="md-nav__link">
-    <span class="md-ellipsis">
-      2D dynamics
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3d-dynamics" class="md-nav__link">
-    <span class="md-ellipsis">
-      3D dynamics
+      run_cases
     </span>
   </a>
   
@@ -1360,62 +1267,6 @@
         
       </ul>
     </nav>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#concurrent-aeroelastic-simulations-on-ultra-high-aspect-ratio-aircraft" class="md-nav__link">
-    <span class="md-ellipsis">
-      Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#wing-tip-static-loading" class="md-nav__link">
-    <span class="md-ellipsis">
-      Wing-tip static loading
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#aeroelastic-equilibrium-for-varying-aoa" class="md-nav__link">
-    <span class="md-ellipsis">
-      Aeroelastic equilibrium for varying AoA
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dynamic-loads-at-large-scale-gust-envelopes" class="md-nav__link">
-    <span class="md-ellipsis">
-      Dynamic loads at large scale: gust envelopes
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#license" class="md-nav__link">
-    <span class="md-ellipsis">
-      License
-    </span>
-  </a>
   
 </li>
       
@@ -1435,105 +1286,310 @@
 
 
 
-<h1 id="finite-element-models-4-nonlinear-intrinsic-aeroelastics-in-jax-feniax">Finite Element models 4 Nonlinear Intrinsic Aeroelastics in JAX [FENIAX]<a class="headerlink" href="#finite-element-models-4-nonlinear-intrinsic-aeroelastics-in-jax-feniax" title="Permanent link">¤</a></h1>
-<p>FENIAX is an aeroelastic toolbox  written in Python using JAX. It acts as a post-processor of commercial software such as MSC Nastran. </p>
-<p>Some of the key features of the software are:</p>
-<ul>
-<li>
-<p>Arbitrary FE models built for linear aeroelastic analysis are enhanced with geometric nonlinear effects, flight dynamics and linearized state-space solutions about nonlinear equilibrium.</p>
-</li>
-<li>
-<p>Leveraging on the numerical library JAX and optimised algorithms, a high performance is achieved that leads to simulation times comparable to the linear counterparts on conventional platforms.</p>
-</li>
-<li>
-<p>The software runs on modern hardware architectures such as GPUs in a addition to standard CPUs.</p>
-</li>
-<li>
-<p>Algorithm differentiation (AD) of the aeroelastic response is available via JAX primitives. </p>
-</li>
-<li>
-<p>Concurrent simulations for multiple load cases have been developed.</p>
-</li>
-</ul>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The software is in beta, and while it has been thoroughly tested, new features keep being added and it is likely features for your analysis might be missing. Get in touch if you encounter problems.</p>
+  <h1>Drivers</h1>
+
+<div class="doc doc-object doc-module">
+
+
+
+<a id="drivers.driver"></a>
+    <div class="doc doc-contents first">
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="drivers.driver.Driver" class="doc doc-heading">
+            <code>Driver</code>
+
+
+<a href="#drivers.driver.Driver" class="headerlink" title="Permanent link">¤</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
+
+        <p>Initialises the main objects of the program and triggers the simulation</p>
+
+
+
+
+
+
+
+
+              <details class="quote">
+                <summary>Source code in <code>feniax/drivers/driver.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 6</span>
+<span class="normal"> 7</span>
+<span class="normal"> 8</span>
+<span class="normal"> 9</span>
+<span class="normal">10</span>
+<span class="normal">11</span>
+<span class="normal">12</span>
+<span class="normal">13</span>
+<span class="normal">14</span>
+<span class="normal">15</span>
+<span class="normal">16</span>
+<span class="normal">17</span>
+<span class="normal">18</span>
+<span class="normal">19</span>
+<span class="normal">20</span>
+<span class="normal">21</span>
+<span class="normal">22</span>
+<span class="normal">23</span>
+<span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span>
+<span class="normal">31</span>
+<span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span>
+<span class="normal">38</span>
+<span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span>
+<span class="normal">48</span>
+<span class="normal">49</span>
+<span class="normal">50</span>
+<span class="normal">51</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Driver</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; Initialises the main objects of the program and triggers the simulation</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_simulation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the simulation object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_systems</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialise the system of equations objects</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pre_simulation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run any computation pre-simulation</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_cases</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Trigger the simulations</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_simulation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run any computation post-simulation</span>
+
+<span class="sd">        For instance the forager pattern that launches other programs</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">pass</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__init_subclass__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">assert</span> <span class="s2">&quot;cls_name&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init_subclass__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;cls_name&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">__DRIVER_DICT__</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Name </span><span class="si">%s</span><span class="s2"> already registered!&quot;</span> <span class="o">%</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;cls_name&quot;</span><span class="p">])</span>
+        <span class="n">__DRIVER_DICT__</span><span class="p">[</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;cls_name&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="bp">cls</span>
+</code></pre></div></td></tr></table></div>
+              </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="drivers.driver.Driver.post_simulation" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">post_simulation</span><span class="p">()</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+<a href="#drivers.driver.Driver.post_simulation" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Run any computation post-simulation</p>
+<p>For instance the forager pattern that launches other programs</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>feniax/drivers/driver.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">39</span>
+<span class="normal">40</span>
+<span class="normal">41</span>
+<span class="normal">42</span>
+<span class="normal">43</span>
+<span class="normal">44</span>
+<span class="normal">45</span>
+<span class="normal">46</span>
+<span class="normal">47</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_simulation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run any computation post-simulation</span>
+
+<span class="sd">    For instance the forager pattern that launches other programs</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
 </div>
-<h2 id="getting-started">Getting started<a class="headerlink" href="#getting-started" title="Permanent link">¤</a></h2>
-<p>If you just want to start running the code, navigate to the <a href="getting_started/">Getting started</a></p>
-<h2 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">¤</a></h2>
-<p>The most relevant examples in the code base are shown here, these and more can be found in the folder <code>/examples</code>
-They are also part of a large test suite that is integrated into the development using CI/CD.</p>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>Navigate to the code of the various examples, including the simulation input settings and postprocessing of the simulation --exactly as it was used for the articles backing the software. See <a href="examples/">examples</a></p>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="drivers.driver.Driver.pre_simulation" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">pre_simulation</span><span class="p">()</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+<a href="#drivers.driver.Driver.pre_simulation" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Run any computation pre-simulation</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>feniax/drivers/driver.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">24</span>
+<span class="normal">25</span>
+<span class="normal">26</span>
+<span class="normal">27</span>
+<span class="normal">28</span>
+<span class="normal">29</span>
+<span class="normal">30</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">pre_simulation</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run any computation pre-simulation</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
 </div>
-<h3 id="nonlinear-structural-static-results">Nonlinear structural static results<a class="headerlink" href="#nonlinear-structural-static-results" title="Permanent link">¤</a></h3>
-<div class="admonition success">
-<p class="admonition-title">Success</p>
-<ul>
-<li>Validated with MSC Nastran nonlinear solution (sol 400)</li>
-<li>AD differentiation of the response verified against finite-differences</li>
-</ul>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="drivers.driver.Driver.run_cases" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">run_cases</span><span class="p">()</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+  </span>
+
+<a href="#drivers.driver.Driver.run_cases" class="headerlink" title="Permanent link">¤</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Trigger the simulations</p>
+
+
+            <details class="quote">
+              <summary>Source code in <code>feniax/drivers/driver.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">32</span>
+<span class="normal">33</span>
+<span class="normal">34</span>
+<span class="normal">35</span>
+<span class="normal">36</span>
+<span class="normal">37</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@abstractmethod</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run_cases</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Trigger the simulations</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">pass</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
 </div>
-<p><a href="examples/SailPlane/sailplane_nb/">Notebook</a></p>
-<p><img alt="Sail Plane static" src="img/SailPlane3D_front.png" /></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Take a liner FE model of arbitrary complexity from your favourite FE solver, and turn it into a fully geometrically nonlinear model. You just need a condensation step into the main load paths and the resulting linear stiffness and mass matrices.  </p>
+
+
+
+  </div>
+
+    </div>
+
 </div>
-<h3 id="wing-free-dynamics">Wing free dynamics<a class="headerlink" href="#wing-free-dynamics" title="Permanent link">¤</a></h3>
-<div class="admonition success">
-<p class="admonition-title">Success</p>
-<ul>
-<li>Validated with MSC Nastran nonlinear solution (sol 400)</li>
-<li>Runs over x100 faster than Nastran </li>
-<li>AD differentiation of the response verified against finite-differences</li>
-</ul>
+
+
+
+
+  </div>
+
+    </div>
+
 </div>
-<p><a href="examples/wingSP/wingSP_nb/">Notebook</a></p>
-<p><img alt="Wing free dynamics" src="media/wingSP_optimized.gif" /></p>
-<h3 id="free-flying-structure">Free flying structure<a class="headerlink" href="#free-flying-structure" title="Permanent link">¤</a></h3>
-<p>This example first appeared in the work of Juan Carlos Simo (see <a href="https://mechanics.stanford.edu/simo">Bio</a>)
-, a pioneer in the field of computational structural mechanics and the </p>
-<p><a href="examples/wingSP/wingSP_nb/">Notebook</a></p>
-<h4 id="2d-dynamics">2D dynamics<a class="headerlink" href="#2d-dynamics" title="Permanent link">¤</a></h4>
-<p><img alt="Free flying structure 2D" src="media/SimoFFB2D_optimized.gif" /></p>
-<h4 id="3d-dynamics">3D dynamics<a class="headerlink" href="#3d-dynamics" title="Permanent link">¤</a></h4>
-<p><img alt="Free flying structure 3D" src="media/SimoFFB3D_optimized.gif" /></p>
-<h3 id="concurrent-aeroelastic-simulations-on-ultra-high-aspect-ratio-aircraft">Concurrent aeroelastic simulations on ultra-high aspect ratio aircraft<a class="headerlink" href="#concurrent-aeroelastic-simulations-on-ultra-high-aspect-ratio-aircraft" title="Permanent link">¤</a></h3>
-<div class="admonition success">
-<p class="admonition-title">Success</p>
-<ul>
-<li>Nonlinear aeroelastic response in our solvers takes similar times or less to the linear Nastran solution!! </li>
-<li>Concurrent simulations for various loading settings achieve unparalleled computational times.</li>
-<li>CPU VS GPU benchmarks available.</li>
-</ul>
-</div>
-<h4 id="wing-tip-static-loading">Wing-tip static loading<a class="headerlink" href="#wing-tip-static-loading" title="Permanent link">¤</a></h4>
-<ul>
-<li>Extremely large deformations</li>
-<li>Validation of concurrent solution</li>
-<li>300 modes in the solution, 8 different loading scenarios running in parallel each with 11 substeps, 24 seconds in total on A100 GPU</li>
-</ul>
-<p><img alt="In-plane" src="media/BugDiscrete3_L0.gif" />
-<img alt="Out-of-plane" src="media/BugDiscrete3_L2.gif" />
-<img alt="Torsion" src="media/BugDiscrete3_L4.gif" /></p>
-<h4 id="aeroelastic-equilibrium-for-varying-aoa">Aeroelastic equilibrium for varying AoA<a class="headerlink" href="#aeroelastic-equilibrium-for-varying-aoa" title="Permanent link">¤</a></h4>
-<ul>
-<li>Nonlinear effects: follower aerodynamic forces, geometric stiffening, wing shortening.</li>
-<li>Steady manoeuvre varying flow conditions and AoA for a total 256 cases in 14 seconds.</li>
-</ul>
-<p><img alt="Manoeuvre" src="img/BUGmonoeuvre3D.jpg" /></p>
-<h4 id="dynamic-loads-at-large-scale-gust-envelopes">Dynamic loads at large scale: gust envelopes<a class="headerlink" href="#dynamic-loads-at-large-scale-gust-envelopes" title="Permanent link">¤</a></h4>
-<ul>
-<li>512 different gust cases run on A100 GPU NVIDIA in 38 seconds!</li>
-<li>Rigid body modes included, rigid/elastic nonlinear couplings accounted for.</li>
-<li>Load envelopes available from the simulation.</li>
-</ul>
-<p><img alt="Gust response" src="media/BugGust1.gif" /></p>
-<h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">¤</a></h2>
-<p>Please see the <a href="LICENSE/">project license</a> for further details.</p>
 
 
 
@@ -1568,15 +1624,31 @@ They are also part of a large test suite that is integrated into the development
       
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
+          
+          <a href="../configuration/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Configuration">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Configuration
+              </div>
+            </div>
+          </a>
+        
         
           
-          <a href="getting_started/" class="md-footer__link md-footer__link--next" aria-label="Next: Getting started">
+          <a href="../modes/" class="md-footer__link md-footer__link--next" aria-label="Next: Modes">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Getting started
+                Modes
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -1612,10 +1684,10 @@ They are also part of a large test suite that is integrated into the development
     
     
       
-      <script id="__config" type="application/json">{"base": ".", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["announce.dismiss", "content.action.edit", "content.action.view", "content.code.annotate", "content.code.copy", "content.tooltips", "navigation.footer", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="assets/javascripts/bundle.92b07e13.min.js"></script>
+      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
       
