@@ -363,8 +363,11 @@ connection between the shard and the ad settings
   	}
   	
   abstract Driver {
-            +()
+            +pre_simulation()
             +run_cases()
+            +post_simulation()
+            -_set_simulation()
+            -_set_systems()		
     }
 
   abstract class Simulation {

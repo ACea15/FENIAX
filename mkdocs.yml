@@ -131,14 +131,15 @@ nav:
       - Wing nonlinear dynamics: examples/wingSP/wingSP_nb.md
       - Free flying shell structure: examples/SimoFS/main.md
       - Full aircraft (clamped) gust verification: examples/industrialAC/main.md
-      - Concurrent loads: examples/ConcurrentLoads/main.md  
+      - Concurrent loads: examples/ConcurrentLoads/main.md 
   #- Postprocessing
   - Theoretical background:
       - Intrinsic modal description: theory_intrinsic.md
   - Architecture:
       - JAX: JAX.md
+      - Algorithms: algorithms.md
       - UML description: UML.md
-  - Code base:
+  - Codebase:
       - Inputs: api/inputs.md
       - Configuration: api/configuration.md
       - Drivers: api/drivers.md        
@@ -146,4 +147,6 @@ nav:
       - Nonlinear couplings: api/couplings.md
       - Simulations: api/simulations.md  
       - Systems: api/systems.md
+      - Deformations: api/deformations.md
+        
         

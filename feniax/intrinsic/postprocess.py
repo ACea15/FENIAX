@@ -5,31 +5,82 @@ from feniax.intrinsic.functions import H0, H1, H0_t, H1_t, H0l, H1l, H0l_t, H1l_
 
 
 def compute_velocities(phi1l: jnp.ndarray, q1: jnp.ndarray) -> jnp.ndarray:
+    """Recovery velocities in material frame.
+
+    Parameters
+    ----------
+    phi1l : jnp.ndarray
+        Intrinsic velocity modes in local frame
+    q1 : jnp.ndarray
+        Velocity modal coordinate
+
+    Returns
+    -------
+    jnp.ndarray
+        Velocity field
+
+    """
+    
     X1 = jnp.tensordot(phi1l, q1, axes=(0, 1))  # 6xNnxNt
     return X1.transpose((2, 0, 1)) # Ntx6xNn
 
 
 def compute_internalforces(phi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:
+    """Recovery velocities in material frame.
+
+    Parameters
+    ----------
+    phi2l : jnp.ndarray
+        Intrinsic force modes in local frame
+    q2 : jnp.ndarray
+        Force modal coordinate
+
+    Returns
+    -------
+    jnp.ndarray
+        Internal force field
+
+    """
+    
     X2 = jnp.tensordot(phi2l, q2, axes=(0, 1))  # 6xNnxNt
     return X2.transpose((2, 0, 1))
 
 
 def compute_strains(cphi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:
+    """Recovery strains in material frame.
+
+    Parameters
+    ----------
+    cphi2l : jnp.ndarray
+        Intrinsic  strain modes in local frame
+    q2 : jnp.ndarray
+        Force modal coordinate
+
+    Returns
+    -------
+    jnp.ndarray
+        Strain field
+
+    """
+    
     X3 = jnp.tensordot(cphi2l, q2, axes=(0, 1))  # 6xNnxNt
     return X3.transpose((2, 0, 1))
 
 
 def compute_velocities_t(phi1l: jnp.ndarray, q1: jnp.ndarray) -> jnp.ndarray:
+    
     X1 = jnp.tensordot(phi1l, q1, axes=(0, 0))  # 6xNnxNt
     return X1
 
 
 def compute_internalforces_t(phi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:
+    
     X2 = jnp.tensordot(phi2l, q2, axes=(0, 0))  # 6xNnxNt
     return X2
 
 
 def compute_strains_t(psi2l: jnp.ndarray, q2: jnp.ndarray) -> jnp.ndarray:
+    
     X3 = jnp.tensordot(psi2l, q2, axes=(0, 0))  # 6xNnxNt
     return X3
 

@@ -121,3 +121,30 @@ Different systems of equations are assembled depending on options:
     \end{cases}
 \end{split}
 \end{equation}
+
+### Recovery of deformations
+
+Calculation of the deformed geometry is obtained in a postprocessing step. Firstly, we define an Earth global reference system \(a\) used to determine the trajectory and instantaneous orientation of the aircraft, and then a local material frame \(b\) at each point along the load path. The relative orientation is defined by the coordinate transformation matrix, \(\textbf{R}_{ab}\). Local rotations are needed, however, within the solution process when gravity, or other dead forces, are active. Recall that in an intrinsic formulation, forces are naturally given in the material frame of reference and so gravity forces need to be expressed in a local deformed frame. Quaternions \(\pmb{\zeta} = [\zeta_0,\pmb{\zeta}_x]\) are used to parameterize the rotation, \(\textbf{R}_{ab}\), such that given the angular velocity, \(\pmb \omega_x\), which is part of the velocity state, \(\pmb{X}_1\), it is
+\begin{equation}\label{eq2:urecover_q}
+\dot{\pmb{\zeta}} =
+\begin{bmatrix}
+\dot{\zeta}_0 \\
+\dot{\pmb{\zeta}}_{x} 
+\end{bmatrix} = \begin{bmatrix}
+-\frac{1}{2}\pmb{\omega}_x^\top\pmb{\zeta}_{x}  \\
+\frac{1}{2}(\zeta_0\pmb{\omega}_x-\tilde{\pmb{\omega}}_x\pmb{\zeta}_{x} ) 
+\end{bmatrix}
+\end{equation}
+The quaternions, one per node, can be added to the main equations and march in time; the rotations can be extracted at every step as
+\[ 
+\textbf{R}_{ab} =\left( 2\pmb{\zeta}_x \otimes  \pmb{\zeta}_x + (\zeta_{0}^{2} - \pmb{\zeta}_x \cdot \pmb{\zeta}_x)\pmb{I}_3 \right) +   2\zeta_0\tilde{\pmb{\zeta}}_x
+\] 
+where the first parenthesis in this equation is the symmetric part of the rotation and the last term the antisymmetric part.
+Alternatively, the rotation and position in the inertial reference system can be calculated by integration of strains along the domain, as in the Frenet-Serret formulas of differential geometry. Following definition of strains \(\pmb\gamma\) and curvatures \(\pmb\kappa\), which can be obtained from the strain modes defined above, we have 
+\begin{equation}
+\begin{split}
+\textbf{R}_{ab}^{\prime} &= \textbf{R}_{ab}\tilde{\pmb{\kappa}} \\
+\pmb{r}B'&=\textbf{R}_{ab}(\pmb{\gamma} + \pmb{e}_1)
+\end{split}
+\end{equation}
+where \(\pmb{e}_1 = [1, 0, 0]\).
