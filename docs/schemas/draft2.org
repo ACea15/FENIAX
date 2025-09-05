@@ -403,8 +403,8 @@ connection between the shard and the ad settings
 #+Name: inheritance_classes
 #+begin_src plantuml :file ../images/inheritance_classes.png
   abstract Driver {
-            +pre_simulation()
-            +run_cases()
+          +pre_simulation()
+          +run_cases()
   }
 
   class IntrinsicDriver {

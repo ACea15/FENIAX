@@ -12,9 +12,9 @@ For links to the codebase, see the following:
 - [Modes](api/modes.md).
 - [Nonlinear couplings](api/couplings.md).
 - Solution of equations:
-  - Orchestrator to build the [Systems](api/systems.md)
-  - Numerical solvers inside [Sollibs](api/sollibs.md): Using [Diffrax](https://docs.kidger.site/diffrax/) or bespoke  
-  - 
+    - Orchestrator to build the [Systems](api/systems.md)
+    - Numerical solvers inside [Sollibs](api/sollibs.md): Using [Diffrax](https://docs.kidger.site/diffrax/) or bespoke solvers in JAX.
+    - Right-hand-side (RHS) of the system of [equations](api/equations.md) implemented in pure functions to comply with JAX functional programming approach.
 
 ## System of equations
 
