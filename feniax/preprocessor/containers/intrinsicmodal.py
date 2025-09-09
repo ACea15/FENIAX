@@ -1255,49 +1255,83 @@ class Dsystem(DataContainer):
     Parameters
     ----------
     name : str
+        Name of the system (arbitrary)
     _fem : Dfem
     solution : str
+        Type of solution to be solved
     target : str
+        The simulation goal of this system (level, trim...)
     bc1 : str
+        Boundary condition first node
     save : bool
+        Save results of the run system
     xloads : dict | __main__.Dxloads
+        External loads dataclass
     aero : dict | __main__.Daero
+        Aerodynamic dataclass
     t0 : float
+        Initial time
     t1 : float
+        Final time
     tn : int
+        Number of time steps
     dt : float
+        Delta time
     t : Array
+        Time vector
     solver_library : str
+        Library solving our system of equations
     solver_function : str
+        Name for the solver of the previously defined library
     solver_settings : str
+        Settings for the solver
     q0treatment : int
+        Modal velocities, q1, and modal forces, q2, are the main variables
+        in the intrinsic structural description,
+        but the steady aerodynamics part needs a displacement component, q0;
+        proportional gain to q2 or  integration of velocities q1
+        can be used to obtain this.
     rb_treatment : int
+        Rigid-body treatment: 1 to use the first node quaternion to track the body
+        dynamics (integration of strains thereafter; 2 to use quaternions at every node.)
     nonlinear : bool
+        whether to include the nonlinear terms in the eqs. (Gammas)
+        and in the integration
     residualise : bool
+        average the higher frequency eqs and make them algebraic (to be implemented)
     residual_modes : int
+        number of modes to residualise
     label : str
+        System label that maps to the solution functional
     label_map : dict
+        label dictionary
     states : dict
+        Dictionary with the state variables.
     num_states : int
+        Total number of states
     init_states : dict
+        Dictionary with initial conditions for each state
     init_mapper : dict
+        Dictionary mapping states types to functions in initcond
     ad : DtoAD
-
+        Dictionary for AD
+    shard: Dshard
+        Dictionary for parallelisation
     """
 
-    name: str = dfield("System name", default="sys1")
+    name: str = dfield("", default="sys1")
     _fem: Dfem = dfield("", default=None, yaml_save=False)
     solution: str = dfield(
-        "Type of solution to be solved",
+        "",
         options=["static", "dynamic", "multibody", "stability"],
     )
     target: str = dfield(
-        "The simulation goal of this system",
+        "",
         default="Level",
         options=SimulationTarget._member_names_,
     )
     bc1: str = dfield(
-        "Boundary condition first node",
+        "",
         default="clamped",
         options=BoundaryCond._member_names_,
     )
@@ -1306,59 +1340,52 @@ class Dsystem(DataContainer):
         options=["(empty string/default)", "Fast", "AD", "Shard", "ShardMap", "ShardAD"],
         default=""
     )
-    
-    save: bool = dfield("Save results of the run system", default=True)
-    xloads: dict | Dxloads = dfield("External loads dataclass", default=None)
-    aero: dict | Daero = dfield("Aerodynamic dataclass", default=None)
-    t0: float = dfield("Initial time", default=0.0)
-    t1: float = dfield("Final time", default=1.0)
-    tn: int = dfield("Number of time steps", default=None)
-    dt: float = dfield("Delta time", default=None)
-    t: jnp.ndarray = dfield("Time vector", default=None, yaml_save=False)
-    solver_library: str = dfield("Library solving our system of equations", default=None)
+    save: bool = dfield("", default=True)
+    xloads: dict | Dxloads = dfield("", default=None)
+    aero: dict | Daero = dfield("", default=None)
+    t0: float = dfield("", default=0.0)
+    t1: float = dfield("", default=1.0)
+    tn: int = dfield("", default=None)
+    dt: float = dfield("", default=None)
+    t: jnp.ndarray = dfield("", default=None, yaml_save=False)
+    solver_library: str = dfield("", default=None)
     solver_function: str = dfield(
-        "Name for the solver of the previously defined library", default=None
+        "", default=None
     )
-    solver_settings: str = dfield("Settings for the solver", default=None)
+    solver_settings: str = dfield("", default=None)
     q0treatment: int = dfield(
-        """Modal velocities, q1, and modal forces, q2, are the main variables
-        in the intrinsic structural description,
-        but the steady aerodynamics part needs a displacement component, q0;
-        proportional gain to q2 or  integration of velocities q1
-        can be used to obtain this.""",
+        "",
         default=2,
         options=[2, 1],
     )
     rb_treatment: int = dfield(
-        """Rigid-body treatment: 1 to use the first node quaternion to track the body
-        dynamics (integration of strains thereafter; 2 to use quaternions at every node.)""",
+        "",
         default=1,
         options=[1, 2],
     )
     nonlinear: int = dfield(
-        """whether to include the nonlinear terms in the eqs. (Gammas)
-        and in the integration""",
+        "",
         default=1,
         options=[2, 1, 0, -1, -2],
     )
     residualise: bool = dfield(
-        "average the higher frequency eqs and make them algebraic", default=False
+        "", default=False
     )
-    residual_modes: int = dfield("number of modes to residualise", default=0)
-    label: str = dfield("""System label that maps to the solution functional""", default=None)
-    label_map: dict = dfield("""label dictionary assigning """, default=None)
+    residual_modes: int = dfield("", default=0)
+    label: str = dfield("", default=None)
+    label_map: dict = dfield("", default=None)
 
-    states: dict = dfield("""Dictionary with the state variables.""", default=None)
-    num_states: int = dfield("""Total number of states""", default=None)
+    states: dict = dfield("", default=None)
+    num_states: int = dfield("", default=None)
     init_states: dict[str:list] = dfield(
-        """Dictionary with initial conditions for each state""", default=None
+        "", default=None
     )
     init_mapper: dict[str:str] = dfield(
-        """Dictionary mapping states types to functions in initcond""",
+        "",
         default=dict(q1="velocity", q2="force"),
     )
-    ad: dict | DtoAD = dfield("""Dictionary for AD""", default=None)
-    shard: dict | DShard = dfield("""Dictionary for parallelisation""", default=None)
+    ad: dict | DtoAD = dfield("", default=None)
+    shard: dict | DShard = dfield("", default=None)
 
     def __post_init__(self):
         if self.t is not None:
