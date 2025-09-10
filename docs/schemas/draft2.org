@@ -5,7 +5,7 @@
 #+LATEX_HEADER: \usepackage{algpseudocode}
 #+LATEX_HEADER: \usepackage[ruled,vlined]{algorithm2e}
 
-* HouseKeeping
+* HouseKeeping :noexport:
 #+begin_src elisp :results none :tangle no 
   (setq org-image-actual-width nil)
   (setq org-confirm-babel-evaluate nil)
@@ -13,7 +13,7 @@
 
 #+end_src
 
-* Challenging problems driving the research :noexport:
+* COMMENT Challenging problems driving the research 
 ** Geometrically nonlinear aeroelastic analysis using complex GFEMs
 - Flight loads
 - Airframe integrity: flutter or divergence assessment
@@ -34,11 +34,11 @@ If for instance one wants to set an optimisation with boundaries on the maximum 
 *** Perform calculations on different models in a single run
 Via the supercase option of driver. This might be used to compute finite differences; or if the response of if the response of a fractured component is to be compared.
 
-* Physical models
+* COMMENT Physical models
 ** Downwash for DLM
 Collocation-points-Normals_atCollocation-Downwash-AIC*Downwash
 
-* Code design and software architecture :noexport:
+* COMMENT Code design and software architecture 
 - feniax main: entry point of the simulation
 - Config object with input settings.
 - Driver class: initialises all relevant objects in the computation such as the simulation, and the systems objects.
@@ -136,10 +136,9 @@ Systems with labels:
 
 *** Architecture for the solution of systems
 
-
 Chain of requirements between the various ways to run the code.
 Fast needs to use the functions in Flexible:
-Fast -> Flexible  and similarly:
+Fast -> Flexible and similarly:
 AD -> Fast
 Shard -> Flexible
 ShardF -> Shard
@@ -151,10 +150,9 @@ ShardF -> Shard
   [[file:~/projects/FENIAX/feniax/intrinsic/dq_static.py][dq_static]]
 
   
-- Fast: entire solution within one function such that memory copies to cuda devices are avoided
+- Fast: entire solution within one function such that memory copies to cuda devices are avoided.
   Computation of intrinsic modes, modal couplings, aerodynamic matrices happen within a single function, from within the solution of the system of equations is also called.
   Importantly, the functions within the dq_[] modules are used for the solution, thereby avoiding code duplication and promoting modular design.
-
   
 - AD: the entire solution within one function as well, but needs inputs/ outputs for the differentiation to take place
 
@@ -166,33 +164,6 @@ ShardF -> Shard
 
 - Shard AD: shard the inputs, take a function for the output,
   
-** Forager
-
-- run()
-  
-- collector(sol)
-  gets data from the sol object
-  - single
-  - mpi
-
- for instance a bunch of gust simulations
-
-filter
-based on the collected data, builds new configs
-but how?
-the original config object is copied and 3 dictionaries are needed:
-1) entries to remove from config
-2)  
-list of dictionaries is setup:  
-
-
-spawn 
-
-instantiate driver
-
-forager name (gust)
-system_name -> ad 
-connection between the shard and the ad settings
 
 ** ExternalForces
 *** prescribed follower and dead point forces
@@ -491,16 +462,7 @@ connection between the shard and the ad settings
 #+RESULTS: inheritance_classes
 [[file:../images/inheritance_classes.png]]
 
-
-* MPI
-
-- feniax_MPImain called with multiple configs.
-  The question is whether to have the MPI
-- intrinsicMPI_driver:
-  - pre_simulation: 
-  - run_cases also unmodified
-  - post_simulation 
-* Algorithms
+* COMMENT Algorithms
 
 $N_N$ Number of discretisation condensed nodes in the model
 $N_m$ Number of modal shapes in the solution
@@ -527,7 +489,7 @@ $\bm{r}_a$, $\bm{R}_{a}$   $\longleftarrow$ integration($\bm{X}_{3}$, $\bm{X}_a$
 \caption{Main components in solution process}
 \end{algorithm}
 
-* Simulation inputs :noexport:
+* COMMENT Simulation inputs 
 trim
 ----
 qh = 0
@@ -556,7 +518,7 @@ q1dot = f(gamma2) + eta_q(q0, qe)
 - Should be suitable for eigenvalue analysis
 
 *** Aerodynamic model via GAFs.
-- Preliminary DLM model. Automatically built from wing-box?
+- Preliminary DLM model. Automatically built from wing-box.
 - Steady loads: Corrections may be needed. 
   
 ** Output requirements
@@ -569,7 +531,7 @@ Critical for large design optimisation problems.
 ** Data workflow
 Well in place for Nastran Models  except for the derivatives provided by Nastran using Sol 200.
 
-* System based solutions :noexport:
+* System based solutions 
 
 Systems:
 {solution=Type}{operationalmode="","fast", "AD"..}_intrinsic

@@ -129,7 +129,6 @@ nav:
       - Summary: ./examples.md
       - Sail Plane static response: examples/SailPlane/sailplane_nb.md
       - Wing nonlinear dynamics: examples/wingSP/wingSP_nb.md
-      - Free flying shell structure: examples/SimoFS/main.md
       - Full aircraft (clamped) gust verification: examples/industrialAC/main.md
       - Concurrent loads: examples/ConcurrentLoads/main.md 
   #- Postprocessing
@@ -141,6 +140,7 @@ nav:
       - Algorithms: algorithms.md
       - UML description: UML.md
       - Developer: developer.md
+      - Postprocessing: postprocessing.md  
   - Codebase:
       - Inputs: api/inputs.md
       - Configuration: api/configuration.md

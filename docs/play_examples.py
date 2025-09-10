@@ -37,6 +37,46 @@ f = jax.vmap(lambda u, v: jnp.matmul(v, u.T), in_axes=(0,1), out_axes=1)
 u = jnp.array([jnp.eye(6) for i in range(3)])
 v = jnp.arange(4*6*3).reshape((4, 3, 6))
 fuv = f(u, v)
+########################################
+# passing functions
+
+import jax
+from jax import Array, jit, numpy as jnp
+from typing import Callable
+
+def func(a: Array, arg: int) -> Array:
+  return a + arg
+
+@jit
+def myjittedfun(f: Callable, a) -> Array:
+   return f(a)
+
+closure = jax.tree_util.Partial(func, arg=1)
+a = jnp.array([3, 4])
+print(myjittedfun(closure, a))
+# [4 5]
+
+from jax import Array, jit, numpy as jnp
+import jax_dataclasses as jdc
+
+
+@jdc.pytree_dataclass
+class MyClosure:
+    closure_arg1: int
+
+    def __call__(self, a:Array) -> Array:
+        return a + self.closure_arg1
+
+@jit
+def myjittedfun(closure: MyClosure):
+   a = jnp.array([3, 4])
+   return closure(a)
+
+def main():
+   closure = MyClosure(closure_arg1=3)
+   print(myjittedfun(closure))
+
+
 
 ##########################################
 

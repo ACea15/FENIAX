@@ -16,7 +16,57 @@ For links to the codebase, see the following:
     - Numerical solvers inside [Sollibs](api/sollibs.md): Using [Diffrax](https://docs.kidger.site/diffrax/) or bespoke solvers in JAX.
     - Right-hand-side (RHS) of the system of [equations](api/equations.md) implemented in pure functions to comply with JAX functional programming approach.
 
-## System of equations
+## System based solutions
+
+An internal function identifier (Sol name) is build such that unique functions are mapped to the input settings in the system of equations, thereby avoiding the use of if-conditionals, 0-only additional vectors inside the solvers (running iteratively).
+The options are as follows:
+
+| Type        | Target | Gravity    | BC1 [prime=2] | ModalAero [prime=3] | SteadyAero [prime=5] | UnsteadyAero [prime=7] | Point loads [prime=11] | q0 approx | Rigid-body           | Nonlinearities          | residualised |
+|-------------|--------|------------|---------------|---------------------|----------------------|------------------------|------------------------|-----------|----------------------|-------------------------|--------------|
+| 1 static    | Level  | False: "g" | Clamped       | None                | None                 | None                   | None                   | via q2    | 1-quaternion+strains | All -\> ""              | None -\> ""  |
+| 2 Dynamic   | TRIM1  | True: "G"  | Free          | Rogers              | qalpha               | gust                   | follower               | via q1    | All-quaternions      | Linear sys -\> "l"      | True -\> "r" |
+| 3 Stability | TRIM2  |            | Prescribed    | Loewner             | qx (control)         | controls               | dead                   |           |                      | Linear sys+disp -\> "L" |              |
+| 4 Control   |        |            |               |                     |                      |                        |                        |           |                      | only gamma1 -\> "g1"    |              |
+
+And some of the implemented RHS solutions (see for instance [equations](api/equations.md)):
+
+| Sol name |                                                 | label               | Imp |
+|----------|-------------------------------------------------|---------------------|-----|
+| 10G1     | Structural static under Gravity                 | [1,0,G]             | Y   |
+| 10g11    | Structural static with follower point forces    | [1,0,g,0,0,0,0,1]   | Y   |
+| 10g121   | Structural static with dead point forces        | [1,0,g,0,0,0,0,2]   | Y   |
+| 10g1331  | Structural static with follower+dead forces     | [1,0,g,0,0,0,0,3]   | N   |
+| 10g15    | Manoeuvre under qalpha                          | [1,0,g,0,1,1]       | Y   |
+| 10G15    | Manoeuvre under qalpha and Gravity              | [1,0,G,0,1,1]       | N   |
+| 10g75    | Manoeuvre under qalpha and controls             | [1,0,g,0,1,2]       | N   |
+| 10G75    | Manoeuvre under qalpha+controls+Gravity         | [1,0,G,0,1,2]       | N   |
+| 20g1     | Clamped Structural dynamics, free vibrations    | [2,0,g]             | Y   |
+| 20G2     | Free Structural dynamic with gravity forces     | [2,0,G,1]           | Y   |
+| 20g2     | Free Structural dynamic                         | [2,0,g,1]           | Y   |
+| 20g11    | Structural dynamic follower point forces        | [2,0,g,0,0,0,0,1]   | Y   |
+| 20g121   | Structural dynamic dead point forces            | [2,0,g,0,0,0,0,2]   | Y   |
+| 20g22    | Free Structural dynamic follower point forces   | [2,0,g,1,0,0,0,1]   | Y   |
+| 20g242   | Free Structural dynamic dead point forces       | [2,0,g,1,0,0,0,2]   | Y   |
+| 11G6     | Static trimmed State (elevator-qalpha,          | [1,1,G,1,1]         | Y   |
+|          | no gravity updating)                            |                     | Y   |
+| 12G2     | Static trimmed State (elevator-qalpha,          | [1,2,G,1]           | Y   |
+|          | gravity updating)                               |                     |     |
+| 21G150   | Dynamic trimmed State                           | [2,1,G,1,1,2]       | N   |
+| 20g21    | Gust response                                   | [2,0,g,0,1,0,1]     | Y   |
+| 20g273   | Gust response, q0 obtained via integrator q1    | [2,0,g,0,1,0,1,0,1] | Y   |
+| 20g105   | Gust response with steady qalpha                | [2,0,g,0,1,1,1]     | N   |
+| 20g42    | Gust response Free-flight                       | [2,0,g,1,1,0,1]     | Y   |
+| 20G42    | Gust response Free-flight and gravity (X error) | [2,0,G,1,1,0,1]     | N   |
+| 20G1050  | Gust response Free-flight, gravity, controls    | [2,0,G,1,1,2,1]     | N   |
+|          |                                                 |                     |     |
+
+Sol name is based on the input options obtained as the multiplication of prime numbers, which can be obtained and inspected as:
+
+``` python
+import feniax.intrinsic.functions as functions
+label = functions.label_generator([2,0,'g',0,1,0,1,0,1])
+print(label)
+```
 
 ## Recovery of deformations
 
