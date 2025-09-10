@@ -817,18 +817,31 @@ class Dxloads(DataContainer):
     follower_forces : bool
         Include point follower forces
     dead_forces : bool
+        Include point dead forces
     gravity_forces : bool
+        Include gravity in the analysis
     modalaero_forces : bool
+        Include aerodynamic forces
     x : Array
+        x-axis vector for interpolation
     force_follower : Array
+        Follower force points [Node, coordinate]
     force_dead : Array
+        Dead force points [Node, coordinate]
     follower_points : list
+        Follower force points [Node, coordinate]
     dead_points : list
+        Dead force points [Node, coordinate]
     follower_interpolation : list
+        (Linear) interpolation of the follower forces on t \
+         [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]
     dead_interpolation : list
+        (Linear) interpolation of the dead forces on t \
+         [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]
     gravity : float
+        gravity force [m/s]
     gravity_vect : Array
-
+        gravity vector
     Attributes
     ----------
 
@@ -842,41 +855,37 @@ class Dxloads(DataContainer):
 
     follower_forces: bool = dfield("", default=False)
     dead_forces: bool = dfield("", default=False)
-    gravity_forces: bool = dfield("Include gravity in the analysis", default=False)
-    modalaero_forces: bool = dfield("Include aerodynamic forces", default=False)
-    x: jnp.ndarray = dfield("x-axis vector for interpolation", default=None)
+    gravity_forces: bool = dfield("", default=False)
+    modalaero_forces: bool = dfield("", default=False)
+    x: jnp.ndarray = dfield("", default=None)
     force_follower: jnp.ndarray = dfield(
-        """Point follower forces
-    (len(x)x6xnum_nodes)""",
+        "",
         default=None,
     )
     force_dead: jnp.ndarray = dfield(
-        """Point follower forces
-    (len(x)x6xnum_nodes)""",
+        "",
         default=None,
     )
     follower_points: list[list[int, int]] = dfield(
-        "Follower force points [Node, coordinate]",
+        "",
         default=None,
     )
     dead_points: list[list[int, int]] = dfield(
-        "Dead force points [Node, coordinate]",
+        "",
         default=None,
     )
 
     follower_interpolation: list[list[float]] = dfield(
-        "(Linear) interpolation of the follower forces on t \
-        [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]",
+        "",
         default=None,
     )
     dead_interpolation: list[list[int]] = dfield(
-        "(Linear) interpolation of the dead forces on t \
-        [[f0(t0)..f0(tn)]..[fm(t0)..fm(tn)]]",
+        "",
         default=None,
     )
 
-    gravity: float = dfield("gravity force [m/s]", default=9.807)
-    gravity_vect: jnp.ndarray = dfield("gravity vector", default=jnp.array([0, 0, -1]))
+    gravity: float = dfield("", default=9.807)
+    gravity_vect: jnp.ndarray = dfield("", default=jnp.array([0, 0, -1]))
 
     # gravity_steps: int = dfield("steps in which gravity is applied in trim simulation",
     #                                    default=1) manage by t
