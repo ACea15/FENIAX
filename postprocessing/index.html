@@ -13,10 +13,10 @@
       
       
       
-        <link rel="prev" href="../UML/">
+        <link rel="prev" href="../developer/">
       
       
-        <link rel="next" href="../postprocessing/">
+        <link rel="next" href="../api/inputs/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Developer - FENIAX</title>
+        <title>Postprocessing - FENIAX</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#tests" class="md-skip">
+        <a href="#postprocessing-app-with-streamlit-and-plotly" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Developer
+              Postprocessing
             
           </span>
         </div>
@@ -807,6 +807,27 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../developer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Developer
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -823,33 +844,12 @@
         
   
   <span class="md-ellipsis">
-    Developer
-  </span>
-  
-
-      </a>
-      
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../postprocessing/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
     Postprocessing
   </span>
   
 
       </a>
+      
     </li>
   
 
@@ -1174,48 +1174,11 @@
                   
 
 
-<h1 id="tests">Tests<a class="headerlink" href="#tests" title="Permanent link">¤</a></h1>
+<h1 id="postprocessing-app-with-streamlit-and-plotly">Postprocessing app with Streamlit and Plotly<a class="headerlink" href="#postprocessing-app-with-streamlit-and-plotly" title="Permanent link">¤</a></h1>
 <ul>
-<li>
-<p>Testing framework using <a href="https://docs.pytest.org/en/stable/">Pytest</a>. Tests marked as <em>slow</em>, <em>private</em> or <em>legacy</em> won't run by default. See the <code>tests</code> folder for details.</p>
-</li>
-<li>
-<p>CI/CD via Github actions, so every push to the master branch checks all tests are run.</p>
-</li>
-</ul>
-<h1 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">¤</a></h1>
-<ul>
-<li>
-<p>The examples folder is a git <a href="https://www.geeksforgeeks.org/git/git-subtree/">subtree</a> of the <a href="https://github.com/ACea15/FENIAXexamples">FENIAXexamples</a> repo. The workflow followed is to install FENIAX anywhere in the system and the FENIAXexamples separated where one wants to run cases so that the code is not clutter with output files. </p>
-</li>
-<li>
-<p>It is encouraged to keep adding new examples to FENIAXexamples, then updating the /examples in FENIAX: 
-<code>git subtree add --prefix examples/ https://github.com/ACea15/FENIAXexamples --squash</code></p>
-</li>
-<li>
-<p>Once cases are added, new tests should be included as a validation. Note the tests rely on data in the /examples folder. </p>
-</li>
-</ul>
-<h1 id="pending-improvements">Pending improvements<a class="headerlink" href="#pending-improvements" title="Permanent link">¤</a></h1>
-<ul>
-<li>
-<p>Extend type-hinting to the entire codebase.</p>
-</li>
-<li>
-<p>Add entry point to run FENIAX from command line to .yml file. </p>
-</li>
-<li>
-<p>TODOs: Search for TODOs within the codebase. Either integrated in your IDE, or just run <code>grep -r --include "*.py" "# TODO:" .</code> from the terminal</p>
-</li>
-<li>
-<p>Documentation is not fully completed and it should be continuously extended. </p>
-</li>
-<li>
-<p>Setup a proper git branching model (as more than one developer contributes to the code).</p>
-</li>
-<li>
-<p>Add code coverage and improve percentage via utility tests.</p>
-</li>
+<li>Copy/paste the streamlit template folder in feniax/plotools into a folder with results as seen in the examples folder.</li>
+<li>Run streamlit: <code>streamlit run Home.py</code></li>
+<li>A webpage will open, select a folder with the results of running FENIAX and navigate around to automatically plot results. </li>
 </ul>
 
 
@@ -1252,7 +1215,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../UML/" class="md-footer__link md-footer__link--prev" aria-label="Previous: UML description">
+          <a href="../developer/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Developer">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -1262,20 +1225,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                UML description
+                Developer
               </div>
             </div>
           </a>
         
         
           
-          <a href="../postprocessing/" class="md-footer__link md-footer__link--next" aria-label="Next: Postprocessing">
+          <a href="../api/inputs/" class="md-footer__link md-footer__link--next" aria-label="Next: Inputs">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Postprocessing
+                Inputs
               </div>
             </div>
             <div class="md-footer__button md-icon">
