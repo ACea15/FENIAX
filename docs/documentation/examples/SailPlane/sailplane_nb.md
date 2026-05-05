@@ -46,9 +46,9 @@ from tabulate import tabulate
 ```
 
 ## Run cases
+Here we define functions for running FENIAX and recording runtimes.
 
 ``` python
-
 import time
 
 TIMES_DICT = dict()
@@ -72,6 +72,11 @@ def save_times():
     pd_times.to_csv("./run_times.csv")
 ```
 
+
+
+
+<!---
+# commented out for clarity - baseline case is SP1
 ``` {#SP .python}
 SP_folder = feniax.PATH / "../examples/SailPlane"
 inp = Inputs()
@@ -129,11 +134,14 @@ inp.systems.sett.s1.xloads.follower_interpolation = [[0.,
                                                      ]
 inp.systems.sett.s1.t = [1, 2, 3, 4, 5, 6]
 ```
+-->
 
-### SP1
+
+### Case SP1
+Solving for static equilibrium of the sailplane model with two follower force point loads applied at both wing tips, using 5 active modes with 7 ramping load cases.
 
 ``` {#SP1 .python}
-
+name = "SP1"
 SP_folder = feniax.PATH / "../examples/SailPlane"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -196,10 +204,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-### SP2
+### Case SP2
+Same as Case SP1, but with 15 retained modes.
 
 ``` {#SP2 .python}
-
+name = "SP2"
 SP_folder = feniax.PATH / "../examples/SailPlane"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -262,10 +271,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-### SP3
+### Case SP3
+Same as Case SP1, but with 30 retained modes.
 
 ``` {#SP3 .python}
-
+name = "SP3"
 SP_folder = feniax.PATH / "../examples/SailPlane"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -328,10 +338,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-### SP4
+### Case SP4
+Same as Case SP1, but with 50 retained modes.
 
 ``` {#SP4 .python}
-
+name = "SP4"
 SP_folder = feniax.PATH / "../examples/SailPlane"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -394,10 +405,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-### SP5
+### Case SP5
+Same as Case SP1, but with 100 retained modes.
 
 ``` {#SP5 .python}
-
+name = "SP5"
 SP_folder = feniax.PATH / "../examples/SailPlane"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -460,6 +472,7 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
+### Saving runtimes
 ``` python
 save_times()
 ```

@@ -46,6 +46,7 @@ from tabulate import tabulate
 ```
 
 ## Run cases
+Here we define functions for running FENIAX and recording runtimes.
 
 ``` python
 
@@ -72,8 +73,11 @@ def save_times():
     pd_times.to_csv("./run_times.csv")
 ```
 
-``` {#wingSP .python}
+### Case WSP1
 
+<!---
+# commented out for clarity - baseline case is WSP1
+``` {#wingSP .python}
 wingSP_folder = feniax.PATH / "../examples/wingSP"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -128,12 +132,13 @@ dts = [round(1./ eigenvals[i]**0.5, 6) for i in [5,15,30,50,100]]
 print(dts)
 dts = [round(1./ eigenvals[i]**0.5, 2) for i in [5,15,30,50,100]]
 ```
+-->
 
-WSP1
+
+Exciting the wing with two linearly increasing follower force point load at the tip for 4 seconds, and simulate the transient response over 15 seconds with 5 active modes while the dynamics decay.
 
 ``` {#WSP1 .python}
-
-
+name = "WSP1"
 wingSP_folder = feniax.PATH / "../examples/wingSP"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -166,11 +171,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-WSP2
+### Case WSP2
+Same as Case WSP1, but with 15 retained modes.
 
 ``` {#WSP2 .python}
-
-
+name = "WSP2"
 wingSP_folder = feniax.PATH / "../examples/wingSP"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -203,11 +208,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-WSP3
+### Case WSP3
+Same as Case WSP1, but with 30 retained modes.
 
 ``` {#WSP3 .python}
-
-
+name = "WSP3"
 wingSP_folder = feniax.PATH / "../examples/wingSP"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -240,11 +245,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-WSP4
+### Case WSP4
+Same as WSP1, but with 50 retained modes.
 
 ``` {#WSP4 .python}
-
-
+name = "WSP4"
 wingSP_folder = feniax.PATH / "../examples/wingSP"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -277,11 +282,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-WSP4alpha05
+### Case WSP4alpha05
+Same as WSP4, but with peak load scaled by 50%.
 
 ``` {#WSP4alpha05 .python}
-
-
+name = "WSP4alpha05"
 wingSP_folder = feniax.PATH / "../examples/wingSP"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -317,10 +322,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-WSP4alpha15
+### Case WSP4alpha15
+Same as WSP4, but with peak load scaled by 150%.
 
 ``` {#WSP4alpha15 .python}
-
+name = "WSP4alpha15"
 wingSP_folder = feniax.PATH / "../examples/wingSP"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
@@ -355,11 +361,11 @@ inp.driver.sol_path = pathlib.Path(
 run(inp, label=name)
 ```
 
-WSP5
+### Case WSP5
+Same as WSP1, but with 100 retained modes.
 
 ``` {#WSP5 .python}
-
-
+name = "WSP5"
 wingSP_folder = feniax.PATH / "../examples/wingSP"
 inp = Inputs()
 inp.engine = "intrinsicmodal"
